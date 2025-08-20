@@ -2013,9 +2013,6 @@ function pickOneFromGroup(parts, group, preferOrder = null){
   return parts.filter(t => !(group.includes(t) && t !== keep));
 }
 
-
-
-
 // 表情：必ず1つだけにする
 function ensureExprExclusive(parts){
   const GROUP = [
