@@ -1,0 +1,727 @@
+:root {
+  --bg: #0e1117;
+  --panel: #151a23;
+  --ink: #e9eef7;
+  --muted: #9aa4b2;
+  --line: #2a3240;
+  --brand: #6aa1ff;
+  --ok: #5fd39a;
+  --warn: #ffb86b;
+  --bad: #ff6b6b;
+}
+
+/* 基本リセット & ベース */
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.55 system-ui, -apple-system, Segoe UI, Roboto;
+}
+h1, h2, h3 { margin: 0 0 8px; }
+a { color: var(--brand); text-decoration: none; }
+
+/* ========================
+   レイアウト / コンテナ
+   ======================== */
+
+/* 画面が広くても読みやすい上限幅＋可変パディング */
+.container {
+  max-width: 1400px;                 /* ← 1200→1400に拡張。好みで調整可 */
+  margin: 0 auto;
+  padding-inline: clamp(12px, 2vw, 24px);
+  padding-block: 16px;
+}
+
+/* 汎用グリッド */
+.grid { display: grid; gap: 12px; }
+
+/* 既存の固定カラムユーティリティ（そのまま使えます） */
+.g2 { grid-template-columns: repeat(2, 1fr); }
+.g3 { grid-template-columns: repeat(3, 1fr); }
+.g4 { grid-template-columns: repeat(4, 1fr); }
+
+/* 新：自動カラム（広い画面でも崩れにくい） */
+.grid.auto {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-content: start;
+}
+
+/* 背の高いカードを2カラム占有させたい時に付ける */
+@media (min-width: 1200px) {
+  .span-2 { grid-column: span 2; }
+}
+
+@media (max-width: 1024px) {
+  .g3, .g2 { grid-template-columns: 1fr; }
+  .g4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .g4 { grid-template-columns: 1fr; }
+}
+
+/* ========================
+   ヘッダー / タブ / ボタン
+   ======================== */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #0b0f16;
+  border-bottom: 1px solid #121826;
+}
+.header .inner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+}
+.header-row { display: flex; align-items: center; gap: 8px; }
+.header-row .card-title { margin: 0; }
+.header-row .push { margin-left: auto; }
+@media (max-width: 640px) {
+  .header-row { flex-wrap: wrap; }
+  .header-row .push { margin-left: 0; }
+}
+
+.tabbar { display: flex; gap: 8px; }
+.tab {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  background: #121723;
+}
+.tab.active {
+  border-color: #3e58a6;
+  background: #172036;
+}
+
+.btn {
+  appearance: none;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #0b1119;
+  background: linear-gradient(180deg, #6aa1ff, #497fff);
+}
+.btn.small { padding: 6px 10px; font-weight: 600; }
+.btn.ghost { background: #1d2432; color: #e6eeff; border: 1px solid var(--line); }
+.btn.ok { background: linear-gradient(180deg, #65d77c, #43b96f); }
+.btn.bad { background: linear-gradient(180deg, #ff7b7b, #ff5454); }
+
+/* ========================
+   カード / パネル
+   ======================== */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 14px 0;
+  min-width: 0;            /* ← はみ出し防止（chipが多くてもOK） */
+}
+.panel {
+  border: 1px dashed #283244;
+  border-radius: 10px;
+  padding: 10px;
+}
+.panel > .card {
+  background: #101520;
+  border-color: #232b3a;
+  margin-top: 10px;
+}
+
+/* ========================
+   フォーム / リスト
+   ======================== */
+label.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 8px 4px 0;
+}
+textarea,
+input[type="text"],
+input[type="password"],
+select {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0f141d;
+  color: var(--ink);
+  padding: 10px;
+}
+
+.scroller {
+  max-height: 190px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px;
+  background: #0f141d;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1b2232;
+  border: 1px solid var(--line);
+  color: #cbd6ea;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+/* 小要素 */
+.mini { color: var(--muted); font-size: 12px; }
+.status {
+  padding: 6px 12px;
+  background: #111a28;
+  border: 1px solid #21304a;
+  border-radius: 10px;
+}
+.toast {
+  background: #111c2a;
+  border: 1px solid #2a3a52;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+.out {
+  white-space: pre-wrap;
+  background: #0b0f16;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 140px;
+}
+
+/* テーブル */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #0b0f16;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.table th, .table td {
+  border-bottom: 1px solid #1e2635;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 13px;
+}
+.table th {
+  background: #121a2a;
+  color: #cfe0ff;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* インラインコード */
+kbd {
+  background: #101826;
+  border: 1px solid #2a3342;
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+code.tag {
+  background: #101826;
+  border: 1px solid #233045;
+  border-radius: 6px;
+  padding: 1px 6px;
+  color: #d9e6ff;
+}
+
+/* ========================
+   色ホイール（共通）
+   ======================== */
+.wheel-box {
+  position: relative;
+  width: 180px;
+  height: 180px;            /* ← 共通は固定。髪/瞳/学習アクセ等はこちらを使う */
+  margin: 6px 0 8px;
+}
+.wheel {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+  box-shadow:
+    0 0 0 10px #0f141d inset,
+    0 0 0 1px #2a3342 inset;
+  z-index: 1;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.wheel::after {
+  content: "";
+  position: absolute;
+  inset: 28px;
+  border-radius: 50%;
+  background: #0e131c;
+  pointer-events: none;
+}
+.thumb {
+  position: absolute;
+  left: 83px;
+  top: -6px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #000;
+  z-index: 2;
+  pointer-events: none;
+}
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #333;
+}
+
+
+/* セパレーター */
+hr.sep {
+  border: 0;
+  border-top: 1px solid #223048;
+  margin: 12px 0;
+}
+
+/* details */
+details {
+  border: 1px dashed #283244;
+  border-radius: 10px;
+  padding: 8px;
+  background: #0f141d;
+}
+summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+summary::-webkit-details-marker { display: none; }
+summary .caret { transform: rotate(0deg); transition: transform .15s; }
+details[open] summary .caret { transform: rotate(90deg); }
+
+/* バッジ & ノート */
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #2a3240;
+  background: #121a2a;
+  color: #cfe0ff;
+  margin-left: 6px;
+}
+.badge.warn { background: #1b1420; border-color: #4a2a3a; color: #ffb6c1; }
+.badge.ok   { background: #132019; border-color: #294b38; color: #9be7b3; }
+.note {
+  margin: 8px 0;
+  padding: 10px;
+  border: 1px dashed #2a3240;
+  border-radius: 10px;
+  background: #0f141d;
+  color: #cfd7e6;
+}
+.note .mini { opacity: .9; }
+
+/* ========================
+   有効/無効 表現の統一
+   ======================== */
+
+/* .disabled は“見た目だけ”にする（クリックは殺さない） */
+.disabled {
+  opacity: .5;
+  filter: grayscale(30%);
+  pointer-events: auto !important;   /* ← これが肝 */
+}
+
+/* 念のため：パネルを is-disabled にしても“モード切替ラジオ”は触れる */
+#panel_outfitFixed input[name="outfitMode"] {
+  pointer-events: auto;
+}
+
+/* 無効状態の見た目（下カテゴリのfieldsetや親パネルに付く想定） */
+.is-disabled {
+  opacity: .45;
+  pointer-events: none;   /* 操作も止める */
+}
+
+/* パネルは見た目を落とす＋操作制御（チェックボックスだけは押せる） */
+.panel.is-disabled {
+  opacity: .5;
+}
+.panel.is-disabled .wheel-box,
+.panel.is-disabled input[type="range"],
+.panel.is-disabled select,
+.panel.is-disabled input[type="text"] {
+  pointer-events: none;
+  filter: grayscale(80%);
+}
+.panel.is-disabled input[type="checkbox"] {
+  pointer-events: auto;   /* ← チェックは常に戻せる */
+}
+
+/* 機能としての無効化は fieldset[disabled] を使うが、見た目は変えない */
+fieldset { border: 0; margin: 0; padding: 0; }
+fieldset:disabled {
+  pointer-events: none;   /* 入力は止める */
+  opacity: inherit;             /* ← ここがキモ：見た目は .is-disabled に任せる */
+}
+
+/* Safari 対策 */
+fieldset, fieldset:disabled {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: 0;
+}
+legend { display: none; }
+
+
+/* ====== Ultra-wide layout（選択肢の枠を広げる）====== */
+/* コンテナを広くしてカラムを“最小幅指定付き”で拡張 */
+@media (min-width: 1280px) {
+  .container { max-width: 1600px; }  /* 1400→1600に拡張 */
+
+  /* 髪型/目/服 の3カラム。各枠の最小幅を与えるのがポイント */
+  #grid_shape {
+    display: grid;
+    grid-template-columns:
+      minmax(440px, 1fr)   /* 髪型 */
+      minmax(440px, 1fr)   /* 目の形 */
+      minmax(560px, 1.2fr) /* 服（広め） */
+    ;
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* 一覧性UP（任意） */
+  #grid_shape .scroller { max-height: 320px; }
+}
+
+@media (min-width: 1600px) {
+  .container { max-width: 1760px; }
+  #grid_shape {
+    grid-template-columns:
+      minmax(520px, 1fr)
+      minmax(520px, 1fr)
+      minmax(640px, 1.3fr);
+  }
+}
+
+/* ===== 服カラー（固定）のホイールを“枠内で可変”にする ===== */
+/* パネルの罫線からはみ出さないように、内側パディング分を差し引いた可変幅に */
+#grid_fixed_colors {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(360px, 1fr));  /* ← 枠自体を広げる */
+  gap: 16px;
+}
+#grid_fixed_colors .panel { overflow: hidden; }          /* 罫線からはみ出さない */
+#grid_fixed_colors .panel .wheel-box {
+  width: clamp(180px, calc(100% - 40px), 300px);         /* 余白(=20px×2)を差し引き */
+  aspect-ratio: 1 / 1;                                   /* 正円維持 */
+  height: auto;
+  margin: 10px auto 8px;                                 /* 中央寄せ */
+}
+
+/* ===== 量産モードの“服カラー”ホイールも同様に復活＆可変 ===== */
+#prodColorCard .panel { overflow: hidden; }
+#prodColorCard .panel .wheel-box {
+  width: clamp(180px, calc(100% - 40px), 300px);
+  aspect-ratio: 1 / 1;
+  height: auto;
+  margin: 10px auto 8px;
+}
+
+/* ===== 量産モードのアクセ：ラベルとホイールのずれ修正 ===== */
+#panelProduction .panel .row.mini {
+  display: block;              /* ← 横並びをやめて縦に積む */
+  margin-bottom: 8px;          /* 下に余白を確保 */
+}
+
+#panelProduction .panel select + .wheel-box {
+  margin-top: 6px;             /* セレクトの直下にホイール */
+}
+
+/* ===== 服（固定）の選択 UI：全画面時は折り返し ===== */
+/* 服（固定）3ブロックを画面幅に応じて確実に折り返す */
+#panel_outfitFixed .grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(380px, 1fr)); /* ← 最小幅を少し広げて3列を強制 */
+  gap: 12px;
+  align-items: start;                                   /* パネルの頭を揃える */
+}
+#panel_outfitFixed .grid > .panel { min-width: 0; }     /* 長いチップでも折り返せる */
+
+@media (max-width: 1440px) {
+  #panel_outfitFixed .grid {
+    grid-template-columns: repeat(2, minmax(380px, 1fr)); /* 2列 */
+  }
+}
+@media (max-width: 980px) {
+  #panel_outfitFixed .grid { grid-template-columns: 1fr; } /* 1列 */
+}
+
+/* 服リストの縦を少しだけ広げる（はみ出し防止） */
+#panel_outfitFixed .scroller { max-height: 460px; }
+@media (min-width: 1600px) {
+  #panel_outfitFixed .scroller { max-height: 520px; }
+}
+
+/* ===== 髪型/目/服（3カラム）の“選択肢の枠”を広げる ===== */
+@media (min-width: 1280px) {
+  .container { max-width: 1600px; }
+  #grid_shape {
+    display: grid;
+    grid-template-columns:
+      minmax(480px, 1fr)      /* 髪型 */
+      minmax(480px, 1fr)      /* 目の形 */
+      minmax(640px, 1.2fr);   /* 服（広め） */
+    gap: 16px;
+    align-items: start;
+  }
+  #grid_shape .scroller { max-height: 320px; }
+  #panel_outfitFixed .scroller { max-height: 360px; }
+}
+@media (min-width: 1700px) {
+  .container { max-width: 1760px; }
+  #grid_shape {
+    grid-template-columns:
+      minmax(520px, 1fr)
+      minmax(520px, 1fr)
+      minmax(680px, 1.3fr);
+  }
+}
+
+/* ===== 共通の縮小（タブレット以下） ===== */
+@media (max-width: 1024px) {
+  #grid_fixed_colors { grid-template-columns: 1fr; }
+  #grid_fixed_colors .panel .wheel-box,
+  #prodColorCard  .panel .wheel-box { width: clamp(160px, 60vw, 240px); }
+}
+
+/* ===== 既存の“ホイール固定サイズ”は髪/瞳/学習アクセに適用 ===== */
+/* 服カラー系で上書きするので、ここは残す */
+@media (max-width: 1024px) {
+  .panel .wheel-box { width: 160px; height: 160px; }
+}
+@media (max-width: 640px) {
+  .panel .wheel-box { width: 140px; height: 140px; }
+}
+
+/* 超ワイドでさらに広げる */
+@media (min-width: 1600px) {
+  #grid_fixed_colors {
+    grid-template-columns: repeat(3, minmax(420px, 1fr));
+  }
+  #grid_fixed_colors .panel .wheel-box {
+    width: min(320px, 92%);
+  }
+}
+
+/* grid 直下のパネルは最小幅0（長いタグでも折り返せる） */
+.grid > .panel { min-width: 0; }
+
+/* タグは1行（幅計算を安定化） */
+.row.mini code.tag { white-space: nowrap; }
+
+/* 見た目のグレーアウト：is-disabled に集約（チェックは常に押せる） */
+.is-disabled { opacity: .5; }
+.panel.is-disabled .wheel-box,
+.panel.is-disabled input[type="range"],
+.panel.is-disabled select,
+.panel.is-disabled input[type="text"] {
+  pointer-events: none;
+  filter: grayscale(80%);
+}
+.panel.is-disabled input[type="checkbox"] { pointer-events: auto; }
+
+/* fieldsetは機能的に無効化するが、見た目は変えない */
+fieldset { border: 0; margin: 0; padding: 0; }
+fieldset:disabled { pointer-events: none; opacity: 1; }
+legend { display: none; }
+
+/* 服カラー（固定・量産）どちらも同じ大きさに統一して枠内に収める */
+#grid_fixed_colors .panel,
+#prodColorCard .panel { overflow: hidden; } /* 罫線から出さない */
+
+#grid_fixed_colors .panel .wheel-box,
+#prodColorCard  .panel .wheel-box {
+  width: 180px !important;
+  height: 180px !important;
+  margin: 8px auto 10px !important; /* 中央寄せ */
+}
+
+/* 服（固定）3ブロックを画面幅に応じて自動折り返し */
+#panel_outfitFixed .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+/* 服リストの縦を広げて“中身のはみ出し”を防止 */
+#panel_outfitFixed .scroller { max-height: 460px; }
+@media (min-width: 1600px) {
+  #panel_outfitFixed .scroller { max-height: 520px; }
+}
+
+/* アクセA/B/C：セレクト→ホイール→S/L の順に縦積みで揃える */
+#panelProduction .panel select + .wheel-box { margin-top: 6px; }
+#panelProduction .panel .row.mini { display: block; margin-bottom: 8px; }
+
+/* 服カラー（固定・量産）の“罫線の枠”を広げる */
+#grid_fixed_colors .panel,
+#prodColorCard .panel {
+  padding: 18px 24px 26px;   /* ← 上右左より下を深めに */
+  min-height: 300px;         /* ← ホイール＋S/L＋タグ分の高さを確保 */
+  overflow: visible;         /* 念のため：内側を切らない */
+  box-sizing: border-box;
+}
+
+/* ホイールの大きさはそのまま（例：180×180）でOK */
+#grid_fixed_colors .panel .wheel-box,
+#prodColorCard  .panel .wheel-box {
+  width: 180px;
+  height: 180px;
+  margin: 10px auto 12px;    /* 中央寄せ＋下に余白 */
+}
+
+
+/* ====== フルスクリーン時の“服”はみ出し対策（外側3カラム） ====== */
+/* minmaxで広がりすぎるのをやめて、frだけで必ず収まる比率にする */
+@media (min-width: 1280px) {
+  #grid_shape {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.2fr;  /* ← 3.2fr = 画面内に必ず収まる */
+    gap: 16px;
+    align-items: start;
+  }
+}
+/* さらに超ワイドでも“比率のみ”で維持（はみ出さない） */
+@media (min-width: 1600px) {
+  #grid_shape { grid-template-columns: 1fr 1fr 1.3fr; }
+}
+
+/* パネル内の長い内容が横幅を押し広げないように */
+#grid_shape > .panel { min-width: 0; }     /* 既にあればOK（再掲） */
+
+/* ====== 服パネル内の3分割も折り返して収める ====== */
+#panel_outfitFixed .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* 収まらない時は自動で2列/1列へ */
+  gap: 12px;
+}
+@media (max-width: 1280px) {
+  #panel_outfitFixed .grid { grid-template-columns: repeat(2, minmax(320px, 1fr)); }
+}
+@media (max-width: 900px) {
+  #panel_outfitFixed .grid { grid-template-columns: 1fr; }
+}
+
+/* パネルの内側からはみ出る装飾をカット（念のため） */
+#panel_outfitFixed { overflow: hidden; }
+#panel_outfitFixed .scroller { max-width: 100%; overflow-x: hidden; }
+
+/* 共通の固定サイズ */
+#grid_fixed_colors .panel .wheel-box,
+#prodColorCard .panel .wheel-box,
+#accCard .wheel-box {
+  width: 180px !important;
+  height: 180px !important;
+  margin: 10px 0 12px !important; /* 左寄せ */
+}
+
+/* 量産モード：最初の「服（カテゴリ別）」パネルを全幅に */
+@media (min-width: 1024px) {
+  #panelProduction > .grid.g3 > .panel:first-child {
+    grid-column: 1 / -1;   /* ← 右の空白を潰して全幅化 */
+  }
+
+  /* 中の g2 を可変カラムに（2 → 3〜5列へ広がる） */
+  #panelProduction > .grid.g3 > .panel:first-child .grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+/* 基本情報の服パネルを独立段落っぽく見せる */
+#panelBasic .panel.clothes-block {
+  grid-column: 1 / -1;   /* 全幅 */
+  margin-top: 1.5rem;    /* 髪・目から少し余白 */
+}
+
+
+/* 小さめラベル（例: 推奨 / enタグミニ表示） */
+.mini {
+  height: 1.4em;
+  display: inline-flex;          /* ← これで勝つ */
+  align-items: center;           /* 縦センター */
+  line-height: 1;                /* ベースラインのズレを抑える */
+  vertical-align: middle;        /* テキストと高さ合わせ */
+  padding: 0.05em 0.45em;
+  border: 1px solid var(--fg-30, #0003);
+  border-radius: .6em;
+  font-size: .78em;
+  opacity: .8;
+}
+
+/* チップ自体も高さがブレないように（任意） */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35em;
+  line-height: 1.2;  /* 既存より大きすぎれば 1.2〜1.3 程度に */
+}
+
+/* iOS Safari だけ微調整（任意） */
+@supports (-webkit-touch-callout: none) {
+  .mini { transform: translateY(-0.02em); } /* ほんの少しだけ下ろす */
+}
+
+/* 学習セット生成カードまわりの被り対策 */
+#learnBatchCard{
+  clear: both;          /* 前のfloatを無視して独立行にする */
+  margin-top: 16px;     /* 前ブロックと離す */
+}
+
+#learnBatchCard .row{
+  display: flex;
+  flex-wrap: wrap;      /* 横が溢れたら折り返す＝高さが潰れない */
+  gap: 8px;
+  align-items: center;
+}
+
+/* テーブルやテキストがはみ出して次要素に重ならないように */
+#tblLearn{
+  width: 100%;
+  table-layout: fixed;
+}
+#tblLearn th, #tblLearn td{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#outLearn{
+  max-height: 420px;    /* 任意：スクロールにして高さ固定 */
+  overflow: auto;
+}
+
+/* パネル/グリッドの下に一定の余白を持たせる（全体の保険） */
+.card > .panel,
+.card > .grid { margin-bottom: 16px; }
+
+/* 親パネルがfloat子を内包できていない場合の保険 */
+.panel::after { content:""; display:block; clear:both; }
