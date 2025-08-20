@@ -2060,6 +2060,8 @@ function buildOneLearning(extraSeed = 0){
   }
 
   // ===== 5) 最終整形・並び順・シード =====
+  parts = fixExclusives(parts);              // ←★ ここで矛盾を除去
+  const pos  = ensurePromptOrder(uniq(parts).filter(Boolean));
   const pos  = ensurePromptOrder(uniq(parts).filter(Boolean));
   const seed = seedFromName($("#charName").value||"", extraSeed);
 
@@ -2123,6 +2125,57 @@ function fillRemainder(rows, groupTags, fallbackTag){
     }
   }
 }
+
+// ===== 排他ガード（表情/構図の同時混入を防ぐ） =====
+function pickOneFromGroup(parts, group, preferOrder = null){
+  const S = new Set(parts);
+  const hits = group.filter(g => S.has(g));
+  if (hits.length <= 1) return parts;
+
+  // どれを残すか：preferOrder があればその順を優先、無ければ最初のヒットを残す
+  let keep = hits[0];
+  if (preferOrder && preferOrder.length){
+    for (const cand of preferOrder){ if (S.has(cand)) { keep = cand; break; } }
+  }
+  // groupから keep 以外を削除
+  const out = parts.filter(t => !(group.includes(t) && t !== keep));
+  return out;
+}
+
+// 表情：必ず1つだけにする
+function ensureExprExclusive(parts){
+  const GROUP = [
+    "neutral expression","smiling","smiling open mouth",
+    "serious","determined","slight blush","surprised (mild)","pouting (slight)"
+  ];
+  // 好みで残す優先順位（例：neutral > smiling > slight blush …）
+  const PREFER = ["neutral expression","smiling","slight blush","serious","determined","surprised (mild)","pouting (slight)","smiling open mouth"];
+  return pickOneFromGroup(parts, GROUP, PREFER);
+}
+
+// 構図/距離：portrait と full body 等を同時にしない
+function ensureCompExclusive(parts){
+  const GROUP = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
+  // 例：より“広い”方を優先（用途に合わせて調整してOK）
+  const PREFER = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
+  return pickOneFromGroup(parts, GROUP, PREFER);
+}
+
+// まとめ
+function fixExclusives(parts){
+  let p = parts.slice();
+  p = ensureExprExclusive(p);
+  p = ensureCompExclusive(p);
+  return p;
+}
+
+
+
+
+
+
+
+
 
 // ④ 配分ルール（必要なら数値だけ調整してOK）
 const MIX_RULES = {
@@ -2292,6 +2345,14 @@ fillRemainder(rows, exprGroup, MIX_RULES.expr.fallback);
   }
   fillRemainder(rows, MIX_RULES.light.group, MIX_RULES.light.fallback);
 }
+
+  // VIEW / COMPOSITION / EXPRESSION / BACKGROUND / LIGHTING の配分が終わった直後
+  // ---- ここから保険の排他整形 ----
+  for (const r of rows){
+    r.pos  = fixExclusives(r.pos);                   // ←★ もう一度締める
+    r.text = `${r.pos.join(", ")} --neg ${r.neg} seed:${r.seed}`;
+  }
+}  
   return out;
 }
 
