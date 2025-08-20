@@ -2033,31 +2033,30 @@ function buildOneLearning(extraSeed = 0){
   parts = forceSoloPos(parts);
 
   // ===== 4) 学習アンカーを不足時だけ補完 =====
-  const asSet = (arr)=> new Set((arr||[]).map(x=> typeof x==='string' ? x : x.tag));
-  const S = {
-    background: asSet(SFW.background),
-    pose:       asSet(SFW.pose_composition),
-    expr:       asSet(SFW.expressions),
-    light:      asSet(SFW.lighting)
-  };
-  const hasAny = (poolSet)=> parts.some(t => poolSet.has(String(t)));
+const asSet = (arr)=> new Set((arr||[]).map(x=> typeof x==='string' ? x : x.tag));
+const S = {
+  background: asSet(SFW.background),
+  pose:       asSet(SFW.pose_composition),
+  // expressions は辞書だけでなく UI 選択と MIX_RULES も候補に含める
+  expressions: new Set([
+    ...(SFW.expressions || []).map(x => x.tag || x),
+    ...getMany("expr"),
+    ...MIX_RULES.expr.group
+  ]),
+  light:      asSet(SFW.lighting)
+};
+const hasAnyFrom = (parts, poolSet)=> parts.some(t => poolSet.has(String(t)));
 
-  // 背景：何も選んでなければフラットに
-  if (!hasAny(S.background)) parts.push("plain background");
+if (!hasAnyFrom(parts, S.background)) parts.push("plain background");
+if (!hasAnyFrom(parts, S.pose))       parts.push("upper body");
 
-  // ポーズ・構図：無ければ“上半身”
-  if (!hasAny(S.pose)) parts.push("upper body");
+// ★ここを修正：S.expressions を使って判定（neutral の自動追加は“表情が皆無の時だけ”）
+if (!hasAnyFrom(parts, S.expressions)) parts.push("neutral expression");
 
-  // 表情：無ければニュートラル
-  if (!hasAny(S.expr)) parts.push("neutral expression");
-
-  // ライティング：無ければソフト
-  if (!hasAny(S.light)) parts.push("soft lighting");
-
-  // 構図の安定化（入ってなければ）
-  if (!parts.some(t => /\b(center(ed)?\s?composition|centered)\b/i.test(String(t)))) {
-    parts.push("centered composition");
-  }
+if (!hasAnyFrom(parts, S.light))       parts.push("soft lighting");
+if (!parts.some(t => /\b(center(ed)?\s?composition|centered)\b/i.test(String(t)))) {
+  parts.push("centered composition");
+}
 
   // ===== 5) 最終整形・並び順・シード =====
   parts = fixExclusives(parts);              // ←★ ここで矛盾を除去
