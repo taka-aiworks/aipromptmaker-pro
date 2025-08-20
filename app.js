@@ -2065,6 +2065,85 @@ function fixExclusives(parts){
 }
 
 
+// ④ 配分ルール（必要なら数値だけ調整してOK）
+const MIX_RULES = {
+  // 視点（横顔/背面は割合で、残りは 3/4 or 正面に後で丸める）
+    view: {
+    group: ["front view","three-quarters view","profile view","side view","back view"],
+    targets: {
+      "profile view":[0.15,0.20],
+      "back view":[0.08,0.12]
+    },
+    fallback: "three-quarters view"
+  },
+
+  comp: {
+    group: ["full body","waist up","upper body","bust","portrait","close-up","wide shot"],
+    targets: {
+      "full body":[0.20,0.25],
+      "waist up":[0.30,0.35],
+      "upper body":[0.05,0.10],   // 追加
+      "bust":[0.20,0.25],
+      "close-up":[0.05,0.10],     // 追加
+      "wide shot":[0.05,0.10]     // 追加
+    },
+    fallback: "portrait"
+  },
+
+  // 表情（UIで選ばれた中だけから配分。未選択なら fallback=neutral）
+expr: {
+  group: [
+    "neutral expression",
+    "smiling",
+    "smiling open mouth",
+    "serious",
+    "determined",
+    "slight blush",
+    "surprised (mild)",
+    "pouting (slight)"
+  ],
+  // ★デフォルト配分（汎用SFW）
+  targets: {
+    "neutral expression": [0.55, 0.65],
+    "smiling":            [0.18, 0.25],
+    "smiling open mouth": [0.05, 0.10],
+    "serious":            [0.01, 0.02],
+    "determined":         [0.01, 0.02],
+    "slight blush":       [0.03, 0.05]
+    // "surprised (mild)" や "pouting (slight)" を使う時はここに追記してね（各 0.03–0.05 程度）
+  },
+  fallback: "neutral expression"
+},
+
+  // 背景（無地/スタジオを多め。bedroom は少し）
+  bg: {
+    group: ["plain background","studio background","solid background","white background","bedroom"],
+    targets: {
+      "plain background":[0.35,0.45]
+      
+    },
+    fallback: "plain background"
+  },
+
+  // ライティング（安定寄り）
+  light: {
+    group: ["soft lighting","even lighting","normal lighting","window light","overcast"],
+    targets: {
+      "soft lighting":[0.35,0.45],
+      "even lighting":[0.25,0.35],
+      "normal lighting":[0.10,0.20]
+    },
+    fallback: "soft lighting"
+  }
+};
+
+// EXPR_ALL はそのまま使う
+const EXPR_ALL = new Set([
+  ...Object.keys(MIX_RULES.expr.targets),
+  MIX_RULES.expr.fallback
+]);
+
+
 
 
 function buildOneLearning(extraSeed = 0){
@@ -2194,83 +2273,6 @@ function fillRemainder(rows, groupTags, fallbackTag){
   }
 }
 
-// ④ 配分ルール（必要なら数値だけ調整してOK）
-const MIX_RULES = {
-  // 視点（横顔/背面は割合で、残りは 3/4 or 正面に後で丸める）
-    view: {
-    group: ["front view","three-quarters view","profile view","side view","back view"],
-    targets: {
-      "profile view":[0.15,0.20],
-      "back view":[0.08,0.12]
-    },
-    fallback: "three-quarters view"
-  },
-
-  comp: {
-    group: ["full body","waist up","upper body","bust","portrait","close-up","wide shot"],
-    targets: {
-      "full body":[0.20,0.25],
-      "waist up":[0.30,0.35],
-      "upper body":[0.05,0.10],   // 追加
-      "bust":[0.20,0.25],
-      "close-up":[0.05,0.10],     // 追加
-      "wide shot":[0.05,0.10]     // 追加
-    },
-    fallback: "portrait"
-  },
-
-  // 表情（UIで選ばれた中だけから配分。未選択なら fallback=neutral）
-expr: {
-  group: [
-    "neutral expression",
-    "smiling",
-    "smiling open mouth",
-    "serious",
-    "determined",
-    "slight blush",
-    "surprised (mild)",
-    "pouting (slight)"
-  ],
-  // ★デフォルト配分（汎用SFW）
-  targets: {
-    "neutral expression": [0.55, 0.65],
-    "smiling":            [0.18, 0.25],
-    "smiling open mouth": [0.05, 0.10],
-    "serious":            [0.01, 0.02],
-    "determined":         [0.01, 0.02],
-    "slight blush":       [0.03, 0.05]
-    // "surprised (mild)" や "pouting (slight)" を使う時はここに追記してね（各 0.03–0.05 程度）
-  },
-  fallback: "neutral expression"
-},
-
-  // 背景（無地/スタジオを多め。bedroom は少し）
-  bg: {
-    group: ["plain background","studio background","solid background","white background","bedroom"],
-    targets: {
-      "plain background":[0.35,0.45]
-      
-    },
-    fallback: "plain background"
-  },
-
-  // ライティング（安定寄り）
-  light: {
-    group: ["soft lighting","even lighting","normal lighting","window light","overcast"],
-    targets: {
-      "soft lighting":[0.35,0.45],
-      "even lighting":[0.25,0.35],
-      "normal lighting":[0.10,0.20]
-    },
-    fallback: "soft lighting"
-  }
-};
-
-// EXPR_ALL はそのまま使う
-const EXPR_ALL = new Set([
-  ...Object.keys(MIX_RULES.expr.targets),
-  MIX_RULES.expr.fallback
-]);
 
 
 // ⑤ まとめ適用（学習バッチだけに適用）
