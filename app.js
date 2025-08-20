@@ -525,8 +525,7 @@ function copyOneTestText(){
   navigator.clipboard.writeText(txt).then(()=> toast("コピーしました"));
 }
 
-// 固定で常に入れたいネガティブ（必要になったらここに増やす）
-const DEFAULT_NEG = "extra fingers, blurry, lowres, bad anatomy, bad hands, bad feet, text, watermark, logo, extra hands, extra arms, fused fingers, mutated hands, multiple arms, multiple hands";
+const DEFAULT_NEG = "extra fingers, fused fingers, mutated hands, extra hands, extra arms, multiple hands, multiple arms, extra legs, extra head, cloned face, multiple body, blurry, lowres, bad anatomy, bad hands, bad feet, bad face, bad eyes, asymmetrical eyes, deformed face, disfigured, bad proportions, long neck, text, letters, text on clothes, watermark, logo, busy background, extra objects, low quality, worst quality, jpeg artifacts";
 
 // チェックボックスのON/OFFを読む（要素が無ければtrue扱い＝互換）
 function isDefaultNegOn() {
