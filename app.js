@@ -1997,6 +1997,79 @@ function enforceOnePieceExclusivity(parts){
 }
 
 
+
+// ===== 排他ガード（表情/構図/視点の同時混入を防ぐ） =====
+
+// ユーティリティ：グループ内は1つだけ残す
+function pickOneFromGroup(parts, group, preferOrder = null){
+  const S = new Set(parts);
+  const hits = group.filter(g => S.has(g));
+  if (hits.length <= 1) return parts;
+
+  let keep = hits[0];
+  if (Array.isArray(preferOrder) && preferOrder.length){
+    for (const cand of preferOrder){ if (S.has(cand)) { keep = cand; break; } }
+  }
+  return parts.filter(t => !(group.includes(t) && t !== keep));
+}
+
+
+
+
+// 表情：必ず1つだけにする
+function ensureExprExclusive(parts){
+  const GROUP = [
+    "neutral expression",
+    "smiling",
+    "smiling open mouth",
+    "serious",
+    "determined",
+    "slight blush",
+    "surprised (mild)",
+    "pouting (slight)"
+  ];
+  // 優先順位（好みで調整可）
+  const PREFER = [
+    "neutral expression",
+    "smiling",
+    "slight blush",
+    "surprised (mild)",
+    "pouting (slight)",
+    "smiling open mouth",
+    "serious",
+    "determined"
+  ];
+  return pickOneFromGroup(parts, GROUP, PREFER);
+}
+
+// 構図/距離：portrait と full body 等を同時にしない
+function ensureCompExclusive(parts){
+  const GROUP = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
+  // より“広い”方を優先
+  const PREFER = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
+  return pickOneFromGroup(parts, GROUP, PREFER);
+}
+
+// 視点：front / three-quarters / profile / back は1つに
+function ensureViewExclusive(parts){
+  const GROUP = ["front view","three-quarters view","profile view","side view","back view"];
+  // 三四分面をデフォルト優先
+  const PREFER = ["three-quarters view","front view","profile view","back view","side view"];
+  return pickOneFromGroup(parts, GROUP, PREFER);
+}
+
+// まとめ（呼び出し側はこれだけ使えばOK）
+function fixExclusives(parts){
+  let p = parts.slice();
+  p = ensureExprExclusive(p);  // 表情：1つ
+  p = ensureCompExclusive(p);  // 構図/距離：1つ
+  p = ensureViewExclusive(p);  // 視点：1つ
+  return p;
+}
+
+
+
+
 function buildOneLearning(extraSeed = 0){
   // ===== 1) ベース構築 =====
   const fixed = assembleFixedLearning();
