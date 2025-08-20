@@ -2059,22 +2059,22 @@ if (!parts.some(t => /\b(center(ed)?\s?composition|centered)\b/i.test(String(t))
 }
 
   // ===== 5) 最終整形・並び順・シード =====
-  parts = fixExclusives(parts);              // ←★ ここで矛盾を除去
-  const pos  = ensurePromptOrder(uniq(parts).filter(Boolean));
-  const pos  = ensurePromptOrder(uniq(parts).filter(Boolean));
-  const seed = seedFromName($("#charName").value||"", extraSeed);
+parts = fixExclusives(parts); // ←★ ここで最後に矛盾を除去（表情/構図の同時混入を排除）
 
-  // 学習向けの追加ネガを上乗せ（重複は withSoloNeg 側で実質吸収）
+// 並び順と重複整理は1回だけ
+const pos = ensurePromptOrder(uniq(parts).filter(Boolean));
+const seed = seedFromName($("#charName").value||"", extraSeed);
+
+// 学習向けの追加ネガを上乗せ（重複は withSoloNeg 側で吸収）
 const EXTRA_NEG = [
   "props", "accessories",
   "smartphone", "phone", "camera"
 ].join(", ");
 
-  const baseNeg = getNeg();                // 既存（グローバル）
-  const neg = withSoloNeg([baseNeg, EXTRA_NEG].filter(Boolean).join(", ")); // 複数人抑止も混ぜる
+const baseNeg = getNeg(); // 既存（グローバル）
+const neg = withSoloNeg([baseNeg, EXTRA_NEG].filter(Boolean).join(", ")); // 複数人抑止も混ぜる
 
-  return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
-}
+return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 
 // === 横顔の制御（学習用・割合ベース） =======================
 // 横顔を全体の 15〜20% で混ぜたい場合
@@ -2345,12 +2345,10 @@ fillRemainder(rows, exprGroup, MIX_RULES.expr.fallback);
   fillRemainder(rows, MIX_RULES.light.group, MIX_RULES.light.fallback);
 }
 
-  // VIEW / COMPOSITION / EXPRESSION / BACKGROUND / LIGHTING の配分が終わった直後
-  // ---- ここから保険の排他整形 ----
-  for (const r of rows){
-    r.pos  = fixExclusives(r.pos);                   // ←★ もう一度締める
-    r.text = `${r.pos.join(", ")} --neg ${r.neg} seed:${r.seed}`;
-  }
+    // ★ 最終排他ガード：配分置換後にもう一度、矛盾を完全除去して文面を確定
+  for (const r of rows) {
+    r.pos = ensurePromptOrder(uniq(fixExclusives(r.pos)).filter(Boolean));
+    r.text = `${r.pos.join(", ")} --neg ${r.neg} seed:${r.seed}`
 }  
   return out;
 }
