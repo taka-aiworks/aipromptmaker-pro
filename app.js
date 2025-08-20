@@ -2178,8 +2178,8 @@ expr: {
   bg: {
     group: ["plain background","studio background","solid background","white background","bedroom"],
     targets: {
-      "plain background":[0.35,0.45],
-      "white background":[0.20,0.30]
+      "plain background":[0.35,0.45]
+      
     },
     fallback: "plain background"
   },
