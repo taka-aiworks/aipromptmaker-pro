@@ -2148,7 +2148,15 @@ function ensureExprExclusive(parts){
     "serious","determined","slight blush","surprised (mild)","pouting (slight)"
   ];
   // 好みで残す優先順位（例：neutral > smiling > slight blush …）
-  const PREFER = ["neutral expression","smiling","slight blush","serious","determined","surprised (mild)","pouting (slight)","smiling open mouth"];
+  // 好みで残す優先順位（例：neutral > smiling > slight blush …）
+const PREFER = [
+  "neutral expression",
+  "smiling",
+  "slight blush",
+  "surprised (mild)",
+  "pouting (slight)",
+  "smiling open mouth"
+];
   return pickOneFromGroup(parts, GROUP, PREFER);
 }
 
@@ -2167,11 +2175,6 @@ function fixExclusives(parts){
   p = ensureCompExclusive(p);
   return p;
 }
-
-
-
-
-
 
 
 
