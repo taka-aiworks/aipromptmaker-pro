@@ -320,7 +320,7 @@ function resetSettings() {
 }
 
 /* ========= 内蔵辞書（空で開始） ========= */
-const EMBED_SFW = { hair_style:[], eyes:[], outfit:[], face:[], skin_body:[], art_style:[], background:[], pose_composition:[], expressions:[], accessories:[], lighting:[], age:[], gender:[], body_type:[], height:[], personality:[], worldview:[], speech_tone:[] };
+const EMBED_SFW = { hair_style:[], eyes:[], outfit:[], face:[], skin_body:[], art_style:[], background:[], pose_composition:[], expressions:[], accessories:[], lighting:[], age:[], gender:[], body_type:[], height:[], personality:[] };
 const EMBED_NSFW = { categories:{ expression:[], exposure:[], situation:[], lighting:[] } };
 
 let SFW  = JSON.parse(JSON.stringify(EMBED_SFW));
@@ -345,9 +345,7 @@ const KEYMAP = {
   "表情":"expressions","アクセサリー":"accessories","ライティング":"lighting","年齢":"age","性別":"gender",
   "体型(基本)":"body_type",   // 好きな日本語キーに合わせて
   "身長":"height",
-  "性格":"personality",
-  "世界観":"worldview",
-  "口調":"speech_tone"
+  "性格":"personality"
 };
 
 // === outfit をカテゴリ分配 ===
@@ -1173,8 +1171,8 @@ function renderSFW(){
   radioList($("#bf_body"),     SFW.body_type,    "bf_body");
   radioList($("#bf_height"),   SFW.height,       "bf_height");
   // radioList($("#bf_person"),   SFW.personality,  "bf_person");
-  radioList($("#bf_world"),    SFW.worldview,    "bf_world");
-  radioList($("#bf_tone"),     SFW.speech_tone,  "bf_tone");
+  // radioList($("#bf_world"),    SFW.worldview,    "bf_world");
+  // radioList($("#bf_tone"),     SFW.speech_tone,  "bf_tone");
 
   // 動的生成後の必須チェック
   if (typeof updateOneTestReady === "function") updateOneTestReady();
@@ -1348,7 +1346,7 @@ function applyCharacterPreset(cfg){
   if (bf.body)       setRadio("bf_body",   String(bf.body));
   if (bf.height)     setRadio("bf_height", String(bf.height));
   // if (bf.personality)setRadio("bf_person", String(bf.personality));
-  if (bf.tone)       setRadio("bf_tone",   String(bf.tone));
+  // if (bf.tone)       setRadio("bf_tone",   String(bf.tone));
 
   // dataset にも保持（必要なら）
   {
@@ -1359,7 +1357,7 @@ function applyCharacterPreset(cfg){
       if (bf.body)       host.dataset.bfBody   = String(bf.body);
       if (bf.height)     host.dataset.bfHeight = String(bf.height);
       // if (bf.personality)host.dataset.bfPerson = String(bf.personality);
-      if (bf.tone)       host.dataset.bfTone   = String(bf.tone);
+      // if (bf.tone)       host.dataset.bfTone   = String(bf.tone);
     }
   }
   // ★ outfit（分割&モード）
@@ -1458,8 +1456,8 @@ function collectCharacterPreset(){
       gender:     getOne("bf_gender"),
       body:       getOne("bf_body"),
       height:     getOne("bf_height"),
-      personality:getOne("bf_person"),
-      tone:       getOne("bf_tone"),
+      // personality:getOne("bf_person"),
+      // tone:       getOne("bf_tone"),
     },
 
     // ★ outfit（分割&モード）
@@ -1853,7 +1851,7 @@ function assembleFixedLearning(){
   out.push($("#charName").value.trim());
 
   // 修正後
-  ["age","gender","body","height","person","tone"]
+  ["age","gender","body","height"]
     .forEach(k => {
       const v = getBFValue(k);
       if (v) out.push(v);
