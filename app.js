@@ -2033,48 +2033,47 @@ function buildOneLearning(extraSeed = 0){
   parts = forceSoloPos(parts);
 
   // ===== 4) 学習アンカーを不足時だけ補完 =====
-const asSet = (arr)=> new Set((arr||[]).map(x=> typeof x==='string' ? x : x.tag));
-const S = {
-  background: asSet(SFW.background),
-  pose:       asSet(SFW.pose_composition),
-  // expressions は辞書だけでなく UI 選択と MIX_RULES も候補に含める
-  expressions: new Set([
-    ...(SFW.expressions || []).map(x => x.tag || x),
-    ...getMany("expr"),
-    ...MIX_RULES.expr.group
-  ]),
-  light:      asSet(SFW.lighting)
-};
-const hasAnyFrom = (parts, poolSet)=> parts.some(t => poolSet.has(String(t)));
+  const asSet = (arr)=> new Set((arr||[]).map(x=> typeof x==='string' ? x : x.tag));
+  const S = {
+    background: asSet(SFW.background),
+    pose:       asSet(SFW.pose_composition),
+    expr:       asSet(SFW.expressions),
+    light:      asSet(SFW.lighting)
+  };
+  const hasAny = (poolSet)=> parts.some(t => poolSet.has(String(t)));
 
-if (!hasAnyFrom(parts, S.background)) parts.push("plain background");
-if (!hasAnyFrom(parts, S.pose))       parts.push("upper body");
+  // 背景：何も選んでなければフラットに
+  if (!hasAny(S.background)) parts.push("plain background");
 
-// ★ここを修正：S.expressions を使って判定（neutral の自動追加は“表情が皆無の時だけ”）
-if (!hasAnyFrom(parts, S.expressions)) parts.push("neutral expression");
+  // ポーズ・構図：無ければ“上半身”
+  if (!hasAny(S.pose)) parts.push("upper body");
 
-if (!hasAnyFrom(parts, S.light))       parts.push("soft lighting");
-if (!parts.some(t => /\b(center(ed)?\s?composition|centered)\b/i.test(String(t)))) {
-  parts.push("centered composition");
-}
+  // 表情：無ければニュートラル
+  if (!hasAny(S.expr)) parts.push("neutral expression");
+
+  // ライティング：無ければソフト
+  if (!hasAny(S.light)) parts.push("soft lighting");
+
+  // 構図の安定化（入ってなければ）
+  if (!parts.some(t => /\b(center(ed)?\s?composition|centered)\b/i.test(String(t)))) {
+    parts.push("centered composition");
+  }
 
   // ===== 5) 最終整形・並び順・シード =====
-parts = fixExclusives(parts); // ←★ ここで最後に矛盾を除去（表情/構図の同時混入を排除）
+  const pos  = ensurePromptOrder(uniq(parts).filter(Boolean));
+  const seed = seedFromName($("#charName").value||"", extraSeed);
 
-// 並び順と重複整理は1回だけ
-const pos = ensurePromptOrder(uniq(parts).filter(Boolean));
-const seed = seedFromName($("#charName").value||"", extraSeed);
-
-// 学習向けの追加ネガを上乗せ（重複は withSoloNeg 側で吸収）
+  // 学習向けの追加ネガを上乗せ（重複は withSoloNeg 側で実質吸収）
 const EXTRA_NEG = [
   "props", "accessories",
   "smartphone", "phone", "camera"
 ].join(", ");
 
-const baseNeg = getNeg(); // 既存（グローバル）
-const neg = withSoloNeg([baseNeg, EXTRA_NEG].filter(Boolean).join(", ")); // 複数人抑止も混ぜる
+  const baseNeg = getNeg();                // 既存（グローバル）
+  const neg = withSoloNeg([baseNeg, EXTRA_NEG].filter(Boolean).join(", ")); // 複数人抑止も混ぜる
 
-return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
+  return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
+}
 
 // === 横顔の制御（学習用・割合ベース） =======================
 // 横顔を全体の 15〜20% で混ぜたい場合
@@ -2124,60 +2123,6 @@ function fillRemainder(rows, groupTags, fallbackTag){
     }
   }
 }
-
-// ===== 排他ガード（表情/構図の同時混入を防ぐ） =====
-function pickOneFromGroup(parts, group, preferOrder = null){
-  const S = new Set(parts);
-  const hits = group.filter(g => S.has(g));
-  if (hits.length <= 1) return parts;
-
-  // どれを残すか：preferOrder があればその順を優先、無ければ最初のヒットを残す
-  let keep = hits[0];
-  if (preferOrder && preferOrder.length){
-    for (const cand of preferOrder){ if (S.has(cand)) { keep = cand; break; } }
-  }
-  // groupから keep 以外を削除
-  const out = parts.filter(t => !(group.includes(t) && t !== keep));
-  return out;
-}
-
-// 表情：必ず1つだけにする
-function ensureExprExclusive(parts){
-  const GROUP = [
-    "neutral expression","smiling","smiling open mouth",
-    "serious","determined","slight blush","surprised (mild)","pouting (slight)"
-  ];
-  // 好みで残す優先順位（例：neutral > smiling > slight blush …）
-  // 好みで残す優先順位（例：neutral > smiling > slight blush …）
-const PREFER = [
-  "neutral expression",
-  "smiling",
-  "slight blush",
-  "surprised (mild)",
-  "pouting (slight)",
-  "smiling open mouth"
-];
-  return pickOneFromGroup(parts, GROUP, PREFER);
-}
-
-// 構図/距離：portrait と full body 等を同時にしない
-function ensureCompExclusive(parts){
-  const GROUP = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
-  // 例：より“広い”方を優先（用途に合わせて調整してOK）
-  const PREFER = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
-  return pickOneFromGroup(parts, GROUP, PREFER);
-}
-
-// まとめ
-function fixExclusives(parts){
-  let p = parts.slice();
-  p = ensureExprExclusive(p);
-  p = ensureCompExclusive(p);
-  return p;
-}
-
-
-
 
 // ④ 配分ルール（必要なら数値だけ調整してOK）
 const MIX_RULES = {
@@ -2347,12 +2292,6 @@ fillRemainder(rows, exprGroup, MIX_RULES.expr.fallback);
   }
   fillRemainder(rows, MIX_RULES.light.group, MIX_RULES.light.fallback);
 }
-
-    // ★ 最終排他ガード：配分置換後にもう一度、矛盾を完全除去して文面を確定
-  for (const r of rows) {
-    r.pos = ensurePromptOrder(uniq(fixExclusives(r.pos)).filter(Boolean));
-    r.text = `${r.pos.join(", ")} --neg ${r.neg} seed:${r.seed}`
-}  
   return out;
 }
 
