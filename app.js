@@ -123,17 +123,24 @@ function stripMultiHints(parts){
 
 /* === 学習ガード：過剰要素の除去＆上限 === */
 
-// === ポーズ/構図のゆる判定（片方のボックスが無いときは無視していい） ===
-function categorizePoseComp(list){
+// 置き換え：categorizePoseComp を “構図 comp / 視点 view / ポーズ” に分離
+function categorizePoseCompView(list){
   const L = normList(list||[]);
-  const isComp = (t) => /\b(front view|side view|back view|profile(?:\sview)?|three-quarters view|looking up|looking down|overhead view|from below|bust(?:\s?shot)?|waist up|upper body|full body|portrait|close-?up|wide shot|centered composition|rule of thirds)\b/i.test(t);
+
+  const isView = (t) => /\b(front view|three-quarters view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down)\b/i.test(t);
+  const isComp = (t) => /\b(bust(?:\s?shot)?|waist up|upper body|full body|portrait|close-?up|wide shot|centered composition|rule of thirds)\b/i.test(t);
+
   const poseTags = [];
   const compTags = [];
+  const viewTags = [];
+
   for (const it of L){
     const tag = it.tag || "";
-    if (isComp(tag)) compTags.push(it); else poseTags.push(it);
+    if (isView(tag)) viewTags.push(it);
+    else if (isComp(tag)) compTags.push(it);
+    else poseTags.push(it);
   }
-  return { poseTags, compTags };
+  return { poseTags, compTags, viewTags };
 }
 
 
@@ -320,7 +327,7 @@ function resetSettings() {
 }
 
 /* ========= 内蔵辞書（空で開始） ========= */
-const EMBED_SFW = { hair_style:[], eyes:[], outfit:[], face:[], skin_body:[], art_style:[], background:[], pose_composition:[], expressions:[], accessories:[], lighting:[], age:[], gender:[], body_type:[], height:[], personality:[] };
+const EMBED_SFW = { hair_style:[], eyes:[], outfit:[], face:[], skin_body:[], art_style:[], background:[], pose_composition:[], view:[], expressions:[], accessories:[], lighting:[], age:[], gender:[], body_type:[], height:[], personality:[] };
 const EMBED_NSFW = { categories:{ expression:[], exposure:[], situation:[], lighting:[] } };
 
 let SFW  = JSON.parse(JSON.stringify(EMBED_SFW));
@@ -340,7 +347,7 @@ function normItem(x) {
 function normList(arr){ return (arr || []).map(normItem).filter(Boolean); }
 
 const KEYMAP = {
-  "髪型":"hair_style","目の形":"eyes","服":"outfit","顔の特徴":"face","体型":"skin_body",
+  "髪型":"hair_style","目の形":"eyes","服":"outfit","顔の特徴":"face","体型":"skin_body","視点":"view",
   "画風":"art_style","背景":"background","ポーズ":"pose_composition","ポーズ・構図":"pose_composition",
   "表情":"expressions","アクセサリー":"accessories","ライティング":"lighting","年齢":"age","性別":"gender",
   "体型(基本)":"body_type",   // 好きな日本語キーに合わせて
@@ -1124,22 +1131,26 @@ function renderSFW(){
   checkList($("#p_expr"),  SFW.expressions,  "p_expr");
   checkList($("#p_light"), SFW.lighting,     "p_light");
 
-  // --- ポーズ/構図（分離対応）
-  {
-    const src = SFW.pose_composition || [];
-    const { poseTags, compTags } = categorizePoseComp(src);
+  // 置き換え：renderSFW 内の“ポーズ/構図”ブロック
+{
+  const src = SFW.pose_composition || [];
+  const { poseTags, compTags, viewTags } = categorizePoseCompView(src);
 
-    // 学習タブ：ポーズ/構図にホワイトリストを適用
-    const pose_learn = filterByScope(poseTags, SCOPE.learning.pose);
-    const comp_learn = filterByScope(compTags, SCOPE.learning.composition);
+  // 学習タブ：ホワイトリスト適用
+  const pose_learn = filterByScope(poseTags, SCOPE.learning.pose);
+  const comp_learn = filterByScope(compTags, SCOPE.learning.composition);
+  const view_learn = filterByScope(viewTags, SCOPE.learning.view);
 
-    if (document.getElementById("comp")) {
-      checkList($("#pose"), pose_learn, "pose");
-      checkList($("#comp"), comp_learn, "comp");
-    } else {
-      // comp が無い旧HTMLでも、学習側は一応 pose に絞りを掛ける
-      checkList($("#pose"), pose_learn, "pose");
-    }
+  // pose/comp/view の3列があるHTMLなら3つ出す（無ければあるものだけ）
+  if (document.getElementById("pose")) checkList($("#pose"), pose_learn, "pose");
+  if (document.getElementById("comp")) checkList($("#comp"), comp_learn, "comp");
+  if (document.getElementById("view")) checkList($("#view"), view_learn, "view");
+
+  // 量産タブ：フル辞書
+  if (document.getElementById("p_pose")) checkList($("#p_pose"), poseTags, "p_pose");
+  if (document.getElementById("p_comp")) checkList($("#p_comp"), compTags, "p_comp");
+  if (document.getElementById("p_view")) checkList($("#p_view"), viewTags, "p_view");
+}
 
     // 量産タブ：フル辞書
     if (document.getElementById("p_comp")) {
@@ -1306,6 +1317,8 @@ function applyCharacterPreset(cfg){
   setChecks("comp", arr);
 }
 
+   
+
 // ライティング：新キー lightLearn / 互換 lighting
 {
   const arr = Array.isArray(cfg.lightLearn) ? cfg.lightLearn
@@ -1321,16 +1334,14 @@ function applyCharacterPreset(cfg){
   if (cfg.skinBody)  setRadio("skinBody",  String(cfg.skinBody));
   if (cfg.artStyle)  setRadio("artStyle",  String(cfg.artStyle));
 
-  // シーン（※ 構図とは分離して個別に反映）
-  if (cfg.background)
-    setChecks("bg", Array.isArray(cfg.background) ? cfg.background : [cfg.background]);
-
-  if (cfg.pose)
-    setChecks("pose", Array.isArray(cfg.pose) ? cfg.pose : [cfg.pose]);
-
-  if (cfg.expressions)
-    setChecks("expr", Array.isArray(cfg.expressions) ? cfg.expressions : [cfg.expressions]);
-
+  // 置き換え：applyCharacterPreset の「シーン」反映部に追記
+if (cfg.background)  setChecks("bg",   Array.isArray(cfg.background) ? cfg.background : [cfg.background]);
+if (cfg.pose)        setChecks("pose", Array.isArray(cfg.pose) ? cfg.pose : [cfg.pose]);
+if (cfg.comp || cfg.composition)
+  setChecks("comp", Array.isArray(cfg.comp||cfg.composition) ? (cfg.comp||cfg.composition) : [cfg.comp||cfg.composition]);
+// ★追加：view
+if (cfg.view)
+  setChecks("view", Array.isArray(cfg.view) ? cfg.view : [cfg.view]);
   // 色（髪/瞳/肌）
   if (cfg.hairColorTag) setColorTag("#tagH", String(cfg.hairColorTag));
   if (cfg.eyeColorTag)  setColorTag("#tagE", String(cfg.eyeColorTag));
@@ -1440,6 +1451,7 @@ function collectCharacterPreset(){
     expressions: getMany("expr"),
     // ★ 追加：構図とライティング（学習タブ）
     comp:        getMany("comp"),
+    view:        getMany("view"),
     lightLearn:  getMany("lightLearn"),
 
     // 色（髪/瞳/肌）
@@ -2172,6 +2184,9 @@ function buildOneLearning(extraSeed = 0){
     light:      asSet(SFW.lighting)
   };
   const hasAny = (poolSet)=> parts.some(t => poolSet.has(String(t)));
+  // 置き換え：buildOneLearning 内 “不足時の自動補完”に view を追加
+  const hasView  = /\b(front view|three-quarters view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down)\b/i.test(parts.join(", "));
+  if (!hasView) parts.push("front view");
 
   // 背景：何も選んでなければフラットに
   if (!hasAny(S.background)) parts.push("plain background");
