@@ -356,7 +356,7 @@
   { "tag": "facepalm", "label": "顔を覆う/フェイスパーム" }
 ],
 
-"composition": [
+"comp": [
   { "tag": "full body", "label": "全身" },
   { "tag": "upper body", "label": "上半身" },
   { "tag": "bust", "label": "バストアップ" },
