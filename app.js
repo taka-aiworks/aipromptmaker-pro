@@ -530,17 +530,24 @@ function listMissingForOneTest() {
   if (!getOne("face"))      miss.push("顔の特徴（任意）");
   if (!getOne("artStyle"))  miss.push("画風（任意）");
 
-  // ★ 服は“任意”に変更（学習タブ）
-  const mode = document.querySelector('input[name="outfitMode"]:checked')?.value || "separate";
+  // ★ 構成タグの必須チェック
+  if (getMany("bg").length === 0) miss.push("背景");
 
-  // 服は未選択でもOKなので、miss.push は行わない
-  // 選択されていればそのまま利用される
-  // ここでは何もチェックしない
+  const hasPose = getMany("pose").length > 0;
+  const hasComp = getMany("comp").length > 0;
+  if (!hasPose && !hasComp) miss.push("ポーズ/構図");
+
+  // 視点・表情・ライティングは buildOneLearning でデフォ補完されるので任意
+  // 必須にしたいなら以下のコメントを外す
+  // if (getMany("view").length === 0) miss.push("視点");
+  // if (getMany("expr").length === 0) miss.push("表情");
+  // if (getMany("lightLearn").length === 0) miss.push("ライティング");
+
+  // ★ 服は任意（チェックしない）
 
   // 任意は不足扱いにしない
   return miss.filter(x => !/（任意）$/.test(x));
 }
-
 function isBasicReadyForOneTest(){ return listMissingForOneTest().length === 0; }
 
 function updateOneTestReady(){
