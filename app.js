@@ -1781,9 +1781,9 @@ function buildMergedPrompt(p, n) {
   return `${p}\nNegative prompt: ${n}`;
 }
 
+/* ========= CSV 抽出（学習）：新しい4列に対応 ========= */
 function csvFromLearn(fmtSelId = "#fmtLearnBatch") {
   const fmt = getFmt(fmtSelId);
-  // 1ファイル内に全部（分割/結合/コマンド行）を入れる
   const header = [
     '"no"',
     '"seed"',
@@ -1793,27 +1793,25 @@ function csvFromLearn(fmtSelId = "#fmtLearnBatch") {
     '"line"'
   ];
 
-  const rows = Array.from($("#tblLearn tbody")?.querySelectorAll("tr") || []).map((tr, i) => {
-    // 学習テーブルの列取りは既存実装に合わせる（seed=td[1], prompt=td[5], neg=td[6]）
-    const tds = Array.from(tr.children).map(td => td.textContent || "");
-    const no   = String(i + 1);
-    const seed = tds[1] || "";
-    const p    = tds[5] || "";
-    const n    = tds[6] || "";
+  const rows = Array.from($("#tblLearn tbody")?.querySelectorAll("tr") || []).map((tr) => {
+    const get = (sel, fallbackIdx) => {
+      const byAttr = tr.querySelector(sel)?.textContent || "";
+      if (byAttr) return byAttr.trim();
+      // 旧レイアウト互換（列位置ベタ取り）——残しておくと移行が安全
+      const tds = Array.from(tr.children).map(td => td.textContent || "");
+      return (tds[fallbackIdx] || "").trim();
+    };
 
-    const merged = buildMergedPrompt(p, n);
-    const line   = fmt.line(p, n, seed); // フォーマッタの1行表現
+    const no   = get('td[data-col="no"]',       0);
+    const seed = get('td[data-col="seed"]',     1);
+    const p    = get('td[data-col="prompt"]',   5); // 旧: 6列目（0始まりで5）
+    const n    = get('td[data-col="negative"]', 6); // 旧: 7列目（0始まりで6）
 
-    // CSVエスケープ
+    const merged = `${p}\nNegative prompt: ${n}`;
+    const line   = fmt.line(p, n, seed);
+
     const esc = (s) => `"${String(s).replace(/"/g, '""')}"`;
-    return [
-      esc(no),
-      esc(seed),
-      esc(p),
-      esc(n),
-      esc(merged),
-      esc(line)
-    ].join(",");
+    return [esc(no), esc(seed), esc(p), esc(n), esc(merged), esc(line)].join(",");
   });
 
   return [header.join(","), ...rows].join("\n");
@@ -2835,21 +2833,33 @@ function getNegProd(){
   return uniq(parts).join(", ");
 }
 
-/* ========= レンダラ ========= */
+/* ========= レンダラ（学習テーブル：no/seed/prompt/negative のみ） ========= */
 function renderLearnTableTo(tbodySel, rows){
-  const tb = document.querySelector(tbodySel); if (!tb) return;
+  const tb = document.querySelector(tbodySel);
+  if (!tb) return;
+
   const frag = document.createDocumentFragment();
-  rows.forEach((r,i)=>{
+  rows.forEach((r, i) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${i+1}</td><td>${r.seed}</td>
-      <td>${r.pos.find(t=> normList(SFW.background).map(x=>x.tag).includes(t))||""}</td>
-      <td>${r.pos.find(t=> normList(SFW.expressions).map(x=>x.tag).includes(t))||""}</td>
-      <td>${r.pos.join(", ")}</td><td>${r.neg}</td>`;
+    // r.pos は配列想定（buildOneLearning の戻りを想定）。フォールバックも用意。
+    const prompt = Array.isArray(r.pos) ? r.pos.join(", ")
+                 : (typeof r.prompt === "string" ? r.prompt : "");
+    const neg = r.neg || "";
+
+    tr.innerHTML = `
+      <td data-col="no">${i + 1}</td>
+      <td data-col="seed">${r.seed}</td>
+      <td data-col="prompt">${prompt}</td>
+      <td data-col="negative">${neg}</td>
+    `;
     frag.appendChild(tr);
   });
+
   tb.innerHTML = "";
   tb.appendChild(frag);
 }
+
+
 function formatLines(rows, fmt){
   return rows.map((r,i)=>{
     const p = (r.pos || []).join(", ");
