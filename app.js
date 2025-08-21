@@ -2482,26 +2482,15 @@ function ensurePromptOrder(parts) {
     }
   }
 
-  // 2) 構図/距離/視点：全バケツ横断でヒット収集 → 1 つだけ残す
-  {
-    const COMP_VIEW_ORDER = [
-      // 距離・フレーミング優先
-      "full body","wide shot","waist up","upper body","bust","portrait","close-up"
-    ];
-    const keys = Object.keys(buckets);
-    const hits = [];
-    for (const k of keys) {
-      for (const t of buckets[k]) {
-        if (COMP_VIEW_ORDER.includes(t)) hits.push(t);
-      }
-    }
-    if (hits.length > 1) {
-      const keep = COMP_VIEW_ORDER.find(t => hits.includes(t)) || hits[0];
-      for (const k of keys) {
-        buckets[k] = buckets[k].filter(t => !(COMP_VIEW_ORDER.includes(t) && t !== keep));
-      }
-    }
+  // 2) 構図（距離/フレーミング）を1つだけ
+{
+  const COMP_ORDER = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
+  const hits = buckets.pose.filter(t => COMP_ORDER.includes(t));
+  if (hits.length > 1) {
+    const keep = COMP_ORDER.find(t => hits.includes(t)) || hits[0];
+    buckets.pose = buckets.pose.filter(t => !(COMP_ORDER.includes(t) && t !== keep));
   }
+}
 
    // 3) 視点（アングル）を1つだけ  ← 新設
 {
