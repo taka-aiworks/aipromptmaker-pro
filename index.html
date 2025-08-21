@@ -219,36 +219,38 @@
       </div>
 
 <!-- ▼ 基本情報：1枚テスト（統一版） -->
-<div class="card" id="learnTestCard">
-  <div class="row">
-    <div id="readyHint" class="mini muted" style="margin-top:.25rem;"></div>
-    <h3 style="margin:0">1枚テスト</h3><span style="flex:1"></span>
-    <label class="inline mini">出力フォーマット
-      <select id="fmtLearn">
-        <option value="a1111" selected>Web UI（汎用）</option>
-        <option value="invoke">InvokeAI（CLI）</option>
-        <option value="comfy">ComfyUI（テキスト）</option>
-        <option value="sdnext">SD.Next（dream.py）</option>
-        <option value="nai">NovelAI</option>
-      </select>
-    </label>
-    <button id="btnOneLearn" class="btn ok">テスト生成</button>
-    <button id="btnCopyLearnTest" class="btn ghost">テストをコピー</button>
-    <button id="btnExportChar" class="btn ghost">キャラ設定エクスポート</button>
-  </div>
-  <div class="grid g2" style="margin-top:10px">
-    <div>
-      <h4 style="margin:0 0 6px">テーブル</h4>
-      <table class="table" id="tblLearnTest">
-        <thead>
-          <tr><th>#</th><th>seed</th><th>背景</th><th>ポーズ</th><th>表情</th><th>prompt</th><th>negative</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+<div id="slotBasicOneTest">
+  <div class="card" id="learnTestCard">
+    <div class="row">
+      <div id="readyHint" class="mini muted" style="margin-top:.25rem;"></div>
+      <h3 style="margin:0">1枚テスト</h3><span style="flex:1"></span>
+      <label class="inline mini">出力フォーマット
+        <select id="fmtLearn">
+          <option value="a1111" selected>Web UI（汎用）</option>
+          <option value="invoke">InvokeAI（CLI）</option>
+          <option value="comfy">ComfyUI（テキスト）</option>
+          <option value="sdnext">SD.Next（dream.py）</option>
+          <option value="nai">NovelAI</option>
+        </select>
+      </label>
+      <button id="btnOneLearn" class="btn ok">テスト生成</button>
+      <button id="btnCopyLearnTest" class="btn ghost">テストをコピー</button>
+      <button id="btnExportChar" class="btn ghost">キャラ設定エクスポート</button>
     </div>
-    <div>
-      <h4 style="margin:0 0 6px">テキスト</h4>
-      <div class="out" id="outLearnTest"></div>
+    <div class="grid g2" style="margin-top:10px">
+      <div>
+        <h4 style="margin:0 0 6px">テーブル</h4>
+        <table class="table" id="tblLearnTest">
+          <thead>
+            <tr><th>#</th><th>seed</th><th>背景</th><th>ポーズ</th><th>表情</th><th>prompt</th><th>negative</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div>
+        <h4 style="margin:0 0 6px">テキスト</h4>
+        <div class="out" id="outLearnTest"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -284,20 +286,8 @@
 
   <hr class="sep">
 
-  <div class="row" style="gap:8px">
-    <button id="btnPlanOne" class="primary">1件出力</button>
-  </div>
-
-  <div class="tablewrap" style="margin-top:10px">
-    <table id="tblPlanner" class="tbl">
-      <thead><tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div class="row" style="margin-top:10px">
-    <textarea id="outPlanner" rows="4" class="mono" placeholder="ここに1行で出力されます"></textarea>
-  </div>
+  <!-- 撮影モードでも同じ 1枚テストカードを使い回すための差し込み先 -->
+<div id="slotPlanOneTest"></div>
 </section>
 
     <!-- 学習モード（バリエーション） -->
