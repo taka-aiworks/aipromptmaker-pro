@@ -2060,8 +2060,16 @@ function fixExclusives(parts){
   let p = parts.slice();
   p = ensureExprExclusive(p);  // 表情：1つ
   p = ensureCompExclusive(p);  // 構図/距離：1つ
-  p = ensureViewExclusive(p);  // 視点：1つ
+  p = ensureViewExclusive(p);  // 視点：1つ ← 追加
   return p;
+}
+
+// 視点：front / three-quarters / profile / back は1つに
+function ensureViewExclusive(parts){
+  const GROUP = ["front view","three-quarters view","profile view","side view","back view"];
+  // デフォルト優先（用途に応じて並び替えOK）
+  const PREFER = ["three-quarters view","front view","profile view","back view","side view"];
+  return pickOneFromGroup(parts, GROUP, PREFER);
 }
 
 
