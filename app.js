@@ -2013,7 +2013,7 @@ function pickOneFromGroup(parts, group, preferOrder = null){
   return parts.filter(t => !(group.includes(t) && t !== keep));
 }
 
-// 表情：必ず1つだけにする
+// 表情：必ず1つだけ
 function ensureExprExclusive(parts){
   const GROUP = [
     "neutral expression",
@@ -2025,7 +2025,6 @@ function ensureExprExclusive(parts){
     "surprised (mild)",
     "pouting (slight)"
   ];
-  // 優先順位（好みで調整可）
   const PREFER = [
     "neutral expression",
     "smiling",
@@ -2042,7 +2041,6 @@ function ensureExprExclusive(parts){
 // 構図/距離：portrait と full body 等を同時にしない
 function ensureCompExclusive(parts){
   const GROUP = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
-  // より“広い”方を優先
   const PREFER = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
   return pickOneFromGroup(parts, GROUP, PREFER);
 }
@@ -2050,26 +2048,17 @@ function ensureCompExclusive(parts){
 // 視点：front / three-quarters / profile / back は1つに
 function ensureViewExclusive(parts){
   const GROUP = ["front view","three-quarters view","profile view","side view","back view"];
-  // 三四分面をデフォルト優先
   const PREFER = ["three-quarters view","front view","profile view","back view","side view"];
   return pickOneFromGroup(parts, GROUP, PREFER);
 }
 
-// まとめ（呼び出し側はこれだけ使えばOK）
+// まとめ（呼び出し側はこれだけ使う）
 function fixExclusives(parts){
   let p = parts.slice();
   p = ensureExprExclusive(p);  // 表情：1つ
   p = ensureCompExclusive(p);  // 構図/距離：1つ
-  p = ensureViewExclusive(p);  // 視点：1つ ← 追加
+  p = ensureViewExclusive(p);  // 視点：1つ ←★これが抜けてた
   return p;
-}
-
-// 視点：front / three-quarters / profile / back は1つに
-function ensureViewExclusive(parts){
-  const GROUP = ["front view","three-quarters view","profile view","side view","back view"];
-  // デフォルト優先（用途に応じて並び替えOK）
-  const PREFER = ["three-quarters view","front view","profile view","back view","side view"];
-  return pickOneFromGroup(parts, GROUP, PREFER);
 }
 
 
