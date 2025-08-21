@@ -1304,7 +1304,7 @@ function initPlannerOnce(){
     const rows = buildPlannerOne();
     renderPlannerTableTo("#tblPlanner tbody", rows);
     const out = document.getElementById("outPlanner");
-    if (out) out.textContent = rows[0].text; // outPlanner は <div> 想定
+    if (out) out.textContent = rows[0].text;
     toast("プランを出力しました");
   });
 }
