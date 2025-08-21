@@ -341,7 +341,7 @@ function normList(arr){ return (arr || []).map(normItem).filter(Boolean); }
 
 const KEYMAP = {
   "髪型":"hair_style","目の形":"eyes","服":"outfit","顔の特徴":"face","体型":"skin_body",
-  "画風":"art_style","背景":"background","ポーズ":"pose_composition","ポーズ":"pose","構図":"comp","視点":"view",
+  "画風":"art_style","背景":"background","ポーズ":"pose","構図":"comp","視点":"view",
   "表情":"expressions","アクセサリー":"accessories","ライティング":"lighting","年齢":"age","性別":"gender",
   "体型(基本)":"body_type",   // 好きな日本語キーに合わせて
   "身長":"height",
