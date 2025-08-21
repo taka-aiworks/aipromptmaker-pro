@@ -258,76 +258,41 @@
     </section>
 
 
-<!-- ==== 撮影プラン タブ本体（置き換え版） ==== -->
-<section id="tabPlanner" class="card hidden">
-  <div class="row" style="align-items:center">
-    <h2 style="margin:0;flex:1">📷 撮影モード（1枚出力）</h2>
-    <span class="badge">LoRA学習なし</span>
-  </div>
-  <p class="note">背景・ポーズ・構図・視点・表情・ライティング・アクセを1つずつ確定して、1枚だけ出力します。</p>
+<!-- ==== 撮影プラン タブ本体（置き換え） ==== -->
+<section id="tabPlanner" class="tab hidden">
+  <h2>撮影モード</h2>
+  <p class="note">LoRA学習は行わず、1枚だけのカットを確定出力します。</p>
 
-  <!-- 選択群 -->
-  <div class="grid g2">
-    <div class="panel">
-      <div class="row mini"><b>背景</b></div>
-      <div id="pl_bg" class="scroller"></div>
+  <div class="row mini"><b>背景</b></div>
+  <div id="pl_bg" class="scroller"></div>
 
-      <div class="row mini" style="margin-top:10px"><b>ポーズ</b></div>
-      <div id="pl_pose" class="scroller"></div>
+  <div class="row mini" style="margin-top:10px"><b>ポーズ</b></div>
+  <div id="pl_pose" class="scroller"></div>
 
-      <div class="row mini" style="margin-top:10px"><b>構図</b></div>
-      <div id="pl_comp" class="scroller"></div>
+  <div class="row mini" style="margin-top:10px"><b>構図</b></div>
+  <div id="pl_comp" class="scroller"></div>
 
-      <div class="row mini" style="margin-top:10px"><b>視点</b></div>
-      <div id="pl_view" class="scroller"></div>
-    </div>
+  <div class="row mini" style="margin-top:10px"><b>視点</b></div>
+  <div id="pl_view" class="scroller"></div>
 
-    <div class="panel">
-      <div class="row mini"><b>表情</b></div>
-      <div id="pl_expr" class="scroller"></div>
+  <div class="row mini" style="margin-top:10px"><b>表情</b></div>
+  <div id="pl_expr" class="scroller"></div>
 
-      <div class="row mini" style="margin-top:10px"><b>ライティング</b></div>
-      <div id="pl_light" class="scroller"></div>
+  <div class="row mini" style="margin-top:10px"><b>ライティング</b></div>
+  <div id="pl_light" class="scroller"></div>
 
-      <div class="row mini" style="margin-top:10px"><b>アクセ（任意）</b></div>
-      <div id="pl_acc" class="scroller"></div>
-
-      <!-- 18禁（量産モード準拠：ホワイトリストなし） -->
-      <hr class="sep">
-      <div class="panel">
-        <h3 style="margin:0 0 6px">18禁</h3>
-        <div class="row">
-          <label class="inline"><input id="nsfwPlan" type="checkbox"> 18禁ON</label>
-          <span class="mini">（選んだもののみ使用）</span>
-        </div>
-        <div id="nsfwPlanPanel" style="display:none; margin-top:8px">
-          <div class="row mini" style="margin-bottom:6px">
-            <b>レベル上限</b>
-            <label class="inline"><input type="radio" name="nsfwLevelPlan" value="L1" checked>R-15</label>
-            <label class="inline"><input type="radio" name="nsfwLevelPlan" value="L2">R-18</label>
-            <label class="inline"><input type="radio" name="nsfwLevelPlan" value="L3">R-18G</label>
-          </div>
-          <div class="grid g3">
-            <div><b class="mini">表情</b><div id="nsfwPl_expr"  class="scroller"></div></div>
-            <div><b class="mini">露出</b><div id="nsfwPl_expo"  class="scroller"></div></div>
-            <div><b class="mini">シチュ</b><div id="nsfwPl_situ"  class="scroller"></div></div>
-            <div><b class="mini">ライティング</b><div id="nsfwPl_light" class="scroller"></div></div>
-          </div>
-          <div class="mini" style="margin-top:6px">※ レベル上限の範囲で表示</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="row mini" style="margin-top:10px"><b>アクセ（任意）</b></div>
+  <div id="pl_acc" class="scroller"></div>
 
   <hr class="sep">
 
-  <!-- 出力UI：他タブと同じ構成（フォーマット選択＋生成/コピーボタン＋テーブル＋テキスト） -->
-  <div class="card" id="plannerOutputCard">
+  <!-- ▼ 撮影モード：1枚出力（learnTestCardと同型UI） -->
+  <div class="card" id="plannerOneCard">
     <div class="row">
-      <h3 style="margin:0">撮影モード：1枚出力</h3>
+      <h3 style="margin:0">1枚出力</h3>
       <span style="flex:1"></span>
       <label class="inline mini">出力フォーマット
-        <select id="fmtPlan">
+        <select id="fmtPlanner">
           <option value="a1111" selected>Web UI（汎用）</option>
           <option value="invoke">InvokeAI（CLI）</option>
           <option value="comfy">ComfyUI（テキスト）</option>
@@ -335,26 +300,32 @@
           <option value="nai">NovelAI</option>
         </select>
       </label>
-      <button id="btnOnePlan" class="btn ok">1枚生成</button>
-      <button id="btnCopyPlan" class="btn ghost">テキストをコピー</button>
+      <button id="btnPlanOne" class="btn ok">1件生成</button>
+      <button id="btnCopyPlanner" class="btn ghost">コピー</button>
     </div>
 
     <div class="grid g2" style="margin-top:10px">
       <div>
         <h4 style="margin:0 0 6px">テーブル</h4>
-        <table class="table" id="tblPlan">
+        <table class="table" id="tblPlanner">
           <thead>
-            <tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr>
+            <tr>
+              <th>#</th>
+              <th>seed</th>
+              <th>prompt</th>
+              <th>negative</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
       <div>
         <h4 style="margin:0 0 6px">テキスト</h4>
-        <div class="out" id="outPlan"></div>
+        <div class="out" id="outPlanner"></div>
       </div>
     </div>
   </div>
+  <!-- ▲ 撮影モード：1枚出力 -->
 </section>
       
 
