@@ -2389,6 +2389,7 @@ function ensurePromptOrder(parts) {
     acc:        asSet(SFW.accessories),
     background: asSet(SFW.background),
     pose:       asSet(SFW.pose_composition),
+    view:       new Set((SFW.view||[]).map(x => (typeof x==='string'? x : x.tag))), // ← 追加
     expr:       asSet(SFW.expressions),
     light:      asSet(SFW.lighting),
 
@@ -2413,7 +2414,7 @@ function ensurePromptOrder(parts) {
     // 服・アクセ
     wear:[], acc:[],
     // シーン
-    bg:[], pose:[], expr:[], light:[],
+    bg:[], pose:[], view:[], expr:[], light:[],
     // NSFW
     n_expr:[], n_expo:[], n_situ:[], n_light:[],
     other:[]
@@ -2455,6 +2456,7 @@ function ensurePromptOrder(parts) {
     // シーン
     if (S.background.has(t)) { buckets.bg.push(t);   continue; }
     if (S.pose.has(t))       { buckets.pose.push(t); continue; }
+    if (S.view.has(t))       { buckets.view.push(t); continue; } 
     if (S.expr.has(t))       { buckets.expr.push(t); continue; }
     if (S.light.has(t))      { buckets.light.push(t);continue; }
 
@@ -2484,9 +2486,7 @@ function ensurePromptOrder(parts) {
   {
     const COMP_VIEW_ORDER = [
       // 距離・フレーミング優先
-      "full body","wide shot","waist up","upper body","bust","portrait","close-up",
-      // 視点
-      "three-quarters view","front view","profile view","back view","side view"
+      "full body","wide shot","waist up","upper body","bust","portrait","close-up"
     ];
     const keys = Object.keys(buckets);
     const hits = [];
@@ -2502,6 +2502,16 @@ function ensurePromptOrder(parts) {
       }
     }
   }
+
+   // 3) 視点（アングル）を1つだけ  ← 新設
+{
+  const VIEW_ORDER = ["three-quarters view","front view","profile view","back view","side view"];
+  const hits = buckets.view.filter(t => VIEW_ORDER.includes(t));
+  if (hits.length > 1) {
+    const keep = VIEW_ORDER.find(t => hits.includes(t)) || hits[0];
+    buckets.view = buckets.view.filter(t => !(VIEW_ORDER.includes(t) && t !== keep));
+  }
+}   
 
   const out = [
     ...buckets.lora, ...buckets.name,
