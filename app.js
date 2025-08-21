@@ -2213,6 +2213,9 @@ function fixExclusives(parts){
   return p;
 }
 
+// fixExclusives() の後～ ensurePromptOrder() の前で保険
+parts = parts.filter(t => t !== "wide shot");   // 使わない構図を落とす
+
 
 // ④ 配分ルール（必要なら数値だけ調整してOK）
 const MIX_RULES = {
@@ -2346,8 +2349,9 @@ function buildOneLearning(extraSeed = 0){
   const asText = parts.join(", ");
 
   // 視点が無ければデフォルトを追加
-  const hasView = /\b(front view|three-quarters view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down|eye-level|low angle|high angle)\b/i.test(asText);
-  if (!hasView) parts.push("front view");
+  const hasView = /\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/i
+    .test(parts.join(", "));
+  if (!hasView) parts.push("front view");   // ←常に1つは入るように
 
   // 背景
   if (!/\b(plain background|studio background|solid background)\b/i.test(asText)) {
