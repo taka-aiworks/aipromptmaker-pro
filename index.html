@@ -798,6 +798,41 @@
   window.applyOutfitMode = applyOutfitMode;
 })();
 </script>
-  
+<script>
+// 既存の $ / $$ が無い環境でも動くよう保険
+window.$  = window.$  || (s => document.querySelector(s));
+window.$$ = window.$$ || (s => document.querySelectorAll(s));
+
+/* ========= タブ切替（置き換え） ========= */
+function initTabs(){
+  $$(".tab").forEach(tab => tab.addEventListener("click", () => {
+    // 見た目
+    $$(".tab").forEach(x => x.classList.remove("active"));
+    tab.classList.add("active");
+
+    // 表示切替
+    const m = tab.dataset.mode;
+    $("#panelBasic").hidden      = (m !== "basic");
+    $("#panelPlanner").hidden    = (m !== "planner");     // ★ 撮影モードを追加
+    $("#panelLearning").hidden   = (m !== "learning");
+    $("#panelProduction").hidden = (m !== "production");
+    $("#panelSettings").hidden   = (m !== "settings");
+
+    // 初回だけ撮影モードを初期化（辞書からラジオ生成）
+    if (m === "planner" && typeof initPlannerOnce === "function") {
+      initPlannerOnce();
+    }
+  }));
+
+  // 初期アクティブ反映（.active のタブをクリック相当で起動）
+  const initial = document.querySelector(".tab.active") || document.querySelector(".tab");
+  if (initial) initial.click();
+}
+
+// DOM 準備できたらタブ初期化
+document.addEventListener("DOMContentLoaded", initTabs);
+</script>
+
+
 </body>
 </html>
