@@ -866,39 +866,30 @@ function initTabs(){
 document.addEventListener("DOMContentLoaded", initTabs);
 </script>
 <script>
-// --- 強制表示デバッグ ---
+/* 撮影モードが可視になった瞬間に一度だけ初期化 */
 (function(){
-  // 1) ページ起動時に「撮影モード」タブを自動クリック
-  const t = document.querySelector('[data-mode="planner"]');
-  if (t) t.addEventListener('click', ()=> console.log('[dbg] planner tab clicked'));
-  setTimeout(()=> t && t.click(), 0);
+  const panel = document.getElementById('panelPlanner');
+  if (!panel) return;
 
-  // 2) 3秒後に panelPlanner を強制的に表示（JSが壊れてても出す）
-  setTimeout(()=>{
-    const p = document.getElementById('panelPlanner');
-    if (!p) return alert('[dbg] #panelPlanner がDOMに見つからない');
-    p.hidden = false;
-    p.style.display = 'block';
-    p.style.visibility = 'visible';
-    p.style.opacity = 1;
-    p.style.removeProperty('display'); // display指定があれば解除
-    // デバッグ表示
-    const tag = document.createElement('div');
-    tag.textContent = '[dbg] planner 強制表示実行';
-    tag.style.cssText = 'position:fixed;bottom:8px;left:8px;background:#000a;color:#0f0;padding:6px 8px;font:12px/1.2 monospace;z-index:99999;border:1px solid #0f0';
-    document.body.appendChild(tag);
-  }, 3000);
-
-  // 3) 手動ボタン（画面左下に出る、押すと強制表示）
-  const btn = document.createElement('button');
-  btn.textContent = 'DBG: Show Planner';
-  btn.onclick = () => {
-    const p = document.getElementById('panelPlanner');
-    if (!p) return alert('[dbg] #panelPlanner がDOMに見つからない');
-    p.hidden = false; p.style.display='block';
+  const tryInit = () => {
+    if (typeof initPlannerOnce === 'function') {
+      initPlannerOnce();
+    }
   };
-  btn.style.cssText = 'position:fixed;bottom:8px;left:8px;z-index:99999';
-  document.body.appendChild(btn);
+
+  // すでに見えていれば即
+  const visibleNow = !panel.hidden && panel.offsetParent !== null;
+  if (visibleNow) { tryInit(); return; }
+
+  // 可視化を待ってから実行
+  const obs = new MutationObserver(() => {
+    const visible = !panel.hidden && panel.offsetParent !== null;
+    if (visible) {
+      tryInit();
+      obs.disconnect();
+    }
+  });
+  obs.observe(panel, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
 })();
 </script>
   
