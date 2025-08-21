@@ -1415,7 +1415,7 @@ function getBasicSelectedOutfit(){
 }
 
 /* ========= タブ切替 ========= */
-function initTabs(){
+/* function initTabs(){
   $$(".tab").forEach(t=> t.addEventListener("click", ()=>{
     $$(".tab").forEach(x=>x.classList.remove("active"));
     t.classList.add("active");
