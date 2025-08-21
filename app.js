@@ -1182,6 +1182,110 @@ function filterByScope(items, allow) {
 }
 
 
+// ==== 撮影プラン描画（各1択ラジオ） ====
+function renderPlanner(){
+  // ホワイトリストを流用（必要なければ filterByScope を外してもよい）
+  const bg   = filterByScope(SFW.background,        SCOPE?.learning?.background || null);
+  const pose = filterByScope(SFW.pose || [],        SCOPE?.learning?.pose || null);
+  const comp = filterByScope(SFW.composition || [], SCOPE?.learning?.composition || null);
+  const view = filterByScope(SFW.view || [],        SCOPE?.learning?.view || null);
+  const expr = filterByScope(SFW.expressions,       SCOPE?.learning?.expressions || null);
+  const lite = filterByScope(SFW.lighting,          SCOPE?.learning?.lighting || null);
+  const acc  = filterByScope(SFW.accessories || [], SCOPE?.learning?.accessories || null);
+
+  radioList($("#pl_bg"),   bg,   "pl_bg");
+  radioList($("#pl_pose"), pose, "pl_pose");
+  radioList($("#pl_comp"), comp, "pl_comp");
+  radioList($("#pl_view"), view, "pl_view");
+  radioList($("#pl_expr"), expr, "pl_expr");
+  radioList($("#pl_light"),lite, "pl_light");
+  radioList($("#pl_acc"),  acc,  "pl_acc", {allowEmpty:true}); // アクセは任意
+}
+
+// ==== 1件だけ出力 ====
+function buildPlannerOne(){
+  const name = ($("#charName")?.value||"").trim();
+  const seed = seedFromName(name, 1);
+
+  // 基本（キャラ名・基礎属性・色タグは既存UIから取得）
+  const base = [
+    name,
+    getOne("bf_age"), getOne("bf_gender"), getOne("bf_body"), getOne("bf_height"),
+    ($("#tagH")?.textContent||"").trim(),  // 髪色タグ
+    ($("#tagE")?.textContent||"").trim(),  // 瞳色タグ
+    ($("#tagSkin")?.textContent||"").trim()// 肌トーン
+  ].filter(Boolean);
+
+  // ラジオ1択（未選択は安全補完）
+  const bg   = getOne("pl_bg")   || "plain background";
+  const pose = getOne("pl_pose") || ""; // 任意
+  const comp = getOne("pl_comp") || "bust";
+  const view = getOne("pl_view") || "three-quarters view";
+  const expr = getOne("pl_expr") || "neutral expression";
+  const lite = getOne("pl_light")|| "soft lighting";
+  const acc  = getOne("pl_acc")  || "";
+
+  // 組み立て
+  let parts = ["solo", getGenderCountTag() || "", ...base, bg, pose, comp, view, expr, lite, acc]
+              .filter(Boolean);
+
+  // 排他整理→順序整形
+  parts = fixExclusives(parts);
+  parts = ensurePromptOrder(parts);
+
+  // ネガは既存（複数人抑止込み）
+  const neg = withSoloNeg(getNeg());
+
+  return [{ seed, pos: parts, neg, text: `${parts.join(", ")} --neg ${neg} seed:${seed}` }];
+}
+
+// ==== テーブル描画（4列：#, seed, prompt, negative） ====
+// 学習テーブルの簡易版（被ってもOK。既に renderLearnTableTo を4列化しているならそれを使っても可）
+function renderPlannerTableTo(tbodySel, rows){
+  const tb = document.querySelector(tbodySel); if (!tb) return;
+  const frag = document.createDocumentFragment();
+  rows.forEach((r,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${i+1}</td><td>${r.seed}</td><td>${r.pos.join(", ")}</td><td>${r.neg}</td>`;
+    frag.appendChild(tr);
+  });
+  tb.innerHTML = "";
+  tb.appendChild(frag);
+}
+
+// ==== ボタン配線＆初期化 ====
+// 1) タブ切替で呼ぶ or 2) 初回レンダ後に呼ぶ
+function initPlannerOnce(){
+  if (initPlannerOnce._done) return;
+  initPlannerOnce._done = true;
+  // ボタン
+  const btn = document.getElementById("btnPlanOne");
+  if (btn) btn.addEventListener("click", ()=>{
+    const rows = buildPlannerOne();
+    renderPlannerTableTo("#tblPlanner tbody", rows);
+    const out = document.getElementById("outPlanner");
+    if (out) out.value = rows[0].text;
+    toast("プランを出力しました");
+  });
+  // 初期描画
+  renderPlanner();
+}
+
+// 既存のタブシステムに合わせて：planner タブが開いたら初期化
+document.addEventListener("click", (ev)=>{
+  const el = ev.target.closest('[data-tab="planner"]');
+  if (el) setTimeout(initPlannerOnce, 0);
+});
+
+// ページロード直後に SFW 辞書が既にある場合は即描画
+if (window.SFW) { setTimeout(initPlannerOnce, 0); }
+
+
+
+
+
+
+
 // 元の categorizePoseComp はそのまま利用する前提
 function renderSFW(){
   // --- 基本（従来の固定系はそのまま）
