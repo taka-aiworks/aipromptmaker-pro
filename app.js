@@ -1338,7 +1338,7 @@ function renderPlannerAcc(){
 }
 
 function getPlannerAccTag(){
-  const acc = document.getElementById('pl_accSel')?.value.trim();
+  const acc = document.getElementById('pl_accSel')?.value?.trim() || '';
   if (!acc) return '';
   // initColorWheel が返した getter を優先、なければタグ要素から読む
   const color = (typeof getPlAccColor === 'function'
