@@ -1290,16 +1290,6 @@ function initPlannerOnce(){
   renderPlanner();
 }
 
-// 既存のタブシステムに合わせて：planner タブが開いたら初期化
-document.addEventListener("click", (ev)=>{
-  const el = ev.target.closest('[data-tab="planner"]');
-  if (el) setTimeout(initPlannerOnce, 0);
-});
-
-// ページロード直後に SFW 辞書が既にある場合は即描画
-if (window.SFW) { setTimeout(initPlannerOnce, 0); }
-
-
 
 
 
