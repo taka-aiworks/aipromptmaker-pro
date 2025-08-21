@@ -1214,6 +1214,8 @@ function renderRadios(containerId, items, { groupName, allowEmpty } = {}){
   root.innerHTML = html.join("");
 }
 
+let getPlAccColor = null;
+
 // ==== 撮影プラン描画（各1択ラジオ：ホワイトリスト不使用・フル辞書） ====
 function renderPlanner(){
   const sfw = window.SFW || {};
