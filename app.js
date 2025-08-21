@@ -1409,17 +1409,31 @@ function getBasicSelectedOutfit(){
   return { mode, top, bottom, dress:null, bottomCat: (bottom===skirtVal ? "skirt" : "pants") };
 }
 
-/* ========= タブ切替 ========= */
+/* ========= タブ切替（撮影モード対応版） ========= */
 function initTabs(){
-  $$(".tab").forEach(t=> t.addEventListener("click", ()=>{
-    $$(".tab").forEach(x=>x.classList.remove("active"));
+  $$(".tab").forEach(t => t.addEventListener("click", () => {
+    // タブの見た目
+    $$(".tab").forEach(x => x.classList.remove("active"));
     t.classList.add("active");
-    const m=t.dataset.mode;
+
+    const m = t.dataset.mode;
+
+    // パネル表示切替（planner を追加）
     $("#panelBasic").hidden      = (m !== "basic");
-    $("#panelLearning").hidden   = (m!=="learning");
-    $("#panelProduction").hidden = (m!=="production");
-    $("#panelSettings").hidden   = (m!=="settings");
+    $("#panelPlanner").hidden    = (m !== "planner");
+    $("#panelLearning").hidden   = (m !== "learning");
+    $("#panelProduction").hidden = (m !== "production");
+    $("#panelSettings").hidden   = (m !== "settings");
+
+    // 撮影モード初期化（1回だけ）
+    if (m === "planner" && typeof initPlannerOnce === "function") {
+      initPlannerOnce();
+    }
   }));
+
+  // 初期状態を現在の active タブに合わせて反映
+  const active = $$(".tab.active")[0] || $$(".tab")[0];
+  if (active) active.click();
 }
 
 /* ========= 辞書 I/O ========= */
