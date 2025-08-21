@@ -1223,7 +1223,8 @@ function renderPlanner(){
   renderRadios("pl_view", sfw.view         || [], { groupName: "pl_view"              /* 必須 */});
   renderRadios("pl_expr", sfw.expressions  || [], { groupName: "pl_expr"              /* 必須 */});
   renderRadios("pl_light",sfw.lighting     || [], { groupName: "pl_light"             /* 必須 */});
-  renderRadios("pl_acc",  sfw.accessories  || [], { groupName: "pl_acc",  allowEmpty:true }); // 任意
+  renderPlannerAcc(); // ←学習モードと同じUIに
+
 }
 
 // 撮影モード専用：固定タグ/ネガ取得
@@ -1260,7 +1261,8 @@ function buildPlannerOne(){
   const view = getOne("pl_view") || "three-quarters view";
   const expr = getOne("pl_expr") || "neutral expression";
   const lite = getOne("pl_light")|| "soft lighting";
-  const acc  = getOne("pl_acc")  || "";
+  const acc  = getPlannerAccTag(); // 学習モードと同じ連結（未選択なら空）
+  
 
   // 固定タグ（撮影モード専用）
   const fixed = getPlanFixed();
@@ -1314,6 +1316,35 @@ function initPlannerOnce(){
   });
 }
 
+
+// 学習と同じ流儀でアクセ選択を描画
+function renderPlannerAcc(){
+  const sel = document.getElementById('pl_accSel');
+  if (!sel) return;
+  const list = (window.SFW && window.SFW.accessories) || [];
+
+  sel.innerHTML = '<option value="">（指定なし）</option>' +
+    list.map(it => {
+      const label = (typeof it === 'string' ? it : (it && it.tag) || '').trim();
+      return label ? `<option value="${label}">${label}</option>` : '';
+    }).join('');
+
+  // ★学習モードの色ホイール初期化と同じ関数を使う
+  // 例）initColorWheelSlot(prefix) のような自前ヘルパがある想定
+  //     学習側が learnAcc を prefix にしているなら、ここは plAcc にする
+  if (typeof initColorWheelSlot === 'function') {
+    initColorWheelSlot('plAcc');     // wheel_plAcc / sat_plAcc / lit_plAcc / tag_plAcc …を束ねる
+  }
+}
+
+// 選択されたアクセの最終タグ（アクセ＋色）を返す
+function getPlannerAccTag(){
+  const acc = document.getElementById('pl_accSel')?.value.trim();
+  if (!acc) return '';
+  const color = document.getElementById('tag_plAcc')?.textContent?.trim();
+  // 学習モードと同じ連結ルールに合わせて
+  return color ? `${acc}, ${color}` : acc;
+}
 
 
 
