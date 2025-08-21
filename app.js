@@ -1182,24 +1182,24 @@ function filterByScope(items, allow) {
 }
 
 
-// ==== 撮影プラン描画（各1択ラジオ） ====
+// ==== 撮影プラン描画（各1択ラジオ：ホワイトリスト不使用・フル辞書） ====
 function renderPlanner(){
-  // ホワイトリストを流用（必要なければ filterByScope を外してもよい）
-  const bg   = filterByScope(SFW.background,        SCOPE?.learning?.background || null);
-  const pose = filterByScope(SFW.pose || [],        SCOPE?.learning?.pose || null);
-  const comp = filterByScope(SFW.composition || [], SCOPE?.learning?.composition || null);
-  const view = filterByScope(SFW.view || [],        SCOPE?.learning?.view || null);
-  const expr = filterByScope(SFW.expressions,       SCOPE?.learning?.expressions || null);
-  const lite = filterByScope(SFW.lighting,          SCOPE?.learning?.lighting || null);
-  const acc  = filterByScope(SFW.accessories || [], SCOPE?.learning?.accessories || null);
+  // そのまま全件を使う（filterByScope は使わない）
+  const bg   = SFW.background || [];
+  const pose = SFW.pose || [];
+  const comp = SFW.composition || [];
+  const view = SFW.view || [];
+  const expr = SFW.expressions || [];
+  const lite = SFW.lighting || [];
+  const acc  = SFW.accessories || [];
 
-  radioList($("#pl_bg"),   bg,   "pl_bg");
-  radioList($("#pl_pose"), pose, "pl_pose");
-  radioList($("#pl_comp"), comp, "pl_comp");
-  radioList($("#pl_view"), view, "pl_view");
-  radioList($("#pl_expr"), expr, "pl_expr");
-  radioList($("#pl_light"),lite, "pl_light");
-  radioList($("#pl_acc"),  acc,  "pl_acc", {allowEmpty:true}); // アクセは任意
+  radioList($("#pl_bg"),   bg,   "pl_bg");                   // 背景：必須
+  radioList($("#pl_pose"), pose, "pl_pose",  {allowEmpty:true}); // ポーズ：任意
+  radioList($("#pl_comp"), comp, "pl_comp");                 // 構図：必須（未選択時はJS側で補完）
+  radioList($("#pl_view"), view, "pl_view");                 // 視点：必須（未選択時はJS側で補完）
+  radioList($("#pl_expr"), expr, "pl_expr");                 // 表情：必須（未選択時はJS側で補完）
+  radioList($("#pl_light"),lite, "pl_light");                // ライト：必須（未選択時はJS側で補完）
+  radioList($("#pl_acc"),  acc,  "pl_acc",   {allowEmpty:true}); // アクセ：任意
 }
 
 // ==== 1件だけ出力 ====
