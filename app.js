@@ -1116,20 +1116,19 @@ const SCOPE = {
       // もし辞書にあれば: "light gray background"
     ],
     // 動きは控えめ＋手の見せ方を少し
-    pose: [
-      "standing", "sitting",
-      "pointing", "head tilt",
-      "hands on hips", "crossed arms"
+     pose: [
+      "standing", "sitting", "hands on hips", "crossed arms",
+      "pointing", "waving", "head tilt"
     ],
-    // ★全身を必ず含める（視点タグはここに置いてOK）
     composition: [
       "full body", "waist up", "bust", "portrait",
-      "profile view", "back view", "front view", "three-quarters view",
-      "centered composition",
-      // 角度系（強すぎないやつ）
-      "from below", "looking down", "overhead view",
-      // 目線系
-      "facing viewer", "looking to the side", "looking up"
+      "centered composition"
+    ],
+    // ← 視点は独立カテゴリに分ける
+    view: [
+      "front view", "side view", "back view",
+      "three-quarters view",
+      "from below", "looking down", "overhead view"
     ],
     // 表情は整合済みの正規タグ
     expressions: [
