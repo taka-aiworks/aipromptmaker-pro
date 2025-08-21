@@ -2446,11 +2446,11 @@ function ensurePromptOrder(parts) {
     if (S.face.has(t))       { buckets.s_face.push(t); continue; }
     if (S.skin_body.has(t))  { buckets.s_body.push(t); continue; }
     if (S.art_style.has(t))  { buckets.s_art.push(t);  continue; }
-   
-   // 服・アクセ（色付き服も outfit に寄せる想定）
-   const WEAR_NAME_RE = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer|skirt|pleated\ skirt|long\ skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\ shorts|dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori)\b/i;
-   if (S.outfit.has(t) || WEAR_NAME_RE.test(t)) { buckets.wear.push(t); continue; }
-   if (S.acc.has(t)) { buckets.acc.push(t); continue; }
+
+    // 服・アクセ（色付き服も outfit に寄せる想定）
+    const WEAR_NAME_RE = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer|skirt|pleated\ skirt|long\ skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\ shorts|dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori)\b/i;
+    if (S.outfit.has(t) || WEAR_NAME_RE.test(t)) { buckets.wear.push(t); continue; }
+    if (S.acc.has(t)) { buckets.acc.push(t); continue; }
 
     // シーン
     if (S.background.has(t)) { buckets.bg.push(t);   continue; }
@@ -2467,14 +2467,43 @@ function ensurePromptOrder(parts) {
     buckets.other.push(t);
   }
 
-  // --- 最終ガード：表情/構図は 1 つに正規化 ---
-  const pickOne = (arr, prefer) => {
-    if (arr.length <= 1) return arr;
-    for (const p of prefer) if (arr.includes(p)) return [p];
-    return [arr[0]];
-  };
-   
-  return [
+  // --- 最終ガード：表情/構図/視点をグローバルに正規化 ---
+
+  // 1) 表情：SFW と NSFW を統合して 1 つだけ残す
+  {
+    const ALL_EXPR = [...buckets.expr, ...buckets.n_expr];
+    if (ALL_EXPR.length > 0) {
+      const PREFER_EXPR = ["smiling","neutral expression","slight blush","surprised (mild)","pouting (slight)"];
+      const keepExpr = PREFER_EXPR.find(t => ALL_EXPR.includes(t)) || ALL_EXPR[0];
+      buckets.expr = [keepExpr];
+      buckets.n_expr = []; // 吸収済み
+    }
+  }
+
+  // 2) 構図/距離/視点：全バケツ横断でヒット収集 → 1 つだけ残す
+  {
+    const COMP_VIEW_ORDER = [
+      // 距離・フレーミング優先
+      "full body","wide shot","waist up","upper body","bust","portrait","close-up",
+      // 視点
+      "three-quarters view","front view","profile view","back view","side view"
+    ];
+    const keys = Object.keys(buckets);
+    const hits = [];
+    for (const k of keys) {
+      for (const t of buckets[k]) {
+        if (COMP_VIEW_ORDER.includes(t)) hits.push(t);
+      }
+    }
+    if (hits.length > 1) {
+      const keep = COMP_VIEW_ORDER.find(t => hits.includes(t)) || hits[0];
+      for (const k of keys) {
+        buckets[k] = buckets[k].filter(t => !(COMP_VIEW_ORDER.includes(t) && t !== keep));
+      }
+    }
+  }
+
+  const out = [
     ...buckets.lora, ...buckets.name,
     // 人となり
     ...buckets.b_age, ...buckets.b_gender, ...buckets.b_body, ...buckets.b_height,
@@ -2492,6 +2521,9 @@ function ensurePromptOrder(parts) {
     // その他
     ...buckets.other
   ].filter(Boolean);
+
+  // 念押しの一意化
+  return Array.from(new Set(out));
 }
 
 /* === ヌード優先ルール（全裸 / 上半身裸 / 下半身裸） === */
