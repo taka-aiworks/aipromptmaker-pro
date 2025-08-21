@@ -353,17 +353,40 @@ function normItem(x) {
 }
 function normList(arr){ return (arr || []).map(normItem).filter(Boolean); }
 
+// ==== KEYMAP（UI見出し → SFWキー）====
 const KEYMAP = {
-  "髪型":"hair_style","目の形":"eyes","服":"outfit","顔の特徴":"face","体型":"skin_body",
-  "画風":"art_style","背景":"background","ポーズ":"pose","構図":"composition","視点":"view",
-  "表情":"expressions","アクセサリー":"accessories","ライティング":"lighting","年齢":"age","性別":"gender",
-  "体型(基本)":"body_type",   // 好きな日本語キーに合わせて
+  "髪型":"hair_style",
+  "目の形":"eyes",
+  "服":"outfit",
+  "顔の特徴":"face",
+  "体型":"skin_body",
+  "視点":"view",
+  "画風":"art_style",
+  "背景":"background",
+  "ポーズ":"pose",
+  "構図":"composition",
+  "表情":"expressions",
+  "アクセサリー":"accessories",
+  "ライティング":"lighting",
+  "年齢":"age",
+  "性別":"gender",
+  "体型(基本)":"body_type",
   "身長":"height",
-  "性格":"personality",
-  // 互換（古いJSON/翻訳UI向けの保険）
-  "ポーズ・構図":"composition",
-  "composition":"composition"
+  "性格":"personality"
 };
+
+// ==== SFW の分割正規化（読み込み直後に1回呼ぶ）====
+function normalizeSFWKeys(){
+  if (!window.SFW) return;
+  // 旧キー → 新キー
+  const legacy = SFW.pose_composition || [];
+  // 既に新キーがあればそれを優先
+  SFW.pose        = SFW.pose || legacy.filter(t => /^(standing|sitting|lying down|jumping|running|pointing|crossed arms|hands on hips|hands behind back|peace sign|waving|head tilt|slumped shoulders|head hung low|staggering|hands on cheeks|facepalm)$/i.test(t));
+  SFW.composition = SFW.composition || legacy.filter(t => /^(full body|upper body|close-up|bust|waist up|portrait|centered composition|rule of thirds|over-the-shoulder|foreshortening)$/i.test(t));
+  SFW.view        = SFW.view || legacy.filter(t => /^(front view|three-quarters view|back view|profile view|side view|eye-level|low angle|high angle|from below|looking down|overhead view|facing viewer|looking to the side|looking up|looking away|looking at viewer)$/i.test(t));
+  // 廃止キーはクリア
+  delete SFW.pose_composition;
+}
 
 // === outfit をカテゴリ分配 ===
 function categorizeOutfit(list){
