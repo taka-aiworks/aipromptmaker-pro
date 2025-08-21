@@ -154,7 +154,7 @@ const LEARN_BUCKET_CAP = {
   c_hair:1, c_eye:1, c_skin:1,
   s_hair:1, s_eye:1, s_face:1, s_body:1, s_art:1,
   wear:2, acc:0,          // ← 服は最大2語（top/bottom or dress）。アクセは0（固定にしたい場合は1でもOK）
-  bg:1, pose:1, expr:1, light:1,
+  bg:1, pose:1, view:1, expr:1, light:1,
   n_expr:1, n_expo:1, n_situ:1, n_light:1,
   other:0
 };
@@ -168,7 +168,7 @@ function trimByBucketForLearning(parts){
     c_hair:[], c_eye:[], c_skin:[],
     s_hair:[], s_eye:[], s_face:[], s_body:[], s_art:[],
     wear:[], acc:[],
-    bg:[], pose:[], expr:[], light:[],
+    bg:[], pose:[], view:[], expr:[], light:[],
     n_expr:[], n_expo:[], n_situ:[], n_light:[],
     other:[]
   };
@@ -1132,34 +1132,35 @@ function renderSFW(){
   checkList($("#p_light"), SFW.lighting,     "p_light");
 
   // 置き換え：renderSFW 内の“ポーズ/構図”ブロック
+// --- ポーズ/構図/視点（分離対応）
 {
   const src = SFW.pose_composition || [];
-  const { poseTags, compTags, viewTags } = categorizePoseCompView(src);
+  const { poseTags, compTags, viewTags } = categorizePoseComp(src);
 
   // 学習タブ：ホワイトリスト適用
   const pose_learn = filterByScope(poseTags, SCOPE.learning.pose);
   const comp_learn = filterByScope(compTags, SCOPE.learning.composition);
   const view_learn = filterByScope(viewTags, SCOPE.learning.view);
 
-  // pose/comp/view の3列があるHTMLなら3つ出す（無ければあるものだけ）
-  if (document.getElementById("pose")) checkList($("#pose"), pose_learn, "pose");
-  if (document.getElementById("comp")) checkList($("#comp"), comp_learn, "comp");
-  if (document.getElementById("view")) checkList($("#view"), view_learn, "view");
-
-  // 量産タブ：フル辞書
-  if (document.getElementById("p_pose")) checkList($("#p_pose"), poseTags, "p_pose");
-  if (document.getElementById("p_comp")) checkList($("#p_comp"), compTags, "p_comp");
-  if (document.getElementById("p_view")) checkList($("#p_view"), viewTags, "p_view");
-}
-
-    // 量産タブ：フル辞書
-    if (document.getElementById("p_comp")) {
-      checkList($("#p_pose"), poseTags, "p_pose");
-      checkList($("#p_comp"), compTags, "p_comp");
-    } else {
-      checkList($("#p_pose"), src, "p_pose");
-    }
+  // 学習タブ：描画
+  if (document.getElementById("comp")) {
+    checkList($("#pose"), pose_learn, "pose");
+    checkList($("#comp"), comp_learn, "comp");
+  } else {
+    checkList($("#pose"), pose_learn, "pose");
   }
+  if (document.getElementById("view")) {
+    checkList($("#view"), view_learn, "view");   // ★ 追加
+  }
+
+  // 量産タブ（必要なら p_comp / p_pose だけ従来通り。p_view がある場合は同様に）
+  if (document.getElementById("p_comp")) {
+    checkList($("#p_pose"), poseTags, "p_pose");
+    checkList($("#p_comp"), compTags, "p_comp");
+  } else {
+    checkList($("#p_pose"), src, "p_pose");
+  }
+}
 
   // ★ outfit をカテゴリに分配して描画（そのまま）
   const C = categorizeOutfit(SFW.outfit);
