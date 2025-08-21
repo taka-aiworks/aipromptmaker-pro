@@ -2039,10 +2039,26 @@ function ensureExprExclusive(parts){
 }
 
 // 構図/距離：portrait と full body 等を同時にしない
+// かつ wide shot は他の距離タグがあるなら落とす
 function ensureCompExclusive(parts){
   const GROUP = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
-  const PREFER = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
-  return pickOneFromGroup(parts, GROUP, PREFER);
+
+  // 現在のヒットを抽出
+  const hits = GROUP.filter(g => parts.includes(g));
+  if (hits.length <= 1) return parts;
+
+  // 他の距離タグが1つでもあれば wide shot は除去対象に
+  let pool = hits;
+  if (hits.some(t => t !== "wide shot")) {
+    pool = hits.filter(t => t !== "wide shot");
+  }
+
+  // 優先順位（“広い”方を優先、最後に wide shot）
+  const PREFER = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
+  const keep = PREFER.find(t => pool.includes(t)) || pool[0];
+
+  // keep 以外の距離タグを削除
+  return parts.filter(t => !(GROUP.includes(t) && t !== keep));
 }
 
 // 視点：front / three-quarters / profile / back は1つに
