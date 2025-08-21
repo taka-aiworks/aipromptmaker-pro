@@ -154,20 +154,23 @@ const LEARN_EXCLUDE_RE = /\b(?:fisheye|wide[-\s]?angle|ultra[-\s]?wide|dutch\s?a
  };
 
 // ensurePromptOrder と同じ仕分けを流用して“刈る”
+// 学習テーブル用：カテゴリ別に仕分けして必要分だけ残す（置き換え）
 function trimByBucketForLearning(parts){
   const ordered = ensurePromptOrder(parts);
+
+  // ← comp を追加、列順もこの通りでテーブルに出ます
   const buckets = {
     lora:[], name:[],
     b_age:[], b_gender:[], b_body:[], b_height:[], b_person:[], b_world:[], b_tone:[],
     c_hair:[], c_eye:[], c_skin:[],
     s_hair:[], s_eye:[], s_face:[], s_body:[], s_art:[],
     wear:[], acc:[],
-    bg:[], pose:[], expr:[], light:[],
+    bg:[], comp:[], pose:[], view:[], expr:[], light:[],
     n_expr:[], n_expo:[], n_situ:[], n_light:[],
     other:[]
   };
 
-  // ensurePromptOrder の分類ロジックに合わせるため、所属判定は同じ関数内の簡易模倣
+  // ensurePromptOrder の分類に合わせた簡易セット
   const S = {
     age:        new Set((SFW.age||[]).map(x=>x.tag||x)),
     gender:     new Set((SFW.gender||[]).map(x=>x.tag||x)),
@@ -184,10 +187,11 @@ function trimByBucketForLearning(parts){
     art_style:  new Set((SFW.art_style||[]).map(x=>x.tag||x)),
     outfit:     new Set((SFW.outfit||[]).map(x=>x.tag||x)),
     acc:        new Set((SFW.accessories||[]).map(x=>x.tag||x)),
+
     background: new Set((SFW.background||[]).map(x=>x.tag||x)),
-    pose:       new Set((SFW.pose||[]).map(x=>x.tag||x)),
-    comp:       new Set((SFW.composition||[]).map(x=>x.tag||x)),
-    view:       new Set((SFW.view||[]).map(x=>x.tag||x)),
+    comp:       new Set((SFW.composition||[]).map(x=>x.tag||x)), // 構図
+    pose:       new Set((SFW.pose||[]).map(x=>x.tag||x)),        // ポーズ
+    view:       new Set((SFW.view||[]).map(x=>x.tag||x)),        // 視点
     expr:       new Set((SFW.expressions||[]).map(x=>x.tag||x)),
     light:      new Set((SFW.lighting||[]).map(x=>x.tag||x)),
 
@@ -202,19 +206,20 @@ function trimByBucketForLearning(parts){
   const isSkinTone  = (t)=> /\bskin$/.test(t) && !S.skin_body.has(t);
   const WEAR_NAME_RE = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer|skirt|pleated\ skirt|long\ skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\ shorts|dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori)\b/i;
 
-  for (const t of ordered) {
+  for (const t0 of ordered) {
+    const t = String(t0||"").trim();
     if (!t || LEARN_EXCLUDE_RE.test(t)) continue;
 
     if (t.startsWith("<lora:") || /\b(?:LoRA|<lyco:)/i.test(t)) { buckets.lora.push(t); continue; }
     if (($("#charName")?.value||"").trim() === t) { buckets.name.push(t); continue; }
 
-    if (S.age.has(t))       { buckets.b_age.push(t); continue; }
-    if (S.gender.has(t))    { buckets.b_gender.push(t); continue; }
-    if (S.body_basic.has(t)){ buckets.b_body.push(t); continue; }
-    if (S.height.has(t))    { buckets.b_height.push(t); continue; }
-    if (S.person.has(t))    { buckets.b_person.push(t); continue; }
-    if (S.world.has(t))     { buckets.b_world.push(t); continue; }
-    if (S.tone.has(t))      { buckets.b_tone.push(t); continue; }
+    if (S.age.has(t))         { buckets.b_age.push(t);    continue; }
+    if (S.gender.has(t))      { buckets.b_gender.push(t); continue; }
+    if (S.body_basic.has(t))  { buckets.b_body.push(t);   continue; }
+    if (S.height.has(t))      { buckets.b_height.push(t); continue; }
+    if (S.person.has(t))      { buckets.b_person.push(t); continue; }
+    if (S.world.has(t))       { buckets.b_world.push(t);  continue; }
+    if (S.tone.has(t))        { buckets.b_tone.push(t);   continue; }
 
     if (isHairColor(t)) { buckets.c_hair.push(t); continue; }
     if (isEyeColor(t))  { buckets.c_eye.push(t);  continue; }
@@ -229,11 +234,10 @@ function trimByBucketForLearning(parts){
     if (S.outfit.has(t) || WEAR_NAME_RE.test(t)) { buckets.wear.push(t); continue; }
     if (S.acc.has(t)) { buckets.acc.push(t); continue; }
 
-
-    if (S.background.has(t)) { buckets.bg.push(t);    continue; }
-    if (S.pose.has(t))       { buckets.pose.push(t);  continue; }
-    if (S.comp.has(t))       { buckets.comp.push(t);  continue; }
-    if (S.view.has(t))       { buckets.view.push(t);  continue; }
+    if (S.background.has(t)) { buckets.bg.push(t);   continue; }
+    if (S.comp.has(t))       { buckets.comp.push(t); continue; } // 構図
+    if (S.pose.has(t))       { buckets.pose.push(t); continue; } // ポーズ
+    if (S.view.has(t))       { buckets.view.push(t); continue; } // 視点
     if (S.expr.has(t))       { buckets.expr.push(t); continue; }
     if (S.light.has(t))      { buckets.light.push(t);continue; }
 
@@ -245,12 +249,12 @@ function trimByBucketForLearning(parts){
     buckets.other.push(t);
   }
 
+  // 上限で刈り込み（未定義は無制限）
   const capped = [];
   for (const [bk, arr] of Object.entries(buckets)) {
-    const cap = LEARN_BUCKET_CAP[bk];
+    const cap = (LEARN_BUCKET_CAP && LEARN_BUCKET_CAP[bk]);
     if (cap === undefined) { capped.push(...arr); continue; }
-    if (cap <= 0) continue;
-    capped.push(...arr.slice(0, cap));
+    if (cap > 0) capped.push(...arr.slice(0, cap));
   }
   return capped;
 }
@@ -2284,10 +2288,10 @@ function buildOneLearning(extraSeed = 0){
   // ===== 4) 不足アンカーの補完（view も対象）=====
   const asText = parts.join(", ");
 
-  // 視点が無ければデフォルトを追加
+  // 視点：無ければ正面（フォールバック）
   const hasView = /\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/i
     .test(parts.join(", "));
-  if (!hasView) parts.push("front view");   // ←常に1つは入るように
+  if (!hasView) parts.push("front view");
 
   // 背景
   if (!/\b(plain background|studio background|solid background)\b/i.test(asText)) {
