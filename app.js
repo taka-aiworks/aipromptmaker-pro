@@ -341,11 +341,14 @@ function normList(arr){ return (arr || []).map(normItem).filter(Boolean); }
 
 const KEYMAP = {
   "髪型":"hair_style","目の形":"eyes","服":"outfit","顔の特徴":"face","体型":"skin_body",
-  "画風":"art_style","背景":"background","ポーズ":"pose","構図":"comp","視点":"view",
+  "画風":"art_style","背景":"background","ポーズ":"pose","構図":"composition","視点":"view",
   "表情":"expressions","アクセサリー":"accessories","ライティング":"lighting","年齢":"age","性別":"gender",
   "体型(基本)":"body_type",   // 好きな日本語キーに合わせて
   "身長":"height",
-  "性格":"personality"
+  "性格":"personality",
+  // 互換（古いJSON/翻訳UI向けの保険）
+  "ポーズ・構図":"composition",
+  "composition":"composition"
 };
 
 // === outfit をカテゴリ分配 ===
@@ -2165,7 +2168,9 @@ function buildOneLearning(extraSeed = 0){
   // ===== 1) ベース構築 =====
   const fixed = assembleFixedLearning();
   const BG = getMany("bg");
-  const PO = [...getMany("pose"), ...getMany("comp")];           // ← compも足す（無ければ空配列）
+  const PO = getMany("pose");
+  const CO = getMany("comp");          // ★ 構図
+  const VI = getMany("view");          // ★ 視点
   const EX = getMany("expr");
   const LI = getMany("lightLearn");  const addon = getSelectedNSFW_Learn();
   const b = pick(BG), p = pick(PO), e = pick(EX), l = LI.length ? pick(LI) : "";
@@ -2406,7 +2411,9 @@ function ensurePromptOrder(parts) {
     outfit:     asSet(SFW.outfit),
     acc:        asSet(SFW.accessories),
     background: asSet(SFW.background),
-    pose:       asSet(SFW.pose_composition),
+    pose:       asSet(SFW.pose),
+    composition:asSet(SFW.composition),   // ★追加
+    view:       asSet(SFW.view),          // ★追加
     expr:       asSet(SFW.expressions),
     light:      asSet(SFW.lighting),
 
