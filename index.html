@@ -260,7 +260,7 @@
 
 <!-- ==== 撮影プラン タブ本体 ==== -->
 <section id="panelPlanner" class="card" hidden>
-  <h2>撮影プラン</h2>
+  <h2>撮影モード</h2>
   <p class="note">LoRA学習は行わず、1枚だけのカットを確定出力します。</p>
 
   <div class="row mini"><b>背景</b></div>
@@ -286,13 +286,19 @@
 
   <hr class="sep">
 
-  <!-- 固有タグ -->
-  <div class="row mini"><b>固有タグ</b></div>
-  <textarea id="pl_fixed" class="input" rows="2" placeholder="カンマ区切りで固定タグを入力"></textarea>
-
-  <!-- ネガティブ -->
-  <div class="row mini" style="margin-top:10px"><b>ネガティブプロンプト</b></div>
-  <textarea id="pl_neg" class="input" rows="2" placeholder="カンマ区切りで不要な要素を入力"></textarea>
+  <div class="panel">
+        <h3>固定タグ / ネガティブ</h3>
+        <label>固定タグ（全行に付与）</label>
+        <textarea id="fixedManual" rows="3" placeholder="※テスト生成時,学習モードでは自動で solo と性別に応じた 1girl 1boyが付与されます"></textarea>
+        <label style="margin-top:10px">ネガティブ（全行）</label>
+        <textarea id="negGlobal" rows="3" placeholder="※ 指崩れ・画質劣化などを防ぐプロンプトがデフォルトで入っています。追加したい場合は入力"></textarea>
+        <div class="row mini">
+        <label>
+          <input type="checkbox" id="useDefaultNeg" checked>
+            デフォルトのネガティブプロンプトを使う
+        </label>
+      </div>
+    </div>
 
   <hr class="sep">
 
