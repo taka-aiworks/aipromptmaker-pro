@@ -1429,11 +1429,6 @@ function initTabs(){
   if (active) active.click();
 }
 
-  // 初期状態を現在の active タブに合わせて反映
-  const active = $$(".tab.active")[0] || $$(".tab")[0];
-  if (active) active.click();
-}
-
 /* ========= 辞書 I/O ========= */
 function isNSFWDict(json){
   const j = json?.NSFW || json || {};
