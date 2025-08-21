@@ -1295,8 +1295,13 @@ function renderPlannerTableTo(tbodySel, rows){
 // ==== 初期化：タブ表示時に1回だけ ====
 function initPlannerOnce(){
   if (initPlannerOnce._done) return;
+
+  const ready = window.SFW && Array.isArray(window.SFW.background) && window.SFW.background.length > 0;
+  if (!ready) { setTimeout(initPlannerOnce, 80); return; } // ←辞書が来るまでリトライ
+
   initPlannerOnce._done = true;
 
+  console.log('[planner] render with', window.SFW.background.length, 'backgrounds');
   renderPlanner();
 
   const btn = document.getElementById("btnPlanOne");
@@ -1305,7 +1310,7 @@ function initPlannerOnce(){
     renderPlannerTableTo("#tblPlanner tbody", rows);
     const out = document.getElementById("outPlanner");
     if (out) out.textContent = rows[0].text;
-    toast("プランを出力しました");
+    if (typeof toast === 'function') toast("プランを出力しました");
   });
 }
 
