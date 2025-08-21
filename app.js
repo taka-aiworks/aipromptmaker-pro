@@ -122,107 +122,6 @@ function stripMultiHints(parts){
 }
 
 
-
-// ===== SFW ロード → マウント一括起動 =====
-async function loadSFW() {
-  const res = await fetch('default_sfw.json', { cache: 'no-store' });
-  const json = await res.json();
-
-  // default_sfw.json の形が { "SFW": { ... } } / { ... } どちらでもOKにする
-  const root = json.SFW ? json.SFW : json;
-
-  // 旧キーが残っていたら安全側で分岐
-  if (root.pose_composition && (!root.pose || !root.composition || !root.view)) {
-    console.warn('[compat] pose_composition から pose/composition/view に分解します');
-    root.pose = (root.pose || []).concat(
-      (root.pose_composition || []).filter(x => [
-        "standing","sitting","lying down","jumping","running","pointing","crossed arms",
-        "hands on hips","hands behind back","hands on cheeks","peace sign","waving",
-        "head tilt","slumped shoulders","head hung low","staggering","dynamic pose",
-        "facepalm"
-      ].includes(x.tag))
-    );
-    root.composition = (root.composition || []).concat(
-      (root.pose_composition || []).filter(x => [
-        "full body","upper body","bust","waist up","portrait","close-up","centered composition",
-        "rule of thirds","over-the-shoulder","foreshortening","wide shot"
-      ].includes(x.tag))
-    );
-    root.view = (root.view || []).concat(
-      (root.pose_composition || []).filter(x => [
-        "front view","three-quarters view","back view","profile view","side view",
-        "eye-level","low angle","high angle","from below","looking down","overhead view",
-        "facing viewer","looking to the side","looking up","looking away","looking at viewer"
-      ].includes(x.tag))
-    );
-    delete root.pose_composition;
-  }
-
-  // グローバル SFW を更新
-  window.SFW = Object.assign(window.SFW || {}, root);
-
-  // ここで必ずマウント（順序が命）
-  mountLearningOptions();
-}
-
-// 起動
-document.addEventListener('DOMContentLoaded', () => {
-  loadSFW().catch(err => console.error('loadSFW failed', err));
-});
-
-// ===== チェックリスト生成ユーティリティ =====
-function mountOptions(selector, list, key) {
-  const host = document.querySelector(selector);
-  if (!host) return;
-  host.innerHTML = ''; // 再描画にも対応
-
-  if (!Array.isArray(list) || list.length === 0) {
-    host.innerHTML = '<div class="note mini">（項目なし）</div>';
-    return;
-  }
-  const frag = document.createDocumentFragment();
-
-  list.forEach((it, i) => {
-    const id = `${key}_${i}`;
-    const tag = typeof it === 'string' ? it : it.tag;
-    const label = typeof it === 'string' ? it : (it.label || it.tag);
-
-    const wrap = document.createElement('label');
-    wrap.className = 'choice chk';
-    wrap.setAttribute('title', tag);
-
-    const inp = document.createElement('input');
-    inp.type = 'checkbox';
-    inp.name = key;               // ← getMany("key") と連携
-    inp.value = tag;
-    inp.id = id;
-
-    const span = document.createElement('span');
-    span.textContent = label;
-
-    wrap.appendChild(inp);
-    wrap.appendChild(span);
-    frag.appendChild(wrap);
-  });
-
-  host.appendChild(frag);
-}
-
-// ===== 学習タブのオプションを全部マウント =====
-function mountLearningOptions() {
-  if (!window.SFW) return;
-
-  // 背景・ライティング（既存）
-  mountOptions('#bg',          SFW.background,   'bg');
-  mountOptions('#lightLearn',  SFW.lighting,     'lightLearn');
-
-  // ★ 新規：ポーズ / 構図 / 視点
-  mountOptions('#pose',        SFW.pose,         'pose');
-  mountOptions('#comp',        SFW.composition,  'comp');
-  mountOptions('#view',        SFW.view,         'view');
-}
-
-
 /* === 学習ガード：過剰要素の除去＆上限 === */
 
 // === ポーズ/構図のゆる判定（片方のボックスが無いときは無視していい） ===
@@ -1524,18 +1423,6 @@ function applyCharacterPreset(cfg){
   if (typeof updateOneTestReady === "function") updateOneTestReady();
   toast("キャラ設定を読み込みました");
 }
-
-
-// ===== 値の収集（HTMLの name= と一致させる） =====
-function getMany(key) {
-  return Array.from(document.querySelectorAll(`input[name="${key}"]:checked`))
-              .map(n => n.value);
-}
-function getOne(key) {
-  const n = document.querySelector(`input[name="${key}"]:checked`);
-  return n ? n.value : '';
-}
-
 
 function collectCharacterPreset(){
   const outfitSel = getBasicSelectedOutfit();
