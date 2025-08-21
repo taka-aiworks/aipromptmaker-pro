@@ -286,25 +286,27 @@
 
   <hr class="sep">
 
+  <!-- ★ 固有タグ / ネガティブ（撮影モード専用ID） -->
   <div class="panel">
-        <h3>固定タグ / ネガティブ</h3>
-        <label>固定タグ（全行に付与）</label>
-        <textarea id="fixedManual" rows="3" placeholder="※テスト生成時,学習モードでは自動で solo と性別に応じた 1girl 1boyが付与されます"></textarea>
-        <label style="margin-top:10px">ネガティブ（全行）</label>
-        <textarea id="negGlobal" rows="3" placeholder="※ 指崩れ・画質劣化などを防ぐプロンプトがデフォルトで入っています。追加したい場合は入力"></textarea>
-        <div class="row mini">
-        <label>
-          <input type="checkbox" id="useDefaultNeg" checked>
-            デフォルトのネガティブプロンプトを使う
-        </label>
-      </div>
+    <h3>固定タグ / ネガティブ</h3>
+    <label>固定タグ（先頭に付与）</label>
+    <textarea id="pl_fixed" rows="3" placeholder="<lora:YourLoRA:0.8>, 1girl, looking at viewer"></textarea>
+
+    <label style="margin-top:10px">ネガティブ（行に付与）</label>
+    <textarea id="pl_neg" rows="3" placeholder="lowres, blurry, bad anatomy, watermark"></textarea>
+
+    <div class="row mini">
+      <label class="inline">
+        <input type="checkbox" id="pl_useDefaultNeg" checked>
+        デフォルトのネガティブプロンプトを使う
+      </label>
     </div>
+  </div>
 
   <hr class="sep">
 
   <div class="row" style="gap:8px">
     <button id="btnPlanOne" class="btn ok">1件出力</button>
-    <!-- 既存の出力ボタンと見た目統一（.btn ok） -->
   </div>
 
   <div class="tablewrap" style="margin-top:10px">
