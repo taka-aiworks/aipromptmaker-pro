@@ -153,8 +153,8 @@ const LEARN_BUCKET_CAP = {
   b_age:1, b_gender:1, b_body:1, b_height:1, b_person:1, b_world:1, b_tone:1,
   c_hair:1, c_eye:1, c_skin:1,
   s_hair:1, s_eye:1, s_face:1, s_body:1, s_art:1,
-  wear:2, acc:0,          // ← 服は最大2語（top/bottom or dress）。アクセは0（固定にしたい場合は1でもOK）
-  bg:1, pose:1, view:1, expr:1, light:1,
+  wear:2, acc:0,
+  bg:1, pose:1, view:1, expr:1, light:1,   // ← view:1 を追加
   n_expr:1, n_expo:1, n_situ:1, n_light:1,
   other:0
 };
@@ -168,12 +168,11 @@ function trimByBucketForLearning(parts){
     c_hair:[], c_eye:[], c_skin:[],
     s_hair:[], s_eye:[], s_face:[], s_body:[], s_art:[],
     wear:[], acc:[],
-    bg:[], pose:[], view:[], expr:[], light:[],
+    bg:[], pose:[], view:[], expr:[], light:[],   // ← view を追加
     n_expr:[], n_expo:[], n_situ:[], n_light:[],
     other:[]
   };
 
-  // ensurePromptOrder の分類ロジックに合わせるため、所属判定は同じ関数内の簡易模倣
   const S = {
     age:        new Set((SFW.age||[]).map(x=>x.tag||x)),
     gender:     new Set((SFW.gender||[]).map(x=>x.tag||x)),
@@ -191,7 +190,11 @@ function trimByBucketForLearning(parts){
     outfit:     new Set((SFW.outfit||[]).map(x=>x.tag||x)),
     acc:        new Set((SFW.accessories||[]).map(x=>x.tag||x)),
     background: new Set((SFW.background||[]).map(x=>x.tag||x)),
+
+    // ここ重要：構図（距離）と視点を分離
     pose:       new Set((SFW.pose_composition||[]).map(x=>x.tag||x)),
+    view:       new Set((SFW.view||[]).map(x=>x.tag||x)),  // ← view セット（無ければ空でOK）
+
     expr:       new Set((SFW.expressions||[]).map(x=>x.tag||x)),
     light:      new Set((SFW.lighting||[]).map(x=>x.tag||x)),
 
@@ -204,21 +207,28 @@ function trimByBucketForLearning(parts){
   const isHairColor = (t)=> /\bhair$/.test(t) && !S.hair_style.has(t);
   const isEyeColor  = (t)=> /\beyes$/.test(t) && !S.eyes_shape.has(t);
   const isSkinTone  = (t)=> /\bskin$/.test(t) && !S.skin_body.has(t);
+
+  // view用のゆる判定（辞書が空でも動くように保険）
+  const VIEW_RE = /\b(front view|three-quarters? view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down)\b/i;
+  // 構図（距離）側は “上半身/バスト/全身/ポートレート/クローズアップ/ワイド” 系
+  const COMP_RE = /\b(full body|waist up|upper body|bust|portrait|close-?up|wide shot)\b/i;
+
   const WEAR_NAME_RE = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer|skirt|pleated\ skirt|long\ skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\ shorts|dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori)\b/i;
 
-  for (const t of ordered) {
+  for (const tRaw of ordered) {
+    const t = String(tRaw||"").trim();
     if (!t || LEARN_EXCLUDE_RE.test(t)) continue;
 
     if (t.startsWith("<lora:") || /\b(?:LoRA|<lyco:)/i.test(t)) { buckets.lora.push(t); continue; }
     if (($("#charName")?.value||"").trim() === t) { buckets.name.push(t); continue; }
 
-    if (S.age.has(t))       { buckets.b_age.push(t); continue; }
-    if (S.gender.has(t))    { buckets.b_gender.push(t); continue; }
-    if (S.body_basic.has(t)){ buckets.b_body.push(t); continue; }
-    if (S.height.has(t))    { buckets.b_height.push(t); continue; }
-    if (S.person.has(t))    { buckets.b_person.push(t); continue; }
-    if (S.world.has(t))     { buckets.b_world.push(t); continue; }
-    if (S.tone.has(t))      { buckets.b_tone.push(t); continue; }
+    if (S.age.has(t))        { buckets.b_age.push(t);   continue; }
+    if (S.gender.has(t))     { buckets.b_gender.push(t);continue; }
+    if (S.body_basic.has(t)) { buckets.b_body.push(t);  continue; }
+    if (S.height.has(t))     { buckets.b_height.push(t);continue; }
+    if (S.person.has(t))     { buckets.b_person.push(t);continue; }
+    if (S.world.has(t))      { buckets.b_world.push(t); continue; }
+    if (S.tone.has(t))       { buckets.b_tone.push(t);  continue; }
 
     if (isHairColor(t)) { buckets.c_hair.push(t); continue; }
     if (isEyeColor(t))  { buckets.c_eye.push(t);  continue; }
@@ -233,10 +243,14 @@ function trimByBucketForLearning(parts){
     if (S.outfit.has(t) || WEAR_NAME_RE.test(t)) { buckets.wear.push(t); continue; }
     if (S.acc.has(t)) { buckets.acc.push(t); continue; }
 
-    if (S.background.has(t)) { buckets.bg.push(t);   continue; }
-    if (S.pose.has(t))       { buckets.pose.push(t); continue; }
-    if (S.expr.has(t))       { buckets.expr.push(t); continue; }
-    if (S.light.has(t))      { buckets.light.push(t);continue; }
+    if (S.background.has(t)) { buckets.bg.push(t);      continue; }
+
+    // ← ここが分離ポイント
+    if (S.view.has(t) || VIEW_RE.test(t)) { buckets.view.push(t); continue; }
+    if (S.pose.has(t) || COMP_RE.test(t)) { buckets.pose.push(t); continue; }
+
+    if (S.expr.has(t))  { buckets.expr.push(t);  continue; }
+    if (S.light.has(t)) { buckets.light.push(t); continue; }
 
     if (S.nsfw_expr.has(t))  { buckets.n_expr.push(t);  continue; }
     if (S.nsfw_expo.has(t))  { buckets.n_expo.push(t);  continue; }
@@ -255,7 +269,6 @@ function trimByBucketForLearning(parts){
   }
   return capped;
 }
-
 /* === 学習アンカー：不足時の自動補完（安定化） === */
 const LEARN_DEFAULTS = {
   // 構図・距離・視線
