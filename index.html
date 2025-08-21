@@ -799,6 +799,39 @@
 })();
 </script>
 <script>
+// ==== 初期化：タブ表示時に1回だけ（辞書ロード待ち） ====
+function initPlannerOnce(){
+  if (initPlannerOnce._done) return;
+
+  // SFW辞書が来るまで待つ（背景が1件以上ある状態を「準備完了」とみなす）
+  const ready = window.SFW && Array.isArray(window.SFW.background) && window.SFW.background.length > 0;
+  if (!ready) {
+    // 次フレーム or 少し後で再試行（_doneはまだ付けない）
+    setTimeout(initPlannerOnce, 60);
+    return;
+  }
+
+  // ここで初めて確定
+  initPlannerOnce._done = true;
+
+  // 初期描画
+  renderPlanner();
+
+  // ボタン配線
+  const btn = document.getElementById("btnPlanOne");
+  if (btn) btn.addEventListener("click", ()=>{
+    const rows = buildPlannerOne();
+    renderPlannerTableTo("#tblPlanner tbody", rows);
+    const out = document.getElementById("outPlanner");
+    if (out) out.textContent = rows[0].text; // outPlannerは<div>
+    toast && toast("プランを出力しました");
+  });
+}
+</script>
+
+
+  
+<script>
 // 既存の $ / $$ が無い環境でも動くよう保険
 window.$  = window.$  || (s => document.querySelector(s));
 window.$$ = window.$$ || (s => document.querySelectorAll(s));
