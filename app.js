@@ -123,24 +123,17 @@ function stripMultiHints(parts){
 
 /* === 学習ガード：過剰要素の除去＆上限 === */
 
-// 置き換え：categorizePoseComp を “構図 comp / 視点 view / ポーズ” に分離
-function categorizePoseCompView(list){
+// === ポーズ/構図のゆる判定（片方のボックスが無いときは無視していい） ===
+function categorizePoseComp(list){
   const L = normList(list||[]);
-
-  const isView = (t) => /\b(front view|three-quarters view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down)\b/i.test(t);
-  const isComp = (t) => /\b(bust(?:\s?shot)?|waist up|upper body|full body|portrait|close-?up|wide shot|centered composition|rule of thirds)\b/i.test(t);
-
+  const isComp = (t) => /\b(front view|side view|back view|profile(?:\sview)?|three-quarters view|looking up|looking down|overhead view|from below|bust(?:\s?shot)?|waist up|upper body|full body|portrait|close-?up|wide shot|centered composition|rule of thirds)\b/i.test(t);
   const poseTags = [];
   const compTags = [];
-  const viewTags = [];
-
   for (const it of L){
     const tag = it.tag || "";
-    if (isView(tag)) viewTags.push(it);
-    else if (isComp(tag)) compTags.push(it);
-    else poseTags.push(it);
+    if (isComp(tag)) compTags.push(it); else poseTags.push(it);
   }
-  return { poseTags, compTags, viewTags };
+  return { poseTags, compTags };
 }
 
 
@@ -154,7 +147,7 @@ const LEARN_BUCKET_CAP = {
   c_hair:1, c_eye:1, c_skin:1,
   s_hair:1, s_eye:1, s_face:1, s_body:1, s_art:1,
   wear:2, acc:0,          // ← 服は最大2語（top/bottom or dress）。アクセは0（固定にしたい場合は1でもOK）
-  bg:1, pose:1, view:1, expr:1, light:1,
+  bg:1, pose:1, expr:1, light:1,
   n_expr:1, n_expo:1, n_situ:1, n_light:1,
   other:0
 };
@@ -168,7 +161,7 @@ function trimByBucketForLearning(parts){
     c_hair:[], c_eye:[], c_skin:[],
     s_hair:[], s_eye:[], s_face:[], s_body:[], s_art:[],
     wear:[], acc:[],
-    bg:[], pose:[], view:[], expr:[], light:[],
+    bg:[], pose:[], expr:[], light:[],
     n_expr:[], n_expo:[], n_situ:[], n_light:[],
     other:[]
   };
@@ -327,7 +320,7 @@ function resetSettings() {
 }
 
 /* ========= 内蔵辞書（空で開始） ========= */
-const EMBED_SFW = { hair_style:[], eyes:[], outfit:[], face:[], skin_body:[], art_style:[], background:[], pose_composition:[], view:[], expressions:[], accessories:[], lighting:[], age:[], gender:[], body_type:[], height:[], personality:[] };
+const EMBED_SFW = { hair_style:[], eyes:[], outfit:[], face:[], skin_body:[], art_style:[], background:[], pose_composition:[], expressions:[], accessories:[], lighting:[], age:[], gender:[], body_type:[], height:[], personality:[] };
 const EMBED_NSFW = { categories:{ expression:[], exposure:[], situation:[], lighting:[] } };
 
 let SFW  = JSON.parse(JSON.stringify(EMBED_SFW));
@@ -347,7 +340,7 @@ function normItem(x) {
 function normList(arr){ return (arr || []).map(normItem).filter(Boolean); }
 
 const KEYMAP = {
-  "髪型":"hair_style","目の形":"eyes","服":"outfit","顔の特徴":"face","体型":"skin_body","視点":"view",
+  "髪型":"hair_style","目の形":"eyes","服":"outfit","顔の特徴":"face","体型":"skin_body",
   "画風":"art_style","背景":"background","ポーズ":"pose_composition","ポーズ・構図":"pose_composition",
   "表情":"expressions","アクセサリー":"accessories","ライティング":"lighting","年齢":"age","性別":"gender",
   "体型(基本)":"body_type",   // 好きな日本語キーに合わせて
@@ -1074,12 +1067,15 @@ const SCOPE = {
       "hands on hips", "crossed arms"
     ],
     // ★全身を必ず含める（視点タグはここに置いてOK）
-      composition: [
-       "full body", "waist up", "bust", "portrait", "close-up"
-     ],
-      view: [
-       "front view", "three-quarter view", "overhead view", "from below", "looking up", "looking down"
-     ],
+    composition: [
+      "full body", "waist up", "bust", "portrait",
+      "profile view", "back view", "front view", "three-quarters view",
+      "centered composition",
+      // 角度系（強すぎないやつ）
+      "from below", "looking down", "overhead view",
+      // 目線系
+      "facing viewer", "looking to the side", "looking up"
+    ],
     // 表情は整合済みの正規タグ
     expressions: [
       "neutral expression",
@@ -1131,36 +1127,31 @@ function renderSFW(){
   checkList($("#p_expr"),  SFW.expressions,  "p_expr");
   checkList($("#p_light"), SFW.lighting,     "p_light");
 
-  // 置き換え：renderSFW 内の“ポーズ/構図”ブロック
-// --- ポーズ/構図/視点（分離対応）
-{
-  const src = SFW.pose_composition || [];
-  const { poseTags, compTags, viewTags } = categorizePoseComp(src);
+  // --- ポーズ/構図（分離対応）
+  {
+    const src = SFW.pose_composition || [];
+    const { poseTags, compTags } = categorizePoseComp(src);
 
-  // 学習タブ：ホワイトリスト適用
-  const pose_learn = filterByScope(poseTags, SCOPE.learning.pose);
-  const comp_learn = filterByScope(compTags, SCOPE.learning.composition);
-  const view_learn = filterByScope(viewTags, SCOPE.learning.view);
+    // 学習タブ：ポーズ/構図にホワイトリストを適用
+    const pose_learn = filterByScope(poseTags, SCOPE.learning.pose);
+    const comp_learn = filterByScope(compTags, SCOPE.learning.composition);
 
-  // 学習タブ：描画
-  if (document.getElementById("comp")) {
-    checkList($("#pose"), pose_learn, "pose");
-    checkList($("#comp"), comp_learn, "comp");
-  } else {
-    checkList($("#pose"), pose_learn, "pose");
-  }
-  if (document.getElementById("view")) {
-    checkList($("#view"), view_learn, "view");   // ★ 追加
-  }
+    if (document.getElementById("comp")) {
+      checkList($("#pose"), pose_learn, "pose");
+      checkList($("#comp"), comp_learn, "comp");
+    } else {
+      // comp が無い旧HTMLでも、学習側は一応 pose に絞りを掛ける
+      checkList($("#pose"), pose_learn, "pose");
+    }
 
-  // 量産タブ（必要なら p_comp / p_pose だけ従来通り。p_view がある場合は同様に）
-  if (document.getElementById("p_comp")) {
-    checkList($("#p_pose"), poseTags, "p_pose");
-    checkList($("#p_comp"), compTags, "p_comp");
-  } else {
-    checkList($("#p_pose"), src, "p_pose");
+    // 量産タブ：フル辞書
+    if (document.getElementById("p_comp")) {
+      checkList($("#p_pose"), poseTags, "p_pose");
+      checkList($("#p_comp"), compTags, "p_comp");
+    } else {
+      checkList($("#p_pose"), src, "p_pose");
+    }
   }
-}
 
   // ★ outfit をカテゴリに分配して描画（そのまま）
   const C = categorizeOutfit(SFW.outfit);
@@ -1318,8 +1309,6 @@ function applyCharacterPreset(cfg){
   setChecks("comp", arr);
 }
 
-   
-
 // ライティング：新キー lightLearn / 互換 lighting
 {
   const arr = Array.isArray(cfg.lightLearn) ? cfg.lightLearn
@@ -1335,14 +1324,16 @@ function applyCharacterPreset(cfg){
   if (cfg.skinBody)  setRadio("skinBody",  String(cfg.skinBody));
   if (cfg.artStyle)  setRadio("artStyle",  String(cfg.artStyle));
 
-  // 置き換え：applyCharacterPreset の「シーン」反映部に追記
-if (cfg.background)  setChecks("bg",   Array.isArray(cfg.background) ? cfg.background : [cfg.background]);
-if (cfg.pose)        setChecks("pose", Array.isArray(cfg.pose) ? cfg.pose : [cfg.pose]);
-if (cfg.comp || cfg.composition)
-  setChecks("comp", Array.isArray(cfg.comp||cfg.composition) ? (cfg.comp||cfg.composition) : [cfg.comp||cfg.composition]);
-// ★追加：view
-if (cfg.view)
-  setChecks("view", Array.isArray(cfg.view) ? cfg.view : [cfg.view]);
+  // シーン（※ 構図とは分離して個別に反映）
+  if (cfg.background)
+    setChecks("bg", Array.isArray(cfg.background) ? cfg.background : [cfg.background]);
+
+  if (cfg.pose)
+    setChecks("pose", Array.isArray(cfg.pose) ? cfg.pose : [cfg.pose]);
+
+  if (cfg.expressions)
+    setChecks("expr", Array.isArray(cfg.expressions) ? cfg.expressions : [cfg.expressions]);
+
   // 色（髪/瞳/肌）
   if (cfg.hairColorTag) setColorTag("#tagH", String(cfg.hairColorTag));
   if (cfg.eyeColorTag)  setColorTag("#tagE", String(cfg.eyeColorTag));
@@ -1452,7 +1443,6 @@ function collectCharacterPreset(){
     expressions: getMany("expr"),
     // ★ 追加：構図とライティング（学習タブ）
     comp:        getMany("comp"),
-    view:        getMany("view"),
     lightLearn:  getMany("lightLearn"),
 
     // 色（髪/瞳/肌）
@@ -2009,51 +1999,81 @@ function enforceOnePieceExclusivity(parts){
 
 
 // ===== 排他ガード（表情/構図/視点の同時混入を防ぐ） =====
-// ユーティリティ：グループ内で 1 つだけ残す
-function pickOneFromGroup(parts, group, prefer = []) {
+
+// ユーティリティ：グループ内は1つだけ残す
+function pickOneFromGroup(parts, group, preferOrder = null){
   const S = new Set(parts);
   const hits = group.filter(g => S.has(g));
   if (hits.length <= 1) return parts;
-  const keep = prefer.find(p => S.has(p)) || hits[0];
+
+  let keep = hits[0];
+  if (Array.isArray(preferOrder) && preferOrder.length){
+    for (const cand of preferOrder){ if (S.has(cand)) { keep = cand; break; } }
+  }
   return parts.filter(t => !(group.includes(t) && t !== keep));
 }
 
-// 表情：必ず 1 つ
+// 表情：必ず1つだけ
 function ensureExprExclusive(parts){
   const GROUP = [
-    "neutral expression","smiling","smiling open mouth","serious",
-    "determined","slight blush","surprised (mild)","pouting (slight)"
+    "neutral expression",
+    "smiling",
+    "smiling open mouth",
+    "serious",
+    "determined",
+    "slight blush",
+    "surprised (mild)",
+    "pouting (slight)"
   ];
   const PREFER = [
-    "smiling","neutral expression","slight blush","surprised (mild)","pouting (slight)"
+    "neutral expression",
+    "smiling",
+    "slight blush",
+    "surprised (mild)",
+    "pouting (slight)",
+    "smiling open mouth",
+    "serious",
+    "determined"
   ];
   return pickOneFromGroup(parts, GROUP, PREFER);
 }
 
-// 構図/距離：必ず 1 つ
+// 構図/距離：portrait と full body 等を同時にしない
+// かつ wide shot は他の距離タグがあるなら落とす
 function ensureCompExclusive(parts){
-  const GROUP = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
-  const PREFER = ["upper body","waist up","bust","portrait","close-up","full body","wide shot"];
-  return pickOneFromGroup(parts, GROUP, PREFER);
+  const GROUP = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
+
+  // 現在のヒットを抽出
+  const hits = GROUP.filter(g => parts.includes(g));
+  if (hits.length <= 1) return parts;
+
+  // 他の距離タグが1つでもあれば wide shot は除去対象に
+  let pool = hits;
+  if (hits.some(t => t !== "wide shot")) {
+    pool = hits.filter(t => t !== "wide shot");
+  }
+
+  // 優先順位（“広い”方を優先、最後に wide shot）
+  const PREFER = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
+  const keep = PREFER.find(t => pool.includes(t)) || pool[0];
+
+  // keep 以外の距離タグを削除
+  return parts.filter(t => !(GROUP.includes(t) && t !== keep));
 }
 
-// 視点：必ず 1 つ（向き＋アングルを同居させない設計）
+// 視点：front / three-quarters / profile / back は1つに
 function ensureViewExclusive(parts){
-  const GROUP = [
-    "three-quarters view","front view","profile view","back view","side view",
-    "from below","overhead view","looking up","looking down"
-  ];
-  const PREFER = ["three-quarters view","front view","profile view","back view","side view",
-                  "from below","looking up","looking down","overhead view"];
+  const GROUP = ["front view","three-quarters view","profile view","side view","back view"];
+  const PREFER = ["three-quarters view","front view","profile view","back view","side view"];
   return pickOneFromGroup(parts, GROUP, PREFER);
 }
 
-// まとめ
+// まとめ（呼び出し側はこれだけ使う）
 function fixExclusives(parts){
   let p = parts.slice();
-  p = ensureExprExclusive(p);
-  p = ensureCompExclusive(p);
-  p = ensureViewExclusive(p);
+  p = ensureExprExclusive(p);  // 表情：1つ
+  p = ensureCompExclusive(p);  // 構図/距離：1つ
+  p = ensureViewExclusive(p);  // 視点：1つ ←★これが抜けてた
   return p;
 }
 
@@ -2144,7 +2164,6 @@ function buildOneLearning(extraSeed = 0){
   const fixed = assembleFixedLearning();
   const BG = getMany("bg");
   const PO = [...getMany("pose"), ...getMany("comp")];           // ← compも足す（無ければ空配列）
-  const VI = getMany("view");       // ★ 視点（向き/アングル）
   const EX = getMany("expr");
   const LI = getMany("lightLearn");  const addon = getSelectedNSFW_Learn();
   const b = pick(BG), p = pick(PO), e = pick(EX), l = LI.length ? pick(LI) : "";
@@ -2180,14 +2199,10 @@ function buildOneLearning(extraSeed = 0){
   const S = {
     background: asSet(SFW.background),
     pose:       asSet(SFW.pose_composition),
-    view:       asSet(SFW.view),
     expr:       asSet(SFW.expressions),
     light:      asSet(SFW.lighting)
   };
   const hasAny = (poolSet)=> parts.some(t => poolSet.has(String(t)));
-  // 置き換え：buildOneLearning 内 “不足時の自動補完”に view を追加
-  const hasView  = /\b(front view|three-quarters view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down)\b/i.test(parts.join(", "));
-  if (!hasView) parts.push("front view");
 
   // 背景：何も選んでなければフラットに
   if (!hasAny(S.background)) parts.push("plain background");
@@ -2390,7 +2405,6 @@ function ensurePromptOrder(parts) {
     acc:        asSet(SFW.accessories),
     background: asSet(SFW.background),
     pose:       asSet(SFW.pose_composition),
-    view:       new Set((SFW.view||[]).map(x => (typeof x==='string'? x : x.tag))), // ← 追加
     expr:       asSet(SFW.expressions),
     light:      asSet(SFW.lighting),
 
@@ -2415,7 +2429,7 @@ function ensurePromptOrder(parts) {
     // 服・アクセ
     wear:[], acc:[],
     // シーン
-    bg:[], pose:[], view:[], expr:[], light:[],
+    bg:[], pose:[], expr:[], light:[],
     // NSFW
     n_expr:[], n_expo:[], n_situ:[], n_light:[],
     other:[]
@@ -2457,7 +2471,6 @@ function ensurePromptOrder(parts) {
     // シーン
     if (S.background.has(t)) { buckets.bg.push(t);   continue; }
     if (S.pose.has(t))       { buckets.pose.push(t); continue; }
-    if (S.view.has(t))       { buckets.view.push(t); continue; } 
     if (S.expr.has(t))       { buckets.expr.push(t); continue; }
     if (S.light.has(t))      { buckets.light.push(t);continue; }
 
@@ -2483,25 +2496,28 @@ function ensurePromptOrder(parts) {
     }
   }
 
-  // 2) 構図（距離/フレーミング）を1つだけ
-{
-  const COMP_ORDER = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
-  const hits = buckets.pose.filter(t => COMP_ORDER.includes(t));
-  if (hits.length > 1) {
-    const keep = COMP_ORDER.find(t => hits.includes(t)) || hits[0];
-    buckets.pose = buckets.pose.filter(t => !(COMP_ORDER.includes(t) && t !== keep));
+  // 2) 構図/距離/視点：全バケツ横断でヒット収集 → 1 つだけ残す
+  {
+    const COMP_VIEW_ORDER = [
+      // 距離・フレーミング優先
+      "full body","wide shot","waist up","upper body","bust","portrait","close-up",
+      // 視点
+      "three-quarters view","front view","profile view","back view","side view"
+    ];
+    const keys = Object.keys(buckets);
+    const hits = [];
+    for (const k of keys) {
+      for (const t of buckets[k]) {
+        if (COMP_VIEW_ORDER.includes(t)) hits.push(t);
+      }
+    }
+    if (hits.length > 1) {
+      const keep = COMP_VIEW_ORDER.find(t => hits.includes(t)) || hits[0];
+      for (const k of keys) {
+        buckets[k] = buckets[k].filter(t => !(COMP_VIEW_ORDER.includes(t) && t !== keep));
+      }
+    }
   }
-}
-
-   // 3) 視点（アングル）を1つだけ  ← 新設
-{
-  const VIEW_ORDER = ["three-quarters view","front view","profile view","back view","side view"];
-  const hits = buckets.view.filter(t => VIEW_ORDER.includes(t));
-  if (hits.length > 1) {
-    const keep = VIEW_ORDER.find(t => hits.includes(t)) || hits[0];
-    buckets.view = buckets.view.filter(t => !(VIEW_ORDER.includes(t) && t !== keep));
-  }
-}   
 
   const out = [
     ...buckets.lora, ...buckets.name,
