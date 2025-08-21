@@ -2419,14 +2419,14 @@ function ensurePromptOrder(parts) {
     other:[]
   };
 
-   // ← ensurePromptOrder 内、buckets へ詰め終わった直後あたりに追加
-   // 表情は常に1つに正規化
-   if (buckets.expr.length > 1) {
-     const nonNeutral = buckets.expr.filter(
-       t => t.toLowerCase() !== "neutral expression"
-     );
-     buckets.expr = nonNeutral.length ? [nonNeutral[0]] : ["neutral expression"];
-   }
+   // 仕分けループの“後”、return配列を作る“前”に入れる
+// 表情は常に1つに正規化（非 neutral があればそれを1つ、無ければ neutral を1つ）
+if (buckets.expr.length !== 1) {
+  const nonNeutral = buckets.expr.filter(
+    t => String(t).toLowerCase() !== "neutral expression"
+  );
+  buckets.expr = nonNeutral.length ? [nonNeutral[0]] : ["neutral expression"];
+}
 
   const charName = ($("#charName")?.value || "").trim();
 
