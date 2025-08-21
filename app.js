@@ -1183,11 +1183,6 @@ function filterByScope(items, allow) {
 
 
 // ==== 撮影モード：ユーティリティ ====
-// コンテナID直下の選択済みラジオ値を取る
-function getOne(containerId){
-  const box = document.getElementById(containerId);
-  return box?.querySelector('input[type="radio"]:checked')?.value || "";
-}
 
 // 簡易ラジオ描画（chips風）: allowEmptyで「指定なし」を出す
 function renderRadios(containerId, items, { groupName, allowEmpty } = {}){
