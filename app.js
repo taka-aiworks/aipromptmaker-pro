@@ -1996,83 +1996,51 @@ function enforceOnePieceExclusivity(parts){
 
 
 // ===== 排他ガード（表情/構図/視点の同時混入を防ぐ） =====
-
-// ユーティリティ：グループ内は1つだけ残す
-function pickOneFromGroup(parts, group, preferOrder = null){
+// ユーティリティ：グループ内で 1 つだけ残す
+function pickOneFromGroup(parts, group, prefer = []) {
   const S = new Set(parts);
   const hits = group.filter(g => S.has(g));
   if (hits.length <= 1) return parts;
-
-  let keep = hits[0];
-  if (Array.isArray(preferOrder) && preferOrder.length){
-    for (const cand of preferOrder){ if (S.has(cand)) { keep = cand; break; } }
-  }
+  const keep = prefer.find(p => S.has(p)) || hits[0];
   return parts.filter(t => !(group.includes(t) && t !== keep));
 }
 
-// 表情：必ず1つだけ
+// 表情：必ず 1 つ
 function ensureExprExclusive(parts){
   const GROUP = [
-    "neutral expression",
-    "smiling",
-    "smiling open mouth",
-    "serious",
-    "determined",
-    "slight blush",
-    "surprised (mild)",
-    "pouting (slight)"
+    "neutral expression","smiling","smiling open mouth","serious",
+    "determined","slight blush","surprised (mild)","pouting (slight)"
   ];
   const PREFER = [
-    "neutral expression",
-    "smiling",
-    "slight blush",
-    "surprised (mild)",
-    "pouting (slight)",
-    "smiling open mouth",
-    "serious",
-    "determined"
+    "smiling","neutral expression","slight blush","surprised (mild)","pouting (slight)"
   ];
   return pickOneFromGroup(parts, GROUP, PREFER);
 }
 
-// 構図/距離：portrait と full body 等を同時にしない
-// かつ wide shot は他の距離タグがあるなら落とす
+// 構図/距離：必ず 1 つ
 function ensureCompExclusive(parts){
-  const GROUP = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
-
-  // 現在のヒットを抽出
-  const hits = GROUP.filter(g => parts.includes(g));
-  if (hits.length <= 1) return parts;
-
-  // 他の距離タグが1つでもあれば wide shot は除去対象に
-  let pool = hits;
-  if (hits.some(t => t !== "wide shot")) {
-    pool = hits.filter(t => t !== "wide shot");
-  }
-
-  // 優先順位（“広い”方を優先、最後に wide shot）
-  const PREFER = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
-  const keep = PREFER.find(t => pool.includes(t)) || pool[0];
-
-  // keep 以外の距離タグを削除
-  return parts.filter(t => !(GROUP.includes(t) && t !== keep));
+  const GROUP = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
+  const PREFER = ["upper body","waist up","bust","portrait","close-up","full body","wide shot"];
+  return pickOneFromGroup(parts, GROUP, PREFER);
 }
 
-// 視点：front / three-quarters / profile / back は1つに
+// 視点：必ず 1 つ（向き＋アングルを同居させない設計）
 function ensureViewExclusive(parts){
-  const viewList = SCOPE.view;
-  const filtered = parts.filter(x => !viewList.includes(x));
-  const selected = parts.find(x => viewList.includes(x));
-  if (selected) filtered.push(selected);  // 最後に残すのを1つだけ
-  return filtered;
+  const GROUP = [
+    "three-quarters view","front view","profile view","back view","side view",
+    "from below","overhead view","looking up","looking down"
+  ];
+  const PREFER = ["three-quarters view","front view","profile view","back view","side view",
+                  "from below","looking up","looking down","overhead view"];
+  return pickOneFromGroup(parts, GROUP, PREFER);
 }
 
-// まとめ（呼び出し側はこれだけ使う）
+// まとめ
 function fixExclusives(parts){
   let p = parts.slice();
-  p = ensureExprExclusive(p);  // 表情：1つ
-  p = ensureCompExclusive(p);  // 構図/距離：1つ
-  p = ensureViewExclusive(p);  // 視点：1つ ←★これが抜けてた
+  p = ensureExprExclusive(p);
+  p = ensureCompExclusive(p);
+  p = ensureViewExclusive(p);
   return p;
 }
 
@@ -2163,6 +2131,7 @@ function buildOneLearning(extraSeed = 0){
   const fixed = assembleFixedLearning();
   const BG = getMany("bg");
   const PO = [...getMany("pose"), ...getMany("comp")];           // ← compも足す（無ければ空配列）
+  const VI = getMany("view");       // ★ 視点（向き/アングル）
   const EX = getMany("expr");
   const LI = getMany("lightLearn");  const addon = getSelectedNSFW_Learn();
   const b = pick(BG), p = pick(PO), e = pick(EX), l = LI.length ? pick(LI) : "";
@@ -2198,6 +2167,7 @@ function buildOneLearning(extraSeed = 0){
   const S = {
     background: asSet(SFW.background),
     pose:       asSet(SFW.pose_composition),
+    view:       asSet(SFW.view),
     expr:       asSet(SFW.expressions),
     light:      asSet(SFW.lighting)
   };
