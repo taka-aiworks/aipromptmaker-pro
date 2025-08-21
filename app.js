@@ -443,51 +443,39 @@ function dedupeByTag(list) {
   return out;
 }
  // 互換マージ：SFW辞書を追記（pose_composition → pose/composition/view に分解）
+// 置き換え版
 function mergeIntoSFW(json) {
-  const src  = (json && (json.SFW || json)) || {};
+  const src  = json?.SFW || json || {};
   const next = { ...SFW };
 
-  // レガシー用の仕分け（tag/文字列どちらでもOK）
-  const splitPoseComp = (list) => {
-    const L = normList(list);
-    const isView = (s) => /\b(front view|three-quarters view|profile view|side view|back view|eye-level|low angle|high angle|from below|looking down|overhead view|facing viewer|looking to the side|looking up|looking away|looking at viewer)\b/i.test(s);
-    const isComp = (s) => /\b(full body|waist up|upper body|bust|portrait|close-?up|wide shot|centered composition|rule of thirds|over-the-shoulder|foreshortening)\b/i.test(s);
+  for (const [k, v] of Object.entries(src || {})) {
+    const key = KEYMAP[k] || k;
 
-    const pose = [];
-    const comp = [];
-    const view = [];
-
-    for (const it of L) {
-      const t = String(it.tag || it).trim();
-      if (!t) continue;
-      if (isView(t)) { view.push(it); continue; }
-      if (isComp(t)) { comp.push(it); continue; }
-      pose.push(it);
-    }
-    return { pose, composition: comp, view };
-  };
-
-  for (const [rawKey, val] of Object.entries(src)) {
-    const key = KEYMAP[rawKey] || rawKey;
-
+    // 互換：pose_composition → pose / composition / view に分配
     if (key === "pose_composition") {
-      const { pose, composition, view } = splitPoseComp(val);
+      const L = normList(v);
+      const isView = (t)=> /\b(front view|three-quarters view|profile view|side view|back view|eye-level|low angle|high angle|from below|looking down|overhead view|facing viewer|looking to the side|looking up|looking away|looking at viewer)\b/i.test(t);
+      const isComp = (t)=> /\b(full body|waist up|upper body|bust|portrait|close-?up|wide shot|centered composition|rule of thirds|over-the-shoulder|foreshortening)\b/i.test(t);
 
-      next.pose        = dedupeByTag([...(next.pose || []),        ...pose]);
-      next.composition = dedupeByTag([...(next.composition || []), ...composition]);
-      next.view        = dedupeByTag([...(next.view || []),        ...view]);
-      continue; // ← ここで次へ（pose_composition は受け流し）
+      const poseArr = L.filter(it => !(isView(it.tag) || isComp(it.tag)));
+      const compArr = L.filter(it =>  isComp(it.tag));
+      const viewArr = L.filter(it =>  isView(it.tag));
+
+      next.pose        = dedupeByTag([...(next.pose||[]),        ...poseArr]);
+      next.composition = dedupeByTag([...(next.composition||[]), ...compArr]);
+      next.view        = dedupeByTag([...(next.view||[]),        ...viewArr]);
+      continue;
     }
 
-    // 既知キーだけマージ（未知キーは無視）
+    // 既知キーのみマージ
     if (next[key] === undefined) continue;
-    next[key] = dedupeByTag([...(next[key] || []), ...normList(val)]);
+    next[key] = dedupeByTag([...(next[key]||[]), ...normList(v)]);
   }
 
-  // 最後にレガシーキーを確実に除去
-  delete next.pose_composition;
-
   SFW = next;
+
+  // ← ここで旧キーを消しつつ新キーへ正規化（保険）
+  normalizeSFWKeys();
 }
 
 
@@ -2855,7 +2843,6 @@ function renderLearnTableTo(tbodySel, rows){
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${i+1}</td><td>${r.seed}</td>
       <td>${r.pos.find(t=> normList(SFW.background).map(x=>x.tag).includes(t))||""}</td>
-      <td>${r.pos.find(t=> normList(SFW.pose_composition).map(x=>x.tag).includes(t))||""}</td>
       <td>${r.pos.find(t=> normList(SFW.expressions).map(x=>x.tag).includes(t))||""}</td>
       <td>${r.pos.join(", ")}</td><td>${r.neg}</td>`;
     frag.appendChild(tr);
