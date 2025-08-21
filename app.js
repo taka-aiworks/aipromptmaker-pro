@@ -1190,9 +1190,10 @@ function renderSFW(){
      // 学習タブ：ホワイトリスト適用
      const pose_learn = filterByScope(poseTags, SCOPE.learning.pose);
      const comp_learn = filterByScope(compTags, SCOPE.learning.composition);
+     const view_learn = filterByScope(viewTags, SCOPE.learning.view);
      checkList($("#pose"), pose_learn, "pose");
      checkList($("#comp"), comp_learn, "comp");
-     checkList($("#view"), viewTags,   "view");  // 視点はそのまま全出し
+     checkList($("#view"), view_learn, "view");
  
      // 量産タブ：フル辞書
      checkList($("#p_pose"), poseTags, "p_pose");
