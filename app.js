@@ -2684,34 +2684,26 @@ function getProdWearColorTag(idBase){
   return (txt && txt !== "—") ? txt : "";
 }
 
-// ② 置き換え版：buildBatchProduction（丸ごと差し替え）
+// ② 完全置き換え版：buildBatchProduction（pose / comp / view 分離対応）
 function buildBatchProduction(n){
   const seedMode = document.querySelector('input[name="seedMode"]:checked')?.value || "fixed";
-  const fixed = ($("#p_fixed").value||"").split(",").map(s=>s.trim()).filter(Boolean);
 
-  const neg = getNegProd();
-  const O = readProductionOutfits();  // {top, pants, skirt, dress, shoes}
+  const fixed = ($("#p_fixed").value||"")
+    .split(",")
+    .map(s=>s.trim())
+    .filter(Boolean);
 
-  const bgs    = getMany("p_bg");
-  const poses  = [...getMany("p_pose"), ...getMany("p_comp")];
-  // 表情（生産モード）
+  const neg   = getNegProd();
+  const O     = readProductionOutfits();     // {top, pants, skirt, dress, shoes}
+  const bgs   = getMany("p_bg");
+  const poses = getMany("p_pose");           // ★ ポーズ（動作・ジェスチャ）
+  const comps = getMany("p_comp");           // ★ 構図（距離・フレーミング）
+  const views = getMany("p_view");           // ★ 視点（向き・アングル）
   const exprs = getMany("p_expr");
+  const lights= getMany("p_light");
+  const acc   = readAccessorySlots();
 
-  // neutral も含む表情グループ
-  const exprGroup = Array.from(new Set([...MIX_RULES.expr.group, "neutral expression"]));
-
-  if (exprs.length > 0) {
-    // 複数選ばれていても先頭だけ採用
-    const chosenExpr = exprs[0];
-    replaceGroupTag(parts, exprGroup, chosenExpr);
-  } else {
-    // 何も選ばれていないなら neutral にする
-    replaceGroupTag(parts, exprGroup, "neutral expression");
-  }
-  const lights = getMany("p_light");
-  const acc    = readAccessorySlots();
-
-  const nsfwOn = $("#nsfwProd").checked;
+  const nsfwOn  = !!$("#nsfwProd")?.checked;
   const nsfwAdd = nsfwOn ? uniq([
     ...getMany("nsfwP_expr"),
     ...getMany("nsfwP_expo"),
@@ -2726,9 +2718,9 @@ function buildBatchProduction(n){
   };
 
   const baseSeed = seedFromName($("#charName").value||"", 0);
-  const out = [];
+  const out  = [];
   const seen = new Set();
-  let guard = 0;
+  let guard  = 0;
 
   const makeOne = (i)=>{
     const parts = [];
@@ -2748,44 +2740,54 @@ function buildBatchProduction(n){
       else if (O.skirt.length) bottomPool = O.skirt;
       if (bottomPool.length) parts.push(pick(bottomPool));
     }
-
     if (O.shoes && O.shoes.length) parts.push(pick(O.shoes));
 
     // --- 色の適用
     if (usedDress) {
-      // ① トップ色は “色 + ワンピ名” に直接乗せ替え
+      const RE_ONE = /\b(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|witch\s+outfit|idol\s+costume|stage\s+costume)\b/i;
       if (PC.top && chosenDress) {
-        // chosenDress の名詞抽出（enforceOnePieceExclusivity と同じ正規表現を再利用）
-        const RE_ONE = /\b(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|witch\s+outfit|idol\s+costume|stage\s+costume)\b/i;
         const noun = (chosenDress.match(RE_ONE)?.[1] || "").toLowerCase();
         if (noun) parts.push(`${PC.top} ${noun}`);
       }
-      // ② ボトム色は破棄（下は存在しない）
+      // 下は無し（破棄）
     } else {
       if (PC.top)    parts.push(`${PC.top} top`);
       if (PC.bottom) parts.push(`${PC.bottom} bottom`);
     }
-    if (PC.shoes)  parts.push(`${PC.shoes} shoes`);
+    if (PC.shoes) parts.push(`${PC.shoes} shoes`);
 
-    // --- アクセ/シーン
-    if (acc.length)    parts.push(...acc);
-    if (bgs.length)    parts.push(pick(bgs));
-    if (poses.length)  parts.push(pick(poses));
-    if (exprs.length)  parts.push(pick(exprs));
+    // --- アクセ/シーン系
+    if (acc.length) parts.push(...acc);
+    if (bgs.length) parts.push(pick(bgs));
+
+    // ★ ポーズ・構図・視点は分離して個別に採用
+    if (poses.length) parts.push(pick(poses));     // 例: standing / sitting / hand gestures
+    if (comps.length) parts.push(pick(comps));     // 例: full body / bust / waist up / portrait
+    if (views.length) parts.push(pick(views));     // 例: front view / 3-quarters / from below
+
+    // 構図が1つも無いときはセンター補完（学習安定化と同様の考え方）
+    if (!comps.length) parts.push("centered composition");
+
+    // 表情：選択があればその1つ、無ければ neutral
+    if (exprs.length) parts.push(pick(exprs));
+    else parts.push("neutral expression");
+
     if (lights.length) parts.push(pick(lights));
     if (nsfwAdd.length)parts.push(...nsfwAdd);
 
-    // --- 服の整合
+    // --- 服の整合 → SOLO ガード
     let all = uniq([...fixed, ...parts]).filter(Boolean);
-    all = applyNudePriority(all);               // ヌード系の優先処理
-    all = enforceOnePieceExclusivity(all);      // ★ ワンピ選択時は上下排除＆色置換
-    all = pairWearColors(all);                  // 名詞と色の最終ペアリング
+    all = applyNudePriority(all);
+    all = enforceOnePieceExclusivity(all);
+    all = pairWearColors(all);
 
-    // --- SOLO ガード
     all = stripMultiHints(all);
     all = forceSoloPos(all);
 
+    // ★ 表情/構図/視点の排他整理 → 並び順整形
+    all = fixExclusives(all);
     const prompt = ensurePromptOrder(all).join(", ");
+
     const seed = (seedMode === "fixed")
       ? baseSeed
       : seedFromName($("#charName").value||"", i);
@@ -2793,7 +2795,7 @@ function buildBatchProduction(n){
     return { key: `${prompt}|${seed}`, seed, prompt, neg: withSoloNeg(neg) };
   };
 
-  // ユニーク優先
+  // ユニーク優先生成
   while (out.length < n && guard < n * 400) {
     guard++;
     const r = makeOne(out.length + 1);
@@ -2801,11 +2803,11 @@ function buildBatchProduction(n){
     seen.add(r.key);
     out.push(r);
   }
-  // フォールバック
+  // フォールバック（同一でも穴埋め）
   while (out.length < n) out.push(makeOne(out.length + 1));
+
   return out;
 }
-
 function getNegProd(){
   const base = isDefaultNegOn() ? DEFAULT_NEG : "";
   const custom = ($("#p_neg").value||"").split(",").map(s=>s.trim()).filter(Boolean);
