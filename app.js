@@ -271,38 +271,52 @@ function trimByBucketForLearning(parts){
 }
 /* === 学習アンカー：不足時の自動補完（安定化） === */
 const LEARN_DEFAULTS = {
-  // 構図・距離・視線
-  pose: ["upper body", "bust", "waist up", "portrait"],
-  expr: ["neutral expression"],
-  bg:   ["plain background", "studio background", "solid background"],
-  light:["soft lighting", "even lighting"],
-  // 追加の安定化（過激にならず識別に効く）
-  anchors: ["facing viewer", "centered composition", "clear focus"]
+  // 構図/距離（comp）…画面内の“切り取り”
+  comp:  ["upper body", "waist up", "bust", "portrait", "full body", "close-up", "wide shot"],
+  // 視点（view）…カメラの向き・アングル
+  view:  ["front view", "three-quarters view", "facing viewer", "looking at viewer"],
+  // そのほか
+  expr:  ["neutral expression"],
+  bg:    ["plain background", "studio background", "solid background"],
+  light: ["soft lighting", "even lighting"],
+  // 追加の安定化（レイアウトの基準）
+  anchors: ["centered composition", "clear focus"]
 };
 
 // bucketsから“1つも入っていない”ものにだけ1語足す
 function addLearningAnchorsIfMissing(parts){
-  const S = new Set(parts);
+  const text = parts.join(", ");
+  const out  = new Set(parts);
   const need = [];
 
-  const hasPose   = /\b(upper body|bust|waist up|portrait)\b/i.test(parts.join(", "));
-  const hasExpr   = /\b(neutral expression)\b/i.test(parts.join(", "));
-  const hasBG     = /\b(plain background|studio background|solid background)\b/i.test(parts.join(", "));
-  const hasLight  = /\b(soft lighting|even lighting)\b/i.test(parts.join(", "));
-  const hasFacing = /\b(facing viewer)\b/i.test(parts.join(", "));
-  const hasCenter = /\b(centered composition)\b/i.test(parts.join(", "));
+  // comp（構図/距離）
+  const hasComp = /\b(upper body|waist up|bust|portrait|full body|close-?up|wide shot)\b/i.test(text);
+  if (!hasComp) need.push(LEARN_DEFAULTS.comp[0]); // "upper body"
 
-  if (!hasPose)  need.push(LEARN_DEFAULTS.pose[0]);
-  if (!hasExpr)  need.push(LEARN_DEFAULTS.expr[0]);
-  if (!hasBG)    need.push(LEARN_DEFAULTS.bg[0]);
-  if (!hasLight) need.push(LEARN_DEFAULTS.light[0]);
-  if (!hasFacing)need.push("facing viewer");
-  if (!hasCenter)need.push("centered composition");
+  // view（視点：向き＋アングル）
+  const hasView = /\b(front view|three-quarters? view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down|facing viewer|looking at viewer)\b/i.test(text);
+  if (!hasView) need.push(LEARN_DEFAULTS.view[0]); // "front view"
 
-  need.forEach(t => S.add(t));
-  return [...S];
+  // 表情
+  const hasExpr = /\b(neutral expression|smiling|serious|determined|slight blush|surprised \(mild\)|pouting \(slight\))\b/i.test(text);
+  if (!hasExpr) need.push(LEARN_DEFAULTS.expr[0]); // "neutral expression"
+
+  // 背景
+  const hasBG = /\b(plain background|studio background|solid background|white background)\b/i.test(text);
+  if (!hasBG) need.push(LEARN_DEFAULTS.bg[0]); // "plain background"
+
+  // ライティング
+  const hasLight = /\b(soft lighting|even lighting|normal lighting)\b/i.test(text);
+  if (!hasLight) need.push(LEARN_DEFAULTS.light[0]); // "soft lighting"
+
+  // レイアウト基準（centered / clear focus）
+  if (!/\b(center(ed)?\s?composition|centered)\b/i.test(text)) need.push("centered composition");
+  if (!/\bclear focus\b/i.test(text)) need.push("clear focus");
+
+  // 追加分をマージ
+  need.forEach(t => out.add(t));
+  return [...out];
 }
-
 /* === 学習強化ネガ === */
 const DEFAULT_TRAINING_NEG = [
   "props", "holding object", "microphone", "smartphone", "camera", "sign", "banner",
