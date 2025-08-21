@@ -768,10 +768,11 @@
   <script src="app.js" defer></script>
   <script>
 (() => {
-  // ===== スコープ：基本情報タブ配下だけ =====
+  // ===== スコープ：基本情報タブ (#panelBasic) 内だけ =====
   const scope = document.getElementById('panelBasic');
-  if (!scope) return; // ページ構成が変わっても安全に無視
+  if (!scope) return; // 構成変更時も安全に無視
 
+  // スコープ内セレクタ
   const $  = (sel) => scope.querySelector(sel);
   const $$ = (sel) => scope.querySelectorAll(sel);
 
@@ -781,7 +782,7 @@
     return r?.value === 'onepiece';
   };
 
-  // 見た目＋操作の無効化ヘルパ
+  // 見た目＋操作の無効化（スコープ内の要素だけ触る）
   const setDisabledDeep = (root, on) => {
     if (!root) return;
     root.classList.toggle('is-disabled', !!on);
@@ -790,7 +791,7 @@
     });
   };
 
-  // 中央ロジック：上下/ワンピースの切替
+  // 上下/ワンピースの切替（#panelBasic 内の関連要素のみ）
   const applyOutfitMode = () => {
     const isOnepiece = getIsOnepiece();
 
@@ -800,12 +801,13 @@
     const fsSkirt   = $('#fsBottom_skirt');
     const bottomCat = $('#bottomCategoryRadios')?.closest('.panel');
 
-    // ※ #fsSeparates は触らない（見た目は is-disabled に任せる）
+    // ※ #fsSeparates は機能的に無効化しない（見た目は is-disabled に任せる）
 
     if (isOnepiece) {
       // ワンピース側のみ操作可
       setDisabledDeep(fsDress, false);
 
+      // セパレート側は見た目も操作もオフ
       setDisabledDeep(topPanel,  true);
       setDisabledDeep(fsPants,   true);
       setDisabledDeep(fsSkirt,   true);
@@ -817,21 +819,22 @@
       setDisabledDeep(fsSkirt,   false);
       setDisabledDeep(bottomCat, false);
 
+      // ワンピースは無効化（誤操作防止）
       setDisabledDeep(fsDress,   true);
     }
   };
 
-  // ラジオにバインド（スコープ内のみ）
+  // ラジオにバインド（#panelBasic 内のみ）
   $$('#panel_outfitFixed input[name="outfitMode"]').forEach(r => {
     r.addEventListener('change', applyOutfitMode);
     r.addEventListener('input',  applyOutfitMode);
   });
 
-  // 初期適用＋履歴戻り（bfcache）対策
-  document.addEventListener('DOMContentLoaded', applyOutfitMode, { once:true });
+  // 初期適用＋bfcache対策（※他タブには触れない）
+  applyOutfitMode();
   window.addEventListener('pageshow', applyOutfitMode);
 
-  // 外部から再適用できるよう公開（任意）
+  // 必要なら外から再適用できるように（任意）
   window.applyOutfitMode = applyOutfitMode;
 })();
 </script>
