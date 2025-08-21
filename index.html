@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>LoRA Prompt Maker – 基本情報 / 学習モード / 量産モード / 設定</title>
+  <title>AI Prompt Maker – 基本情報 / 撮影モード /学習モード / 量産モード / 設定</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -11,6 +11,7 @@
     <div class="inner">
       <div class="tabbar">
         <div class="tab active" data-mode="basic">👤 基本情報</div>
+        <div class="tab" data-mode="planner">📷 撮影モード</div>
         <div class="tab" data-mode="learning">🧠 LoRA学習モード</div>
         <div class="tab" data-mode="production">📦 量産モード</div>
         <div class="tab" data-mode="settings">⚙️ 設定</div>
@@ -253,6 +254,51 @@
 </div>
 <!-- ▲ 基本情報：1枚テスト -->
     </section>
+
+
+<!-- ==== 撮影プラン タブ本体 ==== -->
+<section id="tabPlanner" class="tab hidden">
+  <h2>撮影プラン</h2>
+  <p class="note">LoRA学習は行わず、1枚だけのカットを確定出力します。</p>
+
+  <div class="row mini"><b>背景</b></div>
+  <div id="pl_bg" class="scroller"></div>
+
+  <div class="row mini" style="margin-top:10px"><b>ポーズ</b></div>
+  <div id="pl_pose" class="scroller"></div>
+
+  <div class="row mini" style="margin-top:10px"><b>構図</b></div>
+  <div id="pl_comp" class="scroller"></div>
+
+  <div class="row mini" style="margin-top:10px"><b>視点</b></div>
+  <div id="pl_view" class="scroller"></div>
+
+  <div class="row mini" style="margin-top:10px"><b>表情</b></div>
+  <div id="pl_expr" class="scroller"></div>
+
+  <div class="row mini" style="margin-top:10px"><b>ライティング</b></div>
+  <div id="pl_light" class="scroller"></div>
+
+  <div class="row mini" style="margin-top:10px"><b>アクセ（任意）</b></div>
+  <div id="pl_acc" class="scroller"></div>
+
+  <hr class="sep">
+
+  <div class="row" style="gap:8px">
+    <button id="btnPlanOne" class="primary">1件出力</button>
+  </div>
+
+  <div class="tablewrap" style="margin-top:10px">
+    <table id="tblPlanner" class="tbl">
+      <thead><tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <textarea id="outPlanner" rows="4" class="mono" placeholder="ここに1行で出力されます"></textarea>
+  </div>
+</section>
 
     <!-- 学習モード（バリエーション） -->
     <section id="panelLearning" class="card" hidden>
