@@ -1165,6 +1165,67 @@ function filterByScope(items, allow) {
   return items.filter(x => s.has(x.tag));
 }
 
+// ===== 置き換え：SFW 正規化 =====
+function normalizeSFWDictionary(SFW){
+  // すでに分離済みなら何もしない
+  const hasPose = Array.isArray(SFW.pose) && SFW.pose.length;
+  const hasComp = Array.isArray(SFW.composition) && SFW.composition.length;
+  const hasView = Array.isArray(SFW.view) && SFW.view.length;
+
+  // 旧 pose_composition から分類して補完
+  if ((!hasPose || !hasComp || !hasView) && Array.isArray(SFW.pose_composition)) {
+    const src = SFW.pose_composition.map(x => (typeof x === "string" ? {tag:x,label:x} : x));
+
+    // 手ぶり/体の状態＝ポーズ
+    const POSE_SET = new Set([
+      "standing","sitting","lying down","pointing","crossed arms","hands on hips",
+      "hands behind back","waving","peace sign","head tilt","hands on cheeks",
+      "facepalm","slumped shoulders","head hung low","staggering","running","jumping"
+    ]);
+
+    // 構図/距離
+    const COMP_SET = new Set([
+      "full body","upper body","close-up","bust","waist up","portrait",
+      "centered composition","rule of thirds"
+    ]);
+
+    // 視点（向き＋アングル＋目線）
+    const VIEW_SET = new Set([
+      "front view","three-quarters view","profile view","side view","back view",
+      "eye-level","low angle","high angle","from below","looking down","overhead view",
+      "facing viewer","looking to the side","looking up","looking away","looking at viewer",
+      "over-the-shoulder","foreshortening","wide shot" // 必要ならここへ
+    ]);
+
+    const pose = hasPose ? SFW.pose : [];
+    const comp = hasComp ? SFW.composition : [];
+    const view = hasView ? SFW.view : [];
+
+    for (const it of src){
+      const t = it.tag || it;
+      if (!hasPose && POSE_SET.has(t)) pose.push(it);
+      else if (!hasComp && COMP_SET.has(t)) comp.push(it);
+      else if (!hasView && VIEW_SET.has(t)) view.push(it);
+    }
+    if (!hasPose) SFW.pose = pose;
+    if (!hasComp) SFW.composition = comp;
+    if (!hasView) SFW.view = view;
+  }
+
+  // 最低限のフォールバック（万一空なら旧配列をそのまま見せる）
+  if (!Array.isArray(SFW.pose) || !SFW.pose.length) SFW.pose = [];
+  if (!Array.isArray(SFW.composition) || !SFW.composition.length) SFW.composition = [];
+  if (!Array.isArray(SFW.view) || !SFW.view.length) SFW.view = [];
+}
+
+// *** SFW を読み込んだ直後にこれを一度だけ呼ぶ ***
+normalizeSFWDictionary(SFW);
+
+
+
+
+
+
 // 元の categorizePoseComp はそのまま利用する前提
 function renderSFW(){
   // --- 基本（従来の固定系はそのまま）
