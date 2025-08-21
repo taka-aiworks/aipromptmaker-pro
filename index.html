@@ -865,7 +865,32 @@ function initTabs(){
 // DOM 準備できたらタブ初期化
 document.addEventListener("DOMContentLoaded", initTabs);
 </script>
+<div id="debugLog" style="white-space:pre; font-size:12px; background:#111; color:#0f0; padding:6px; margin-top:12px;">
+[debug] ready
+</div>
+<script>
+// ==== in-page logger ====
+(function(){
+  const $ = s => document.querySelector(s);
+  function log(...args){
+    const box = $("#debugLog");
+    const line = "[debug] " + args.map(a => {
+      try{ return typeof a==='object' ? JSON.stringify(a) : String(a) }catch(e){ return String(a) }
+    }).join(" ");
+    if (box) box.textContent += "\n" + line;
+  }
+  // 画面にも出す＆本来のconsoleにも流す
+  const _cl = console.log.bind(console);
+  console.log = (...a)=>{ _cl(...a); log(...a); };
 
+  // 例外は全部ここへ
+  window.onerror = function(msg, src, line, col){ log("ERROR:", msg, src+":"+line+":"+col); };
+  window.addEventListener("unhandledrejection", e => log("PROMISE REJECT:", e.reason));
 
+  // 起動時の状態
+  log("UA:", navigator.userAgent);
+  log("SFW exist?", !!window.SFW);
+})();
+</script>
 </body>
 </html>
