@@ -1067,15 +1067,12 @@ const SCOPE = {
       "hands on hips", "crossed arms"
     ],
     // ★全身を必ず含める（視点タグはここに置いてOK）
-    composition: [
-      "full body", "waist up", "bust", "portrait",
-      "profile view", "back view", "front view", "three-quarters view",
-      "centered composition",
-      // 角度系（強すぎないやつ）
-      "from below", "looking down", "overhead view",
-      // 目線系
-      "facing viewer", "looking to the side", "looking up"
-    ],
+      composition: [
+       "full body", "waist up", "bust", "portrait", "close-up"
+     ],
+      view: [
+       "front view", "three-quarter view", "overhead view", "from below", "looking up", "looking down"
+     ],
     // 表情は整合済みの正規タグ
     expressions: [
       "neutral expression",
@@ -2063,9 +2060,11 @@ function ensureCompExclusive(parts){
 
 // 視点：front / three-quarters / profile / back は1つに
 function ensureViewExclusive(parts){
-  const GROUP = ["front view","three-quarters view","profile view","side view","back view"];
-  const PREFER = ["three-quarters view","front view","profile view","back view","side view"];
-  return pickOneFromGroup(parts, GROUP, PREFER);
+  const viewList = SCOPE.view;
+  const filtered = parts.filter(x => !viewList.includes(x));
+  const selected = parts.find(x => viewList.includes(x));
+  if (selected) filtered.push(selected);  // 最後に残すのを1つだけ
+  return filtered;
 }
 
 // まとめ（呼び出し側はこれだけ使う）
