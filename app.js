@@ -1182,60 +1182,80 @@ function filterByScope(items, allow) {
 }
 
 
+// ==== 撮影モード：ユーティリティ ====
+// コンテナID直下の選択済みラジオ値を取る
+function getOne(containerId){
+  const box = document.getElementById(containerId);
+  return box?.querySelector('input[type="radio"]:checked')?.value || "";
+}
+
+// 簡易ラジオ描画（chips風）: allowEmptyで「指定なし」を出す
+function renderRadios(containerId, items, { groupName, allowEmpty } = {}){
+  const root = document.getElementById(containerId);
+  if (!root) return;
+  const name = groupName || containerId;
+  const toLabel = it => (typeof it === 'string' ? it : (it && it.tag) || "").trim();
+  const html = [];
+
+  if (allowEmpty) {
+    html.push(`<label class="chip">
+      <input type="radio" name="${name}" value="" checked>
+      <span>（指定なし）</span>
+    </label>`);
+  }
+  for (const it of (items || [])) {
+    const label = toLabel(it);
+    if (!label) continue;
+    html.push(`<label class="chip">
+      <input type="radio" name="${name}" value="${label}">
+      <span>${label}</span>
+    </label>`);
+  }
+  root.innerHTML = html.join("");
+}
+
 // ==== 撮影プラン描画（各1択ラジオ：ホワイトリスト不使用・フル辞書） ====
 function renderPlanner(){
-  // そのまま全件を使う（filterByScope は使わない）
-  const bg   = SFW.background || [];
-  const pose = SFW.pose || [];
-  const comp = SFW.composition || [];
-  const view = SFW.view || [];
-  const expr = SFW.expressions || [];
-  const lite = SFW.lighting || [];
-  const acc  = SFW.accessories || [];
-
-  radioList($("#pl_bg"),   bg,   "pl_bg");                   // 背景：必須
-  radioList($("#pl_pose"), pose, "pl_pose",  {allowEmpty:true}); // ポーズ：任意
-  radioList($("#pl_comp"), comp, "pl_comp");                 // 構図：必須（未選択時はJS側で補完）
-  radioList($("#pl_view"), view, "pl_view");                 // 視点：必須（未選択時はJS側で補完）
-  radioList($("#pl_expr"), expr, "pl_expr");                 // 表情：必須（未選択時はJS側で補完）
-  radioList($("#pl_light"),lite, "pl_light");                // ライト：必須（未選択時はJS側で補完）
-  radioList($("#pl_acc"),  acc,  "pl_acc",   {allowEmpty:true}); // アクセ：任意
+  const sfw = window.SFW || {};
+  renderRadios("pl_bg",   sfw.background   || [], { groupName: "pl_bg"                 /* 必須 */});
+  renderRadios("pl_pose", sfw.pose         || [], { groupName: "pl_pose", allowEmpty:true }); // 任意
+  renderRadios("pl_comp", sfw.composition  || [], { groupName: "pl_comp"              /* 必須 */});
+  renderRadios("pl_view", sfw.view         || [], { groupName: "pl_view"              /* 必須 */});
+  renderRadios("pl_expr", sfw.expressions  || [], { groupName: "pl_expr"              /* 必須 */});
+  renderRadios("pl_light",sfw.lighting     || [], { groupName: "pl_light"             /* 必須 */});
+  renderRadios("pl_acc",  sfw.accessories  || [], { groupName: "pl_acc",  allowEmpty:true }); // 任意
 }
 
 // 撮影モード専用：固定タグ/ネガ取得
-function getPlanFixed() {
-  return (document.getElementById('pl_fixed')?.value || '')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
+function getPlanFixed(){
+  return (document.getElementById("pl_fixed")?.value || "")
+    .split(",").map(s => s.trim()).filter(Boolean);
 }
-
-function getPlanNeg() {
-  const useDef = document.getElementById('pl_useDefaultNeg')?.checked;
-  const defNeg = (useDef && typeof getDefaultNegativePrompt === 'function')
-    ? getDefaultNegativePrompt()
-    : '';
-  const extra = (document.getElementById('pl_neg')?.value || '').trim();
-  return [defNeg, extra].filter(Boolean).join(', ');
+function getPlanNeg(){
+  const useDef = document.getElementById("pl_useDefaultNeg")?.checked;
+  const defNeg = (useDef && typeof getDefaultNegativePrompt === "function")
+    ? getDefaultNegativePrompt() : "";
+  const extra = (document.getElementById("pl_neg")?.value || "").trim();
+  return [defNeg, extra].filter(Boolean).join(", ");
 }
 
 // ==== 1件だけ出力（撮影モード） ====
 function buildPlannerOne(){
-  const name = ($("#charName")?.value||"").trim();
+  const name = (document.getElementById("charName")?.value || "").trim();
   const seed = seedFromName(name, 1);
 
   // 基本（キャラ名・基礎属性・色タグ）
   const base = [
     name,
     getOne("bf_age"), getOne("bf_gender"), getOne("bf_body"), getOne("bf_height"),
-    ($("#tagH")?.textContent||"").trim(),
-    ($("#tagE")?.textContent||"").trim(),
-    ($("#tagSkin")?.textContent||"").trim()
+    (document.getElementById("tagH")?.textContent || "").trim(),   // 髪色
+    (document.getElementById("tagE")?.textContent || "").trim(),   // 瞳色
+    (document.getElementById("tagSkin")?.textContent || "").trim() // 肌
   ].filter(Boolean);
 
   // ラジオ選択（未選択は安全補完）
   const bg   = getOne("pl_bg")   || "plain background";
-  const pose = getOne("pl_pose") || "";
+  const pose = getOne("pl_pose") || ""; // 任意
   const comp = getOne("pl_comp") || "bust";
   const view = getOne("pl_view") || "three-quarters view";
   const expr = getOne("pl_expr") || "neutral expression";
@@ -1247,8 +1267,9 @@ function buildPlannerOne(){
 
   // 組み立て
   let parts = ["solo", getGenderCountTag() || "", ...fixed, ...base, bg, pose, comp, view, expr, lite, acc]
-              .filter(Boolean);
+    .filter(Boolean);
 
+  // 排他整理→順序整形（既存ヘルパを使用）
   parts = fixExclusives(parts);
   parts = ensurePromptOrder(parts);
 
@@ -1259,7 +1280,6 @@ function buildPlannerOne(){
 }
 
 // ==== テーブル描画（4列：#, seed, prompt, negative） ====
-// 学習テーブルの簡易版（被ってもOK。既に renderLearnTableTo を4列化しているならそれを使っても可）
 function renderPlannerTableTo(tbodySel, rows){
   const tb = document.querySelector(tbodySel); if (!tb) return;
   const frag = document.createDocumentFragment();
@@ -1272,23 +1292,23 @@ function renderPlannerTableTo(tbodySel, rows){
   tb.appendChild(frag);
 }
 
-// ==== ボタン配線＆初期化 ====
-// 1) タブ切替で呼ぶ or 2) 初回レンダ後に呼ぶ
+// ==== 初期化：タブ表示時に1回だけ ====
 function initPlannerOnce(){
   if (initPlannerOnce._done) return;
   initPlannerOnce._done = true;
-  // ボタン
+
+  renderPlanner();
+
   const btn = document.getElementById("btnPlanOne");
   if (btn) btn.addEventListener("click", ()=>{
     const rows = buildPlannerOne();
     renderPlannerTableTo("#tblPlanner tbody", rows);
     const out = document.getElementById("outPlanner");
-    if (out) out.value = rows[0].text;
+    if (out) out.textContent = rows[0].text; // outPlanner は <div> 想定
     toast("プランを出力しました");
   });
-  // 初期描画
-  renderPlanner();
 }
+
 
 
 
