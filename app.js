@@ -142,16 +142,16 @@ function categorizePoseComp(list){
 const LEARN_EXCLUDE_RE = /\b(?:fisheye|wide[-\s]?angle|ultra[-\s]?wide|dutch\s?angle|extreme\s?(?:close[-\s]?up|zoom|perspective)|motion\s?blur|long\s?exposure|bokeh\s?balls|tilt[-\s]?shift|depth\s?of\s?field|hdr|high\s?contrast|dynamic\s?lighting|dramatic\s?lighting|backlight(?:ing)?|rim\s?light(?:ing)?|fireworks|sparks|confetti|holding\s+\w+|wielding\s+\w+|carrying\s+\w+|using\s+\w+|smartphone|cell\s?phone|microphone|camera|sign|banner|weapon)\b/i;
 
 // カテゴリ単位で“最大数”を制限（学習時）
-const LEARN_BUCKET_CAP = {
-  lora:  2, name: 1,
-  b_age:1, b_gender:1, b_body:1, b_height:1, b_person:1, b_world:1, b_tone:1,
-  c_hair:1, c_eye:1, c_skin:1,
-  s_hair:1, s_eye:1, s_face:1, s_body:1, s_art:1,
-  wear:2, acc:0,          // ← 服は最大2語（top/bottom or dress）。アクセは0（固定にしたい場合は1でもOK）
-  bg:1, pose:1, expr:1, light:1,
-  n_expr:1, n_expo:1, n_situ:1, n_light:1,
-  other:0
-};
+ const LEARN_BUCKET_CAP = {
+   lora:  2, name: 1,
+   b_age:1, b_gender:1, b_body:1, b_height:1, b_person:1, b_world:1, b_tone:1,
+   c_hair:1, c_eye:1, c_skin:1,
+   s_hair:1, s_eye:1, s_face:1, s_body:1, s_art:1,
+   wear:2, acc:0,
+   bg:1, pose:1, comp:1, view:1, expr:1, light:1,  // ★ comp / view を追加
+   n_expr:1, n_expo:1, n_situ:1, n_light:1,
+   other:0
+ };
 
 // ensurePromptOrder と同じ仕分けを流用して“刈る”
 function trimByBucketForLearning(parts){
@@ -185,7 +185,9 @@ function trimByBucketForLearning(parts){
     outfit:     new Set((SFW.outfit||[]).map(x=>x.tag||x)),
     acc:        new Set((SFW.accessories||[]).map(x=>x.tag||x)),
     background: new Set((SFW.background||[]).map(x=>x.tag||x)),
-    pose:       new Set((SFW.pose_composition||[]).map(x=>x.tag||x)),
+    pose:       new Set((SFW.pose||[]).map(x=>x.tag||x)),
+    comp:       new Set((SFW.composition||[]).map(x=>x.tag||x)),
+    view:       new Set((SFW.view||[]).map(x=>x.tag||x)),
     expr:       new Set((SFW.expressions||[]).map(x=>x.tag||x)),
     light:      new Set((SFW.lighting||[]).map(x=>x.tag||x)),
 
@@ -227,8 +229,11 @@ function trimByBucketForLearning(parts){
     if (S.outfit.has(t) || WEAR_NAME_RE.test(t)) { buckets.wear.push(t); continue; }
     if (S.acc.has(t)) { buckets.acc.push(t); continue; }
 
-    if (S.background.has(t)) { buckets.bg.push(t);   continue; }
-    if (S.pose.has(t))       { buckets.pose.push(t); continue; }
+
+    if (S.background.has(t)) { buckets.bg.push(t);    continue; }
+    if (S.pose.has(t))       { buckets.pose.push(t);  continue; }
+    if (S.comp.has(t))       { buckets.comp.push(t);  continue; }
+    if (S.view.has(t))       { buckets.view.push(t);  continue; }
     if (S.expr.has(t))       { buckets.expr.push(t); continue; }
     if (S.light.has(t))      { buckets.light.push(t);continue; }
 
@@ -321,7 +326,15 @@ function resetSettings() {
 }
 
 /* ========= 内蔵辞書（空で開始） ========= */
-const EMBED_SFW = { hair_style:[], eyes:[], outfit:[], face:[], skin_body:[], art_style:[], background:[], pose_composition:[], expressions:[], accessories:[], lighting:[], age:[], gender:[], body_type:[], height:[], personality:[] };
+ const EMBED_SFW = {
+   hair_style:[], eyes:[], outfit:[], face:[], skin_body:[], art_style:[], background:[],
+   // 新分離
+   pose:[], composition:[], view:[],
+   // 互換レガシ
+   pose_composition:[],
+   expressions:[], accessories:[], lighting:[],
+   age:[], gender:[], body_type:[], height:[], personality:[]
+ };
 const EMBED_NSFW = { categories:{ expression:[], exposure:[], situation:[], lighting:[] } };
 
 let SFW  = JSON.parse(JSON.stringify(EMBED_SFW));
@@ -402,16 +415,31 @@ function dedupeByTag(list) {
   for (const it of normList(list)) { if (seen.has(it.tag)) continue; seen.add(it.tag); out.push(it); }
   return out;
 }
-function mergeIntoSFW(json) {
-  const src = json?.SFW || json || {};
-  const next = { ...SFW };
-  for (const [k,v] of Object.entries(src||{})) {
-    const key = KEYMAP[k] || k;
-    if (next[key] === undefined) continue;
-    next[key] = dedupeByTag([...(next[key] || []), ...normList(v)]);
-  }
-  SFW = next;
-}
+ function mergeIntoSFW(json) {
+   const src = json?.SFW || json || {};
+   const next = { ...SFW };
+   for (const [k,v] of Object.entries(src||{})) {
+     const key = KEYMAP[k] || k;
+     // 互換：pose_composition は pose / composition / view に振り分け
+     if (key === "pose_composition") {
+       const L = normList(v);
+       const isView = (t)=> /\b(front view|three-quarters view|profile view|side view|back view|eye-level|low angle|high angle|from below|looking down|overhead view|facing viewer|looking to the side|looking up|looking away|looking at viewer)\b/i.test(t);
+       const isComp = (t)=> /\b(full body|waist up|upper body|bust|portrait|close-?up|wide shot|centered composition|rule of thirds|over-the-shoulder|foreshortening)\b/i.test(t);
+       const poseArr = L.filter(it=> !(isView(it.tag)||isComp(it.tag)));
+       const compArr = L.filter(it=>  isComp(it.tag));
+       const viewArr = L.filter(it=>  isView(it.tag));
+       next.pose        = dedupeByTag([...(next.pose||[]),        ...poseArr]);
+       next.composition = dedupeByTag([...(next.composition||[]), ...compArr]);
+       next.view        = dedupeByTag([...(next.view||[]),        ...viewArr]);
+       continue;
+     }
+     if (next[key] === undefined) continue;
+     next[key] = dedupeByTag([...(next[key] || []), ...normList(v)]);
+   }
+   SFW = next;
+ }
+
+
 function mergeIntoNSFW(json) {
   const src = json?.NSFW ? normNSFW(json.NSFW) : normNSFW(json);
   NSFW = {
@@ -1131,31 +1159,24 @@ function renderSFW(){
   checkList($("#p_expr"),  SFW.expressions,  "p_expr");
   checkList($("#p_light"), SFW.lighting,     "p_light");
 
-  // --- ポーズ/構図（分離対応）
-  {
-    const src = SFW.pose_composition || [];
-    const { poseTags, compTags } = categorizePoseComp(src);
-
-    // 学習タブ：ポーズ/構図にホワイトリストを適用
-    const pose_learn = filterByScope(poseTags, SCOPE.learning.pose);
-    const comp_learn = filterByScope(compTags, SCOPE.learning.composition);
-
-    if (document.getElementById("comp")) {
-      checkList($("#pose"), pose_learn, "pose");
-      checkList($("#comp"), comp_learn, "comp");
-    } else {
-      // comp が無い旧HTMLでも、学習側は一応 pose に絞りを掛ける
-      checkList($("#pose"), pose_learn, "pose");
-    }
-
-    // 量産タブ：フル辞書
-    if (document.getElementById("p_comp")) {
-      checkList($("#p_pose"), poseTags, "p_pose");
-      checkList($("#p_comp"), compTags, "p_comp");
-    } else {
-      checkList($("#p_pose"), src, "p_pose");
-    }
-  }
+   // --- ポーズ/構図/視点（分離版）
+   {
+     const poseTags = SFW.pose || [];
+     const compTags = SFW.composition || [];
+     const viewTags = SFW.view || [];
+ 
+     // 学習タブ：ホワイトリスト適用
+     const pose_learn = filterByScope(poseTags, SCOPE.learning.pose);
+     const comp_learn = filterByScope(compTags, SCOPE.learning.composition);
+     checkList($("#pose"), pose_learn, "pose");
+     checkList($("#comp"), comp_learn, "comp");
+     checkList($("#view"), viewTags,   "view");  // 視点はそのまま全出し
+ 
+     // 量産タブ：フル辞書
+     checkList($("#p_pose"), poseTags, "p_pose");
+     checkList($("#p_comp"), compTags, "p_comp");
+     checkList($("#p_view"), viewTags, "p_view");
+   }
 
   // ★ outfit をカテゴリに分配して描画（そのまま）
   const C = categorizeOutfit(SFW.outfit);
@@ -2169,19 +2190,18 @@ function buildOneLearning(extraSeed = 0){
   // ===== 1) ベース構築 =====
   const fixed = assembleFixedLearning();
   const BG = getMany("bg");
-  const PO = getMany("pose");
-  const CO = getMany("comp");          // ★ 構図
-  const VI = getMany("view");          // ★ 視点
+  const CO = getMany("comp");          // 構図
+  const VI = getMany("view");          // 視点
   const EX = getMany("expr");
   const LI = getMany("lightLearn");  const addon = getSelectedNSFW_Learn();
-  const b = pick(BG), p = pick(PO), e = pick(EX), l = LI.length ? pick(LI) : "";
+  const b = pick(BG), p = pick(PO), c = pick(CO), v = pick(VI), e = pick(EX), l = LI.length ? pick(LI) : "";
 
   // 学習は常に1人
   const partsSolo = ["solo"];
   const genderCount = getGenderCountTag(); // "1girl" / "1boy" / ""
   if (genderCount) partsSolo.push(genderCount);
-
-  let parts = uniq([...partsSolo, ...fixed, b, p, e, l, ...addon]).filter(Boolean);
+ 
+  let parts = uniq([...partsSolo, ...fixed, b, p, c, v, e, l, ...addon]).filter(Boolean);
 
   // ===== 2) 服の整合、露出優先などの既存ルール =====
   parts = applyNudePriority(parts);
