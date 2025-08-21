@@ -2230,79 +2230,86 @@ const EXPR_ALL = new Set([
 function buildOneLearning(extraSeed = 0){
   // ===== 1) ベース構築 =====
   const fixed = assembleFixedLearning();
-  const BG = getMany("bg");
-  const CO = getMany("comp");          // 構図
-  const VI = getMany("view");          // 視点
-  const EX = getMany("expr");
-  const LI = getMany("lightLearn");  const addon = getSelectedNSFW_Learn();
-  const b = pick(BG), p = pick(PO), c = pick(CO), v = pick(VI), e = pick(EX), l = LI.length ? pick(LI) : "";
+
+  // UI 取得（分離後のID）
+  const BG = getMany("bg");          // 背景
+  const PO = getMany("pose");        // ポーズ
+  const CO = getMany("comp");        // 構図・距離
+  const VI = getMany("view");        // 視点・アングル
+  const EX = getMany("expr");        // 表情
+  const LI = getMany("lightLearn");  // ライティング(学習)
+  const addon = getSelectedNSFW_Learn?.() || [];
+
+  // 1件ずつランダム選択（空なら ""）
+  const b = pick(BG) || "";
+  const p = pick(PO) || "";
+  const c = pick(CO) || "";
+  const v = pick(VI) || "";
+  const e = pick(EX) || "";
+  const l = LI.length ? pick(LI) : "";
 
   // 学習は常に1人
   const partsSolo = ["solo"];
   const genderCount = getGenderCountTag(); // "1girl" / "1boy" / ""
   if (genderCount) partsSolo.push(genderCount);
- 
-  let parts = uniq([...partsSolo, ...fixed, b, p, c, v, e, l, ...addon]).filter(Boolean);
 
-  // ===== 2) 服の整合、露出優先などの既存ルール =====
+  // ここで comp と view も parts に入れる
+  let parts = uniq([
+    ...partsSolo, ...fixed,
+    b, p, c, v, e, l,
+    ...addon
+  ]).filter(Boolean);
+
+  // ===== 2) 服の整合・色置換など既存ルール =====
   parts = applyNudePriority(parts);
-  // ▼ 追加：ワンピ優先の排他と色プレースホルダの置換（18禁でも効く）
   parts = enforceOnePieceExclusivity(parts);
   parts = pairWearColors(parts);
 
-  // ===== 3) 学習に向かない“ノイズ”を除去 =====
-  // 学習で常に除外する R-18G/暴力・流血系（UIで選ばれても落とす）
+  // ===== 3) 学習ノイズ除去 =====
   const NSFW_HARD_BLOCK_RE = /\b(blood(_splatter)?|injur(y|ies)|wound(ed)?|gore|gory|violence|torture)\b/i;
-  // 学習用ノイズ（強演出・小道具・群衆…）を一か所に集約
   const LEARN_NOISE_RE = /\b(crowd|group|multiple people|two people|three people|duo|trio|background people|lens flare|cinematic lighting|dramatic lighting|stage lighting|studio lighting|hdr|tilt-?shift|fisheye|wide-?angle|dutch angle|extreme close-?up|depth of field|strong bokeh|motion blur|watermark|signature|copyright|smartphone|phone|camera|microphone|mic|weapon|gun|sword|shield|staff|laptop|keyboard|headphones|backpack|bag|umbrella|drink|food|ice cream|skateboard)\b/i;
-  // --- 学習に不要なタグの削除（順番はどちらが先でもOKだが両方実行）
+
   parts = parts.filter(t => !NSFW_HARD_BLOCK_RE.test(String(t)));
   parts = parts.filter(t => !LEARN_NOISE_RE.test(String(t)));
-
-  // 複数人系のニュアンス語をさらに落とす → ソロ強制マーカーを足す
   parts = stripMultiHints(parts);
   parts = forceSoloPos(parts);
 
-  // ===== 4) 学習アンカーを不足時だけ補完 =====
-  const asSet = (arr)=> new Set((arr||[]).map(x=> typeof x==='string' ? x : x.tag));
-  const S = {
-    background: asSet(SFW.background),
-    pose:       asSet(SFW.pose_composition),
-    expr:       asSet(SFW.expressions),
-    light:      asSet(SFW.lighting)
-  };
-  const hasAny = (poolSet)=> parts.some(t => poolSet.has(String(t)));
+  // ===== 4) 不足アンカーの補完（view も対象）=====
+  const asText = parts.join(", ");
 
-  // 背景：何も選んでなければフラットに
-  if (!hasAny(S.background)) parts.push("plain background");
+  // 視点が無ければデフォルトを追加
+  const hasView = /\b(front view|three-quarters view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down|eye-level|low angle|high angle)\b/i.test(asText);
+  if (!hasView) parts.push("front view");
 
-  // ポーズ・構図：無ければ“上半身”
-  if (!hasAny(S.pose)) parts.push("upper body");
-
-  // 表情：無ければニュートラル
-  if (!hasAny(S.expr)) parts.push("neutral expression");
-
-  // ライティング：無ければソフト
-  if (!hasAny(S.light)) parts.push("soft lighting");
-
-  // 構図の安定化（入ってなければ）
-  if (!parts.some(t => /\b(center(ed)?\s?composition|centered)\b/i.test(String(t)))) {
+  // 背景
+  if (!/\b(plain background|studio background|solid background)\b/i.test(asText)) {
+    parts.push("plain background");
+  }
+  // 構図・距離（pose/comp どちらもヒットしなければ）
+  if (!/\b(upper body|bust|waist up|portrait|full body)\b/i.test(asText)) {
+    parts.push("upper body");
+  }
+  // 表情
+  if (!/\b(neutral expression|smiling|serious|determined|slight blush|surprised \(mild\)|pouting \(slight\))\b/i.test(asText)) {
+    parts.push("neutral expression");
+  }
+  // ライティング
+  if (!/\b(soft lighting|even lighting|normal lighting)\b/i.test(asText)) {
+    parts.push("soft lighting");
+  }
+  // 構図の安定化（中央寄せ）
+  if (!/\b(center(ed)?\s?composition|centered composition)\b/i.test(asText)) {
     parts.push("centered composition");
   }
 
-  // ===== 5) 最終整形・並び順・シード =====
-  parts = fixExclusives(parts);           // ★ これを ensurePromptOrder の直前に置く（2062行目相当）
-  const pos  = ensurePromptOrder(uniq(parts).filter(Boolean));
-  const seed = seedFromName($("#charName").value||"", extraSeed);
+  // ===== 5) 排他・整形・シード =====
+  parts = fixExclusives(parts);                 // 表情/構図/視点の同時混入を整理
+  const pos  = ensurePromptOrder(uniq(parts));  // 並び順正規化
+  const seed = seedFromName($("#charName").value || "", extraSeed);
 
-  // 学習向けの追加ネガを上乗せ（重複は withSoloNeg 側で実質吸収）
-const EXTRA_NEG = [
-  "props", "accessories",
-  "smartphone", "phone", "camera"
-].join(", ");
-
-  const baseNeg = getNeg();                // 既存（グローバル）
-  const neg = withSoloNeg([baseNeg, EXTRA_NEG].filter(Boolean).join(", ")); // 複数人抑止も混ぜる
+  // 追加ネガ
+  const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"].join(", ");
+  const neg = withSoloNeg([getNeg(), EXTRA_NEG].filter(Boolean).join(", "));
 
   return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
