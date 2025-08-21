@@ -1342,58 +1342,81 @@ function applyNSFWLearningPreset(p){
 }
 
 function applyCharacterPreset(cfg){
-  // 文字列系
+  // ===== 小ヘルパ（ローカル） =====
+  const arrify = (v)=> Array.isArray(v) ? v : (v != null ? [v] : []);
+  const uniq = (a)=> Array.from(new Set((a||[]).filter(Boolean)));
+  const tagOf = (x)=> (typeof x === "string" ? x : (x && x.tag) ? x.tag : "");
+  const toSet = (list)=> new Set((list||[]).map(tagOf));
+
+  // ====== マスタ定義から分類セットを作る（HTMLに寄せる） ======
+  // pose は新: SFW.pose / 旧: SFW.pose_composition のどちらでも組む
+  const POSE = toSet(SFW.pose || SFW.pose_composition || []);
+  const COMP = toSet(SFW.composition || []); // 構図
+  const VIEW = toSet(SFW.view || []);        // 視点
+
+  // ====== 文字列系 ======
   setVal("#charName",   cfg.charName || cfg.characterName || "");
   setVal("#loraTag",    cfg.loraTag  || cfg.lora || "");
   setVal("#fixedManual",cfg.fixed    || cfg.fixedTags || "");
   setVal("#negGlobal",  cfg.negative || cfg.negativeTags || "");
 
-  // 構図：新キー comp / 互換 composition のどちらでも受ける
-{
-  const arr = Array.isArray(cfg.comp) ? cfg.comp
-            : Array.isArray(cfg.composition) ? cfg.composition
-            : (cfg.comp ?? cfg.composition ? [cfg.comp ?? cfg.composition] : []);
-  setChecks("comp", arr);
-}
+  // ====== 旧データ互換：pose_composition を分解して各バケツへ ======
+  const legacy = arrify(cfg.pose_composition);
+  const legacyPose = legacy.filter(t => POSE.has(String(t)));
+  const legacyComp = legacy.filter(t => COMP.has(String(t)));
+  const legacyView = legacy.filter(t => VIEW.has(String(t)));
 
-// ライティング：新キー lightLearn / 互換 lighting
-{
-  const arr = Array.isArray(cfg.lightLearn) ? cfg.lightLearn
-            : Array.isArray(cfg.lighting) ? cfg.lighting
-            : (cfg.lightLearn ?? cfg.lighting ? [cfg.lightLearn ?? cfg.lighting] : []);
-  setChecks("lightLearn", arr);
-}
+  // ====== 構図(comp) ======
+  {
+    const fromNew   = arrify(cfg.comp);
+    const fromAlt   = arrify(cfg.composition); // 互換キー
+    const merged    = uniq([...fromNew, ...fromAlt, ...legacyComp]);
+    setChecks("comp", merged);
+  }
 
-  // 形状
+  // ====== 視点(view) ←★ここが出ていなかった原因の本命 ======
+  {
+    const fromNew = arrify(cfg.view);
+    const merged  = uniq([...fromNew, ...legacyView]);
+    setChecks("view", merged);
+  }
+
+  // ====== 形状（ラジオ） ======
   if (cfg.hairStyle) setRadio("hairStyle", String(cfg.hairStyle));
   if (cfg.eyeShape)  setRadio("eyeShape",  String(cfg.eyeShape));
   if (cfg.face)      setRadio("face",      String(cfg.face));
   if (cfg.skinBody)  setRadio("skinBody",  String(cfg.skinBody));
   if (cfg.artStyle)  setRadio("artStyle",  String(cfg.artStyle));
 
-  // シーン（※ 構図とは分離して個別に反映）
-  if (cfg.background)
-    setChecks("bg", Array.isArray(cfg.background) ? cfg.background : [cfg.background]);
+  // ====== 背景/表情/ライティング（学習タブのチェック群） ======
+  if (cfg.background)   setChecks("bg",   arrify(cfg.background));
+  if (cfg.expressions)  setChecks("expr", arrify(cfg.expressions));
 
-  if (cfg.pose)
-    setChecks("pose", Array.isArray(cfg.pose) ? cfg.pose : [cfg.pose]);
+  // ライティング：新キー lightLearn / 互換 lighting
+  {
+    const fromNew = arrify(cfg.lightLearn);
+    const fromAlt = arrify(cfg.lighting);
+    setChecks("lightLearn", uniq([...fromNew, ...fromAlt]));
+  }
 
-  if (cfg.expressions)
-    setChecks("expr", Array.isArray(cfg.expressions) ? cfg.expressions : [cfg.expressions]);
+  // ====== ポーズ（チェック群） ======
+  {
+    const fromNew = arrify(cfg.pose);
+    const merged  = uniq([...fromNew, ...legacyPose]);
+    setChecks("pose", merged);
+  }
 
-  // 色（髪/瞳/肌）
+  // ====== 色（髪/瞳/肌） ======
   if (cfg.hairColorTag) setColorTag("#tagH", String(cfg.hairColorTag));
   if (cfg.eyeColorTag)  setColorTag("#tagE", String(cfg.eyeColorTag));
   if (typeof cfg.skinTone === "number") setSkinTone(cfg.skinTone);
 
-  // ★ 基本情報（bf_*）
+  // ====== 基本情報（bf_*) ======
   const bf = cfg.bf || {};
   if (bf.age)        setRadio("bf_age",    String(bf.age));
   if (bf.gender)     setRadio("bf_gender", String(bf.gender));
   if (bf.body)       setRadio("bf_body",   String(bf.body));
   if (bf.height)     setRadio("bf_height", String(bf.height));
-  // if (bf.personality)setRadio("bf_person", String(bf.personality));
-  // if (bf.tone)       setRadio("bf_tone",   String(bf.tone));
 
   // dataset にも保持（必要なら）
   {
@@ -1403,20 +1426,17 @@ function applyCharacterPreset(cfg){
       if (bf.gender)     host.dataset.bfGender = String(bf.gender);
       if (bf.body)       host.dataset.bfBody   = String(bf.body);
       if (bf.height)     host.dataset.bfHeight = String(bf.height);
-      // if (bf.personality)host.dataset.bfPerson = String(bf.personality);
-      // if (bf.tone)       host.dataset.bfTone   = String(bf.tone);
     }
   }
-  // ★ outfit（分割&モード）
+
+  // ====== outfit（分割&モード） ======
   const outf = cfg.outfit || cfg.outfitSel || cfg.outfits;
   if (typeof outf === "string") {
-    // 互換: 旧フォーマットが1語だけのときの推測
     if (isOnePieceOutfitTag(outf)) {
       setRadio("outfitMode", "onepiece");
       setRadio("outfit_dress", outf);
     } else {
       setRadio("outfitMode", "separate");
-      // ざっくり top 側へ入れる（必要なら KEYMAP で吸収）
       setRadio("outfit_top", outf);
     }
   } else if (outf && typeof outf === "object") {
@@ -1427,7 +1447,6 @@ function applyCharacterPreset(cfg){
       if (outf.dress) setRadio("outfit_dress", String(outf.dress));
     } else {
       if (outf.top) setRadio("outfit_top", String(outf.top));
-      // bottom は pants / skirt を bottomCat で振り分け
       const cat = (outf.bottomCat || "pants").toLowerCase();
       if (cat === "skirt") {
         setRadio("outfit_skirt", String(outf.bottom||""));
@@ -1437,35 +1456,34 @@ function applyCharacterPreset(cfg){
         __bottomCat = "pants";
       }
     }
-    // ラジオの有効/無効再適用
     if (typeof window.__applyBottomCatSwap === 'function') window.__applyBottomCatSwap();
   }
 
-  // ★ 服カラー（学習タブ固定色）＋ON/OFF
+  // ====== 学習用ウェア色 + ON/OFF ======
   const wc = cfg.wearColors || {};
   const wu = cfg.wearColorUse || {};
   const applyWear = (idBase, text, useOn) => {
-    const useEl = (idBase === "bottom") ? document.getElementById("useBottomColor") : document.getElementById("use_"+idBase);
-    if (useEl) { useEl.checked = !!useOn; }
-    if (text)  { setColorTag("#tag_"+idBase, String(text)); }
+    const useEl = (idBase === "bottom") ? document.getElementById("useBottomColor")
+                                        : document.getElementById("use_"+idBase);
+    if (useEl) useEl.checked = !!useOn;
+    if (text)  setColorTag("#tag_"+idBase, String(text));
     updateWearPanelEnabled(idBase);
   };
   applyWear("top",    wc.top,    (wu.top    ?? !!wc.top));
   applyWear("bottom", wc.bottom, (wu.bottom ?? !!wc.bottom));
   applyWear("shoes",  wc.shoes,  (wu.shoes  ?? !!wc.shoes));
 
-  // アクセ（学習）
-  if(cfg.learnAccessory){
-    applyLearnAccessoryPreset(cfg.learnAccessory);
-  }
+  // ====== 学習アクセ ======
+  if (cfg.learnAccessory) applyLearnAccessoryPreset(cfg.learnAccessory);
 
-  // NSFW（学習）
-  if(cfg.nsfwLearn) applyNSFWLearningPreset(cfg.nsfwLearn);
+  // ====== NSFW（学習） ======
+  if (cfg.nsfwLearn) applyNSFWLearningPreset(cfg.nsfwLearn);
 
-  // 最終：UI再描画の依存関係を軽く叩く
+  // ====== 最後に依存更新 ======
   if (typeof updateOneTestReady === "function") updateOneTestReady();
   toast("キャラ設定を読み込みました");
 }
+
 
 function collectCharacterPreset(){
   const outfitSel = getBasicSelectedOutfit();
