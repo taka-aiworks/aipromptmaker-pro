@@ -1212,7 +1212,6 @@ function getPlanFixed() {
 
 function getPlanNeg() {
   const useDef = document.getElementById('pl_useDefaultNeg')?.checked;
-  // 既存アプリにある「デフォルトのネガ組み立て関数」があれば流用する
   const defNeg = (useDef && typeof getDefaultNegativePrompt === 'function')
     ? getDefaultNegativePrompt()
     : '';
@@ -1229,32 +1228,31 @@ function buildPlannerOne(){
   const base = [
     name,
     getOne("bf_age"), getOne("bf_gender"), getOne("bf_body"), getOne("bf_height"),
-    ($("#tagH")?.textContent||"").trim(),   // 髪色タグ
-    ($("#tagE")?.textContent||"").trim(),   // 瞳色タグ
-    ($("#tagSkin")?.textContent||"").trim() // 肌トーン
+    ($("#tagH")?.textContent||"").trim(),
+    ($("#tagE")?.textContent||"").trim(),
+    ($("#tagSkin")?.textContent||"").trim()
   ].filter(Boolean);
 
-  // 撮影モードのラジオ（未選択は安全補完）
+  // ラジオ選択（未選択は安全補完）
   const bg   = getOne("pl_bg")   || "plain background";
-  const pose = getOne("pl_pose") || ""; // 任意
+  const pose = getOne("pl_pose") || "";
   const comp = getOne("pl_comp") || "bust";
   const view = getOne("pl_view") || "three-quarters view";
   const expr = getOne("pl_expr") || "neutral expression";
   const lite = getOne("pl_light")|| "soft lighting";
   const acc  = getOne("pl_acc")  || "";
 
-  // 固定タグ（撮影モード専用）を先頭へ
+  // 固定タグ（撮影モード専用）
   const fixed = getPlanFixed();
 
   // 組み立て
   let parts = ["solo", getGenderCountTag() || "", ...fixed, ...base, bg, pose, comp, view, expr, lite, acc]
               .filter(Boolean);
 
-  // 排他整理→順序整形（既存ユーティリティを流用）
   parts = fixExclusives(parts);
   parts = ensurePromptOrder(parts);
 
-  // ネガは撮影モード専用の入力＋複数人抑止
+  // ネガ（撮影モード専用）
   const neg = withSoloNeg(getPlanNeg());
 
   return [{ seed, pos: parts, neg, text: `${parts.join(", ")} --neg ${neg} seed:${seed}` }];
