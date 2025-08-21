@@ -153,8 +153,8 @@ const LEARN_BUCKET_CAP = {
   b_age:1, b_gender:1, b_body:1, b_height:1, b_person:1, b_world:1, b_tone:1,
   c_hair:1, c_eye:1, c_skin:1,
   s_hair:1, s_eye:1, s_face:1, s_body:1, s_art:1,
-  wear:2, acc:0,
-  bg:1, pose:1, view:1, expr:1, light:1,   // ← view:1 を追加
+  wear:2, acc:0,          // ← 服は最大2語（top/bottom or dress）。アクセは0（固定にしたい場合は1でもOK）
+  bg:1, pose:1, expr:1, light:1,
   n_expr:1, n_expo:1, n_situ:1, n_light:1,
   other:0
 };
@@ -168,11 +168,12 @@ function trimByBucketForLearning(parts){
     c_hair:[], c_eye:[], c_skin:[],
     s_hair:[], s_eye:[], s_face:[], s_body:[], s_art:[],
     wear:[], acc:[],
-    bg:[], pose:[], view:[], expr:[], light:[],   // ← view を追加
+    bg:[], pose:[], expr:[], light:[],
     n_expr:[], n_expo:[], n_situ:[], n_light:[],
     other:[]
   };
 
+  // ensurePromptOrder の分類ロジックに合わせるため、所属判定は同じ関数内の簡易模倣
   const S = {
     age:        new Set((SFW.age||[]).map(x=>x.tag||x)),
     gender:     new Set((SFW.gender||[]).map(x=>x.tag||x)),
@@ -190,11 +191,7 @@ function trimByBucketForLearning(parts){
     outfit:     new Set((SFW.outfit||[]).map(x=>x.tag||x)),
     acc:        new Set((SFW.accessories||[]).map(x=>x.tag||x)),
     background: new Set((SFW.background||[]).map(x=>x.tag||x)),
-
-    // ここ重要：構図（距離）と視点を分離
     pose:       new Set((SFW.pose_composition||[]).map(x=>x.tag||x)),
-    view:       new Set((SFW.view||[]).map(x=>x.tag||x)),  // ← view セット（無ければ空でOK）
-
     expr:       new Set((SFW.expressions||[]).map(x=>x.tag||x)),
     light:      new Set((SFW.lighting||[]).map(x=>x.tag||x)),
 
@@ -207,28 +204,21 @@ function trimByBucketForLearning(parts){
   const isHairColor = (t)=> /\bhair$/.test(t) && !S.hair_style.has(t);
   const isEyeColor  = (t)=> /\beyes$/.test(t) && !S.eyes_shape.has(t);
   const isSkinTone  = (t)=> /\bskin$/.test(t) && !S.skin_body.has(t);
-
-  // view用のゆる判定（辞書が空でも動くように保険）
-  const VIEW_RE = /\b(front view|three-quarters? view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down)\b/i;
-  // 構図（距離）側は “上半身/バスト/全身/ポートレート/クローズアップ/ワイド” 系
-  const COMP_RE = /\b(full body|waist up|upper body|bust|portrait|close-?up|wide shot)\b/i;
-
   const WEAR_NAME_RE = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer|skirt|pleated\ skirt|long\ skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\ shorts|dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori)\b/i;
 
-  for (const tRaw of ordered) {
-    const t = String(tRaw||"").trim();
+  for (const t of ordered) {
     if (!t || LEARN_EXCLUDE_RE.test(t)) continue;
 
     if (t.startsWith("<lora:") || /\b(?:LoRA|<lyco:)/i.test(t)) { buckets.lora.push(t); continue; }
     if (($("#charName")?.value||"").trim() === t) { buckets.name.push(t); continue; }
 
-    if (S.age.has(t))        { buckets.b_age.push(t);   continue; }
-    if (S.gender.has(t))     { buckets.b_gender.push(t);continue; }
-    if (S.body_basic.has(t)) { buckets.b_body.push(t);  continue; }
-    if (S.height.has(t))     { buckets.b_height.push(t);continue; }
-    if (S.person.has(t))     { buckets.b_person.push(t);continue; }
-    if (S.world.has(t))      { buckets.b_world.push(t); continue; }
-    if (S.tone.has(t))       { buckets.b_tone.push(t);  continue; }
+    if (S.age.has(t))       { buckets.b_age.push(t); continue; }
+    if (S.gender.has(t))    { buckets.b_gender.push(t); continue; }
+    if (S.body_basic.has(t)){ buckets.b_body.push(t); continue; }
+    if (S.height.has(t))    { buckets.b_height.push(t); continue; }
+    if (S.person.has(t))    { buckets.b_person.push(t); continue; }
+    if (S.world.has(t))     { buckets.b_world.push(t); continue; }
+    if (S.tone.has(t))      { buckets.b_tone.push(t); continue; }
 
     if (isHairColor(t)) { buckets.c_hair.push(t); continue; }
     if (isEyeColor(t))  { buckets.c_eye.push(t);  continue; }
@@ -243,14 +233,10 @@ function trimByBucketForLearning(parts){
     if (S.outfit.has(t) || WEAR_NAME_RE.test(t)) { buckets.wear.push(t); continue; }
     if (S.acc.has(t)) { buckets.acc.push(t); continue; }
 
-    if (S.background.has(t)) { buckets.bg.push(t);      continue; }
-
-    // ← ここが分離ポイント
-    if (S.view.has(t) || VIEW_RE.test(t)) { buckets.view.push(t); continue; }
-    if (S.pose.has(t) || COMP_RE.test(t)) { buckets.pose.push(t); continue; }
-
-    if (S.expr.has(t))  { buckets.expr.push(t);  continue; }
-    if (S.light.has(t)) { buckets.light.push(t); continue; }
+    if (S.background.has(t)) { buckets.bg.push(t);   continue; }
+    if (S.pose.has(t))       { buckets.pose.push(t); continue; }
+    if (S.expr.has(t))       { buckets.expr.push(t); continue; }
+    if (S.light.has(t))      { buckets.light.push(t);continue; }
 
     if (S.nsfw_expr.has(t))  { buckets.n_expr.push(t);  continue; }
     if (S.nsfw_expo.has(t))  { buckets.n_expo.push(t);  continue; }
@@ -269,54 +255,41 @@ function trimByBucketForLearning(parts){
   }
   return capped;
 }
+
 /* === 学習アンカー：不足時の自動補完（安定化） === */
 const LEARN_DEFAULTS = {
-  // 構図/距離（comp）…画面内の“切り取り”
-  comp:  ["upper body", "waist up", "bust", "portrait", "full body", "close-up", "wide shot"],
-  // 視点（view）…カメラの向き・アングル
-  view:  ["front view", "three-quarters view", "facing viewer", "looking at viewer"],
-  // そのほか
-  expr:  ["neutral expression"],
-  bg:    ["plain background", "studio background", "solid background"],
-  light: ["soft lighting", "even lighting"],
-  // 追加の安定化（レイアウトの基準）
-  anchors: ["centered composition", "clear focus"]
+  // 構図・距離・視線
+  pose: ["upper body", "bust", "waist up", "portrait"],
+  expr: ["neutral expression"],
+  bg:   ["plain background", "studio background", "solid background"],
+  light:["soft lighting", "even lighting"],
+  // 追加の安定化（過激にならず識別に効く）
+  anchors: ["facing viewer", "centered composition", "clear focus"]
 };
 
 // bucketsから“1つも入っていない”ものにだけ1語足す
 function addLearningAnchorsIfMissing(parts){
-  const text = parts.join(", ");
-  const out  = new Set(parts);
+  const S = new Set(parts);
   const need = [];
 
-  // comp（構図/距離）
-  const hasComp = /\b(upper body|waist up|bust|portrait|full body|close-?up|wide shot)\b/i.test(text);
-  if (!hasComp) need.push(LEARN_DEFAULTS.comp[0]); // "upper body"
+  const hasPose   = /\b(upper body|bust|waist up|portrait)\b/i.test(parts.join(", "));
+  const hasExpr   = /\b(neutral expression)\b/i.test(parts.join(", "));
+  const hasBG     = /\b(plain background|studio background|solid background)\b/i.test(parts.join(", "));
+  const hasLight  = /\b(soft lighting|even lighting)\b/i.test(parts.join(", "));
+  const hasFacing = /\b(facing viewer)\b/i.test(parts.join(", "));
+  const hasCenter = /\b(centered composition)\b/i.test(parts.join(", "));
 
-  // view（視点：向き＋アングル）
-  const hasView = /\b(front view|three-quarters? view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down|facing viewer|looking at viewer)\b/i.test(text);
-  if (!hasView) need.push(LEARN_DEFAULTS.view[0]); // "front view"
+  if (!hasPose)  need.push(LEARN_DEFAULTS.pose[0]);
+  if (!hasExpr)  need.push(LEARN_DEFAULTS.expr[0]);
+  if (!hasBG)    need.push(LEARN_DEFAULTS.bg[0]);
+  if (!hasLight) need.push(LEARN_DEFAULTS.light[0]);
+  if (!hasFacing)need.push("facing viewer");
+  if (!hasCenter)need.push("centered composition");
 
-  // 表情
-  const hasExpr = /\b(neutral expression|smiling|serious|determined|slight blush|surprised \(mild\)|pouting \(slight\))\b/i.test(text);
-  if (!hasExpr) need.push(LEARN_DEFAULTS.expr[0]); // "neutral expression"
-
-  // 背景
-  const hasBG = /\b(plain background|studio background|solid background|white background)\b/i.test(text);
-  if (!hasBG) need.push(LEARN_DEFAULTS.bg[0]); // "plain background"
-
-  // ライティング
-  const hasLight = /\b(soft lighting|even lighting|normal lighting)\b/i.test(text);
-  if (!hasLight) need.push(LEARN_DEFAULTS.light[0]); // "soft lighting"
-
-  // レイアウト基準（centered / clear focus）
-  if (!/\b(center(ed)?\s?composition|centered)\b/i.test(text)) need.push("centered composition");
-  if (!/\bclear focus\b/i.test(text)) need.push("clear focus");
-
-  // 追加分をマージ
-  need.forEach(t => out.add(t));
-  return [...out];
+  need.forEach(t => S.add(t));
+  return [...S];
 }
+
 /* === 学習強化ネガ === */
 const DEFAULT_TRAINING_NEG = [
   "props", "holding object", "microphone", "smartphone", "camera", "sign", "banner",
@@ -1159,35 +1132,34 @@ function renderSFW(){
   checkList($("#p_light"), SFW.lighting,     "p_light");
 
   // 置き換え：renderSFW 内の“ポーズ/構図”ブロック
-// --- ポーズ/構図/視点（分離対応）
 {
   const src = SFW.pose_composition || [];
-  const { poseTags, compTags, viewTags } = categorizePoseComp(src);
+  const { poseTags, compTags, viewTags } = categorizePoseCompView(src);
 
   // 学習タブ：ホワイトリスト適用
   const pose_learn = filterByScope(poseTags, SCOPE.learning.pose);
   const comp_learn = filterByScope(compTags, SCOPE.learning.composition);
   const view_learn = filterByScope(viewTags, SCOPE.learning.view);
 
-  // 学習タブ：描画
-  if (document.getElementById("comp")) {
-    checkList($("#pose"), pose_learn, "pose");
-    checkList($("#comp"), comp_learn, "comp");
-  } else {
-    checkList($("#pose"), pose_learn, "pose");
-  }
-  if (document.getElementById("view")) {
-    checkList($("#view"), view_learn, "view");   // ★ 追加
-  }
+  // pose/comp/view の3列があるHTMLなら3つ出す（無ければあるものだけ）
+  if (document.getElementById("pose")) checkList($("#pose"), pose_learn, "pose");
+  if (document.getElementById("comp")) checkList($("#comp"), comp_learn, "comp");
+  if (document.getElementById("view")) checkList($("#view"), view_learn, "view");
 
-  // 量産タブ（必要なら p_comp / p_pose だけ従来通り。p_view がある場合は同様に）
-  if (document.getElementById("p_comp")) {
-    checkList($("#p_pose"), poseTags, "p_pose");
-    checkList($("#p_comp"), compTags, "p_comp");
-  } else {
-    checkList($("#p_pose"), src, "p_pose");
-  }
+  // 量産タブ：フル辞書
+  if (document.getElementById("p_pose")) checkList($("#p_pose"), poseTags, "p_pose");
+  if (document.getElementById("p_comp")) checkList($("#p_comp"), compTags, "p_comp");
+  if (document.getElementById("p_view")) checkList($("#p_view"), viewTags, "p_view");
 }
+
+    // 量産タブ：フル辞書
+    if (document.getElementById("p_comp")) {
+      checkList($("#p_pose"), poseTags, "p_pose");
+      checkList($("#p_comp"), compTags, "p_comp");
+    } else {
+      checkList($("#p_pose"), src, "p_pose");
+    }
+  }
 
   // ★ outfit をカテゴリに分配して描画（そのまま）
   const C = categorizeOutfit(SFW.outfit);
@@ -2166,42 +2138,39 @@ const EXPR_ALL = new Set([
 
 
 
-// 置き換え：buildOneLearning の先頭～アンカー補完前まで
 function buildOneLearning(extraSeed = 0){
   // ===== 1) ベース構築 =====
   const fixed = assembleFixedLearning();
   const BG = getMany("bg");
-  const PO = [...getMany("pose"), ...getMany("comp")]; // 構図はpose/comp混在プール
-  const VI = getMany("view");                           // 視点（向き/アングル）
+  const PO = [...getMany("pose"), ...getMany("comp")];           // ← compも足す（無ければ空配列）
+  const VI = getMany("view");       // ★ 視点（向き/アングル）
   const EX = getMany("expr");
-  const LI = getMany("lightLearn");
-  const addon = getSelectedNSFW_Learn();
-
-  const b = pick(BG);
-  const p = pick(PO);
-  const v = pick(VI);                 // ★ 追加：視点から1つ選ぶ
-  const e = pick(EX);
-  const l = LI.length ? pick(LI) : "";
+  const LI = getMany("lightLearn");  const addon = getSelectedNSFW_Learn();
+  const b = pick(BG), p = pick(PO), e = pick(EX), l = LI.length ? pick(LI) : "";
 
   // 学習は常に1人
   const partsSolo = ["solo"];
   const genderCount = getGenderCountTag(); // "1girl" / "1boy" / ""
   if (genderCount) partsSolo.push(genderCount);
 
-  // ★ 追加：v を parts に入れる
-  let parts = uniq([...partsSolo, ...fixed, b, p, v, e, l, ...addon]).filter(Boolean);
+  let parts = uniq([...partsSolo, ...fixed, b, p, e, l, ...addon]).filter(Boolean);
 
   // ===== 2) 服の整合、露出優先などの既存ルール =====
   parts = applyNudePriority(parts);
+  // ▼ 追加：ワンピ優先の排他と色プレースホルダの置換（18禁でも効く）
   parts = enforceOnePieceExclusivity(parts);
   parts = pairWearColors(parts);
 
   // ===== 3) 学習に向かない“ノイズ”を除去 =====
+  // 学習で常に除外する R-18G/暴力・流血系（UIで選ばれても落とす）
   const NSFW_HARD_BLOCK_RE = /\b(blood(_splatter)?|injur(y|ies)|wound(ed)?|gore|gory|violence|torture)\b/i;
+  // 学習用ノイズ（強演出・小道具・群衆…）を一か所に集約
   const LEARN_NOISE_RE = /\b(crowd|group|multiple people|two people|three people|duo|trio|background people|lens flare|cinematic lighting|dramatic lighting|stage lighting|studio lighting|hdr|tilt-?shift|fisheye|wide-?angle|dutch angle|extreme close-?up|depth of field|strong bokeh|motion blur|watermark|signature|copyright|smartphone|phone|camera|microphone|mic|weapon|gun|sword|shield|staff|laptop|keyboard|headphones|backpack|bag|umbrella|drink|food|ice cream|skateboard)\b/i;
+  // --- 学習に不要なタグの削除（順番はどちらが先でもOKだが両方実行）
   parts = parts.filter(t => !NSFW_HARD_BLOCK_RE.test(String(t)));
   parts = parts.filter(t => !LEARN_NOISE_RE.test(String(t)));
 
+  // 複数人系のニュアンス語をさらに落とす → ソロ強制マーカーを足す
   parts = stripMultiHints(parts);
   parts = forceSoloPos(parts);
 
@@ -2215,39 +2184,43 @@ function buildOneLearning(extraSeed = 0){
     light:      asSet(SFW.lighting)
   };
   const hasAny = (poolSet)=> parts.some(t => poolSet.has(String(t)));
-
-  // 視点：入ってなければ front view を補完
-  const hasView = /\b(front view|three-quarters view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down)\b/i.test(parts.join(", "));
+  // 置き換え：buildOneLearning 内 “不足時の自動補完”に view を追加
+  const hasView  = /\b(front view|three-quarters view|profile(?:\sview)?|side view|back view|from below|overhead view|looking up|looking down)\b/i.test(parts.join(", "));
   if (!hasView) parts.push("front view");
 
-  // 背景
+  // 背景：何も選んでなければフラットに
   if (!hasAny(S.background)) parts.push("plain background");
-  // 構図（距離）
+
+  // ポーズ・構図：無ければ“上半身”
   if (!hasAny(S.pose)) parts.push("upper body");
-  // 表情
+
+  // 表情：無ければニュートラル
   if (!hasAny(S.expr)) parts.push("neutral expression");
-  // ライティング
+
+  // ライティング：無ければソフト
   if (!hasAny(S.light)) parts.push("soft lighting");
 
-  // センタリング
+  // 構図の安定化（入ってなければ）
   if (!parts.some(t => /\b(center(ed)?\s?composition|centered)\b/i.test(String(t)))) {
     parts.push("centered composition");
   }
 
-  // ===== 5) 最終整形 =====
-  parts = fixExclusives(parts);
+  // ===== 5) 最終整形・並び順・シード =====
+  parts = fixExclusives(parts);           // ★ これを ensurePromptOrder の直前に置く（2062行目相当）
   const pos  = ensurePromptOrder(uniq(parts).filter(Boolean));
   const seed = seedFromName($("#charName").value||"", extraSeed);
 
-  // 追加ネガ
-  const EXTRA_NEG = ["props", "accessories", "smartphone", "phone", "camera"].join(", ");
-  const baseNeg = getNeg();
-  const neg = withSoloNeg([baseNeg, EXTRA_NEG].filter(Boolean).join(", "));
+  // 学習向けの追加ネガを上乗せ（重複は withSoloNeg 側で実質吸収）
+const EXTRA_NEG = [
+  "props", "accessories",
+  "smartphone", "phone", "camera"
+].join(", ");
+
+  const baseNeg = getNeg();                // 既存（グローバル）
+  const neg = withSoloNeg([baseNeg, EXTRA_NEG].filter(Boolean).join(", ")); // 複数人抑止も混ぜる
 
   return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
-
-
 
 // === 横顔の制御（学習用・割合ベース） =======================
 // 横顔を全体の 15〜20% で混ぜたい場合
@@ -2509,15 +2482,26 @@ function ensurePromptOrder(parts) {
     }
   }
 
-  // 2) 構図（距離/フレーミング）を1つだけ
-{
-  const COMP_ORDER = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
-  const hits = buckets.pose.filter(t => COMP_ORDER.includes(t));
-  if (hits.length > 1) {
-    const keep = COMP_ORDER.find(t => hits.includes(t)) || hits[0];
-    buckets.pose = buckets.pose.filter(t => !(COMP_ORDER.includes(t) && t !== keep));
+  // 2) 構図/距離/視点：全バケツ横断でヒット収集 → 1 つだけ残す
+  {
+    const COMP_VIEW_ORDER = [
+      // 距離・フレーミング優先
+      "full body","wide shot","waist up","upper body","bust","portrait","close-up"
+    ];
+    const keys = Object.keys(buckets);
+    const hits = [];
+    for (const k of keys) {
+      for (const t of buckets[k]) {
+        if (COMP_VIEW_ORDER.includes(t)) hits.push(t);
+      }
+    }
+    if (hits.length > 1) {
+      const keep = COMP_VIEW_ORDER.find(t => hits.includes(t)) || hits[0];
+      for (const k of keys) {
+        buckets[k] = buckets[k].filter(t => !(COMP_VIEW_ORDER.includes(t) && t !== keep));
+      }
+    }
   }
-}
 
    // 3) 視点（アングル）を1つだけ  ← 新設
 {
@@ -2757,8 +2741,6 @@ function renderLearnTableTo(tbodySel, rows){
   tb.innerHTML = "";
   tb.appendChild(frag);
 }
-
-
 function formatLines(rows, fmt){
   return rows.map((r,i)=>{
     const p = (r.pos || []).join(", ");
@@ -3018,3 +3000,4 @@ document.addEventListener("DOMContentLoaded", ()=>{
   // ...既存の init / bind 系...
   bindOneTestUI();
 });
+
