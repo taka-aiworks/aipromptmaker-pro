@@ -2419,15 +2419,6 @@ function ensurePromptOrder(parts) {
     other:[]
   };
 
-   // 仕分けループの“後”、return配列を作る“前”に入れる
-// 表情は常に1つに正規化（非 neutral があればそれを1つ、無ければ neutral を1つ）
-if (buckets.expr.length !== 1) {
-  const nonNeutral = buckets.expr.filter(
-    t => String(t).toLowerCase() !== "neutral expression"
-  );
-  buckets.expr = nonNeutral.length ? [nonNeutral[0]] : ["neutral expression"];
-}
-
   const charName = ($("#charName")?.value || "").trim();
 
   for (const t of set) {
@@ -2476,6 +2467,13 @@ if (buckets.expr.length !== 1) {
     buckets.other.push(t);
   }
 
+  // --- 最終ガード：表情/構図は 1 つに正規化 ---
+  const pickOne = (arr, prefer) => {
+    if (arr.length <= 1) return arr;
+    for (const p of prefer) if (arr.includes(p)) return [p];
+    return [arr[0]];
+  };
+   
   return [
     ...buckets.lora, ...buckets.name,
     // 人となり
