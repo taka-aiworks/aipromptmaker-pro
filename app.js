@@ -2206,6 +2206,7 @@ function buildOneLearning(extraSeed = 0){
   }
 
   // ===== 5) 最終整形・並び順・シード =====
+  parts = fixExclusives(parts);           // ★ これを ensurePromptOrder の直前に置く（2062行目相当）
   const pos  = ensurePromptOrder(uniq(parts).filter(Boolean));
   const seed = seedFromName($("#charName").value||"", extraSeed);
 
