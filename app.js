@@ -1184,6 +1184,13 @@ function filterByScope(items, allow) {
 
 // ===== 撮影モード（pm* 名前空間で衝突回避） =====
 
+// どちらでも取れる安全版
+function pmSFW(){
+  // 先に裸の SFW（モジュール外グローバル）を優先
+  if (typeof SFW !== 'undefined' && SFW) return SFW;
+  // それが無ければ window/globalThis から
+  return (globalThis.SFW || {});
+}
 // chips風ラジオ（UI=日本語＋英語/薄字、value=英語タグ）
 // allowEmpty: 先頭に「指定なし」を追加してそれを既定選択
 function pmRenderRadios(containerId, list, { groupName, allowEmpty, checkFirst = false } = {}){
@@ -1222,7 +1229,7 @@ function pmRenderAcc(){
   const sel = document.getElementById('pl_accSel');
   if (!sel) return;
 
-  const src = (window.SFW && (SFW.accessories || window.SFW.acc)) || [];
+  const src = (pmSFW().accessories || pmSFW().acc || []);
   const items = (typeof normList === 'function') ? normList(src) : (Array.isArray(src) ? src : []);
 
   sel.innerHTML = '<option value="">未選択</option>' + items.map(it=>{
@@ -1249,7 +1256,7 @@ function pmPickList(obj, keys){
 
 // 画面描画：ホワイトリストなしでSFW辞書をそのまま
 function pmRenderPlanner(){
-  const sfw = window.SFW || {};
+  const sfw = pmSFW();
   pmRenderRadios('pl_bg',    pmPickList(sfw, ['background','bg']),        { groupName:'pl_bg' });
   pmRenderRadios('pl_pose',  pmPickList(sfw, ['pose','poses']),           { groupName:'pl_pose', allowEmpty:true });
   pmRenderRadios('pl_comp',  pmPickList(sfw, ['composition','comp']),     { groupName:'pl_comp' });
