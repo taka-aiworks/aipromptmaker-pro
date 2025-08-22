@@ -2083,19 +2083,6 @@ const FORMATTERS = {
 const getFmt = (selId, fallback="a1111") => FORMATTERS[$(selId)?.value || fallback] || FORMATTERS[fallback];
 
 
-// 撮影モード：#outPlanner へフォーマット済みテキストを書き出す
-function renderPlannerTextTo(sel, rows, fmtSelId = "fmtPlanner") {
-  const el = document.querySelector(sel);
-  if (!el) return;
-  const fmt = getFmt("#" + fmtSelId, "a1111"); // 既存の getFmt を利用
-  const buf = (rows || []).map(r => {
-    const p = Array.isArray(r.pos) ? r.pos.join(", ") : String(r.pos||"");
-    return fmt.line(p, r.neg || "", r.seed || 0);
-  }).join("\n\n");
-  el.textContent = buf;
-}
-
-
 // --- 追加：結合版（プロンプト＋ネガ）を作るヘルパ
 function buildMergedPrompt(p, n) {
   return `${p}\nNegative prompt: ${n}`;
@@ -3222,6 +3209,14 @@ function renderProdText(rows){
   }).join("\n\n");
   $("#outProd").textContent = lines;
 }
+
+// 撮影モード：1枚テキスト出力（1枚テストと同じ経路）
+function renderPlannerTextTo(outSel, rows, selId="fmtPlanner"){
+  const fmt = getFmt(`#${selId}`, "a1111");
+  const box = document.querySelector(outSel);
+  if (box) box.textContent = formatLines(rows, fmt); // ← textContentなので%20化しない
+}
+
 
 /* ========= アクセ選択肢 ========= */
 function fillAccessorySlots(){
