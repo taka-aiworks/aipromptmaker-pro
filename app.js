@@ -1591,9 +1591,6 @@ function pmInitPlannerOnce(){
 window.pmInitPlannerOnce = pmInitPlannerOnce;
 
 
-
-
-
 // 安全にキー候補から配列を拾う
 function pmPickList(obj, keys){
   for (const k of keys){ const v = obj && obj[k]; if (Array.isArray(v)) return v; }
