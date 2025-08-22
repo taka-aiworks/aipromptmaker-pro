@@ -65,6 +65,26 @@ function getGenderCountTag() {
   return ""; // 中立系（androgynous 等）は solo のみで制御
 }
 
+// 先頭に solo と 1girl/1boy を強制配置し、重複を除去（元の順序は保持）
+function enforceHeadOrder(parts){
+  const solo = 'solo';
+  const gen  = (typeof getGenderCountTag === 'function' ? (getGenderCountTag() || '') : '');
+  const out = [];
+  const seen = new Set();
+
+  // まず head を入れる
+  if (solo) { out.push(solo); seen.add(solo); }
+  if (gen)  { out.push(gen);  seen.add(gen);  }
+
+  // 残りを順序維持で追加（headと重複はスキップ）
+  for (const t of (parts || [])) {
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
 // --- 学習モード専用: 複数人を抑止するネガティブを付足 ---
 function withSoloNegatives(negText) {
   const add = [
@@ -1320,7 +1340,7 @@ function pmRenderPlanner(){
 function pmBuildOne(){
   var name = pmValById('charName');
   var seed = (typeof seedFromName === 'function') ? seedFromName(name,1) : 0;
-
+ 
   var base = [];
   if (name) base.push(name);
 
@@ -1379,16 +1399,12 @@ function pmBuildOne(){
   for (var i=0; i<parts.length; i++){ if (parts[i]) cleaned.push(parts[i]); }
   parts = cleaned;
 
-  if (typeof fixExclusives==='function') parts = fixExclusives(parts);
-  if (typeof ensurePromptOrder==='function') parts = ensurePromptOrder(parts);
+  // 既存の整合処理があれば先に
+  if (typeof fixExclusives === 'function') parts = fixExclusives(parts);
+  if (typeof ensurePromptOrder === 'function') parts = ensurePromptOrder(parts);
 
-  // --- enforce head order (撮影モード) ---
-{
-  const headSolo = 'solo';
-  const headGen  = (typeof getGenderCountTag==='function' ? (getGenderCountTag()||'') : '');
-  parts = parts.filter(t => t !== headSolo && t !== headGen);
-  parts = [headSolo, headGen, ...parts].filter(Boolean);
-}
+  // ← 最後にこれで頭を固定＆重複除去
+  parts = enforceHeadOrder(parts);
 
   var neg = (typeof withSoloNeg==='function') ? withSoloNeg(pmGetNeg()) : pmGetNeg();
 
@@ -2659,13 +2675,10 @@ function buildOneLearning(extraSeed = 0){
   parts = fixExclusives(parts);                 // 表情/構図/視点の同時混入を整理
   const pos  = ensurePromptOrder(uniq(parts));  // 並び順正規化
 
- // --- enforce head order (学習モード) ---
-{
-  const headSolo = 'solo';
-  const headGen  = (typeof getGenderCountTag==='function' ? (getGenderCountTag()||'') : '');
-  parts = parts.filter(t => t !== headSolo && t !== headGen);
-  parts = [headSolo, headGen, ...parts].filter(Boolean);
-}
+   // parts 組み立て後
+  if (typeof fixExclusives === 'function') parts = fixExclusives(parts);
+  if (typeof ensurePromptOrder === 'function') parts = ensurePromptOrder(parts);
+  parts = enforceHeadOrder(parts);
 
   const seed = seedFromName($("#charName").value || "", extraSeed);
 
@@ -3142,6 +3155,7 @@ function buildBatchProduction(n){
     // ★ 表情/構図/視点の排他整理 → 並び順整形
     all = fixExclusives(all);
     const prompt = ensurePromptOrder(all).join(", ");
+    all = enforceHeadOrder(all);
 
     const seed = (seedMode === "fixed")
       ? baseSeed
