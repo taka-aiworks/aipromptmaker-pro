@@ -1227,32 +1227,33 @@ let getPlAccColor = null;
 function renderPlanner(){
   const sfw = window.SFW || {};
 
-  const list_bg   = pickList(sfw, ['background','backgrounds','bg']);
-  const list_pose = pickList(sfw, ['pose','poses']);
-  const list_comp = pickList(sfw, ['composition','compositions','comp']);
-  const list_view = pickList(sfw, ['view','views']);
-  const list_expr = pickList(sfw, ['expressions','expression','expr']);
-  const list_lite = pickList(sfw, ['lighting','light','lights','lightLearn']);
+  const bgList    = pickList(sfw, ["background", "bg", "backgrounds"]);
+  const poseList  = pickList(sfw, ["pose", "poses"]);
+  const compList  = pickList(sfw, ["composition", "comp", "compositions"]);
+  const viewList  = pickList(sfw, ["view", "views", "angle"]);
+  const exprList  = pickList(sfw, ["expressions", "expression", "faces"]);
+  const lightList = pickList(sfw, ["lighting", "light", "lights"]);
 
-  renderRadios("pl_bg",   list_bg,   { groupName: "pl_bg"                      });
-  renderRadios("pl_pose", list_pose, { groupName: "pl_pose", allowEmpty:true   });
-  renderRadios("pl_comp", list_comp, { groupName: "pl_comp"                    });
-  renderRadios("pl_view", list_view, { groupName: "pl_view"                    });
-  renderRadios("pl_expr", list_expr, { groupName: "pl_expr"                    });
-  renderRadios("pl_light",list_lite, { groupName: "pl_light"                   });
+  renderRadios("pl_bg",    bgList,    { groupName: "pl_bg" });
+  renderRadios("pl_pose",  poseList,  { groupName: "pl_pose",  allowEmpty:true });
+  renderRadios("pl_comp",  compList,  { groupName: "pl_comp" });
+  renderRadios("pl_view",  viewList,  { groupName: "pl_view" });
+  renderRadios("pl_expr",  exprList,  { groupName: "pl_expr" });
+  renderRadios("pl_light", lightList, { groupName: "pl_light" });
 
-  renderPlannerAcc(); // アクセ（下で修正）
+  renderPlannerAcc(); // アクセUIの初期化
 }
 
 // 初期化の“ready判定”も background だけに依存しないように
 function initPlannerOnce(){
   if (initPlannerOnce._done) return;
 
-  const sfw = window.SFW || {};
-  const ready = pickList(sfw, ['background','backgrounds','bg']).length > 0
-             || pickList(sfw, ['pose','poses']).length > 0
-             || pickList(sfw, ['composition','compositions','comp']).length > 0;
-  if (!ready){ setTimeout(initPlannerOnce, 80); return; }
+  const S = window.SFW || {};
+  const ready =
+    (pickList(S, ["background","bg","backgrounds"]).length) ||
+    (pickList(S, ["pose","poses"]).length);
+
+  if (!ready) { setTimeout(initPlannerOnce, 80); return; }
 
   initPlannerOnce._done = true;
   renderPlanner();
@@ -1272,16 +1273,15 @@ function renderPlannerAcc(){
   const sel = document.getElementById('pl_accSel');
   if (!sel) return;
 
-  const sfw = window.SFW || {};
-  const list = pickList(sfw, ['accessories','accessory','acc','access']);
+  const list = pickList(window.SFW || {}, ["accessories", "accessory", "acc", "accs"]);
   sel.innerHTML = '<option value="">（指定なし）</option>' +
     list.map(it => {
-      const label = (typeof it === 'string' ? it : (it && (it.tag || it.label || it.name || it.text)) || '').trim();
+      const label = (typeof it === 'string' ? it : (it && it.tag) || '').trim();
       return label ? `<option value="${label}">${label}</option>` : '';
     }).join('');
 
+  // 色ホイール初期化（HTMLのidが plAcc ベースで揃っていること）
   if (typeof initColorWheel === 'function') {
-    // plAcc = wheel_plAcc / thumb_plAcc / sat_plAcc / lit_plAcc / sw_plAcc / tag_plAcc
     getPlAccColor = initColorWheel('plAcc', 0, 75, 50);
   }
 }
