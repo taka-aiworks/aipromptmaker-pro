@@ -1279,7 +1279,7 @@ function pmRenderAcc(){
 
 /* SFWラジオ群の描画 */
 function pmRenderPlanner(){
-  const sfw = pmSFW();
+  const sfw = pmSFW() || {};
   pmRenderRadios('pl_bg',    pmPickList(sfw, ['background','bg']),        { groupName:'pl_bg' });
   pmRenderRadios('pl_pose',  pmPickList(sfw, ['pose','poses']),           { groupName:'pl_pose', allowEmpty:true });
   pmRenderRadios('pl_comp',  pmPickList(sfw, ['composition','comp']),     { groupName:'pl_comp' });
