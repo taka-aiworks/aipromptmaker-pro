@@ -3152,10 +3152,11 @@ function buildBatchProduction(n){
     all = stripMultiHints(all);
     all = forceSoloPos(all);
 
-    // ★ 表情/構図/視点の排他整理 → 並び順整形
+        // ★ 表情/構図/視点の排他整理 → 並び順整形
     all = fixExclusives(all);
-    const prompt = ensurePromptOrder(all).join(", ");
-    all = enforceHeadOrder(all);
+    all = ensurePromptOrder(all);
+    all = enforceHeadOrder(all);      // ← 先に配列を整えて
+    const prompt = all.join(", ");    // ← その結果で文字列化
 
     const seed = (seedMode === "fixed")
       ? baseSeed
