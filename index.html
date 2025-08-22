@@ -841,69 +841,36 @@
   window.applyOutfitMode = applyOutfitMode;
 })();
 </script>
-<script>
-// 既存の $ / $$ が無い環境でも動くよう保険
-window.$  = window.$  || (s => document.querySelector(s));
-window.$$ = window.$$ || (s => document.querySelectorAll(s));
-
-/* ========= タブ切替（置き換え） ========= */
-function initTabs(){
-  $$(".tab").forEach(tab => {
-    tab.addEventListener("click", () => {
-      // 見た目
-      $$(".tab").forEach(x => x.classList.remove("active"));
-      tab.classList.add("active");
-
-      // 表示切替
-      const m = tab.dataset.mode;
-      $("#panelBasic").hidden      = (m !== "basic");
-      $("#panelPlanner").hidden    = (m !== "planner");     // ★ 撮影モードを追加
-      $("#panelLearning").hidden   = (m !== "learning");
-      $("#panelProduction").hidden = (m !== "production");
-      $("#panelSettings").hidden   = (m !== "settings");
-
-      // 撮影タブが選ばれたら一度だけ初期化
-      if (m === "planner" && typeof pmInitPlannerOnce === "function") {
-        pmInitPlannerOnce();
-      }
-    });
-  });
-
-  // 初期アクティブ反映（.active のタブをクリック相当で起動）
-  const initial = document.querySelector(".tab.active") || document.querySelector(".tab");
-  if (initial) initial.click();
-}
-
-// DOM 準備できたらタブ初期化
-document.addEventListener("DOMContentLoaded", initTabs);
-</script>
+  <!-- タブ切替（planner 初回表示で pmInitPlannerOnce を呼ぶ） -->
   <script>
-/* 撮影モードが可視になった瞬間に一度だけ初期化 */
-(function(){
-  const panel = document.getElementById('panelPlanner');
-  if (!panel) return;
+  // 既存の $ / $$ が無い環境でも動くよう保険
+  window.$  = window.$  || (s => document.querySelector(s));
+  window.$$ = window.$$ || (s => document.querySelectorAll(s));
 
-  const tryInit = () => {
-    if (typeof pmInitPlannerOnce === 'function') {
-      pmInitPlannerOnce();
-    }
-  };
+  function initTabs(){
+    $$(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        $$(".tab").forEach(x => x.classList.remove("active"));
+        tab.classList.add("active");
 
-  // すでに見えていれば即
-  const visibleNow = !panel.hidden && panel.offsetParent !== null;
-  if (visibleNow) { tryInit(); return; }
+        const m = tab.dataset.mode;
+        $("#panelBasic").hidden      = (m !== "basic");
+        $("#panelPlanner").hidden    = (m !== "planner");
+        $("#panelLearning").hidden   = (m !== "learning");
+        $("#panelProduction").hidden = (m !== "production");
+        $("#panelSettings").hidden   = (m !== "settings");
 
-  // 可視化を待ってから実行
-  const obs = new MutationObserver(() => {
-    const visible = !panel.hidden && panel.offsetParent !== null;
-    if (visible) {
-      tryInit();
-      obs.disconnect();
-    }
-  });
-  obs.observe(panel, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
-})();
-</script>
+        if (m === "planner" && typeof pmInitPlannerOnce === "function") {
+          pmInitPlannerOnce();
+        }
+      });
+    });
+
+    const initial = document.querySelector(".tab.active") || document.querySelector(".tab");
+    if (initial) initial.click();
+  }
+  document.addEventListener("DOMContentLoaded", initTabs);
+  </script>
   
 </body>
 </html>
