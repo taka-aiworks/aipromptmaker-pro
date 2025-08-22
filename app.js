@@ -1419,42 +1419,60 @@ function pmInitPlannerOnce(){
     r.addEventListener('change', pmRenderNSFW);
   });
 
-  // 1件出力
-  const btn = document.getElementById('btnPlanOne');
-  if (btn) btn.addEventListener('click', ()=>{
-    const rows = pmBuildOne();
-    pmRenderTable('#tblPlanner tbody', rows);
-    const out = document.getElementById('outPlanner');
-    if (out) out.textContent = rows[0].text;
-    if (typeof toast==='function') toast('プランを出力しました');
-  });
+  // ▼▼ ここから置き換え ▼▼
 
-  // プロンプトをコピー
-  const btnCopy = document.getElementById('btnCopyPlanner');
-  if (btnCopy) btnCopy.addEventListener('click', async ()=>{
-    let text = (document.getElementById('outPlanner')?.textContent || '').trim();
-    if (!text) {
-      const tr = document.querySelector('#tblPlanner tbody tr');
-      if (tr) {
-        const tds = tr.querySelectorAll('td');
-        const prompt = tds[2]?.textContent?.trim() || '';
-        const neg    = tds[3]?.textContent?.trim() || '';
-        if (prompt) text = `${prompt}${neg ? ` --neg ${neg}` : ''}`;
-      }
-    }
-    if (!text){ toast && toast('コピーする内容がありません'); return; }
-    try {
-      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
-      else {
-        const ta = document.createElement('textarea');
-        ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
-        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-      }
-      toast && toast('コピーしました');
-    } catch(e){ console.warn(e); toast && toast('コピーに失敗しました'); }
-  });
+// 出力テキストを現在のテーブル内容＋選択フォーマットから再構築
+function pmUpdateOutFromTable(){
+  const tr = document.querySelector('#tblPlanner tbody tr');
+  const out = document.getElementById('outPlanner');
+  if (!tr || !out) return;
+
+  const tds  = Array.from(tr.children).map(td => td.textContent || "");
+  const seed = tds[1] || "";  // seed
+  const p    = tds[2] || "";  // prompt
+  const n    = tds[3] || "";  // negative
+
+  const fmt  = getFmt("#fmtPlanner", "a1111");
+  out.textContent = fmt.line(p, n, seed);
 }
-window.pmInitPlannerOnce = pmInitPlannerOnce;
+
+// 1件出力
+const btn = document.getElementById('btnPlanOne');
+if (btn) btn.addEventListener('click', ()=>{
+  const rows = pmBuildOne();                           // [{seed,pos[],neg,text}]
+  pmRenderTable('#tblPlanner tbody', rows);            // テーブル更新
+  pmUpdateOutFromTable();                              // 選択フォーマットで out を更新
+  if (typeof toast==='function') toast('プランを出力しました');
+});
+
+// フォーマット変更時も out を更新
+const fmtSel = document.getElementById('fmtPlanner');
+if (fmtSel) fmtSel.addEventListener('change', pmUpdateOutFromTable);
+
+// プロンプトをコピー（常に現在のフォーマットでコピー）
+const btnCopy = document.getElementById('btnCopyPlanner');
+if (btnCopy) btnCopy.addEventListener('click', async ()=>{
+  // out が空でも、テーブルから組み直せば常にコピーできる
+  pmUpdateOutFromTable();
+  const text = (document.getElementById('outPlanner')?.textContent || '').trim();
+  if (!text){ if (typeof toast==='function') toast('コピーする内容がありません'); return; }
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    }
+    if (typeof toast==='function') toast('コピーしました');
+  } catch(e){
+    console.warn(e);
+    if (typeof toast==='function') toast('コピーに失敗しました');
+  }
+});
+
+// ▲▲ ここまで置き換え ▲▲
 
 
 // 元の categorizePoseComp はそのまま利用する前提
