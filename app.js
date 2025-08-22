@@ -1193,9 +1193,6 @@ window.$$ = window.$$ || (s => document.querySelectorAll(s));
 /* =========================================
    撮影モード（pm* 名前空間）
 ========================================= */
-/* ================================
-   撮影モード (planner) — ES5 only
-   ================================ */
 
 /* 安全ヘルパ */
 function pmById(id){ return document.getElementById(id); }
@@ -1504,7 +1501,7 @@ function pmRenderTable(tbodySel, rows){
 function pmInitPlannerOnce(){
   if (pmInitPlannerOnce._done) return;
 
-  var sfw = pmSFW();
+  var sfw = (typeof pmSFW === 'function' ? pmSFW() : (window.SFW || {}));
   var ready =
     pmPickList(sfw, ['background','bg']).length ||
     pmPickList(sfw, ['pose','poses']).length   ||
@@ -1517,49 +1514,38 @@ function pmInitPlannerOnce(){
 
   pmInitPlannerOnce._done = true;
 
+  // ラジオ・アクセ等の描画
   pmRenderPlanner();
-  pmBindNSFWPlanner();
+
+  // 撮影モードの NSFW UI（実装がある場合だけ呼ぶ）
+  if (typeof pmBindNSFWPlanner === 'function') pmBindNSFWPlanner();
 
   // 1件出力
-  var btn = pmById('btnPlanOne');
+  var btn = document.getElementById('btnPlanOne');
   if (btn) btn.addEventListener('click', function(){
-    var rows = pmBuildOne();
-    pmRenderTable('#tblPlanner tbody', rows);
+    var rows = pmBuildOne();                        // [{ seed, pos[], neg, ... }]
+    pmRenderTable('#tblPlanner tbody', rows);       // テーブル描画
 
-    // 出力フォーマット（既存 FORMATTERS/getFmt を使用）
-    var p = rows[0].pos.join(', ');
-    var n = rows[0].neg;
-    var seed = rows[0].seed;
-
-    var fmt = (typeof getFmt === 'function') ? getFmt('#fmtPlanner', 'a1111') : null;
-    var line = fmt ? fmt.line(p, n, seed) : (p + ' --neg ' + n + ' seed:' + seed);
-
-    var out = pmById('outPlanner');
-    if (out) out.textContent = line;
+    // フォーマッタ経由で #outPlanner にテキスト出力（学習タブと同じ流れ）
+    if (typeof renderPlannerTextTo === 'function') {
+      renderPlannerTextTo('#outPlanner', rows, 'fmtPlanner');
+    } else {
+      // 保険：フォーマッタが無い環境でも従来書式で出す
+      var p = rows[0].pos.join(', ');
+      var n = rows[0].neg || '';
+      var s = rows[0].seed || 0;
+      var out = document.getElementById('outPlanner');
+      if (out) out.textContent = 'Prompt: ' + p + '\nNegative prompt: ' + n + '\nSeed: ' + s;
+    }
 
     if (typeof toast === 'function') toast('プランを出力しました');
   });
 
-  // プロンプトをコピー
-  var btnCopy = pmById('btnCopyPlanner');
+  // プロンプトをコピー（常に #outPlanner のプレーンテキストをコピー）
+  var btnCopy = document.getElementById('btnCopyPlanner');
   if (btnCopy) btnCopy.addEventListener('click', function(){
-    var text = pmById('outPlanner') && pmById('outPlanner').textContent
-             ? String(pmById('outPlanner').textContent).trim() : '';
-
-    if (!text){
-      var tr = document.querySelector('#tblPlanner tbody tr');
-      if (tr){
-        var tds = tr.querySelectorAll('td');
-        var prompt = tds[2] ? String(tds[2].textContent).trim() : '';
-        var neg    = tds[3] ? String(tds[3].textContent).trim() : '';
-        var seed   = tds[1] ? String(tds[1].textContent).trim() : '';
-        if (prompt){
-          var fmt = (typeof getFmt === 'function') ? getFmt('#fmtPlanner', 'a1111') : null;
-          text = fmt ? fmt.line(prompt, neg, seed)
-                     : (prompt + (neg ? ' --neg ' + neg : '') + (seed ? ' seed:' + seed : ''));
-        }
-      }
-    }
+    var out = document.getElementById('outPlanner');
+    var text = out ? String(out.textContent || '').trim() : '';
 
     if (!text){
       if (typeof toast === 'function') toast('コピーする内容がありません');
@@ -1570,9 +1556,7 @@ function pmInitPlannerOnce(){
       if (navigator.clipboard && navigator.clipboard.writeText){
         navigator.clipboard.writeText(text).then(function(){
           if (typeof toast === 'function') toast('コピーしました');
-        }, function(){
-          throw new Error('clipboard failed');
-        });
+        }, function(){ throw new Error('clipboard failed'); });
       } else {
         var ta = document.createElement('textarea');
         ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
@@ -1586,11 +1570,8 @@ function pmInitPlannerOnce(){
     }
   });
 }
-
 /* 外から呼べるように */
 window.pmInitPlannerOnce = pmInitPlannerOnce;
-
-
 
 
 
@@ -2195,6 +2176,20 @@ const FORMATTERS = {
     csvRow:(i,seed,p,n)=>[`"${i}"`,`"${seed}"`,`"${p.replace(/"/g,'""')}"`,`"${n.replace(/"/g,'""')}"`].join(",") }
 };
 const getFmt = (selId, fallback="a1111") => FORMATTERS[$(selId)?.value || fallback] || FORMATTERS[fallback];
+
+
+// 撮影モード：#outPlanner へフォーマット済みテキストを書き出す
+function renderPlannerTextTo(sel, rows, fmtSelId = "fmtPlanner") {
+  const el = document.querySelector(sel);
+  if (!el) return;
+  const fmt = getFmt("#" + fmtSelId, "a1111"); // 既存の getFmt を利用
+  const buf = (rows || []).map(r => {
+    const p = Array.isArray(r.pos) ? r.pos.join(", ") : String(r.pos||"");
+    return fmt.line(p, r.neg || "", r.seed || 0);
+  }).join("\n\n");
+  el.textContent = buf;
+}
+
 
 // --- 追加：結合版（プロンプト＋ネガ）を作るヘルパ
 function buildMergedPrompt(p, n) {
