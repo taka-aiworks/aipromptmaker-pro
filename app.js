@@ -1193,8 +1193,402 @@ window.$$ = window.$$ || (s => document.querySelectorAll(s));
 /* =========================================
    撮影モード（pm* 名前空間）
 ========================================= */
+/* ================================
+   撮影モード (planner) — ES5 only
+   ================================ */
 
+/* 安全ヘルパ */
+function pmById(id){ return document.getElementById(id); }
+function pmTextById(id){
+  var el = pmById(id); return el && el.textContent ? String(el.textContent).trim() : '';
+}
+function pmValById(id){
+  var el = pmById(id); return el && typeof el.value !== 'undefined' ? String(el.value).trim() : '';
+}
+function pmChecked(id){
+  var el = pmById(id); return !!(el && el.checked);
+}
 
+/* SFW / NSFW 取得（存在すればそれを返す） */
+function pmSFW(){
+  if (typeof SFW !== 'undefined' && SFW) return SFW;
+  if (typeof globalThis !== 'undefined' && globalThis.SFW) return globalThis.SFW;
+  if (typeof window !== 'undefined' && window.SFW) return window.SFW;
+  return {};
+}
+function pmNSFW(){
+  if (typeof NSFW !== 'undefined' && NSFW) return NSFW;
+  if (typeof globalThis !== 'undefined' && globalThis.NSFW) return globalThis.NSFW;
+  if (typeof window !== 'undefined' && window.NSFW) return window.NSFW;
+  return {};
+}
+
+/* list 正規化（外部の normList があれば使い、無ければ簡易版） */
+function pmNormList(list){
+  if (typeof normList === 'function') return normList(list);
+  var out = [];
+  if (!list || Object.prototype.toString.call(list) !== '[object Array]') return out;
+  for (var i=0; i<list.length; i++){
+    var it = list[i];
+    if (typeof it === 'string'){
+      out.push({ tag: String(it), label: String(it) });
+    } else if (it && typeof it === 'object'){
+      var tg = (it.tag || it.value || it.en || it.id || '');
+      var lb = (it.label || it.jp || it.name || it.title || it.tag || '');
+      tg = String(tg || '').trim();
+      lb = String(lb || '').trim();
+      if (tg || lb) out.push({ tag: tg || lb, label: lb || tg });
+    }
+  }
+  return out;
+}
+
+/* ラジオの選択値取得 */
+function pmPickOne(name){
+  var el = document.querySelector('input[name="'+ name +'"]:checked');
+  return el ? (el.value || '') : '';
+}
+
+/* 安全に候補配列を拾う */
+function pmPickList(obj, keys){
+  if (!obj) return [];
+  for (var i=0; i<keys.length; i++){
+    var v = obj[keys[i]];
+    if (v && Object.prototype.toString.call(v) === '[object Array]') return v;
+  }
+  return [];
+}
+
+/* chips風ラジオ（主表示=日本語label / 右肩小さく英tag。value=英tag） */
+function pmRenderRadios(containerId, list, opts){
+  opts = opts || {};
+  var groupName  = opts.groupName || containerId;
+  var allowEmpty = !!opts.allowEmpty;
+  var checkFirst = !!opts.checkFirst;
+
+  var root = pmById(containerId);
+  if (!root) return;
+
+  var items = pmNormList(list);
+  var html = [];
+
+  if (allowEmpty){
+    html.push(
+      '<label class="chip">' +
+        '<input type="radio" name="'+ groupName +'" value="" checked>' +
+        '<span>指定なし <span class="mini en">none</span></span>' +
+      '</label>'
+    );
+  }
+
+  for (var i=0; i<items.length; i++){
+    var it = items[i] || {};
+    var tag   = String(it.tag   || '').trim();
+    var label = String(it.label || tag).trim();
+    var showMini = (tag && label && tag !== label);
+    var checked  = (!allowEmpty && checkFirst && i === 0) ? ' checked' : '';
+    html.push(
+      '<label class="chip">' +
+        '<input type="radio" name="'+ groupName +'" value="'+ (tag || label) +'"'+ checked +'>' +
+        '<span>'+ label + (showMini ? ' <span class="mini en">'+ tag +'</span>' : '') +'</span>' +
+      '</label>'
+    );
+  }
+
+  root.innerHTML = html.join('');
+}
+
+/* アクセ（セレクト）— 表示は日本語、value=英tag。色は initColorWheel があれば利用 */
+var pmGetAccColor = function(){
+  var t = pmById('tag_plAcc');
+  var s = t && t.textContent ? String(t.textContent).trim() : '';
+  return s || '';
+};
+
+function pmRenderAcc(){
+  var sel = pmById('pl_accSel');
+  if (!sel) return;
+
+  var src   = pmSFW().accessories || pmSFW().acc || [];
+  var items = pmNormList(src);
+  var html  = ['<option value="">未選択</option>'];
+
+  for (var i=0; i<items.length; i++){
+    var it = items[i] || {};
+    var tag   = String(it.tag   || '').trim();
+    var label = String(it.label || tag).trim();
+    if (!tag && !label) continue;
+    html.push('<option value="'+ (tag || label) +'">'+ label +'</option>');
+  }
+  sel.innerHTML = html.join('');
+
+  if (typeof initColorWheel === 'function'){
+    // plAcc 名で wheel/sat/lit/sw/tag を束ねた関数が返る想定
+    pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
+  }
+}
+
+/* 固定・ネガ */
+function pmGetFixed(){
+  var el = pmById('pl_fixed');
+  var txt = el && typeof el.value !== 'undefined' ? String(el.value) : '';
+  var arr = txt.split(',');
+  var out = [];
+  for (var i=0; i<arr.length; i++){
+    var s = String(arr[i]).trim();
+    if (s) out.push(s);
+  }
+  return out;
+}
+function pmGetNeg(){
+  var useDef = pmChecked('pl_useDefaultNeg');
+  var defNeg = (useDef && typeof getDefaultNegativePrompt === 'function') ? getDefaultNegativePrompt() : '';
+  var extra  = pmValById('pl_neg');
+  var both = [];
+  if (defNeg) both.push(defNeg);
+  if (extra)  both.push(extra);
+  return both.join(', ');
+}
+
+/* 撮影モード NSFW（制限なし、レベル上限のみ） */
+function pmRenderNSFWPlanner(){
+  var on = pmChecked('pl_nsfw');
+  var panel = pmById('pl_nsfwPanel');
+  if (panel) panel.style.display = on ? '' : 'none';
+  if (!on) return;
+
+  var capEl = document.querySelector('input[name="pl_nsfwLevel"]:checked');
+  var cap   = capEl ? capEl.value : 'L1';
+  var order = {L1:1,L2:2,L3:3};
+  function allow(lv){ return (order[lv||'L1'] || 1) <= (order[cap] || 1); }
+  function lvl(x){ return {L1:'R-15',L2:'R-18',L3:'R-18G'}[x||'L1'] || 'R-15'; }
+
+  var ns = pmNSFW();
+
+  function chips(list, name){
+    list = pmNormList(list);
+    var i, o, html = [];
+    for (i=0; i<list.length; i++){
+      o = list[i] || {};
+      if (!allow(o.level)) continue;
+      var tg = String(o.tag||'').trim();
+      var lb = String(o.label||tg).trim();
+      if (!tg) continue;
+      html.push(
+        '<label class="chip">' +
+          '<input type="radio" name="pl_nsfw_'+ name +'" value="'+ tg +'">' +
+          lb + '<span class="mini"> '+ lvl(o.level) +'</span>' +
+        '</label>'
+      );
+    }
+    return html.join('');
+  }
+
+  var e;
+  e = pmById('pl_nsfw_expr');  if (e) e.innerHTML  = chips(ns.expression, 'expr');
+  e = pmById('pl_nsfw_expo');  if (e) e.innerHTML  = chips(ns.exposure,   'expo');
+  e = pmById('pl_nsfw_situ');  if (e) e.innerHTML  = chips(ns.situation,  'situ');
+  e = pmById('pl_nsfw_light'); if (e) e.innerHTML  = chips(ns.lighting,   'light');
+}
+function pmBindNSFWPlanner(){
+  var tgl = pmById('pl_nsfw');
+  if (tgl){ tgl.addEventListener('change', pmRenderNSFWPlanner); }
+  var lv = document.querySelectorAll('input[name="pl_nsfwLevel"]');
+  for (var i=0; i<lv.length; i++){ lv[i].addEventListener('change', pmRenderNSFWPlanner); }
+}
+
+/* 画面描画 */
+function pmRenderPlanner(){
+  var sfw = pmSFW();
+  pmRenderRadios('pl_bg',    pmPickList(sfw, ['background','bg']),           { groupName:'pl_bg' });
+  pmRenderRadios('pl_pose',  pmPickList(sfw, ['pose','poses']),              { groupName:'pl_pose', allowEmpty:true });
+  pmRenderRadios('pl_comp',  pmPickList(sfw, ['composition','comp']),        { groupName:'pl_comp' });
+  pmRenderRadios('pl_view',  pmPickList(sfw, ['view','views']),              { groupName:'pl_view' });
+  pmRenderRadios('pl_expr',  pmPickList(sfw, ['expressions','expr']),        { groupName:'pl_expr' });
+  pmRenderRadios('pl_light', pmPickList(sfw, ['lighting','light','lights']), { groupName:'pl_light' });
+
+  pmRenderNSFWPlanner();
+  pmRenderAcc();
+}
+
+/* 1件出力 */
+function pmBuildOne(){
+  var name = pmValById('charName');
+  var seed = (typeof seedFromName === 'function') ? seedFromName(name,1) : 0;
+
+  var base = [];
+  if (name) base.push(name);
+
+  var tmp;
+  tmp = pmPickOne('bf_age');    if (tmp) base.push(tmp);
+  tmp = pmPickOne('bf_gender'); if (tmp) base.push(tmp);
+  tmp = pmPickOne('bf_body');   if (tmp) base.push(tmp);
+  tmp = pmPickOne('bf_height'); if (tmp) base.push(tmp);
+
+  tmp = pmTextById('tagH');     if (tmp) base.push(tmp);
+  tmp = pmTextById('tagE');     if (tmp) base.push(tmp);
+  tmp = pmTextById('tagSkin');  if (tmp) base.push(tmp);
+
+  var bg    = pmPickOne('pl_bg')   || 'plain background';
+  var pose  = pmPickOne('pl_pose') || '';
+  var comp  = pmPickOne('pl_comp') || 'bust';
+  var view  = pmPickOne('pl_view') || 'three-quarters view';
+  var exprS = pmPickOne('pl_expr') || 'neutral expression';
+  var liteS = pmPickOne('pl_light')|| 'soft lighting';
+
+  var expr = exprS;
+  var lite = liteS;
+  var nsfwOn = pmChecked('pl_nsfw');
+  var nsfwExpr  = nsfwOn ? pmPickOne('pl_nsfw_expr')  : '';
+  var nsfwExpo  = nsfwOn ? pmPickOne('pl_nsfw_expo')  : '';
+  var nsfwSitu  = nsfwOn ? pmPickOne('pl_nsfw_situ')  : '';
+  var nsfwLight = nsfwOn ? pmPickOne('pl_nsfw_light') : '';
+  if (nsfwOn){
+    if (nsfwExpr)  expr = nsfwExpr;
+    if (nsfwLight) lite = nsfwLight;
+  }
+
+  var accName = pmValById('pl_accSel');
+  var acc = '';
+  if (accName){
+    var color = pmGetAccColor ? pmGetAccColor() : '';
+    acc = color ? (accName + ', ' + color) : accName;
+  }
+
+  var fixed = pmGetFixed();
+
+  var parts = []
+    .concat(['solo'])
+    .concat((typeof getGenderCountTag==='function') ? [(getGenderCountTag()||'')] : [])
+    .concat(fixed)
+    .concat(base)
+    .concat([bg, pose, comp, view, expr, lite, acc]);
+
+  if (nsfwOn){
+    if (nsfwExpo) parts.push(nsfwExpo);
+    if (nsfwSitu) parts.push(nsfwSitu);
+  }
+
+  // 空除去
+  var cleaned = [];
+  for (var i=0; i<parts.length; i++){ if (parts[i]) cleaned.push(parts[i]); }
+  parts = cleaned;
+
+  if (typeof fixExclusives==='function') parts = fixExclusives(parts);
+  if (typeof ensurePromptOrder==='function') parts = ensurePromptOrder(parts);
+
+  var neg = (typeof withSoloNeg==='function') ? withSoloNeg(pmGetNeg()) : pmGetNeg();
+
+  return [{ seed: seed, pos: parts, neg: neg }];
+}
+
+/* テーブル描画 */
+function pmRenderTable(tbodySel, rows){
+  var tb = document.querySelector(tbodySel); if (!tb) return;
+  var frag = document.createDocumentFragment();
+  for (var i=0; i<rows.length; i++){
+    var r = rows[i];
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+ (i+1) +'</td>' +
+      '<td>'+ r.seed +'</td>' +
+      '<td>'+ r.pos.join(', ') +'</td>' +
+      '<td>'+ r.neg +'</td>';
+    frag.appendChild(tr);
+  }
+  tb.innerHTML = '';
+  tb.appendChild(frag);
+}
+
+/* 初期化（1回だけ） */
+function pmInitPlannerOnce(){
+  if (pmInitPlannerOnce._done) return;
+
+  var sfw = pmSFW();
+  var ready =
+    pmPickList(sfw, ['background','bg']).length ||
+    pmPickList(sfw, ['pose','poses']).length   ||
+    pmPickList(sfw, ['composition','comp']).length;
+
+  if (!ready){
+    setTimeout(pmInitPlannerOnce, 80);
+    return;
+  }
+
+  pmInitPlannerOnce._done = true;
+
+  pmRenderPlanner();
+  pmBindNSFWPlanner();
+
+  // 1件出力
+  var btn = pmById('btnPlanOne');
+  if (btn) btn.addEventListener('click', function(){
+    var rows = pmBuildOne();
+    pmRenderTable('#tblPlanner tbody', rows);
+
+    // 出力フォーマット（既存 FORMATTERS/getFmt を使用）
+    var p = rows[0].pos.join(', ');
+    var n = rows[0].neg;
+    var seed = rows[0].seed;
+
+    var fmt = (typeof getFmt === 'function') ? getFmt('#fmtPlanner', 'a1111') : null;
+    var line = fmt ? fmt.line(p, n, seed) : (p + ' --neg ' + n + ' seed:' + seed);
+
+    var out = pmById('outPlanner');
+    if (out) out.textContent = line;
+
+    if (typeof toast === 'function') toast('プランを出力しました');
+  });
+
+  // プロンプトをコピー
+  var btnCopy = pmById('btnCopyPlanner');
+  if (btnCopy) btnCopy.addEventListener('click', function(){
+    var text = pmById('outPlanner') && pmById('outPlanner').textContent
+             ? String(pmById('outPlanner').textContent).trim() : '';
+
+    if (!text){
+      var tr = document.querySelector('#tblPlanner tbody tr');
+      if (tr){
+        var tds = tr.querySelectorAll('td');
+        var prompt = tds[2] ? String(tds[2].textContent).trim() : '';
+        var neg    = tds[3] ? String(tds[3].textContent).trim() : '';
+        var seed   = tds[1] ? String(tds[1].textContent).trim() : '';
+        if (prompt){
+          var fmt = (typeof getFmt === 'function') ? getFmt('#fmtPlanner', 'a1111') : null;
+          text = fmt ? fmt.line(prompt, neg, seed)
+                     : (prompt + (neg ? ' --neg ' + neg : '') + (seed ? ' seed:' + seed : ''));
+        }
+      }
+    }
+
+    if (!text){
+      if (typeof toast === 'function') toast('コピーする内容がありません');
+      return;
+    }
+
+    try{
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){
+          if (typeof toast === 'function') toast('コピーしました');
+        }, function(){
+          throw new Error('clipboard failed');
+        });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); ta.parentNode.removeChild(ta);
+        if (typeof toast === 'function') toast('コピーしました');
+      }
+    } catch(e){
+      if (window.console && console.warn) console.warn(e);
+      if (typeof toast === 'function') toast('コピーに失敗しました');
+    }
+  });
+}
+
+/* 外から呼べるように */
+window.pmInitPlannerOnce = pmInitPlannerOnce;
 
 
 
