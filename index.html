@@ -258,10 +258,10 @@
     </section>
 
 
-<!-- ==== 撮影プラン タブ本体 ==== -->
+<!-- ==== 撮影モード ==== -->
 <section id="panelPlanner" class="card" hidden>
   <h2>撮影モード</h2>
-  <p class="note">LoRA学習は行わず、1枚だけのカットを確定出力します。</p>
+  <p class="note">1枚だけ確定出力。学習・量産のホワイトリストなし。</p>
 
   <div class="row mini"><b>背景</b></div>
   <div id="pl_bg" class="scroller"></div>
@@ -281,48 +281,39 @@
   <div class="row mini" style="margin-top:10px"><b>ライティング</b></div>
   <div id="pl_light" class="scroller"></div>
 
-  <!-- アクセ（任意・学習モードと同仕様） -->
-<div class="row mini" style="margin-top:10px"><b>アクセ（任意）</b></div>
-<div class="panel">
-  <div class="mini"><b>固定アクセ（常時1種のみ）</b></div>
-  <select id="pl_accSel"></select>
-
-  <div class="wheel-box" style="margin-top:6px">
-    <div id="wheel_plAcc" class="wheel"></div><div id="thumb_plAcc" class="thumb"></div>
+  <!-- アクセ（学習モードと同様：1種＋色） -->
+  <div class="row mini" style="margin-top:10px"><b>アクセ（任意）</b></div>
+  <div class="panel">
+    <div class="mini"><b>固定アクセ（常時1種のみ）</b></div>
+    <select id="pl_accSel"></select>
+    <div class="wheel-box" style="margin-top:6px">
+      <div id="wheel_plAcc" class="wheel"></div><div id="thumb_plAcc" class="thumb"></div>
+    </div>
+    <div class="row mini">
+      S:<input id="sat_plAcc" type="range" min="0" max="100" value="75">
+      L:<input id="lit_plAcc" type="range" min="0" max="100" value="50">
+    </div>
+    <div class="row mini">
+      <div id="sw_plAcc" class="swatch"></div>
+      <span>色タグ: <code class="tag" id="tag_plAcc">black</code></span>
+    </div>
+    <div class="mini">※ 未選択なら挿入しません</div>
   </div>
-  <div class="row mini">
-    S:<input id="sat_plAcc" type="range" min="0" max="100" value="75">
-    L:<input id="lit_plAcc" type="range" min="0" max="100" value="50">
-  </div>
-  <div class="row mini">
-    <div id="sw_plAcc" class="swatch"></div>
-    <span>色タグ: <code class="tag" id="tag_plAcc">black</code></span>
-  </div>
-  <div class="mini">※ 未選択なら挿入しません</div>
-</div>
 
   <hr class="sep">
 
-  <!-- ★ 固有タグ / ネガティブ（撮影モード専用ID） -->
   <div class="panel">
     <h3>固定タグ / ネガティブ</h3>
     <label>固定タグ（先頭に付与）</label>
     <textarea id="pl_fixed" rows="3" placeholder="<lora:YourLoRA:0.8>, 1girl, looking at viewer"></textarea>
-
     <label style="margin-top:10px">ネガティブ（行に付与）</label>
     <textarea id="pl_neg" rows="3" placeholder="lowres, blurry, bad anatomy, watermark"></textarea>
-
     <div class="row mini">
-      <label class="inline">
-        <input type="checkbox" id="pl_useDefaultNeg" checked>
-        デフォルトのネガティブプロンプトを使う
-      </label>
+      <label class="inline"><input type="checkbox" id="pl_useDefaultNeg" checked> デフォルトのネガティブを使う</label>
     </div>
   </div>
 
-  <hr class="sep">
-
-  <div class="row" style="gap:8px">
+  <div class="row" style="gap:8px;margin-top:10px">
     <button id="btnPlanOne" class="btn ok">1件出力</button>
   </div>
 
