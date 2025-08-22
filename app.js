@@ -1194,9 +1194,10 @@ function pmRenderRadios(containerId, items, { groupName, allowEmpty } = {}){
     ? it
     : (it?.tag || it?.value || it?.en || it?.id || '')).trim();
 
-  const toDisp = it => (typeof it === 'string'
-    ? it
-    : (it?.jp || it?.label || it?.name || it?.title || it?.tag || '')).trim();
+   // 表示用は label（日本語）が最優先
+   const toDisp = it => (typeof it === 'string'
+     ? it
+     : (it?.label || it?.jp || it?.name || it?.title || it?.tag || '')).trim();
 
   const html = [];
   if (allowEmpty) {
@@ -1241,7 +1242,8 @@ function pmRenderAcc(){
   sel.innerHTML = '<option value="">（指定なし）</option>' +
     list.map(it=>{
       const tag  = toTag(it);
-      const disp = toDisp(it);
+      // 表示用は label（日本語）が最優先
+      const toDisp = it => (typeof it==='string' ? it : (it?.label || it?.jp || it?.name || it?.title || it?.tag || '')).trim();
       if (!tag && !disp) return '';
       return `<option value="${tag || disp}">${disp || tag}</option>`;
     }).join('');
