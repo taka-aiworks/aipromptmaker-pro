@@ -1184,60 +1184,55 @@ function filterByScope(items, allow) {
 
 // ===== 撮影モード（pm* 名前空間で衝突回避） =====
 
-// chips風ラジオ（UI=日本語＋英語 / value=英語タグ）
-function pmRenderRadios(containerId, items, { groupName, allowEmpty } = {}){
+// chips風ラジオ（UI=日本語＋英語/薄字、value=英語タグ）
+// allowEmpty: 先頭に「指定なし」を追加してそれを既定選択
+function pmRenderRadios(containerId, list, { groupName, allowEmpty, checkFirst = false } = {}){
   const root = document.getElementById(containerId);
   if (!root) return;
-  const name = groupName || containerId;
-  const list = Array.isArray(items) ? items : [];
 
-  const toTag = it => (typeof it === 'string' ? it : (it?.tag || it?.value || it?.en || '')).trim();
-  const toJP  = it => (typeof it === 'string' ? it : (it?.label || it?.jp || '')).trim();
+  const name  = groupName || containerId;
+  const items = (typeof normList === 'function') ? normList(list) : (Array.isArray(list) ? list : []);
 
   const html = [];
+
   if (allowEmpty){
-    html.push(
-      `<label class="chip">
-         <input type="radio" name="${name}" value="" checked>
-         <span>指定なし <small class="en">none</small></span>
-       </label>`
-    );
+    html.push(`<label class="chip">
+      <input type="radio" name="${name}" value="" checked>
+      <span>指定なし <span class="mini en">none</span></span>
+    </label>`);
   }
-  for (const it of list){
-    const jp  = toJP(it);
-    const en  = toTag(it);
-    if (!jp && !en) continue;
-    const val = en || jp; // 可能なら英語タグをvalueに
-    const dispMain = jp || en;
-    const dispEn   = (en && jp && jp !== en) ? ` <small class="en">${en}</small>` : '';
-    html.push(
-      `<label class="chip">
-         <input type="radio" name="${name}" value="${val}">
-         <span>${dispMain}${dispEn}</span>
-       </label>`
-    );
-  }
+
+  items.forEach((it, i) => {
+    // normList 後想定: { tag: 'standing', label: '直立/立ち' }
+    const tag   = (it?.tag   || '').trim();
+    const label = (it?.label || tag).trim();
+    const showMini = tag && label && tag !== label;
+    const checked  = (!allowEmpty && checkFirst && i === 0) ? 'checked' : '';
+    html.push(`<label class="chip">
+      <input type="radio" name="${name}" value="${tag || label}" ${checked}>
+      <span>${label}${showMini ? ` <span class="mini en">${tag}</span>` : ''}</span>
+    </label>`);
+  });
+
   root.innerHTML = html.join('');
 }
 
-// アクセ色タグ取得用（initColorWheelが無ければフォールバック）
-let pmGetAccColor = () => document.getElementById('tag_plAcc')?.textContent?.trim() || '';
-
-// アクセ：日本語のみ表示 / value=英語タグ
+// アクセ（日本語だけ表示 / value=英語タグ）
 function pmRenderAcc(){
   const sel = document.getElementById('pl_accSel');
   if (!sel) return;
-  const list = (window.SFW && (SFW.accessories || SFW.acc)) || [];
 
-  sel.innerHTML = '<option value="">未選択</option>' + list.map(it=>{
-    const tag = (typeof it === 'string' ? it : (it?.tag || '')).trim();
-    const jp  = (typeof it === 'string' ? it : (it?.label || '')).trim();
-    const text = jp || tag;
-    const val  = tag || jp;
-    return text ? `<option value="${val}">${text}</option>` : '';
+  const src = (window.SFW && (SFW.accessories || SFW.acc)) || [];
+  const items = (typeof normList === 'function') ? normList(src) : (Array.isArray(src) ? src : []);
+
+  sel.innerHTML = '<option value="">未選択</option>' + items.map(it=>{
+    const tag   = (it?.tag   || '').trim();
+    const label = (it?.label || tag).trim(); // 表示は日本語優先
+    if (!label && !tag) return '';
+    return `<option value="${tag || label}">${label}</option>`;
   }).join('');
 
-  // 色ホイール（既存の initColorWheel 利用）
+  // 色ホイール
   if (typeof initColorWheel === 'function'){
     window.pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
   }
