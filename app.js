@@ -1187,7 +1187,7 @@ function filterByScope(items, allow) {
 // ==== SFW/NSFW 辞書取得 ====
 // R18チェックボックス (id="chkR18") の状態で切替
 function pmDict(){
-  const useNSFW = document.getElementById('chkR18')?.checked;
+  const useNSFW = document.getElementById('nsfwLearn')?.checked;
   if (useNSFW) {
     return (globalThis.NSFW || {});  // R18モードなら NSFW
   } else {
