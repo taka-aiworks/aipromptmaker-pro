@@ -258,110 +258,112 @@
     </section>
 
 
-<!-- ==== 撮影モード ==== -->
-<section id="panelPlanner" class="card" hidden>
-  <h2>撮影モード</h2>
-  <p class="note">1枚だけ確定出力。学習・量産のホワイトリストなし。</p>
-
-  <div class="row mini"><b>背景</b></div>
-  <div id="pl_bg" class="scroller"></div>
-
-  <div class="row mini" style="margin-top:10px"><b>ポーズ</b></div>
-  <div id="pl_pose" class="scroller"></div>
-
-  <div class="row mini" style="margin-top:10px"><b>構図</b></div>
-  <div id="pl_comp" class="scroller"></div>
-
-  <div class="row mini" style="margin-top:10px"><b>視点</b></div>
-  <div id="pl_view" class="scroller"></div>
-
-  <div class="row mini" style="margin-top:10px"><b>表情</b></div>
-  <div id="pl_expr" class="scroller"></div>
-
-  <div class="row mini" style="margin-top:10px"><b>ライティング</b></div>
-  <div id="pl_light" class="scroller"></div>
-
-  <!-- 18禁 -->
-  <div class="panel" style="margin-top:10px">
-    <h3>18禁</h3>
-    <div class="row" style="margin-top:6px">
-      <label class="inline"><input type="checkbox" id="pl_nsfw"> 18禁ON</label>
-      <span class="mini">（手動選択のみ）</span>
-    </div>
-    <div id="pl_nsfwPanel" class="panel" style="margin-top:8px; display:none">
-      <div class="row mini">
-        <b>レベル上限</b>
-        <label class="inline"><input type="radio" name="pl_nsfwLevel" value="L1" checked>R-15</label>
-        <label class="inline"><input type="radio" name="pl_nsfwLevel" value="L2">R-18</label>
-        <label class="inline"><input type="radio" name="pl_nsfwLevel" value="L3">R-18G</label>
-      </div>
-      <div class="grid g3" style="margin-top:6px">
-        <div><b class="mini">表情</b><div id="pl_nsfw_expr" class="scroller"></div></div>
-        <div><b class="mini">露出</b><div id="pl_nsfw_expo" class="scroller"></div></div>
-        <div><b class="mini">シチュ</b><div id="pl_nsfw_situ" class="scroller"></div></div>
-        <div><b class="mini">ライティング</b><div id="pl_nsfw_light" class="scroller"></div></div>
-      </div>
-      <div class="mini" style="margin-top:6px">※ リストはレベル上限の範囲で表示されます</div>
-    </div>
-  </div>
-
-  <!-- アクセ（学習モードと同様：1種＋色） -->
-  <div class="row mini" style="margin-top:10px"><b>アクセ（任意）</b></div>
-  <div class="panel">
-    <div class="mini"><b>固定アクセ（常時1種のみ）</b></div>
-    <select id="pl_accSel"></select>
-    <div class="wheel-box" style="margin-top:6px">
-      <div id="wheel_plAcc" class="wheel"></div><div id="thumb_plAcc" class="thumb"></div>
-    </div>
-    <div class="row mini">
-      S:<input id="sat_plAcc" type="range" min="0" max="100" value="75">
-      L:<input id="lit_plAcc" type="range" min="0" max="100" value="50">
-    </div>
-    <div class="row mini">
-      <div id="sw_plAcc" class="swatch"></div>
-      <span>色タグ: <code class="tag" id="tag_plAcc">black</code></span>
-    </div>
-    <div class="mini">※ 未選択なら挿入しません</div>
-  </div>
-
-  <hr class="sep">
-
-  <div class="panel">
-    <h3>固定タグ / ネガティブ</h3>
-    <label>固定タグ（先頭に付与）</label>
-    <textarea id="pl_fixed" rows="3" placeholder="<lora:YourLoRA:0.8>, 1girl, looking at viewer"></textarea>
-    <label style="margin-top:10px">ネガティブ（行に付与）</label>
-    <textarea id="pl_neg" rows="3" placeholder="lowres, blurry, bad anatomy, watermark"></textarea>
-    <div class="row mini">
-      <label class="inline"><input type="checkbox" id="pl_useDefaultNeg" checked> デフォルトのネガティブを使う</label>
-    </div>
-  </div>
+   <!-- ==== 撮影モード（新：完成版） ==== -->
+    <section id="panelPlanner" class="card" hidden>
+      <div class="row" style="align-items:center">
+        <h2 style="margin:0;flex:1">撮影モード</h2>
+        <label class="inline mini">出力フォーマット
+          <select id="fmtPlanner">
+            <option value="a1111" selected>Web UI（汎用）</option>
+            <option value="invoke">InvokeAI（CLI）</option>
+            <option value="comfy">ComfyUI（テキスト）</option>
+            <option value="sdnext">SD.Next（dream.py）</option>
+            <option value="nai">NovelAI</option>
           </select>
-          <label class="inline mini">出力フォーマット
-            <select id="fmtPlanner">
-              <option value="a1111" selected>Web UI（汎用）</option>
-              <option value="invoke">InvokeAI（CLI）</option>
-              <option value="comfy">ComfyUI（テキスト）</option>
-              <option value="sdnext">SD.Next（dream.py）</option>
-              <option value="nai">NovelAI</option>
-            </select>
-          </label>
-  <div class="row" style="gap:8px;margin-top:10px">
-    <button id="btnPlanOne" class="btn ok">1件出力</button>
-    <button id="btnCopyPlanner" class="btn ghost">プロンプトをコピー</button>
-  </div>
+        </label>
+      </div>
+      <p class="note">1枚だけ確定出力。学習・量産のホワイトリストなし。</p>
 
-  <div class="tablewrap" style="margin-top:10px">
-    <table id="tblPlanner" class="table">
-      <thead><tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
+      <div class="row mini"><b>背景</b></div>
+      <div id="pl_bg" class="scroller"></div>
 
-  <div class="row" style="margin-top:10px">
-    <div class="out" id="outPlanner"></div>
-  </div>
-</section>      
+      <div class="row mini" style="margin-top:10px"><b>ポーズ</b></div>
+      <div id="pl_pose" class="scroller"></div>
+
+      <div class="row mini" style="margin-top:10px"><b>構図</b></div>
+      <div id="pl_comp" class="scroller"></div>
+
+      <div class="row mini" style="margin-top:10px"><b>視点</b></div>
+      <div id="pl_view" class="scroller"></div>
+
+      <div class="row mini" style="margin-top:10px"><b>表情</b></div>
+      <div id="pl_expr" class="scroller"></div>
+
+      <div class="row mini" style="margin-top:10px"><b>ライティング</b></div>
+      <div id="pl_light" class="scroller"></div>
+
+      <!-- 18禁（撮影モード用：自由選択＆レベル上限） -->
+      <div class="panel" style="margin-top:10px">
+        <h3>18禁</h3>
+        <div class="row" style="margin-top:6px">
+          <label class="inline"><input type="checkbox" id="pl_nsfw"> 18禁ON</label>
+          <span class="mini">（手動選択のみ / ホワイトリスト制限なし）</span>
+        </div>
+        <div id="pl_nsfwPanel" class="panel" style="margin-top:8px; display:none">
+          <div class="row mini" style="gap:8px;align-items:center">
+            <b>レベル上限</b>
+            <label class="inline"><input type="radio" name="pl_nsfwLevel" value="L1" checked>R-15</label>
+            <label class="inline"><input type="radio" name="pl_nsfwLevel" value="L2">R-18</label>
+            <label class="inline"><input type="radio" name="pl_nsfwLevel" value="L3">R-18G</label>
+          </div>
+          <div class="grid g3" style="margin-top:6px">
+            <div><b class="mini">表情</b><div id="pl_nsfw_expr" class="scroller"></div></div>
+            <div><b class="mini">露出</b><div id="pl_nsfw_expo" class="scroller"></div></div>
+            <div><b class="mini">シチュ</b><div id="pl_nsfw_situ" class="scroller"></div></div>
+            <div><b class="mini">ライティング</b><div id="pl_nsfw_light" class="scroller"></div></div>
+          </div>
+          <div class="mini" style="margin-top:6px">※ レベル上限内の項目のみ表示します</div>
+        </div>
+      </div>
+
+      <!-- アクセ（1種＋色 / 表示は日本語のみ） -->
+      <div class="row mini" style="margin-top:10px"><b>アクセ（任意）</b></div>
+      <div class="panel">
+        <div class="mini"><b>固定アクセ（常時1種のみ）</b></div>
+        <select id="pl_accSel"></select>
+        <div class="wheel-box" style="margin-top:6px">
+          <div id="wheel_plAcc" class="wheel"></div><div id="thumb_plAcc" class="thumb"></div>
+        </div>
+        <div class="row mini">
+          S:<input id="sat_plAcc" type="range" min="0" max="100" value="75">
+          L:<input id="lit_plAcc" type="range" min="0" max="100" value="50">
+        </div>
+        <div class="row mini">
+          <div id="sw_plAcc" class="swatch"></div>
+          <span>色タグ: <code class="tag" id="tag_plAcc">black</code></span>
+        </div>
+        <div class="mini">※ 未選択なら挿入しません</div>
+      </div>
+
+      <hr class="sep">
+
+      <div class="panel">
+        <h3>固定タグ / ネガティブ</h3>
+        <label>固定タグ（先頭に付与）</label>
+        <textarea id="pl_fixed" rows="3" placeholder="<lora:YourLoRA:0.8>, 1girl, looking at viewer"></textarea>
+        <label style="margin-top:10px">ネガティブ（行に付与）</label>
+        <textarea id="pl_neg" rows="3" placeholder="lowres, blurry, bad anatomy, watermark"></textarea>
+        <div class="row mini">
+          <label class="inline"><input type="checkbox" id="pl_useDefaultNeg" checked> デフォルトのネガティブを使う</label>
+        </div>
+      </div>
+
+      <div class="row" style="gap:8px;margin-top:10px">
+        <button id="btnPlanOne" class="btn ok">1件出力</button>
+        <button id="btnCopyPlanner" class="btn ghost">プロンプトをコピー</button>
+      </div>
+
+      <div class="tablewrap" style="margin-top:10px">
+        <table id="tblPlanner" class="table">
+          <thead><tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <div class="out" id="outPlanner"></div>
+      </div>
+    </section>      
 
     <!-- 学習モード（バリエーション） -->
     <section id="panelLearning" class="card" hidden>
