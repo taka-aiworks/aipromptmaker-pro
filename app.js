@@ -1,5 +1,5 @@
 /* =========================
-   LoRA Prompt Maker – app.js
+   AI Prompt Maker – app.js
    （分割版 / 軽量化込み）
    ========================= */
 
