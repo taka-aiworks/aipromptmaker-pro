@@ -112,28 +112,6 @@ function buildNegative(baseText="") {
 }
 
 
-/*// --- 学習モード専用: 複数人を抑止するネガティブを付足 ---
-function withSoloNegatives(negText) {
-  const add = [
-    "2girls", "2boys", "two people", "multiple people", "group",
-    "crowd", "duo", "trio"
-  ];
-  const base = (negText || "").split(",").map(s=>s.trim()).filter(Boolean);
-  return uniq([...base, ...add]).join(", ");
-}
-
-/* === ソロ強制ガード（複数人対策） =======================
-const SOLO_POS = ["solo"]; // 1人明示
-const SOLO_NEG = [
-  "multiple people",   // 複数人
-  "group",             // グループ・集合
-  "crowd",             // 群衆
-  "background people", // 背景にいる人
-  "text on clothes",   // シャツに余計な文字が含まれないようにする
-  "letters",           // 文字全般
-  "logo"
-]; */
-
 // 背景が人混みに寄りやすいタグ → “無人化”の弱い補正を足す
 const MULTI_RISK_BG = new Set([
   "festival stalls","shrine festival","street at night","classroom",
@@ -157,9 +135,7 @@ function forceSoloPos(parts){
 
 // ネガに複数人ブロックを必ず混ぜる
 function withSoloNeg(neg){
-  const base = (neg || "").split(",").map(s=>s.trim()).filter(Boolean);
-  const merged = new Set([...base, ...SOLO_NEG]);
-  return [...merged].join(", ");
+    return buildNegative(neg);
 }
 
 // 複数人を示唆しがちな語を“念のため”落とす（プロンプト側）
