@@ -1037,46 +1037,41 @@ const getOne  = (name) => document.querySelector(`input[name="${name}"]:checked`
 const getMany = (name) => $$(`input[name="${name}"]:checked`).map(x=>x.value);
 
 // 追加：学習用ホワイトリスト（必要ならここを編集）
-// 学習用ホワイトリスト（控えめ多様性版）
-// ※ 文字列は SFW 辞書の tag と完全一致させてね
+// 学習モードで使う最小・安定セット
 const SCOPE = {
   learning: {
+    // 背景：単色/スタジオ系のみに絞る（屋外や雑多小物を排除）
     background: [
-      "plain background", "white background", "solid background", "studio background",
-      "bedroom"
-      // もし辞書にあれば: "light gray background"
+      "plain background", "white background", "solid background",
+      "studio background", "light gray background"
     ],
-    // 動きは控えめ＋手の見せ方を少し
-     pose: [
-      "standing", "sitting", "hands on hips", "crossed arms",
-      "pointing", "waving", "head tilt"
+    // ポーズ：骨格崩れが出にくい静的中心（手は少しだけ見せる）
+    pose: [
+      "standing", "sitting",
+      "hands on hips", "crossed arms", "hand on chest"
     ],
+    // 構図：距離3種＋ポートレート。センタリングを常に許容
     composition: [
       "full body", "waist up", "bust", "portrait",
       "centered composition"
     ],
-    // ← 視点は独立カテゴリに分ける
+    // 視点：正面・3/4 を基軸。横/後ろは少量、極端角度は外す
     view: [
-      "front view", "side view", "back view",
-      "three-quarters view",
-      "from below", "looking down", "overhead view"
+      "front view", "three-quarters view",
+      "side view", "back view"
     ],
-    // 表情は整合済みの正規タグ
+    // 表情：個性重視、極端は外す（涙は1段だけ許容）
     expressions: [
-      "neutral expression",
-      "smiling",
-      "smiling open mouth",
-      "serious",
-      "determined",
-      "slight blush",
-      "surprised (mild)",
-      "pouting (slight)",
-      "crying"
+      "neutral expression", "smiling", "smiling open mouth",
+      "serious", "determined",
+      "slight blush", "surprised (mild)", "pouting (slight)",
+      "teary eyes"
     ],
-    // ライティングは安定系のみ
+    // ライティング：安定光中心。ドラマチックは控えめに残す
     lighting: [
-      "normal lighting", "even lighting", "soft lighting","studio lighting","dramatic lighting","backlighting",
-      "window light", "overcast","natural lighting"
+      "normal lighting", "even lighting", "soft lighting",
+      "window light", "overcast", "natural lighting",
+      "studio lighting", "backlighting"
     ]
   }
 };
