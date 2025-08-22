@@ -1184,37 +1184,56 @@ function filterByScope(items, allow) {
 
 // ===== 撮影モード（pm* 名前空間で衝突回避） =====
 
+// 共通: 表示ラベルを「日本語 (英語)」に整形
+const pmLabel = (en, jp) => (jp ? `${jp} (${en})` : en);
+
 // chips風ラジオ描画（allowEmptyで「指定なし」）
 function pmRenderRadios(containerId, items, { groupName, allowEmpty } = {}){
   const root = document.getElementById(containerId);
   if (!root) return;
   const name = groupName || containerId;
 
-  const toTag  = it => (typeof it === 'string'
+  // 値（英語）を取る
+  const toTag = it => (typeof it === 'string'
     ? it
-    : (it?.tag || it?.value || it?.en || it?.id || '')).trim();
+    : (it?.tag || it?.value || it?.en || it?.id || '')
+  ).trim();
 
-   // 表示用は label（日本語）が最優先
-   const toDisp = it => (typeof it === 'string'
-     ? it
-     : (it?.label || it?.jp || it?.name || it?.title || it?.tag || '')).trim();
+  // 日本語ラベル候補
+  const toJp  = it => (typeof it === 'string'
+    ? ''
+    : (it?.label || it?.jp || it?.name || it?.title || '')
+  ).trim();
 
   const html = [];
+
   if (allowEmpty) {
-    html.push(`<label class="chip">
-      <input type="radio" name="${name}" value="" checked>
-      <span>（指定なし）</span>
-    </label>`);
+    html.push(
+      `<label class="chip">
+         <input type="radio" name="${name}" value="" checked>
+         <span>（指定なし）</span>
+       </label>`
+    );
   }
+
   (Array.isArray(items) ? items : []).forEach(it=>{
-    const tag  = toTag(it);
-    const disp = toDisp(it);
-    if (!tag && !disp) return;
-    html.push(`<label class="chip">
-      <input type="radio" name="${name}" value="${tag || disp}">
-      <span>${disp || tag}</span>
-    </label>`);
+    const en = toTag(it);
+    const jp = toJp(it);
+    const hasAny = en || jp;
+    if (!hasAny) return;
+
+    // 値は英語（en）。万一enが無ければ表示文字を値にフォールバック
+    const value = en || jp;
+    const disp  = pmLabel(en || jp, jp); // UIは「JP (EN)」/ ENだけ
+
+    html.push(
+      `<label class="chip">
+         <input type="radio" name="${name}" value="${value}">
+         <span>${disp}</span>
+       </label>`
+    );
   });
+
   root.innerHTML = html.join('');
 }
 
@@ -1234,22 +1253,25 @@ let pmGetAccColor = () => document.getElementById('tag_plAcc')?.textContent?.tri
 function pmRenderAcc(){
   const sel = document.getElementById('pl_accSel');
   if (!sel) return;
+
   const list = pmPickList(window.SFW || {}, ['accessories','acc']);
 
-  const toTag  = it => (typeof it==='string' ? it : (it?.tag || it?.value || it?.en || '')).trim();
-  const toDisp = it => (typeof it==='string' ? it : (it?.jp  || it?.label || it?.name || it?.title || it?.tag || '')).trim();
-
-  sel.innerHTML = '<option value="">（指定なし）</option>' +
-    list.map(it=>{
-      const tag  = toTag(it);
-      // 表示用は label（日本語）が最優先
-      const toDisp = it => (typeof it==='string' ? it : (it?.label || it?.jp || it?.name || it?.title || it?.tag || '')).trim();
-      if (!tag && !disp) return '';
-      return `<option value="${tag || disp}">${disp || tag}</option>`;
-    }).join('');
+  const opts = ['<option value="">（指定なし）</option>'];
+  (Array.isArray(list) ? list : []).forEach(it=>{
+    const en = (typeof it==='string' ? it : (it?.tag || it?.value || it?.en || '')).trim();
+    const jp = (typeof it==='string' ? ''  : (it?.label || it?.jp  || '')).trim();
+    if (!en && !jp) return;
+    const value = en || jp;
+    const text  = pmLabel(en || jp, jp);
+    opts.push(`<option value="${value}">${text}</option>`);
+  });
+  sel.innerHTML = opts.join('');
 
   // 色ホイール
-  if (typeof initColorWheel === 'function') {
+  if (typeof initColorWheel === 'function'
+   && typeof addHueDrag === 'function'
+   && typeof hslToRgb === 'function'
+   && typeof colorNameFromHSL === 'function'){
     pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
   }
 }
