@@ -813,26 +813,26 @@ window.$$ = window.$$ || (s => document.querySelectorAll(s));
 
 /* ========= タブ切替（置き換え） ========= */
 function initTabs(){
-  $$(".tab").forEach(tab => tab.addEventListener("click", () => {
-    // 見た目
-    $$(".tab").forEach(x => x.classList.remove("active"));
-    tab.classList.add("active");
+  $$(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      // 見た目
+      $$(".tab").forEach(x => x.classList.remove("active"));
+      tab.classList.add("active");
 
-    // 表示切替
-    const m = tab.dataset.mode;
-    $("#panelBasic").hidden      = (m !== "basic");
-    $("#panelPlanner").hidden    = (m !== "planner");     // ★ 撮影モードを追加
-    $("#panelLearning").hidden   = (m !== "learning");
-    $("#panelProduction").hidden = (m !== "production");
-    $("#panelSettings").hidden   = (m !== "settings");
+      // 表示切替
+      const m = tab.dataset.mode;
+      $("#panelBasic").hidden      = (m !== "basic");
+      $("#panelPlanner").hidden    = (m !== "planner");     // ★ 撮影モードを追加
+      $("#panelLearning").hidden   = (m !== "learning");
+      $("#panelProduction").hidden = (m !== "production");
+      $("#panelSettings").hidden   = (m !== "settings");
 
-    // タブ切替の初期化
-    if (m === "planner" && typeof pmInitPlannerOnce === "function") { pmInitPlannerOnce(); }
-
-// 可視化を待ってから実行
-const tryInit = () => {
-  if (typeof pmInitPlannerOnce === 'function') pmInitPlannerOnce();
-};
+      // 撮影タブが選ばれたら一度だけ初期化
+      if (m === "planner" && typeof pmInitPlannerOnce === "function") {
+        pmInitPlannerOnce();
+      }
+    });
+  });
 
   // 初期アクティブ反映（.active のタブをクリック相当で起動）
   const initial = document.querySelector(".tab.active") || document.querySelector(".tab");
@@ -842,7 +842,7 @@ const tryInit = () => {
 // DOM 準備できたらタブ初期化
 document.addEventListener("DOMContentLoaded", initTabs);
 </script>
-<script>
+  <script>
 /* 撮影モードが可視になった瞬間に一度だけ初期化 */
 (function(){
   const panel = document.getElementById('panelPlanner');
