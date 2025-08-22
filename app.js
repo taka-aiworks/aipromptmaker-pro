@@ -547,49 +547,23 @@ function bindBottomCategoryRadios(){
   swap(); // 初期反映（パンツ既定→スカート側を無効）
 }
 
-// ===== 1枚テスト: 必須チェック =====
+// ===== 1枚テスト: 必須チェック（髪・瞳・肌だけ必須） =====
 function listMissingForOneTest() {
   const miss = [];
 
-  // 名前（seed固定用）
-  const name = ($("#charName")?.value || "").trim();
-  if (!name) miss.push("キャラ名");
-
-  // 色タグ（髪・瞳・肌）
+  // 色タグ（髪・瞳・肌）だけ必須
   const hairTag = ($("#tagH")?.textContent || "").trim();
   const eyeTag  = ($("#tagE")?.textContent || "").trim();
   const skinTag = ($("#tagSkin")?.textContent || "").trim();
+
   if (!hairTag) miss.push("髪色");
   if (!eyeTag)  miss.push("瞳色");
   if (!skinTag) miss.push("肌トーン");
 
-  // 形状1択（髪型・目の形）
-  if (!getOne("hairStyle")) miss.push("髪型");
-  if (!getOne("eyeShape"))  miss.push("目の形");
-
-  // 推奨（任意）
-  if (!getOne("skinBody"))  miss.push("体型（任意）");
-  if (!getOne("face"))      miss.push("顔の特徴（任意）");
-  if (!getOne("artStyle"))  miss.push("画風（任意）");
-
-  // ★ 構成タグの必須チェック
-  if (getMany("bg").length === 0) miss.push("背景");
-
-  const hasPose = getMany("pose").length > 0;
-  const hasComp = getMany("comp").length > 0;
-  if (!hasPose && !hasComp) miss.push("ポーズ/構図");
-
-  // 視点・表情・ライティングは buildOneLearning でデフォ補完されるので任意
-  // 必須にしたいなら以下のコメントを外す
-  // if (getMany("view").length === 0) miss.push("視点");
-  // if (getMany("expr").length === 0) miss.push("表情");
-  // if (getMany("lightLearn").length === 0) miss.push("ライティング");
-
-  // ★ 服は任意（チェックしない）
-
-  // 任意は不足扱いにしない
-  return miss.filter(x => !/（任意）$/.test(x));
+  return miss;
 }
+
+
 function isBasicReadyForOneTest(){ return listMissingForOneTest().length === 0; }
 
 function updateOneTestReady(){
