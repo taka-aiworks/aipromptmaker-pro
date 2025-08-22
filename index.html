@@ -826,11 +826,13 @@ function initTabs(){
     $("#panelProduction").hidden = (m !== "production");
     $("#panelSettings").hidden   = (m !== "settings");
 
-    // 初回だけ撮影モードを初期化（辞書からラジオ生成）
-    if (m === "planner" && typeof initPlannerOnce === "function") {
-      initPlannerOnce();
-    }
-  }));
+    // タブ切替の初期化
+    if (m === "planner" && typeof pmInitPlannerOnce === "function") { pmInitPlannerOnce(); }
+
+// 可視化を待ってから実行
+const tryInit = () => {
+  if (typeof pmInitPlannerOnce === 'function') pmInitPlannerOnce();
+};
 
   // 初期アクティブ反映（.active のタブをクリック相当で起動）
   const initial = document.querySelector(".tab.active") || document.querySelector(".tab");
