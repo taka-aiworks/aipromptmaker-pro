@@ -2671,23 +2671,18 @@ function buildOneLearning(extraSeed = 0){
   }
 
   // ===== 5) 排他・整形・シード =====
-  parts = fixExclusives(parts);                 // 表情/構図/視点の同時混入を整理
-  const pos  = ensurePromptOrder(uniq(parts));  // 並び順正規化
+parts = fixExclusives(parts);          // 表情/構図/視点の同時混入を整理
+parts = ensurePromptOrder(uniq(parts));// 並び順正規化（ここで一旦全体の順序を整える）
+parts = enforceHeadOrder(parts);       // ★ 最後に solo / 1girl(1boy) を先頭に固定
+const pos = parts;                     // ← 以後は pos を真値として使う
 
-   // parts 組み立て後
-  if (typeof fixExclusives === 'function') parts = fixExclusives(parts);
-  if (typeof ensurePromptOrder === 'function') parts = ensurePromptOrder(parts);
-  parts = enforceHeadOrder(parts);
+const seed = seedFromName($("#charName").value || "", extraSeed);
 
-  const seed = seedFromName($("#charName").value || "", extraSeed);
+// 追加ネガ（小物の誤検出抑制）
+const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"];
+const neg = buildNegative([ getNeg(), ...EXTRA_NEG ].filter(Boolean).join(", "));
 
-  // 追加ネガは配列のまま保持
-  const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"];
-
-  // 新: buildNegative にまとめて渡す
-  const neg = buildNegative([ getNeg(), ...EXTRA_NEG ].filter(Boolean).join(", "));
-
-  return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
+return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
 
 // === 横顔の制御（学習用・割合ベース） =======================
