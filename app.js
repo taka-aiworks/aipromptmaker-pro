@@ -2644,15 +2644,13 @@ function buildOneLearning(extraSeed = 0){
     parts.push("centered composition");
   }
 
-  // ===== 5) 排他・整形・シード =====
-parts = fixExclusives(parts);          // 表情/構図/視点の同時混入を整理
-parts = ensurePromptOrder(uniq(parts));// 並び順正規化（ここで一旦全体の順序を整える）
-parts = enforceHeadOrder(parts);       // ★ 最後に solo / 1girl(1boy) を先頭に固定
-const pos = parts;                     // ← 以後は pos を真値として使う
+  // 5) 排他・整形・シード
+parts = fixExclusives(parts);
+let pos = ensurePromptOrder(uniq(parts));
+pos = enforceHeadOrder(pos);            // ★ ここで先頭固定を最終適用
 
 const seed = seedFromName($("#charName").value || "", extraSeed);
 
-// 追加ネガ（小物の誤検出抑制）
 const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"];
 const neg = buildNegative([ getNeg(), ...EXTRA_NEG ].filter(Boolean).join(", "));
 
