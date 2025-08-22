@@ -1190,10 +1190,10 @@ function renderRadios(containerId, items, { groupName, allowEmpty } = {}){
   if (!root) return;
   const name = groupName || containerId;
   const toLabel = it =>
-    (typeof it === 'string'
-      ? it
-      : (it && (it.tag || it.label || it.name || it.text)) || ''
-    ).trim();
+  (typeof it === 'string'
+    ? it
+    : (it && (it.tag || it.label || it.name || it.text)) || ''
+  ).trim();
   const html = [];
 
   if (allowEmpty) {
