@@ -1213,42 +1213,77 @@ function renderRadios(containerId, items, { groupName, allowEmpty } = {}){
   root.innerHTML = html.join("");
 }
 
+function pickList(obj, keys){
+  for (const k of keys){
+    const v = obj && obj[k];
+    if (Array.isArray(v) && v.length) return v;
+  }
+  return [];
+}
+
 let getPlAccColor = null;
 
 // ==== 撮影プラン描画（各1択ラジオ：ホワイトリスト不使用・フル辞書） ====
 function renderPlanner(){
   const sfw = window.SFW || {};
 
-  // ← 別名も拾う。無ければ空配列に。
-  const BG    = sfw.background   || sfw.backgrounds || sfw.bg        || [];
-  const POSE  = sfw.pose         || sfw.poses       || sfw.posture   || [];
-  const COMP  = sfw.composition  || sfw.compose     || sfw.comp      || [];
-  const VIEW  = sfw.view         || sfw.views       || [];
-  const EXPR  = sfw.expressions  || sfw.expression  || sfw.faces     || [];
-  const LIGHT = sfw.lighting     || sfw.lights      || sfw.light     || [];
+  const list_bg   = pickList(sfw, ['background','backgrounds','bg']);
+  const list_pose = pickList(sfw, ['pose','poses']);
+  const list_comp = pickList(sfw, ['composition','compositions','comp']);
+  const list_view = pickList(sfw, ['view','views']);
+  const list_expr = pickList(sfw, ['expressions','expression','expr']);
+  const list_lite = pickList(sfw, ['lighting','light','lights','lightLearn']);
 
-  // 中身の有無をログ（原因切り分け）
-  const warn = (id, arr)=>{ if(!arr || arr.length===0) console.warn(`[planner] empty: ${id}`); };
+  renderRadios("pl_bg",   list_bg,   { groupName: "pl_bg"                      });
+  renderRadios("pl_pose", list_pose, { groupName: "pl_pose", allowEmpty:true   });
+  renderRadios("pl_comp", list_comp, { groupName: "pl_comp"                    });
+  renderRadios("pl_view", list_view, { groupName: "pl_view"                    });
+  renderRadios("pl_expr", list_expr, { groupName: "pl_expr"                    });
+  renderRadios("pl_light",list_lite, { groupName: "pl_light"                   });
 
-  warn('pl_bg', BG);
-  renderRadios("pl_bg",   BG,   { groupName: "pl_bg" });
+  renderPlannerAcc(); // アクセ（下で修正）
+}
 
-  warn('pl_pose', POSE);
-  renderRadios("pl_pose", POSE, { groupName: "pl_pose", allowEmpty:true });
+// 初期化の“ready判定”も background だけに依存しないように
+function initPlannerOnce(){
+  if (initPlannerOnce._done) return;
 
-  warn('pl_comp', COMP);
-  renderRadios("pl_comp", COMP, { groupName: "pl_comp" });
+  const sfw = window.SFW || {};
+  const ready = pickList(sfw, ['background','backgrounds','bg']).length > 0
+             || pickList(sfw, ['pose','poses']).length > 0
+             || pickList(sfw, ['composition','compositions','comp']).length > 0;
+  if (!ready){ setTimeout(initPlannerOnce, 80); return; }
 
-  warn('pl_view', VIEW);
-  renderRadios("pl_view", VIEW, { groupName: "pl_view" });
+  initPlannerOnce._done = true;
+  renderPlanner();
 
-  warn('pl_expr', EXPR);
-  renderRadios("pl_expr", EXPR, { groupName: "pl_expr" });
+  const btn = document.getElementById("btnPlanOne");
+  if (btn) btn.addEventListener("click", ()=>{
+    const rows = buildPlannerOne();
+    renderPlannerTableTo("#tblPlanner tbody", rows);
+    const out = document.getElementById("outPlanner");
+    if (out) out.textContent = rows[0].text;
+    if (typeof toast === 'function') toast("プランを出力しました");
+  });
+}
 
-  warn('pl_light', LIGHT);
-  renderRadios("pl_light", LIGHT,{ groupName: "pl_light" });
+// アクセの辞書もキー名ゆらぎを吸収
+function renderPlannerAcc(){
+  const sel = document.getElementById('pl_accSel');
+  if (!sel) return;
 
-  renderPlannerAcc();
+  const sfw = window.SFW || {};
+  const list = pickList(sfw, ['accessories','accessory','acc','access']);
+  sel.innerHTML = '<option value="">（指定なし）</option>' +
+    list.map(it => {
+      const label = (typeof it === 'string' ? it : (it && (it.tag || it.label || it.name || it.text)) || '').trim();
+      return label ? `<option value="${label}">${label}</option>` : '';
+    }).join('');
+
+  if (typeof initColorWheel === 'function') {
+    // plAcc = wheel_plAcc / thumb_plAcc / sat_plAcc / lit_plAcc / sw_plAcc / tag_plAcc
+    getPlAccColor = initColorWheel('plAcc', 0, 75, 50);
+  }
 }
 
 // 撮影モード専用：固定タグ/ネガ取得
@@ -1318,58 +1353,7 @@ function renderPlannerTableTo(tbodySel, rows){
   tb.appendChild(frag);
 }
 
-// ==== 初期化：撮影タブ表示時に1回だけ ====
-function initPlannerOnce(){
-  if (initPlannerOnce._done) return;
-  initPlannerOnce._done = true;
 
-  // 1) まず今ある情報で描画（辞書が未到着でも静的UIは出す）
-  renderPlanner();
-
-  // 2) 辞書が遅れて来る場合に備えて追描画（最大 ~4秒）
-  let tries = 0;
-  const timer = setInterval(() => {
-    const ready = window.SFW
-      && Array.isArray(window.SFW.background) && window.SFW.background.length > 0;
-    if (ready) {
-      console.log('[planner] late dictionary detected. re-render.');
-      renderPlanner();
-      clearInterval(timer);
-    }
-    if (++tries > 80) { // 80 * 50ms = 4秒で諦め
-      clearInterval(timer);
-    }
-  }, 50);
-
-  // ボタン配線
-  const btn = document.getElementById("btnPlanOne");
-  if (btn) btn.addEventListener("click", ()=>{
-    const rows = buildPlannerOne();
-    renderPlannerTableTo("#tblPlanner tbody", rows);
-    const out = document.getElementById("outPlanner");
-    if (out) out.textContent = rows[0].text;
-    if (typeof toast === 'function') toast("プランを出力しました");
-  });
-}
-
-
-function renderPlannerAcc(){
-  const sel = document.getElementById('pl_accSel');
-  if (!sel) return;
-
-  const list = (window.SFW && window.SFW.accessories) || [];
-  sel.innerHTML = '<option value="">（指定なし）</option>' +
-    list.map(it => {
-      const label = (typeof it === 'string' ? it : (it && it.tag) || '').trim();
-      return label ? `<option value="${label}">${label}</option>` : '';
-    }).join('');
-
-  // ★ 色ホイール初期化：あなたの initColorWheel を使う
-  if (typeof initColorWheel === 'function') {
-    // 引数は (idBase, defaultHue, defaultS, defaultL)
-    getPlAccColor = initColorWheel('plAcc', 0, 75, 50);
-  }
-}
 
 function getPlannerAccTag(){
   const acc = document.getElementById('pl_accSel')?.value?.trim() || '';
