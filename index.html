@@ -242,7 +242,7 @@
         <h4 style="margin:0 0 6px">テーブル</h4>
         <table class="table" id="tblLearnTest">
           <thead>
-            <tr><th>#</th><th>seed</th><th>背景</th><th>ポーズ</th><th>表情</th><th>prompt</th><th>negative</th></tr>
+            <tr><th>#</th><th>seed</th>prompt</th><th>negative</th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -336,7 +336,16 @@
       <label class="inline"><input type="checkbox" id="pl_useDefaultNeg" checked> デフォルトのネガティブを使う</label>
     </div>
   </div>
-
+          </select>
+          <label class="inline mini">出力フォーマット
+            <select id="fmtPlanner">
+              <option value="a1111" selected>Web UI（汎用）</option>
+              <option value="invoke">InvokeAI（CLI）</option>
+              <option value="comfy">ComfyUI（テキスト）</option>
+              <option value="sdnext">SD.Next（dream.py）</option>
+              <option value="nai">NovelAI</option>
+            </select>
+          </label>
   <div class="row" style="gap:8px;margin-top:10px">
     <button id="btnPlanOne" class="btn ok">1件出力</button>
     <button id="btnCopyPlanner" class="btn ghost">プロンプトをコピー</button>
