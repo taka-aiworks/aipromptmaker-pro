@@ -1291,18 +1291,30 @@ function renderPlannerTableTo(tbodySel, rows){
   tb.appendChild(frag);
 }
 
-// ==== 初期化：タブ表示時に1回だけ ====
+// ==== 初期化：撮影タブ表示時に1回だけ ====
 function initPlannerOnce(){
   if (initPlannerOnce._done) return;
-
-  const ready = window.SFW && Array.isArray(window.SFW.background) && window.SFW.background.length > 0;
-  if (!ready) { setTimeout(initPlannerOnce, 80); return; } // ←辞書が来るまでリトライ
-
   initPlannerOnce._done = true;
 
-  console.log('[planner] render with', window.SFW.background.length, 'backgrounds');
+  // 1) まず今ある情報で描画（辞書が未到着でも静的UIは出す）
   renderPlanner();
 
+  // 2) 辞書が遅れて来る場合に備えて追描画（最大 ~4秒）
+  let tries = 0;
+  const timer = setInterval(() => {
+    const ready = window.SFW
+      && Array.isArray(window.SFW.background) && window.SFW.background.length > 0;
+    if (ready) {
+      console.log('[planner] late dictionary detected. re-render.');
+      renderPlanner();
+      clearInterval(timer);
+    }
+    if (++tries > 80) { // 80 * 50ms = 4秒で諦め
+      clearInterval(timer);
+    }
+  }, 50);
+
+  // ボタン配線
   const btn = document.getElementById("btnPlanOne");
   if (btn) btn.addEventListener("click", ()=>{
     const rows = buildPlannerOne();
