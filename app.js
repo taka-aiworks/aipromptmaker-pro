@@ -1219,33 +1219,34 @@ let getPlAccColor = null;
 function renderPlanner(){
   const sfw = window.SFW || {};
 
-  const bg     = sfw.background   || sfw.backgrounds || sfw.bg        || [];
-  const poses  = sfw.pose         || sfw.poses       || sfw.posture   || [];
-  const comp   = sfw.composition  || sfw.compose     || sfw.comp      || [];
-  const view   = sfw.view         || sfw.views       || [];
-  const expr   = sfw.expressions  || sfw.expression  || sfw.faces     || [];
-  const light  = sfw.lighting     || sfw.lights      || sfw.light     || [];
+  // ← 別名も拾う。無ければ空配列に。
+  const BG    = sfw.background   || sfw.backgrounds || sfw.bg        || [];
+  const POSE  = sfw.pose         || sfw.poses       || sfw.posture   || [];
+  const COMP  = sfw.composition  || sfw.compose     || sfw.comp      || [];
+  const VIEW  = sfw.view         || sfw.views       || [];
+  const EXPR  = sfw.expressions  || sfw.expression  || sfw.faces     || [];
+  const LIGHT = sfw.lighting     || sfw.lights      || sfw.light     || [];
 
-  // 空だったらコンソールに警告（原因切り分け用）
-  const warnIfEmpty = (id, arr) => { if (!arr || arr.length === 0) console.warn(`[planner] empty: ${id}`); };
+  // 中身の有無をログ（原因切り分け）
+  const warn = (id, arr)=>{ if(!arr || arr.length===0) console.warn(`[planner] empty: ${id}`); };
 
-  warnIfEmpty('pl_bg', bg);
-  renderRadios("pl_bg",   bg,   { groupName: "pl_bg" });
+  warn('pl_bg', BG);
+  renderRadios("pl_bg",   BG,   { groupName: "pl_bg" });
 
-  warnIfEmpty('pl_pose', poses);
-  renderRadios("pl_pose", poses,{ groupName: "pl_pose", allowEmpty:true });
+  warn('pl_pose', POSE);
+  renderRadios("pl_pose", POSE, { groupName: "pl_pose", allowEmpty:true });
 
-  warnIfEmpty('pl_comp', comp);
-  renderRadios("pl_comp", comp, { groupName: "pl_comp" });
+  warn('pl_comp', COMP);
+  renderRadios("pl_comp", COMP, { groupName: "pl_comp" });
 
-  warnIfEmpty('pl_view', view);
-  renderRadios("pl_view", view, { groupName: "pl_view" });
+  warn('pl_view', VIEW);
+  renderRadios("pl_view", VIEW, { groupName: "pl_view" });
 
-  warnIfEmpty('pl_expr', expr);
-  renderRadios("pl_expr", expr, { groupName: "pl_expr" });
+  warn('pl_expr', EXPR);
+  renderRadios("pl_expr", EXPR, { groupName: "pl_expr" });
 
-  warnIfEmpty('pl_light', light);
-  renderRadios("pl_light", light,{ groupName: "pl_light" });
+  warn('pl_light', LIGHT);
+  renderRadios("pl_light", LIGHT,{ groupName: "pl_light" });
 
   renderPlannerAcc();
 }
