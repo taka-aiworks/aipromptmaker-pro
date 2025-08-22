@@ -1182,36 +1182,43 @@ function filterByScope(items, allow) {
 }
 
 
-// ===== 撮影モード（pm* 名前空間で衝突回避） =====
 
-// ==== SFW/NSFW 辞書取得 ====
-// R18チェックボックス (id="chkR18") の状態で切替
-function pmDict(){
-  const useNSFW = document.getElementById('nsfwLearn')?.checked;
-  if (useNSFW) {
-    return (globalThis.NSFW || {});  // R18モードなら NSFW
-  } else {
-    return (globalThis.SFW  || {});  // 通常は SFW
-  }
-}
-// SFW辞書の安全取得（直グローバル or window どちらでもOK）
+/* =========================================
+   共通ユーティリティ（既存があればそのままでOK）
+========================================= */
+// 既存の $ / $$ が無い環境でも動くよう保険
+window.$  = window.$  || (s => document.querySelector(s));
+window.$$ = window.$$ || (s => document.querySelectorAll(s));
+
+/* =========================================
+   撮影モード（pm* 名前空間）
+========================================= */
+
+// SFWを安全に取得（裸の SFW があれば最優先）
 function pmSFW(){
   if (typeof SFW !== 'undefined' && SFW) return SFW;
   return (globalThis.SFW || {});
 }
-// ★ 追記：NSFW辞書（EMBED_NSFW→normNSFW→NSFW どれでもOKで取る）
+
+// NSFWは既存グローバルを使用
 function pmNSFW(){
-  const g = globalThis;
-  if (g.NSFW) return g.NSFW;
-  if (g.EMBED_NSFW && typeof normNSFW === 'function') {
-    // 一度正規化してグローバルに載せておく
-    g.NSFW = normNSFW(g.EMBED_NSFW) || {};
-    return g.NSFW;
-  }
-  return {};
+  return (globalThis.NSFW || {});
 }
 
-// chips風ラジオ（UI=日本語＋英語/薄字、value=英語タグ）
+// name属性から選択値（ラジオ）を拾う
+const pmPickOne = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+
+// 複数キー候補から配列を拾う
+function pmPickList(obj, keys){
+  for (const k of keys){
+    const v = obj && obj[k];
+    if (Array.isArray(v)) return v;
+  }
+  return [];
+}
+
+// chips風ラジオ（UI=日本語＋英語薄字、value=英語タグ）
+// allowEmpty: 先頭に「指定なし / none」を既定選択で付与
 function pmRenderRadios(containerId, list, { groupName, allowEmpty, checkFirst = false } = {}){
   const root = document.getElementById(containerId);
   if (!root) return;
@@ -1243,10 +1250,10 @@ function pmRenderRadios(containerId, list, { groupName, allowEmpty, checkFirst =
   root.innerHTML = html.join('');
 }
 
-// アクセ色タグ取得（ホイール未初期化のときは <code id="tag_plAcc"> から読む）
+/* アクセ色タグ取得（initColorWheel が無ければ #tag_plAcc のテキストを返す） */
 let pmGetAccColor = () => document.getElementById('tag_plAcc')?.textContent?.trim() || '';
 
-// アクセ（日本語だけ表示 / value=英語タグ）
+/* アクセ：日本語表示 / value=英語 */
 function pmRenderAcc(){
   const sel = document.getElementById('pl_accSel');
   if (!sel) return;
@@ -1256,19 +1263,19 @@ function pmRenderAcc(){
 
   sel.innerHTML = '<option value="">未選択</option>' + items.map(it=>{
     const tag   = (it?.tag   || '').trim();
-    const label = (it?.label || tag).trim();
+    const label = (it?.label || tag).trim(); // 表示は日本語優先
     if (!label && !tag) return '';
     return `<option value="${tag || label}">${label}</option>`;
   }).join('');
 
-  // 色ホイール
+  // 色ホイール初期化（存在時のみ）
   if (typeof initColorWheel === 'function'){
     pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
   }
 }
 
-// SFW: 画面描画（ホワイトリストなし）
-function pmRenderPlannerSFW(){
+/* SFWラジオ群の描画 */
+function pmRenderPlanner(){
   const sfw = pmSFW();
   pmRenderRadios('pl_bg',    pmPickList(sfw, ['background','bg']),        { groupName:'pl_bg' });
   pmRenderRadios('pl_pose',  pmPickList(sfw, ['pose','poses']),           { groupName:'pl_pose', allowEmpty:true });
@@ -1277,52 +1284,212 @@ function pmRenderPlannerSFW(){
   pmRenderRadios('pl_expr',  pmPickList(sfw, ['expressions','expr']),     { groupName:'pl_expr' });
   pmRenderRadios('pl_light', pmPickList(sfw, ['lighting','light','lights']), { groupName:'pl_light' });
   pmRenderAcc();
-
-    // ★ここを追加
-  bindNSFWPlannerOnce();
-  renderNSFWPlanner();
 }
 
-// 撮影モード：NSFW表示（ON時のみ / レベル上限だけでフィルタ）
-function renderNSFWPlanner(){
-  const panel = document.getElementById('pl_nsfwPanel');
-  const on = document.getElementById('pl_nsfw')?.checked;
-  if (panel) panel.style.display = on ? '' : 'none';
-  if (!on) return;
+/* === NSFW（撮影モード）：レベル上限をかけてラジオ（単一選択）で描画 === */
+function pmRenderNSFWPlanner(){
+  const panelOn = document.getElementById('pl_nsfw')?.checked;
+  const panel   = document.getElementById('pl_nsfwPanel');
+  if (!panel) return;
+  panel.style.display = panelOn ? '' : 'none';
+  if (!panelOn) return;
 
-  const cap = (document.querySelector('input[name="pl_nsfwLevel"]:checked')?.value) || "L1";
-  const order = {L1:1,L2:2,L3:3};
-  const allow = (lv)=> (order[lv||"L1"]||1) <= (order[cap]||1);
-  const lvl = (x)=>({L1:"R-15",L2:"R-18",L3:"R-18G"}[(x||"L1")] || "R-15");
+  const order = {L1:1, L2:2, L3:3};
+  const cap   = document.querySelector('input[name="pl_nsfwLevel"]:checked')?.value || 'L1';
+  const allow = (lv)=> order[(lv||'L1')] <= order[cap];
 
-  const chips = (arr, name) => normList(arr).filter(o=>allow(o.level)).map(o=>`
-    <label class="chip">
-      <input type="radio" name="pl_nsfw_${name}" value="${o.tag}">
-      ${o.label}<span class="mini"> ${lvl(o.level)}</span>
-    </label>
-  `).join("");
+  const NS = pmNSFW();
 
-  if (document.getElementById('pl_nsfw_expr'))  document.getElementById('pl_nsfw_expr').innerHTML  = chips(NSFW.expression, "expr");
-  if (document.getElementById('pl_nsfw_expo'))  document.getElementById('pl_nsfw_expo').innerHTML  = chips(NSFW.exposure,   "expo");
-  if (document.getElementById('pl_nsfw_situ'))  document.getElementById('pl_nsfw_situ').innerHTML  = chips(NSFW.situation,  "situ");
-  if (document.getElementById('pl_nsfw_light')) document.getElementById('pl_nsfw_light').innerHTML = chips(NSFW.lighting,   "light");
-}
+  const draw = (containerId, arr, name) => {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const items = (Array.isArray(arr) ? arr : []).map(o=>({
+      tag: (o?.tag||'').trim(),
+      label: (o?.label||o?.tag||'').trim(),
+      level: o?.level || 'L1'
+    })).filter(o=> o.tag && allow(o.level));
 
-// 撮影モード：NSFWトグル／レベル変更
-function bindNSFWPlannerOnce(){
-  if (bindNSFWPlannerOnce._done) return;
-  bindNSFWPlannerOnce._done = true;
-
-  document.getElementById('pl_nsfw')?.addEventListener('change', e=>{
-    document.getElementById('pl_nsfwPanel').style.display = e.target.checked ? '' : 'none';
-    if (e.target.checked) renderNSFWPlanner();
-  });
-  document.querySelectorAll('input[name="pl_nsfwLevel"]').forEach(x=>{
-    x.addEventListener('change', ()=>{
-      if (document.getElementById('pl_nsfw')?.checked) renderNSFWPlanner();
+    const lvl = (x)=>({L1:"R-15",L2:"R-18",L3:"R-18G"}[(x||"L1")] || "R-15");
+    // allowEmpty = true（指定なし）
+    const html = [];
+    html.push(`<label class="chip">
+      <input type="radio" name="${name}" value="" checked>
+      <span>指定なし <span class="mini en">none</span></span>
+    </label>`);
+    items.forEach(o=>{
+      html.push(`<label class="chip">
+        <input type="radio" name="${name}" value="${o.tag}">
+        <span>${o.label}<span class="mini"> ${lvl(o.level)}</span></span>
+      </label>`);
     });
-  });
+    el.innerHTML = html.join('');
+  };
+
+  draw('pl_nsfw_expr',  NS.expression, 'pl_nsfw_expr');
+  draw('pl_nsfw_expo',  NS.exposure,   'pl_nsfw_expo');
+  draw('pl_nsfw_situ',  NS.situation,  'pl_nsfw_situ');
+  draw('pl_nsfw_light', NS.lighting,   'pl_nsfw_light');
 }
+
+/* 固定/ネガ */
+function pmGetFixed(){
+  return (document.getElementById('pl_fixed')?.value||'')
+    .split(',')
+    .map(s=>s.trim())
+    .filter(Boolean);
+}
+function pmGetNeg(){
+  const useDef = document.getElementById('pl_useDefaultNeg')?.checked;
+  const defNeg = (useDef && typeof getDefaultNegativePrompt==='function') ? getDefaultNegativePrompt() : '';
+  const extra  = (document.getElementById('pl_neg')?.value||'').trim();
+  return [defNeg, extra].filter(Boolean).join(', ');
+}
+
+/* 1件出力（parts配列→テーブル、選択フォーマットでテキスト化→#outPlanner） */
+function pmBuildOne(){
+  const name = (document.getElementById('charName')?.value||'').trim();
+  const seed = (typeof seedFromName==='function') ? seedFromName(name,1) : 0;
+
+  const base = [
+    name,
+    pmPickOne('bf_age'), pmPickOne('bf_gender'), pmPickOne('bf_body'), pmPickOne('bf_height'),
+    (document.getElementById('tagH')?.textContent||'').trim(),
+    (document.getElementById('tagE')?.textContent||'').trim(),
+    (document.getElementById('tagSkin')?.textContent||'').trim(),
+  ].filter(Boolean);
+
+  // SFW選択
+  const bg    = pmPickOne('pl_bg')   || 'plain background';
+  const pose  = pmPickOne('pl_pose') || '';
+  const comp  = pmPickOne('pl_comp') || 'bust';
+  const view  = pmPickOne('pl_view') || 'three-quarters view';
+  const exprS = pmPickOne('pl_expr') || 'neutral expression';
+  const liteS = pmPickOne('pl_light')|| 'soft lighting';
+
+  // NSFW（ONのときだけ）
+  const nsfwOn = document.getElementById('pl_nsfw')?.checked;
+  const nsfwExpr  = nsfwOn ? pmPickOne('pl_nsfw_expr')  : '';
+  const nsfwExpo  = nsfwOn ? pmPickOne('pl_nsfw_expo')  : '';
+  const nsfwSitu  = nsfwOn ? pmPickOne('pl_nsfw_situ')  : '';
+  const nsfwLight = nsfwOn ? pmPickOne('pl_nsfw_light') : '';
+
+  let expr = exprS;
+  let lite = liteS;
+  if (nsfwOn) {
+    if (nsfwExpr)  expr = nsfwExpr;
+    if (nsfwLight) lite = nsfwLight;
+  }
+
+  // アクセ（選択＋色）
+  const accName = document.getElementById('pl_accSel')?.value?.trim() || '';
+  const acc = accName ? (pmGetAccColor() ? `${accName}, ${pmGetAccColor()}` : accName) : '';
+
+  const fixed = pmGetFixed();
+
+  // parts
+  let parts = [
+    'solo',
+    (typeof getGenderCountTag==='function' ? (getGenderCountTag()||'') : ''),
+    ...fixed, ...base,
+    bg, pose, comp, view, expr, lite, acc,
+    ...(nsfwOn ? [nsfwExpo, nsfwSitu].filter(Boolean) : [])
+  ].filter(Boolean);
+
+  if (typeof fixExclusives==='function') parts = fixExclusives(parts);
+  if (typeof ensurePromptOrder==='function') parts = ensurePromptOrder(parts);
+
+  const neg = (typeof withSoloNeg==='function') ? withSoloNeg(pmGetNeg()) : pmGetNeg();
+
+  // テーブル用＆フォーマッタ用
+  const p = parts.join(', ');
+  const n = neg;
+  const fmt = (typeof getFmt === 'function') ? getFmt('#fmtPlanner', 'a1111') : {
+    line:(pp,nn,sd)=>`${pp} --neg ${nn} seed:${sd}`
+  };
+  const line = fmt.line(p, n, seed);
+
+  // テーブル描画
+  pmRenderTable('#tblPlanner tbody', [{ seed, pos: parts, neg }]);
+
+  // 出力テキスト
+  const out = document.getElementById('outPlanner');
+  if (out) out.textContent = line;
+
+  return [{ seed, pos: parts, neg, text: line }];
+}
+
+/* テーブル描画 */
+function pmRenderTable(tbodySel, rows){
+  const tb = document.querySelector(tbodySel); if (!tb) return;
+  const frag = document.createDocumentFragment();
+  rows.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${r.seed}</td><td>${r.pos.join(', ')}</td><td>${r.neg}</td>`;
+    frag.appendChild(tr);
+  });
+  tb.innerHTML = '';
+  tb.appendChild(frag);
+}
+
+/* 初期化（辞書ロード待ち→1回だけ） */
+function pmInitPlannerOnce(){
+  if (pmInitPlannerOnce._done) return;
+
+  const sfw = pmSFW();
+  const ready =
+    pmPickList(sfw, ['background','bg']).length ||
+    pmPickList(sfw, ['pose','poses']).length   ||
+    pmPickList(sfw, ['composition','comp']).length;
+
+  if (!ready){
+    setTimeout(pmInitPlannerOnce, 80);
+    return;
+  }
+
+  pmInitPlannerOnce._done = true;
+
+  // ラジオ等の描画
+  pmRenderPlanner();
+  // NSFW 初期描画
+  pmRenderNSFWPlanner();
+
+  // 「1件出力」
+  const btn = document.getElementById('btnPlanOne');
+  if (btn) btn.addEventListener('click', pmBuildOne);
+
+  // 「プロンプトをコピー」：#outPlanner の文字列をコピー
+  const btnCopy = document.getElementById('btnCopyPlanner');
+  if (btnCopy) btnCopy.addEventListener('click', async ()=>{
+    const text = (document.getElementById('outPlanner')?.textContent || '').trim();
+    if (!text){ if (typeof toast==='function') toast('コピーする内容がありません'); return; }
+    try {
+      if (navigator.clipboard?.writeText){
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+      }
+      if (typeof toast==='function') toast('コピーしました');
+    } catch(e){
+      console.warn(e);
+      if (typeof toast==='function') toast('コピーに失敗しました');
+    }
+  });
+
+  // NSFWトグル＆レベル変更で再描画
+  document.getElementById('pl_nsfw')?.addEventListener('change', pmRenderNSFWPlanner);
+  Array.from(document.querySelectorAll('input[name="pl_nsfwLevel"]'))
+    .forEach(el => el.addEventListener('change', pmRenderNSFWPlanner));
+}
+window.pmInitPlannerOnce = pmInitPlannerOnce; // 露出
+
+
+
+
+
+
 
 
 // 安全にキー候補から配列を拾う
