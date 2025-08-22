@@ -1224,6 +1224,9 @@ function pmRenderRadios(containerId, list, { groupName, allowEmpty, checkFirst =
   root.innerHTML = html.join('');
 }
 
+// ← ファイル上の早い位置に置く( pmRenderAcc / pmBuildOne より前 )
+let pmGetAccColor = () => document.getElementById('tag_plAcc')?.textContent?.trim() || '';
+
 // アクセ（日本語だけ表示 / value=英語タグ）
 function pmRenderAcc(){
   const sel = document.getElementById('pl_accSel');
@@ -1241,7 +1244,7 @@ function pmRenderAcc(){
 
   // 色ホイール
   if (typeof initColorWheel === 'function'){
-    window.pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
+    pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
   }
 }
 // name属性から選択値を取る（既存getOneと衝突しないよう別名）
@@ -1328,7 +1331,7 @@ function pmRenderTable(tbodySel, rows){
 function pmInitPlannerOnce(){
   if (pmInitPlannerOnce._done) return;
 
-  const sfw = window.SFW || {};
+  const sfw =pmSFW || {};
   const ready =
     pmPickList(sfw, ['background','bg']).length ||
     pmPickList(sfw, ['pose','poses']).length   ||
