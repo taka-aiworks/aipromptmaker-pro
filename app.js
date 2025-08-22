@@ -1184,59 +1184,64 @@ function filterByScope(items, allow) {
 
 // ===== 撮影モード（pm* 名前空間で衝突回避） =====
 
-// 共通: 表示ラベルを「日本語 (英語)」に整形
-const pmLabel = (en, jp) => (jp ? `${jp} (${en})` : en);
-
-// chips風ラジオ描画（allowEmptyで「指定なし」）
+// chips風ラジオ（UI=日本語＋英語 / value=英語タグ）
 function pmRenderRadios(containerId, items, { groupName, allowEmpty } = {}){
   const root = document.getElementById(containerId);
   if (!root) return;
   const name = groupName || containerId;
+  const list = Array.isArray(items) ? items : [];
 
-  // 値（英語）を取る
-  const toTag = it => (typeof it === 'string'
-    ? it
-    : (it?.tag || it?.value || it?.en || it?.id || '')
-  ).trim();
-
-  // 日本語ラベル候補
-  const toJp  = it => (typeof it === 'string'
-    ? ''
-    : (it?.label || it?.jp || it?.name || it?.title || '')
-  ).trim();
+  const toTag = it => (typeof it === 'string' ? it : (it?.tag || it?.value || it?.en || '')).trim();
+  const toJP  = it => (typeof it === 'string' ? it : (it?.label || it?.jp || '')).trim();
 
   const html = [];
-
-  if (allowEmpty) {
+  if (allowEmpty){
     html.push(
       `<label class="chip">
          <input type="radio" name="${name}" value="" checked>
-         <span>（指定なし）</span>
+         <span>指定なし <small class="en">none</small></span>
        </label>`
     );
   }
-
-  (Array.isArray(items) ? items : []).forEach(it=>{
-    const en = toTag(it);
-    const jp = toJp(it);
-    const hasAny = en || jp;
-    if (!hasAny) return;
-
-    // 値は英語（en）。万一enが無ければ表示文字を値にフォールバック
-    const value = en || jp;
-    const disp  = pmLabel(en || jp, jp); // UIは「JP (EN)」/ ENだけ
-
+  for (const it of list){
+    const jp  = toJP(it);
+    const en  = toTag(it);
+    if (!jp && !en) continue;
+    const val = en || jp; // 可能なら英語タグをvalueに
+    const dispMain = jp || en;
+    const dispEn   = (en && jp && jp !== en) ? ` <small class="en">${en}</small>` : '';
     html.push(
       `<label class="chip">
-         <input type="radio" name="${name}" value="${value}">
-         <span>${disp}</span>
+         <input type="radio" name="${name}" value="${val}">
+         <span>${dispMain}${dispEn}</span>
        </label>`
     );
-  });
-
+  }
   root.innerHTML = html.join('');
 }
 
+// アクセ色タグ取得用（initColorWheelが無ければフォールバック）
+let pmGetAccColor = () => document.getElementById('tag_plAcc')?.textContent?.trim() || '';
+
+// アクセ：日本語のみ表示 / value=英語タグ
+function pmRenderAcc(){
+  const sel = document.getElementById('pl_accSel');
+  if (!sel) return;
+  const list = (window.SFW && (SFW.accessories || SFW.acc)) || [];
+
+  sel.innerHTML = '<option value="">未選択</option>' + list.map(it=>{
+    const tag = (typeof it === 'string' ? it : (it?.tag || '')).trim();
+    const jp  = (typeof it === 'string' ? it : (it?.label || '')).trim();
+    const text = jp || tag;
+    const val  = tag || jp;
+    return text ? `<option value="${val}">${text}</option>` : '';
+  }).join('');
+
+  // 色ホイール（既存の initColorWheel 利用）
+  if (typeof initColorWheel === 'function'){
+    window.pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
+  }
+}
 // name属性から選択値を取る（既存getOneと衝突しないよう別名）
 const pmPickOne = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
 
@@ -1246,35 +1251,6 @@ function pmPickList(obj, keys){
   return [];
 }
 
-// アクセ色タグ取得用（initColorWheelが無ければフォールバック）
-let pmGetAccColor = () => document.getElementById('tag_plAcc')?.textContent?.trim() || '';
-
-// アクセUI
-function pmRenderAcc(){
-  const sel = document.getElementById('pl_accSel');
-  if (!sel) return;
-
-  const list = pmPickList(window.SFW || {}, ['accessories','acc']);
-
-  const opts = ['<option value="">（指定なし）</option>'];
-  (Array.isArray(list) ? list : []).forEach(it=>{
-    const en = (typeof it==='string' ? it : (it?.tag || it?.value || it?.en || '')).trim();
-    const jp = (typeof it==='string' ? ''  : (it?.label || it?.jp  || '')).trim();
-    if (!en && !jp) return;
-    const value = en || jp;
-    const text  = pmLabel(en || jp, jp);
-    opts.push(`<option value="${value}">${text}</option>`);
-  });
-  sel.innerHTML = opts.join('');
-
-  // 色ホイール
-  if (typeof initColorWheel === 'function'
-   && typeof addHueDrag === 'function'
-   && typeof hslToRgb === 'function'
-   && typeof colorNameFromHSL === 'function'){
-    pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
-  }
-}
 
 // 画面描画：ホワイトリストなしでSFW辞書をそのまま
 function pmRenderPlanner(){
