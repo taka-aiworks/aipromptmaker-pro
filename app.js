@@ -349,8 +349,8 @@ const DEFAULT_TRAINING_NEG = [
 
 // 学習用ネガ統合（ソロ強制の既存処理に追記）
 function getNegLearn(){
-  const base = getNeg(); // 既存（DEFAULT_NEG + カスタム）
-  return withSoloNeg(uniq([...(base||"").split(",").map(s=>s.trim()).filter(Boolean), ...DEFAULT_TRAINING_NEG.split(",")]).join(", "));
+  const extra = (document.getElementById('learn_neg')?.value||"").trim();
+  return buildNegative(extra);
 }
 
 
