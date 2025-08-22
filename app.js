@@ -1205,8 +1205,11 @@ function pmNSFW(){
   return (globalThis.NSFW || {});
 }
 
-// name属性から選択値（ラジオ）を拾う
-const pmPickOne = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+// name属性から選択値を取る（ES5安全版）
+function pmPickOne(name){
+  var el = document.querySelector('input[name="'+ name +'"]:checked');
+  return el ? (el.value || '') : '';
+}
 
 // 複数キー候補から配列を拾う
 function pmPickList(obj, keys){
