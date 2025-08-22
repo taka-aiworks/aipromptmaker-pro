@@ -1406,6 +1406,7 @@ function pmRenderTable(tbodySel, rows){
 function pmInitPlannerOnce(){
   if (pmInitPlannerOnce._done) return;
 
+  // SFW 辞書読み込みの準備完了待ち
   var sfw = (typeof pmSFW === 'function' ? pmSFW() : (window.SFW || {}));
   var ready =
     pmPickList(sfw, ['background','bg']).length ||
@@ -1420,64 +1421,50 @@ function pmInitPlannerOnce(){
   pmInitPlannerOnce._done = true;
 
   // ラジオ・アクセ等の描画
-  pmRenderPlanner();
+  if (typeof pmRenderPlanner === 'function') pmRenderPlanner();
 
   // 撮影モードの NSFW UI（実装がある場合だけ呼ぶ）
   if (typeof pmBindNSFWPlanner === 'function') pmBindNSFWPlanner();
 
-  // 1件出力
+  // === 1件出力 ===
   var btn = document.getElementById('btnPlanOne');
-  if (btn) btn.addEventListener('click', function(){
-    var rows = pmBuildOne();                        // [{ seed, pos[], neg, ... }]
-    pmRenderTable('#tblPlanner tbody', rows);       // テーブル描画
+  if (btn) btn.addEventListener('click', function () {
+    // rows: [{ seed, pos:[], neg }]
+    var rows = pmBuildOne();
+    pmRenderTable('#tblPlanner tbody', rows);
 
-    // フォーマッタ経由で #outPlanner にテキスト出力（学習タブと同じ流れ）
-    if (typeof renderPlannerTextTo === 'function') {
-      renderPlannerTextTo('#outPlanner', rows, 'fmtPlanner');
-    } else {
-      // 保険：フォーマッタが無い環境でも従来書式で出す
-      var p = rows[0].pos.join(', ');
-      var n = rows[0].neg || '';
-      var s = rows[0].seed || 0;
-      var out = document.getElementById('outPlanner');
-      if (out) out.textContent = 'Prompt: ' + p + '\nNegative prompt: ' + n + '\nSeed: ' + s;
-    }
+    // 共通フォーマッタ経由のテキスト整形（1枚テストと同じ）
+    renderPlannerTextTo('#outPlanner', rows, 'fmtPlanner');
 
     if (typeof toast === 'function') toast('プランを出力しました');
   });
 
-  // プロンプトをコピー（常に #outPlanner のプレーンテキストをコピー）
+  // === プロンプトをコピー（常に #outPlanner の素テキストをコピー） ===
   var btnCopy = document.getElementById('btnCopyPlanner');
-  if (btnCopy) btnCopy.addEventListener('click', function(){
-    var out = document.getElementById('outPlanner');
-    var text = out ? String(out.textContent || '').trim() : '';
-
+  if (btnCopy) btnCopy.addEventListener('click', function () {
+    var text = (document.getElementById('outPlanner')?.textContent || '').trim();
     if (!text){
       if (typeof toast === 'function') toast('コピーする内容がありません');
       return;
     }
-
-    try{
-      if (navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(text).then(function(){
-          if (typeof toast === 'function') toast('コピーしました');
-        }, function(){ throw new Error('clipboard failed'); });
-      } else {
-        var ta = document.createElement('textarea');
-        ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); ta.parentNode.removeChild(ta);
-        if (typeof toast === 'function') toast('コピーしました');
-      }
-    } catch(e){
-      if (window.console && console.warn) console.warn(e);
-      if (typeof toast === 'function') toast('コピーに失敗しました');
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(()=> { if (typeof toast==='function') toast('コピーしました'); })
+        .catch(()=> fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+    function fallbackCopy(t){
+      var ta = document.createElement('textarea');
+      ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+      if (typeof toast==='function') toast('コピーしました');
     }
   });
 }
-/* 外から呼べるように */
+// 念のため公開
 window.pmInitPlannerOnce = pmInitPlannerOnce;
-
 
 
 
