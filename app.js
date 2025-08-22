@@ -1211,17 +1211,38 @@ function renderRadios(containerId, items, { groupName, allowEmpty } = {}){
 
 let getPlAccColor = null;
 
-// ==== 撮影プラン描画（各1択ラジオ：ホワイトリスト不使用・フル辞書） ====
-function renderPlanner(){
+// ==== 撮影プラン描画（各1択ラジオ：ホワイトリスト不使用・フル辞書） ====function renderPlanner(){
   const sfw = window.SFW || {};
-  renderRadios("pl_bg",   sfw.background   || [], { groupName: "pl_bg"                 /* 必須 */});
-  renderRadios("pl_pose", sfw.pose         || [], { groupName: "pl_pose", allowEmpty:true }); // 任意
-  renderRadios("pl_comp", sfw.composition  || [], { groupName: "pl_comp"              /* 必須 */});
-  renderRadios("pl_view", sfw.view         || [], { groupName: "pl_view"              /* 必須 */});
-  renderRadios("pl_expr", sfw.expressions  || [], { groupName: "pl_expr"              /* 必須 */});
-  renderRadios("pl_light",sfw.lighting     || [], { groupName: "pl_light"             /* 必須 */});
-  renderPlannerAcc(); // ←学習モードと同じUIに
 
+  const bg     = sfw.background   || sfw.backgrounds || sfw.bg        || [];
+  const poses  = sfw.pose         || sfw.poses       || sfw.posture   || [];
+  const comp   = sfw.composition  || sfw.compose     || sfw.comp      || [];
+  const view   = sfw.view         || sfw.views       || [];
+  const expr   = sfw.expressions  || sfw.expression  || sfw.faces     || [];
+  const light  = sfw.lighting     || sfw.lights      || sfw.light     || [];
+
+  // 空だったらコンソールに警告（原因切り分け用）
+  const warnIfEmpty = (id, arr) => { if (!arr || arr.length === 0) console.warn(`[planner] empty: ${id}`); };
+
+  warnIfEmpty('pl_bg', bg);
+  renderRadios("pl_bg",   bg,   { groupName: "pl_bg" });
+
+  warnIfEmpty('pl_pose', poses);
+  renderRadios("pl_pose", poses,{ groupName: "pl_pose", allowEmpty:true });
+
+  warnIfEmpty('pl_comp', comp);
+  renderRadios("pl_comp", comp, { groupName: "pl_comp" });
+
+  warnIfEmpty('pl_view', view);
+  renderRadios("pl_view", view, { groupName: "pl_view" });
+
+  warnIfEmpty('pl_expr', expr);
+  renderRadios("pl_expr", expr, { groupName: "pl_expr" });
+
+  warnIfEmpty('pl_light', light);
+  renderRadios("pl_light", light,{ groupName: "pl_light" });
+
+  renderPlannerAcc();
 }
 
 // 撮影モード専用：固定タグ/ネガ取得
