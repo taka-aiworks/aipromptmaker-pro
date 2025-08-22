@@ -2678,9 +2678,11 @@ function buildOneLearning(extraSeed = 0){
 
   const seed = seedFromName($("#charName").value || "", extraSeed);
 
-  // 追加ネガ
-  const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"].join(", ");
-  const neg = withSoloNeg([getNeg(), EXTRA_NEG].filter(Boolean).join(", "));
+  // 追加ネガは配列のまま保持
+  const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"];
+
+  // 新: buildNegative にまとめて渡す
+  const neg = buildNegative([ getNeg(), ...EXTRA_NEG ].filter(Boolean).join(", "));
 
   return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
