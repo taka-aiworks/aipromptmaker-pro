@@ -1215,7 +1215,8 @@ function renderRadios(containerId, items, { groupName, allowEmpty } = {}){
 
 let getPlAccColor = null;
 
-// ==== 撮影プラン描画（各1択ラジオ：ホワイトリスト不使用・フル辞書） ====function renderPlanner(){
+// ==== 撮影プラン描画（各1択ラジオ：ホワイトリスト不使用・フル辞書） ====
+function renderPlanner(){
   const sfw = window.SFW || {};
 
   const bg     = sfw.background   || sfw.backgrounds || sfw.bg        || [];
