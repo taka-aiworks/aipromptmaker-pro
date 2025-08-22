@@ -1328,15 +1328,23 @@ function pmRenderTable(tbodySel, rows){
 function pmInitPlannerOnce(){
   if (pmInitPlannerOnce._done) return;
 
+  const sfw = window.SFW || {};
   const ready =
-    pmPickList(SFW||{}, ['background','bg']).length ||
-    pmPickList(SFW||{}, ['pose','poses']).length   ||
-    pmPickList(SFW||{}, ['composition','comp']).length;
-  if (!ready){ setTimeout(pmInitPlannerOnce, 80); return; }
+    pmPickList(sfw, ['background','bg']).length ||
+    pmPickList(sfw, ['pose','poses']).length   ||
+    pmPickList(sfw, ['composition','comp']).length;
+
+  if (!ready){
+    setTimeout(pmInitPlannerOnce, 80);
+    return;
+  }
 
   pmInitPlannerOnce._done = true;
+
+  // ラジオ等の描画
   pmRenderPlanner();
 
+  // 「1件出力」
   const btn = document.getElementById('btnPlanOne');
   if (btn) btn.addEventListener('click', ()=>{
     const rows = pmBuildOne();
@@ -1345,9 +1353,42 @@ function pmInitPlannerOnce(){
     if (out) out.textContent = rows[0].text;
     if (typeof toast==='function') toast('プランを出力しました');
   });
+
+  // 「プロンプトをコピー」
+  const btnCopy = document.getElementById('btnCopyPlanner');
+  if (btnCopy) btnCopy.addEventListener('click', async ()=>{
+    // outPlanner 優先、なければテーブル1行目から再構成
+    let text = (document.getElementById('outPlanner')?.textContent || '').trim();
+    if (!text) {
+      const tr = document.querySelector('#tblPlanner tbody tr');
+      if (tr) {
+        const tds = tr.querySelectorAll('td');
+        const prompt = tds[2]?.textContent?.trim() || '';
+        const neg    = tds[3]?.textContent?.trim() || '';
+        if (prompt) text = `${prompt}${neg ? ` --neg ${neg}` : ''}`;
+      }
+    }
+    if (!text){
+      if (typeof toast==='function') toast('コピーする内容がありません');
+      return;
+    }
+    try {
+      if (navigator.clipboard?.writeText){
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+      }
+      if (typeof toast==='function') toast('コピーしました');
+    } catch(e){
+      console.warn(e);
+      if (typeof toast==='function') toast('コピーに失敗しました');
+    }
+  });
 }
 window.pmInitPlannerOnce = pmInitPlannerOnce; // 念のため公開
-
 
 
 // 元の categorizePoseComp はそのまま利用する前提
