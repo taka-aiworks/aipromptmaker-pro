@@ -1189,14 +1189,30 @@ function pmRenderRadios(containerId, items, { groupName, allowEmpty } = {}){
   const root = document.getElementById(containerId);
   if (!root) return;
   const name = groupName || containerId;
-  const toLabel = it => (typeof it === 'string' ? it : (it && it.tag) || '').trim();
+
+  const toTag  = it => (typeof it === 'string'
+    ? it
+    : (it?.tag || it?.value || it?.en || it?.id || '')).trim();
+
+  const toDisp = it => (typeof it === 'string'
+    ? it
+    : (it?.jp || it?.label || it?.name || it?.title || it?.tag || '')).trim();
+
   const html = [];
   if (allowEmpty) {
-    html.push(`<label class="chip"><input type="radio" name="${name}" value="" checked><span>（指定なし）</span></label>`);
+    html.push(`<label class="chip">
+      <input type="radio" name="${name}" value="" checked>
+      <span>（指定なし）</span>
+    </label>`);
   }
   (Array.isArray(items) ? items : []).forEach(it=>{
-    const label = toLabel(it); if (!label) return;
-    html.push(`<label class="chip"><input type="radio" name="${name}" value="${label}"><span>${label}</span></label>`);
+    const tag  = toTag(it);
+    const disp = toDisp(it);
+    if (!tag && !disp) return;
+    html.push(`<label class="chip">
+      <input type="radio" name="${name}" value="${tag || disp}">
+      <span>${disp || tag}</span>
+    </label>`);
   });
   root.innerHTML = html.join('');
 }
@@ -1217,16 +1233,21 @@ let pmGetAccColor = () => document.getElementById('tag_plAcc')?.textContent?.tri
 function pmRenderAcc(){
   const sel = document.getElementById('pl_accSel');
   if (!sel) return;
-  const list = pmPickList(SFW || {}, ['accessories','acc']);
-  sel.innerHTML = '<option value="">（指定なし）</option>' + list.map(it=>{
-    const label = (typeof it==='string'?it:it?.tag||'').trim();
-    return label ? `<option value="${label}">${label}</option>` : '';
-  }).join('');
+  const list = pmPickList(window.SFW || {}, ['accessories','acc']);
 
-  if (typeof initColorWheel === 'function'
-   && typeof addHueDrag === 'function'
-   && typeof hslToRgb === 'function'
-   && typeof colorNameFromHSL === 'function'){
+  const toTag  = it => (typeof it==='string' ? it : (it?.tag || it?.value || it?.en || '')).trim();
+  const toDisp = it => (typeof it==='string' ? it : (it?.jp  || it?.label || it?.name || it?.title || it?.tag || '')).trim();
+
+  sel.innerHTML = '<option value="">（指定なし）</option>' +
+    list.map(it=>{
+      const tag  = toTag(it);
+      const disp = toDisp(it);
+      if (!tag && !disp) return '';
+      return `<option value="${tag || disp}">${disp || tag}</option>`;
+    }).join('');
+
+  // 色ホイール
+  if (typeof initColorWheel === 'function') {
     pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
   }
 }
