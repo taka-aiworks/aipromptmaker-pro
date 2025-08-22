@@ -1182,197 +1182,147 @@ function filterByScope(items, allow) {
 }
 
 
-// ==== 撮影モード：ユーティリティ ====
+// ===== 撮影モード（pm* 名前空間で衝突回避） =====
 
-// 簡易ラジオ描画（chips風）: allowEmptyで「指定なし」を出す
-function renderRadios(containerId, items, { groupName, allowEmpty } = {}){
+// chips風ラジオ描画（allowEmptyで「指定なし」）
+function pmRenderRadios(containerId, items, { groupName, allowEmpty } = {}){
   const root = document.getElementById(containerId);
   if (!root) return;
   const name = groupName || containerId;
-  const toLabel = it =>
-  (typeof it === 'string'
-    ? it
-    : (it && (it.tag || it.label || it.name || it.text)) || ''
-  ).trim();
+  const toLabel = it => (typeof it === 'string' ? it : (it && it.tag) || '').trim();
   const html = [];
-
   if (allowEmpty) {
-    html.push(`<label class="chip">
-      <input type="radio" name="${name}" value="" checked>
-      <span>（指定なし）</span>
-    </label>`);
+    html.push(`<label class="chip"><input type="radio" name="${name}" value="" checked><span>（指定なし）</span></label>`);
   }
-  for (const it of (items || [])) {
-    const label = toLabel(it);
-    if (!label) continue;
-    html.push(`<label class="chip">
-      <input type="radio" name="${name}" value="${label}">
-      <span>${label}</span>
-    </label>`);
-  }
-  root.innerHTML = html.join("");
+  (Array.isArray(items) ? items : []).forEach(it=>{
+    const label = toLabel(it); if (!label) return;
+    html.push(`<label class="chip"><input type="radio" name="${name}" value="${label}"><span>${label}</span></label>`);
+  });
+  root.innerHTML = html.join('');
 }
 
-function pickList(obj, keys){
-  for (const k of keys){
-    const v = obj && obj[k];
-    if (Array.isArray(v) && v.length) return v;
-  }
+// name属性から選択値を取る（既存getOneと衝突しないよう別名）
+const pmPickOne = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+
+// 安全にキー候補から配列を拾う
+function pmPickList(obj, keys){
+  for (const k of keys){ const v = obj && obj[k]; if (Array.isArray(v)) return v; }
   return [];
 }
 
-let getPlAccColor = null;
+// アクセ色タグ取得用（initColorWheelが無ければフォールバック）
+let pmGetAccColor = () => document.getElementById('tag_plAcc')?.textContent?.trim() || '';
 
-// すでにあるこれを有効活用
-// pickList(obj, ['候補1','候補2',...]) の最初に見つかった配列を返す
-
-function renderPlanner(){
-  const sfw = window.SFW || {};
-
-  const list_bg   = pickList(sfw, ['background','bg']);
-  const list_pose = pickList(sfw, ['pose','poses']);
-  const list_comp = pickList(sfw, ['composition','comp']);
-  const list_view = pickList(sfw, ['view','views','camera_view']);
-  const list_expr = pickList(sfw, ['expressions','expr']);
-  const list_light= pickList(sfw, ['lighting','light','lights']);
-  // アクセはセレクト（学習モード仕様）なのでここでは描画しない
-
-  renderRadios("pl_bg",   list_bg,   { groupName: "pl_bg" });
-  renderRadios("pl_pose", list_pose, { groupName: "pl_pose", allowEmpty:true });
-  renderRadios("pl_comp", list_comp, { groupName: "pl_comp" });
-  renderRadios("pl_view", list_view, { groupName: "pl_view" });
-  renderRadios("pl_expr", list_expr, { groupName: "pl_expr" });
-  renderRadios("pl_light",list_light,{ groupName: "pl_light" });
-
-  renderPlannerAcc(); // アクセ（セレクト＋色ホイール）
-}
-
-// 初期化の「準備完了」条件も background 固定だと詰むので広げる
-function initPlannerOnce(){
-  if (initPlannerOnce._done) return;
-
-  const sfw = window.SFW || {};
-  const ready =
-    pickList(sfw, ['background','bg']).length ||
-    pickList(sfw, ['pose','poses']).length   ||
-    pickList(sfw, ['composition','comp']).length ||
-    pickList(sfw, ['view','views']).length;
-
-  if (!ready) { setTimeout(initPlannerOnce, 80); return; }
-
-  initPlannerOnce._done = true;
-
-  console.log('[planner] render with keys:', Object.keys(sfw));
-  renderPlanner();
-
-  const btn = document.getElementById("btnPlanOne");
-  if (btn) btn.addEventListener("click", ()=>{
-    const rows = buildPlannerOne();
-    renderPlannerTableTo("#tblPlanner tbody", rows);
-    const out = document.getElementById("outPlanner");
-    if (out) out.textContent = rows[0].text;
-    if (typeof toast === 'function') toast("プランを出力しました");
-  });
-}
-
-// アクセの辞書もキー名ゆらぎを吸収
-function renderPlannerAcc(){
+// アクセUI
+function pmRenderAcc(){
   const sel = document.getElementById('pl_accSel');
   if (!sel) return;
+  const list = pmPickList(window.SFW || {}, ['accessories','acc']);
+  sel.innerHTML = '<option value="">（指定なし）</option>' + list.map(it=>{
+    const label = (typeof it==='string'?it:it?.tag||'').trim();
+    return label ? `<option value="${label}">${label}</option>` : '';
+  }).join('');
 
-  const sfw  = window.SFW || {};
-  const list = pickList(sfw, ['accessories','acc']); // ← 両対応
-  sel.innerHTML = '<option value="">（指定なし）</option>' +
-    list.map(it => {
-      const label = (typeof it === 'string' ? it : (it && it.tag) || '').trim();
-      return label ? `<option value="${label}">${label}</option>` : '';
-    }).join('');
-
-  if (typeof initColorWheel === 'function') {
-    // 色ホイールの依存関数（addHueDrag/hslToRgb/colorNameFromHSL）が先に読まれていること
-    getPlAccColor = initColorWheel('plAcc', 0, 75, 50);
+  if (typeof initColorWheel === 'function'
+   && typeof addHueDrag === 'function'
+   && typeof hslToRgb === 'function'
+   && typeof colorNameFromHSL === 'function'){
+    pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
   }
 }
 
-// 撮影モード専用：固定タグ/ネガ取得
-function getPlanFixed(){
-  return (document.getElementById("pl_fixed")?.value || "")
-    .split(",").map(s => s.trim()).filter(Boolean);
-}
-function getPlanNeg(){
-  const useDef = document.getElementById("pl_useDefaultNeg")?.checked;
-  const defNeg = (useDef && typeof getDefaultNegativePrompt === "function")
-    ? getDefaultNegativePrompt() : "";
-  const extra = (document.getElementById("pl_neg")?.value || "").trim();
-  return [defNeg, extra].filter(Boolean).join(", ");
+// 画面描画：ホワイトリストなしでSFW辞書をそのまま
+function pmRenderPlanner(){
+  const sfw = window.SFW || {};
+  pmRenderRadios('pl_bg',    pmPickList(sfw, ['background','bg']),        { groupName:'pl_bg' });
+  pmRenderRadios('pl_pose',  pmPickList(sfw, ['pose','poses']),           { groupName:'pl_pose', allowEmpty:true });
+  pmRenderRadios('pl_comp',  pmPickList(sfw, ['composition','comp']),     { groupName:'pl_comp' });
+  pmRenderRadios('pl_view',  pmPickList(sfw, ['view','views']),           { groupName:'pl_view' });
+  pmRenderRadios('pl_expr',  pmPickList(sfw, ['expressions','expr']),     { groupName:'pl_expr' });
+  pmRenderRadios('pl_light', pmPickList(sfw, ['lighting','light','lights']), { groupName:'pl_light' });
+  pmRenderAcc();
 }
 
-// ==== 1件だけ出力（撮影モード） ====
-function buildPlannerOne(){
-  const name = (document.getElementById("charName")?.value || "").trim();
-  const seed = seedFromName(name, 1);
+// 固定/ネガ
+function pmGetFixed(){ return (document.getElementById('pl_fixed')?.value||'').split(',').map(s=>s.trim()).filter(Boolean); }
+function pmGetNeg(){
+  const useDef = document.getElementById('pl_useDefaultNeg')?.checked;
+  const defNeg = (useDef && typeof getDefaultNegativePrompt==='function') ? getDefaultNegativePrompt() : '';
+  const extra  = (document.getElementById('pl_neg')?.value||'').trim();
+  return [defNeg, extra].filter(Boolean).join(', ');
+}
 
-  // 基本（キャラ名・基礎属性・色タグ）
+// 1件出力（フォーマットは他タブと同じ想定）
+function pmBuildOne(){
+  const name = (document.getElementById('charName')?.value||'').trim();
+  const seed = (typeof seedFromName==='function') ? seedFromName(name,1) : 0;
+
   const base = [
     name,
-    getOne("bf_age"), getOne("bf_gender"), getOne("bf_body"), getOne("bf_height"),
-    (document.getElementById("tagH")?.textContent || "").trim(),   // 髪色
-    (document.getElementById("tagE")?.textContent || "").trim(),   // 瞳色
-    (document.getElementById("tagSkin")?.textContent || "").trim() // 肌
+    pmPickOne('bf_age'), pmPickOne('bf_gender'), pmPickOne('bf_body'), pmPickOne('bf_height'),
+    (document.getElementById('tagH')?.textContent||'').trim(),
+    (document.getElementById('tagE')?.textContent||'').trim(),
+    (document.getElementById('tagSkin')?.textContent||'').trim(),
   ].filter(Boolean);
 
-  // ラジオ選択（未選択は安全補完）
-  const bg   = getOne("pl_bg")   || "plain background";
-  const pose = getOne("pl_pose") || ""; // 任意
-  const comp = getOne("pl_comp") || "bust";
-  const view = getOne("pl_view") || "three-quarters view";
-  const expr = getOne("pl_expr") || "neutral expression";
-  const lite = getOne("pl_light")|| "soft lighting";
-  const acc  = getPlannerAccTag(); // 学習モードと同じ連結（未選択なら空）
-  
+  const bg   = pmPickOne('pl_bg')   || 'plain background';
+  const pose = pmPickOne('pl_pose') || '';
+  const comp = pmPickOne('pl_comp') || 'bust';
+  const view = pmPickOne('pl_view') || 'three-quarters view';
+  const expr = pmPickOne('pl_expr') || 'neutral expression';
+  const lite = pmPickOne('pl_light')|| 'soft lighting';
 
-  // 固定タグ（撮影モード専用）
-  const fixed = getPlanFixed();
+  // アクセ（選択＋色）
+  const accName = document.getElementById('pl_accSel')?.value?.trim() || '';
+  const acc = accName ? (pmGetAccColor() ? `${accName}, ${pmGetAccColor()}` : accName) : '';
 
-  // 組み立て
-  let parts = ["solo", getGenderCountTag() || "", ...fixed, ...base, bg, pose, comp, view, expr, lite, acc]
-    .filter(Boolean);
+  const fixed = pmGetFixed();
 
-  // 排他整理→順序整形（既存ヘルパを使用）
-  parts = fixExclusives(parts);
-  parts = ensurePromptOrder(parts);
+  let parts = ['solo', (typeof getGenderCountTag==='function' ? (getGenderCountTag()||'') : ''), ...fixed, ...base, bg, pose, comp, view, expr, lite, acc].filter(Boolean);
 
-  // ネガ（撮影モード専用）
-  const neg = withSoloNeg(getPlanNeg());
+  if (typeof fixExclusives==='function') parts = fixExclusives(parts);
+  if (typeof ensurePromptOrder==='function') parts = ensurePromptOrder(parts);
 
-  return [{ seed, pos: parts, neg, text: `${parts.join(", ")} --neg ${neg} seed:${seed}` }];
+  const neg = (typeof withSoloNeg==='function') ? withSoloNeg(pmGetNeg()) : pmGetNeg();
+
+  return [{ seed, pos: parts, neg, text: `${parts.join(', ')} --neg ${neg} seed:${seed}` }];
 }
 
-// ==== テーブル描画（4列：#, seed, prompt, negative） ====
-function renderPlannerTableTo(tbodySel, rows){
+// テーブル描画
+function pmRenderTable(tbodySel, rows){
   const tb = document.querySelector(tbodySel); if (!tb) return;
   const frag = document.createDocumentFragment();
   rows.forEach((r,i)=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${i+1}</td><td>${r.seed}</td><td>${r.pos.join(", ")}</td><td>${r.neg}</td>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${r.seed}</td><td>${r.pos.join(', ')}</td><td>${r.neg}</td>`;
     frag.appendChild(tr);
   });
-  tb.innerHTML = "";
+  tb.innerHTML = '';
   tb.appendChild(frag);
 }
 
+// 初回だけ初期化（SFWロード待ち）
+function initPlannerOnce(){
+  if (initPlannerOnce._done) return;
 
+  const ready =
+    pmPickList(window.SFW||{}, ['background','bg']).length ||
+    pmPickList(window.SFW||{}, ['pose','poses']).length   ||
+    pmPickList(window.SFW||{}, ['composition','comp']).length;
+  if (!ready){ setTimeout(initPlannerOnce, 80); return; }
 
-function getPlannerAccTag(){
-  const acc = document.getElementById('pl_accSel')?.value?.trim() || '';
-  if (!acc) return '';
-  // initColorWheel が返した getter を優先、なければタグ要素から読む
-  const color = (typeof getPlAccColor === 'function'
-                  ? getPlAccColor()
-                  : document.getElementById('tag_plAcc')?.textContent?.trim()) || '';
-  return color ? `${acc}, ${color}` : acc;
+  initPlannerOnce._done = true;
+  pmRenderPlanner();
+
+  const btn = document.getElementById('btnPlanOne');
+  if (btn) btn.addEventListener('click', ()=>{
+    const rows = pmBuildOne();
+    pmRenderTable('#tblPlanner tbody', rows);
+    const out = document.getElementById('outPlanner');
+    if (out) out.textContent = rows[0].text;
+    if (typeof toast==='function') toast('プランを出力しました');
+  });
 }
-
 
 
 
