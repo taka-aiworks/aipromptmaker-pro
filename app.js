@@ -1501,8 +1501,11 @@ function pmPickList(obj, keys){
   return [];
 }
 
-// 選択値（name属性で取得）
-const pmPickOne = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+// name属性から選択値を取る（ES5安全版）
+function pmPickOne(name){
+  var el = document.querySelector('input[name="'+ name +'"]:checked');
+  return el ? (el.value || '') : '';
+}
 
 // 固定/ネガ
 function pmGetFixed(){ return (document.getElementById('pl_fixed')?.value||'').split(',').map(s=>s.trim()).filter(Boolean); }
