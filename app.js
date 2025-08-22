@@ -1217,7 +1217,7 @@ let pmGetAccColor = () => document.getElementById('tag_plAcc')?.textContent?.tri
 function pmRenderAcc(){
   const sel = document.getElementById('pl_accSel');
   if (!sel) return;
-  const list = pmPickList(window.SFW || {}, ['accessories','acc']);
+  const list = pmPickList(SFW || {}, ['accessories','acc']);
   sel.innerHTML = '<option value="">（指定なし）</option>' + list.map(it=>{
     const label = (typeof it==='string'?it:it?.tag||'').trim();
     return label ? `<option value="${label}">${label}</option>` : '';
@@ -1233,7 +1233,7 @@ function pmRenderAcc(){
 
 // 画面描画：ホワイトリストなしでSFW辞書をそのまま
 function pmRenderPlanner(){
-  const sfw = window.SFW || {};
+  const sfw = SFW || {};
   pmRenderRadios('pl_bg',    pmPickList(sfw, ['background','bg']),        { groupName:'pl_bg' });
   pmRenderRadios('pl_pose',  pmPickList(sfw, ['pose','poses']),           { groupName:'pl_pose', allowEmpty:true });
   pmRenderRadios('pl_comp',  pmPickList(sfw, ['composition','comp']),     { groupName:'pl_comp' });
@@ -1306,9 +1306,9 @@ function pmInitPlannerOnce(){
   if (pmInitPlannerOnce._done) return;
 
   const ready =
-    pmPickList(window.SFW||{}, ['background','bg']).length ||
-    pmPickList(window.SFW||{}, ['pose','poses']).length   ||
-    pmPickList(window.SFW||{}, ['composition','comp']).length;
+    pmPickList(SFW||{}, ['background','bg']).length ||
+    pmPickList(SFW||{}, ['pose','poses']).length   ||
+    pmPickList(SFW||{}, ['composition','comp']).length;
   if (!ready){ setTimeout(pmInitPlannerOnce, 80); return; }
 
   pmInitPlannerOnce._done = true;
