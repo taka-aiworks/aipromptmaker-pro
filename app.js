@@ -2658,6 +2658,15 @@ function buildOneLearning(extraSeed = 0){
   // ===== 5) 排他・整形・シード =====
   parts = fixExclusives(parts);                 // 表情/構図/視点の同時混入を整理
   const pos  = ensurePromptOrder(uniq(parts));  // 並び順正規化
+
+ // --- enforce head order (学習モード) ---
+{
+  const headSolo = 'solo';
+  const headGen  = (typeof getGenderCountTag==='function' ? (getGenderCountTag()||'') : '');
+  parts = parts.filter(t => t !== headSolo && t !== headGen);
+  parts = [headSolo, headGen, ...parts].filter(Boolean);
+}
+
   const seed = seedFromName($("#charName").value || "", extraSeed);
 
   // 追加ネガ
