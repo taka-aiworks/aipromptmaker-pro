@@ -1184,15 +1184,17 @@ function filterByScope(items, allow) {
 
 // ===== 撮影モード（pm* 名前空間で衝突回避） =====
 
-// どちらでも取れる安全版
+// SFW辞書の安全取得（直グローバル or window どちらでもOK）
 function pmSFW(){
-  // 先に裸の SFW（モジュール外グローバル）を優先
   if (typeof SFW !== 'undefined' && SFW) return SFW;
-  // それが無ければ window/globalThis から
   return (globalThis.SFW || {});
 }
+// NSFW辞書（無ければ空）
+function pmNSFW(){
+  return (globalThis.NSFW || {});
+}
+
 // chips風ラジオ（UI=日本語＋英語/薄字、value=英語タグ）
-// allowEmpty: 先頭に「指定なし」を追加してそれを既定選択
 function pmRenderRadios(containerId, list, { groupName, allowEmpty, checkFirst = false } = {}){
   const root = document.getElementById(containerId);
   if (!root) return;
@@ -1224,7 +1226,7 @@ function pmRenderRadios(containerId, list, { groupName, allowEmpty, checkFirst =
   root.innerHTML = html.join('');
 }
 
-// ← ファイル上の早い位置に置く( pmRenderAcc / pmBuildOne より前 )
+// アクセ色タグ取得（ホイール未初期化のときは <code id="tag_plAcc"> から読む）
 let pmGetAccColor = () => document.getElementById('tag_plAcc')?.textContent?.trim() || '';
 
 // アクセ（日本語だけ表示 / value=英語タグ）
@@ -1237,7 +1239,7 @@ function pmRenderAcc(){
 
   sel.innerHTML = '<option value="">未選択</option>' + items.map(it=>{
     const tag   = (it?.tag   || '').trim();
-    const label = (it?.label || tag).trim(); // 表示は日本語優先
+    const label = (it?.label || tag).trim();
     if (!label && !tag) return '';
     return `<option value="${tag || label}">${label}</option>`;
   }).join('');
@@ -1247,18 +1249,9 @@ function pmRenderAcc(){
     pmGetAccColor = initColorWheel('plAcc', 0, 75, 50);
   }
 }
-// name属性から選択値を取る（既存getOneと衝突しないよう別名）
-const pmPickOne = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
 
-// 安全にキー候補から配列を拾う
-function pmPickList(obj, keys){
-  for (const k of keys){ const v = obj && obj[k]; if (Array.isArray(v)) return v; }
-  return [];
-}
-
-
-// 画面描画：ホワイトリストなしでSFW辞書をそのまま
-function pmRenderPlanner(){
+// SFW: 画面描画（ホワイトリストなし）
+function pmRenderPlannerSFW(){
   const sfw = pmSFW();
   pmRenderRadios('pl_bg',    pmPickList(sfw, ['background','bg']),        { groupName:'pl_bg' });
   pmRenderRadios('pl_pose',  pmPickList(sfw, ['pose','poses']),           { groupName:'pl_pose', allowEmpty:true });
@@ -1269,6 +1262,46 @@ function pmRenderPlanner(){
   pmRenderAcc();
 }
 
+// NSFW レベル順位
+const pmLevelRank = { L1:1, L2:2, L3:3 };
+
+// NSFW 辞書をレベルでフィルタ
+function pmFilterByLevel(list, level){
+  const rank = pmLevelRank[level] || 1;
+  const src = (typeof normList === 'function') ? normList(list) : (Array.isArray(list) ? list : []);
+  return src.filter(it => {
+    const lv = (it?.level || it?.lvl || 'L1').toString().trim();
+    return (pmLevelRank[lv] || 1) <= rank;
+  });
+}
+
+// NSFW UI描画
+function pmRenderNSFW(){
+  const on = document.getElementById('pl_nsfw')?.checked;
+  const panel = document.getElementById('pl_nsfwPanel');
+  if (!panel) return;
+
+  panel.style.display = on ? '' : 'none';
+  if (!on) return;
+
+  const level = document.querySelector('input[name="pl_nsfwLevel"]:checked')?.value || 'L1';
+  const nsfw = pmNSFW();
+
+  pmRenderRadios('pl_nsfw_expr',  pmFilterByLevel(nsfw.expressions || nsfw.expr || [], level), { groupName:'pl_nsfw_expr',  allowEmpty:true });
+  pmRenderRadios('pl_nsfw_expo',  pmFilterByLevel(nsfw.exposure    || nsfw.expo || [], level), { groupName:'pl_nsfw_expo',  allowEmpty:true });
+  pmRenderRadios('pl_nsfw_situ',  pmFilterByLevel(nsfw.situations  || nsfw.situ || [], level), { groupName:'pl_nsfw_situ',  allowEmpty:true });
+  pmRenderRadios('pl_nsfw_light', pmFilterByLevel(nsfw.lighting    || nsfw.light|| [], level), { groupName:'pl_nsfw_light', allowEmpty:true });
+}
+
+// 安全にキー候補から配列を拾う
+function pmPickList(obj, keys){
+  for (const k of keys){ const v = obj && obj[k]; if (Array.isArray(v)) return v; }
+  return [];
+}
+
+// 選択値（name属性で取得）
+const pmPickOne = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+
 // 固定/ネガ
 function pmGetFixed(){ return (document.getElementById('pl_fixed')?.value||'').split(',').map(s=>s.trim()).filter(Boolean); }
 function pmGetNeg(){
@@ -1278,7 +1311,7 @@ function pmGetNeg(){
   return [defNeg, extra].filter(Boolean).join(', ');
 }
 
-// 1件出力（フォーマットは他タブと同じ想定）
+// 1件出力
 function pmBuildOne(){
   const name = (document.getElementById('charName')?.value||'').trim();
   const seed = (typeof seedFromName==='function') ? seedFromName(name,1) : 0;
@@ -1291,12 +1324,25 @@ function pmBuildOne(){
     (document.getElementById('tagSkin')?.textContent||'').trim(),
   ].filter(Boolean);
 
-  const bg   = pmPickOne('pl_bg')   || 'plain background';
-  const pose = pmPickOne('pl_pose') || '';
-  const comp = pmPickOne('pl_comp') || 'bust';
-  const view = pmPickOne('pl_view') || 'three-quarters view';
-  const expr = pmPickOne('pl_expr') || 'neutral expression';
-  const lite = pmPickOne('pl_light')|| 'soft lighting';
+  // SFW選択
+  const bg    = pmPickOne('pl_bg')   || 'plain background';
+  const pose  = pmPickOne('pl_pose') || '';
+  const comp  = pmPickOne('pl_comp') || 'bust';
+  const view  = pmPickOne('pl_view') || 'three-quarters view';
+  const exprS = pmPickOne('pl_expr') || 'neutral expression';
+  const liteS = pmPickOne('pl_light')|| 'soft lighting';
+
+  // NSFW選択（ON時のみ）
+  let expr = exprS, lite = liteS;
+  const nsfwOn = document.getElementById('pl_nsfw')?.checked;
+  const nsfwExpr  = nsfwOn ? pmPickOne('pl_nsfw_expr')  : '';
+  const nsfwExpo  = nsfwOn ? pmPickOne('pl_nsfw_expo')  : '';
+  const nsfwSitu  = nsfwOn ? pmPickOne('pl_nsfw_situ')  : '';
+  const nsfwLight = nsfwOn ? pmPickOne('pl_nsfw_light') : '';
+  if (nsfwOn) {
+    if (nsfwExpr)  expr = nsfwExpr;   // 表情はNSFW優先
+    if (nsfwLight) lite = nsfwLight;  // ライティングもNSFW優先
+  }
 
   // アクセ（選択＋色）
   const accName = document.getElementById('pl_accSel')?.value?.trim() || '';
@@ -1304,7 +1350,15 @@ function pmBuildOne(){
 
   const fixed = pmGetFixed();
 
-  let parts = ['solo', (typeof getGenderCountTag==='function' ? (getGenderCountTag()||'') : ''), ...fixed, ...base, bg, pose, comp, view, expr, lite, acc].filter(Boolean);
+  // 組み立て
+  let parts = [
+    'solo',
+    (typeof getGenderCountTag==='function' ? (getGenderCountTag()||'') : ''),
+    ...fixed, ...base,
+    bg, pose, comp, view, expr, lite, acc,
+    // NSFW追加要素（上書き済みの expr/light 以外は追加）
+    ...(nsfwOn ? [nsfwExpo, nsfwSitu].filter(Boolean) : [])
+  ].filter(Boolean);
 
   if (typeof fixExclusives==='function') parts = fixExclusives(parts);
   if (typeof ensurePromptOrder==='function') parts = ensurePromptOrder(parts);
@@ -1327,11 +1381,11 @@ function pmRenderTable(tbodySel, rows){
   tb.appendChild(frag);
 }
 
-// 旧: function initPlannerOnce(){
+// 初期化（辞書ロード待ち＋配線）
 function pmInitPlannerOnce(){
   if (pmInitPlannerOnce._done) return;
 
-  const sfw =pmSFW || {};
+  const sfw = pmSFW();
   const ready =
     pmPickList(sfw, ['background','bg']).length ||
     pmPickList(sfw, ['pose','poses']).length   ||
@@ -1345,9 +1399,17 @@ function pmInitPlannerOnce(){
   pmInitPlannerOnce._done = true;
 
   // ラジオ等の描画
-  pmRenderPlanner();
+  pmRenderPlannerSFW();
+  pmRenderNSFW();
 
-  // 「1件出力」
+  // 18禁トグル＆レベル変更でNSFW再描画
+  const nsfwChk = document.getElementById('pl_nsfw');
+  if (nsfwChk) nsfwChk.addEventListener('change', pmRenderNSFW);
+  document.querySelectorAll('input[name="pl_nsfwLevel"]').forEach(r=>{
+    r.addEventListener('change', pmRenderNSFW);
+  });
+
+  // 1件出力
   const btn = document.getElementById('btnPlanOne');
   if (btn) btn.addEventListener('click', ()=>{
     const rows = pmBuildOne();
@@ -1357,10 +1419,9 @@ function pmInitPlannerOnce(){
     if (typeof toast==='function') toast('プランを出力しました');
   });
 
-  // 「プロンプトをコピー」
+  // プロンプトをコピー
   const btnCopy = document.getElementById('btnCopyPlanner');
   if (btnCopy) btnCopy.addEventListener('click', async ()=>{
-    // outPlanner 優先、なければテーブル1行目から再構成
     let text = (document.getElementById('outPlanner')?.textContent || '').trim();
     if (!text) {
       const tr = document.querySelector('#tblPlanner tbody tr');
@@ -1371,27 +1432,19 @@ function pmInitPlannerOnce(){
         if (prompt) text = `${prompt}${neg ? ` --neg ${neg}` : ''}`;
       }
     }
-    if (!text){
-      if (typeof toast==='function') toast('コピーする内容がありません');
-      return;
-    }
+    if (!text){ toast && toast('コピーする内容がありません'); return; }
     try {
-      if (navigator.clipboard?.writeText){
-        await navigator.clipboard.writeText(text);
-      } else {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+      else {
         const ta = document.createElement('textarea');
         ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); ta.remove();
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
       }
-      if (typeof toast==='function') toast('コピーしました');
-    } catch(e){
-      console.warn(e);
-      if (typeof toast==='function') toast('コピーに失敗しました');
-    }
+      toast && toast('コピーしました');
+    } catch(e){ console.warn(e); toast && toast('コピーに失敗しました'); }
   });
 }
-window.pmInitPlannerOnce = pmInitPlannerOnce; // 念のため公開
+window.pmInitPlannerOnce = pmInitPlannerOnce;
 
 
 // 元の categorizePoseComp はそのまま利用する前提
