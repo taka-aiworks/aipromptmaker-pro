@@ -1301,17 +1301,17 @@ function pmRenderTable(tbodySel, rows){
   tb.appendChild(frag);
 }
 
-// 初回だけ初期化（SFWロード待ち）
-function initPlannerOnce(){
-  if (initPlannerOnce._done) return;
+// 旧: function initPlannerOnce(){
+function pmInitPlannerOnce(){
+  if (pmInitPlannerOnce._done) return;
 
   const ready =
     pmPickList(window.SFW||{}, ['background','bg']).length ||
     pmPickList(window.SFW||{}, ['pose','poses']).length   ||
     pmPickList(window.SFW||{}, ['composition','comp']).length;
-  if (!ready){ setTimeout(initPlannerOnce, 80); return; }
+  if (!ready){ setTimeout(pmInitPlannerOnce, 80); return; }
 
-  initPlannerOnce._done = true;
+  pmInitPlannerOnce._done = true;
   pmRenderPlanner();
 
   const btn = document.getElementById('btnPlanOne');
@@ -1323,6 +1323,7 @@ function initPlannerOnce(){
     if (typeof toast==='function') toast('プランを出力しました');
   });
 }
+window.pmInitPlannerOnce = pmInitPlannerOnce; // 念のため公開
 
 
 
