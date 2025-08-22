@@ -1199,9 +1199,16 @@ function pmSFW(){
   if (typeof SFW !== 'undefined' && SFW) return SFW;
   return (globalThis.SFW || {});
 }
-// NSFW辞書（無ければ空）
+// ★ 追記：NSFW辞書（EMBED_NSFW→normNSFW→NSFW どれでもOKで取る）
 function pmNSFW(){
-  return (globalThis.NSFW || {});
+  const g = globalThis;
+  if (g.NSFW) return g.NSFW;
+  if (g.EMBED_NSFW && typeof normNSFW === 'function') {
+    // 一度正規化してグローバルに載せておく
+    g.NSFW = normNSFW(g.EMBED_NSFW) || {};
+    return g.NSFW;
+  }
+  return {};
 }
 
 // chips風ラジオ（UI=日本語＋英語/薄字、value=英語タグ）
@@ -1270,38 +1277,53 @@ function pmRenderPlannerSFW(){
   pmRenderRadios('pl_expr',  pmPickList(sfw, ['expressions','expr']),     { groupName:'pl_expr' });
   pmRenderRadios('pl_light', pmPickList(sfw, ['lighting','light','lights']), { groupName:'pl_light' });
   pmRenderAcc();
+
+    // ★ここを追加
+  bindNSFWPlannerOnce();
+  renderNSFWPlanner();
 }
 
-// NSFW レベル順位
-const pmLevelRank = { L1:1, L2:2, L3:3 };
+// 撮影モード：NSFW表示（ON時のみ / レベル上限だけでフィルタ）
+function renderNSFWPlanner(){
+  const panel = document.getElementById('pl_nsfwPanel');
+  const on = document.getElementById('pl_nsfw')?.checked;
+  if (panel) panel.style.display = on ? '' : 'none';
+  if (!on) return;
 
-// NSFW 辞書をレベルでフィルタ
-function pmFilterByLevel(list, level){
-  const rank = pmLevelRank[level] || 1;
-  const src = (typeof normList === 'function') ? normList(list) : (Array.isArray(list) ? list : []);
-  return src.filter(it => {
-    const lv = (it?.level || it?.lvl || 'L1').toString().trim();
-    return (pmLevelRank[lv] || 1) <= rank;
+  const cap = (document.querySelector('input[name="pl_nsfwLevel"]:checked')?.value) || "L1";
+  const order = {L1:1,L2:2,L3:3};
+  const allow = (lv)=> (order[lv||"L1"]||1) <= (order[cap]||1);
+  const lvl = (x)=>({L1:"R-15",L2:"R-18",L3:"R-18G"}[(x||"L1")] || "R-15");
+
+  const chips = (arr, name) => normList(arr).filter(o=>allow(o.level)).map(o=>`
+    <label class="chip">
+      <input type="radio" name="pl_nsfw_${name}" value="${o.tag}">
+      ${o.label}<span class="mini"> ${lvl(o.level)}</span>
+    </label>
+  `).join("");
+
+  if (document.getElementById('pl_nsfw_expr'))  document.getElementById('pl_nsfw_expr').innerHTML  = chips(NSFW.expression, "expr");
+  if (document.getElementById('pl_nsfw_expo'))  document.getElementById('pl_nsfw_expo').innerHTML  = chips(NSFW.exposure,   "expo");
+  if (document.getElementById('pl_nsfw_situ'))  document.getElementById('pl_nsfw_situ').innerHTML  = chips(NSFW.situation,  "situ");
+  if (document.getElementById('pl_nsfw_light')) document.getElementById('pl_nsfw_light').innerHTML = chips(NSFW.lighting,   "light");
+}
+
+// 撮影モード：NSFWトグル／レベル変更
+function bindNSFWPlannerOnce(){
+  if (bindNSFWPlannerOnce._done) return;
+  bindNSFWPlannerOnce._done = true;
+
+  document.getElementById('pl_nsfw')?.addEventListener('change', e=>{
+    document.getElementById('pl_nsfwPanel').style.display = e.target.checked ? '' : 'none';
+    if (e.target.checked) renderNSFWPlanner();
+  });
+  document.querySelectorAll('input[name="pl_nsfwLevel"]').forEach(x=>{
+    x.addEventListener('change', ()=>{
+      if (document.getElementById('pl_nsfw')?.checked) renderNSFWPlanner();
+    });
   });
 }
 
-// NSFW UI描画
-function pmRenderNSFW(){
-  const on = document.getElementById('pl_nsfw')?.checked;
-  const panel = document.getElementById('pl_nsfwPanel');
-  if (!panel) return;
-
-  panel.style.display = on ? '' : 'none';
-  if (!on) return;
-
-  const level = document.querySelector('input[name="pl_nsfwLevel"]:checked')?.value || 'L1';
-  const nsfw = pmNSFW();
-
-  pmRenderRadios('pl_nsfw_expr',  pmFilterByLevel(nsfw.expressions || nsfw.expr || [], level), { groupName:'pl_nsfw_expr',  allowEmpty:true });
-  pmRenderRadios('pl_nsfw_expo',  pmFilterByLevel(nsfw.exposure    || nsfw.expo || [], level), { groupName:'pl_nsfw_expo',  allowEmpty:true });
-  pmRenderRadios('pl_nsfw_situ',  pmFilterByLevel(nsfw.situations  || nsfw.situ || [], level), { groupName:'pl_nsfw_situ',  allowEmpty:true });
-  pmRenderRadios('pl_nsfw_light', pmFilterByLevel(nsfw.lighting    || nsfw.light|| [], level), { groupName:'pl_nsfw_light', allowEmpty:true });
-}
 
 // 安全にキー候補から配列を拾う
 function pmPickList(obj, keys){
