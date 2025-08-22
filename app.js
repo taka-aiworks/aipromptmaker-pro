@@ -118,6 +118,9 @@ const MULTI_RISK_BG = new Set([
   "train platform","beach","rooftop","library","caf\u00e9","snowy town",
 ]);
 
+// 先頭に必ず入れるべきタグ
+const SOLO_POS = ["solo", "1girl", "1boy"];
+
 function forceSoloPos(parts){
   // ソロ系の明示タグを必ず入れる
   const s = new Set(parts.filter(Boolean));
