@@ -1222,7 +1222,7 @@ function pmRenderAcc(){
   const sel = document.getElementById('pl_accSel');
   if (!sel) return;
 
-  const src = (window.SFW && (SFW.accessories || SFW.acc)) || [];
+  const src = (window.SFW && (SFW.accessories || window.SFW.acc)) || [];
   const items = (typeof normList === 'function') ? normList(src) : (Array.isArray(src) ? src : []);
 
   sel.innerHTML = '<option value="">未選択</option>' + items.map(it=>{
@@ -1249,7 +1249,7 @@ function pmPickList(obj, keys){
 
 // 画面描画：ホワイトリストなしでSFW辞書をそのまま
 function pmRenderPlanner(){
-  const sfw = SFW || {};
+  const sfw = window.SFW || {};
   pmRenderRadios('pl_bg',    pmPickList(sfw, ['background','bg']),        { groupName:'pl_bg' });
   pmRenderRadios('pl_pose',  pmPickList(sfw, ['pose','poses']),           { groupName:'pl_pose', allowEmpty:true });
   pmRenderRadios('pl_comp',  pmPickList(sfw, ['composition','comp']),     { groupName:'pl_comp' });
