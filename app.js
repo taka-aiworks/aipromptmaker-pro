@@ -85,7 +85,34 @@ function enforceHeadOrder(parts){
   return out;
 }
 
-// --- 学習モード専用: 複数人を抑止するネガティブを付足 ---
+// どのモードでも共通で使う最小強力セット（20語）
+const NEG_TIGHT = [
+  // 複数人を強めに抑止
+  "multiple people","group","background people","another person",
+
+  // 解剖学・手崩れ
+  "bad anatomy","bad hands","extra fingers","fused fingers","extra arms","extra legs",
+
+  // 顔まわり
+  "bad face","asymmetrical eyes",
+
+  // 画質・ノイズ
+  "lowres","blurry","low quality","worst quality","jpeg artifacts",
+
+  // 文字・透かし
+  "text","watermark","logo"
+];
+
+// ネガティブを組み立てる共通関数
+function buildNegative(baseText="") {
+  const custom = baseText
+    ? baseText.split(",").map(s=>s.trim()).filter(Boolean)
+    : [];
+  return Array.from(new Set([...NEG_TIGHT, ...custom])).join(", ");
+}
+
+
+/*// --- 学習モード専用: 複数人を抑止するネガティブを付足 ---
 function withSoloNegatives(negText) {
   const add = [
     "2girls", "2boys", "two people", "multiple people", "group",
@@ -95,7 +122,7 @@ function withSoloNegatives(negText) {
   return uniq([...base, ...add]).join(", ");
 }
 
-/* === ソロ強制ガード（複数人対策） ======================= */
+/* === ソロ強制ガード（複数人対策） =======================
 const SOLO_POS = ["solo"]; // 1人明示
 const SOLO_NEG = [
   "multiple people",   // 複数人
@@ -105,7 +132,7 @@ const SOLO_NEG = [
   "text on clothes",   // シャツに余計な文字が含まれないようにする
   "letters",           // 文字全般
   "logo"
-];
+]; */
 
 // 背景が人混みに寄りやすいタグ → “無人化”の弱い補正を足す
 const MULTI_RISK_BG = new Set([
@@ -1265,14 +1292,12 @@ function pmGetFixed(){
   }
   return out;
 }
+
 function pmGetNeg(){
-  var useDef = pmChecked('pl_useDefaultNeg');
-  var defNeg = (useDef && typeof getDefaultNegativePrompt === 'function') ? getDefaultNegativePrompt() : '';
-  var extra  = pmValById('pl_neg');
-  var both = [];
-  if (defNeg) both.push(defNeg);
-  if (extra)  both.push(extra);
-  return both.join(', ');
+  const useDef = document.getElementById('pl_useDefaultNeg')?.checked;
+  const base   = useDef ? NEG_TIGHT.join(", ") : "";
+  const extra  = (document.getElementById('pl_neg')?.value||"").trim();
+  return buildNegative([base, extra].filter(Boolean).join(","));
 }
 
 /* 撮影モード NSFW（制限なし、レベル上限のみ） */
@@ -2270,13 +2295,8 @@ function bindGASTools(){
 
 /* ========= 学習：組み立て ========= */
 function getNeg(){
-  const base = isDefaultNegOn() ? DEFAULT_NEG : "";
-  const custom = ($("#negGlobal").value||"").split(",").map(s=>s.trim()).filter(Boolean);
-  const parts = [
-    ... (base ? base.split(",").map(s=>s.trim()) : []),
-    ... custom
-  ];
-  return uniq(parts).join(", ");
+  const extra = (document.getElementById('learn_neg')?.value||"").trim();
+  return buildNegative(extra);
 }
 
 // 置き換え: assembleFixedLearning
@@ -3178,14 +3198,10 @@ function buildBatchProduction(n){
 
   return out;
 }
+
 function getNegProd(){
-  const base = isDefaultNegOn() ? DEFAULT_NEG : "";
-  const custom = ($("#p_neg").value||"").split(",").map(s=>s.trim()).filter(Boolean);
-  const parts = [
-    ... (base ? base.split(",").map(s=>s.trim()) : []),
-    ... custom
-  ];
-  return uniq(parts).join(", ");
+  const custom = ($("#p_neg").value||"").trim();
+  return buildNegative(custom);
 }
 
 /* ========= レンダラ（学習テーブル：no/seed/prompt/negative のみ） ========= */
