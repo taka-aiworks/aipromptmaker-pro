@@ -1223,39 +1223,46 @@ function pickList(obj, keys){
 
 let getPlAccColor = null;
 
-// ==== 撮影プラン描画（各1択ラジオ：ホワイトリスト不使用・フル辞書） ====
+// すでにあるこれを有効活用
+// pickList(obj, ['候補1','候補2',...]) の最初に見つかった配列を返す
+
 function renderPlanner(){
   const sfw = window.SFW || {};
 
-  const bgList    = pickList(sfw, ["background", "bg", "backgrounds"]);
-  const poseList  = pickList(sfw, ["pose", "poses"]);
-  const compList  = pickList(sfw, ["composition", "comp", "compositions"]);
-  const viewList  = pickList(sfw, ["view", "views", "angle"]);
-  const exprList  = pickList(sfw, ["expressions", "expression", "faces"]);
-  const lightList = pickList(sfw, ["lighting", "light", "lights"]);
+  const list_bg   = pickList(sfw, ['background','bg']);
+  const list_pose = pickList(sfw, ['pose','poses']);
+  const list_comp = pickList(sfw, ['composition','comp']);
+  const list_view = pickList(sfw, ['view','views','camera_view']);
+  const list_expr = pickList(sfw, ['expressions','expr']);
+  const list_light= pickList(sfw, ['lighting','light','lights']);
+  // アクセはセレクト（学習モード仕様）なのでここでは描画しない
 
-  renderRadios("pl_bg",    bgList,    { groupName: "pl_bg" });
-  renderRadios("pl_pose",  poseList,  { groupName: "pl_pose",  allowEmpty:true });
-  renderRadios("pl_comp",  compList,  { groupName: "pl_comp" });
-  renderRadios("pl_view",  viewList,  { groupName: "pl_view" });
-  renderRadios("pl_expr",  exprList,  { groupName: "pl_expr" });
-  renderRadios("pl_light", lightList, { groupName: "pl_light" });
+  renderRadios("pl_bg",   list_bg,   { groupName: "pl_bg" });
+  renderRadios("pl_pose", list_pose, { groupName: "pl_pose", allowEmpty:true });
+  renderRadios("pl_comp", list_comp, { groupName: "pl_comp" });
+  renderRadios("pl_view", list_view, { groupName: "pl_view" });
+  renderRadios("pl_expr", list_expr, { groupName: "pl_expr" });
+  renderRadios("pl_light",list_light,{ groupName: "pl_light" });
 
-  renderPlannerAcc(); // アクセUIの初期化
+  renderPlannerAcc(); // アクセ（セレクト＋色ホイール）
 }
 
-// 初期化の“ready判定”も background だけに依存しないように
+// 初期化の「準備完了」条件も background 固定だと詰むので広げる
 function initPlannerOnce(){
   if (initPlannerOnce._done) return;
 
-  const S = window.SFW || {};
+  const sfw = window.SFW || {};
   const ready =
-    (pickList(S, ["background","bg","backgrounds"]).length) ||
-    (pickList(S, ["pose","poses"]).length);
+    pickList(sfw, ['background','bg']).length ||
+    pickList(sfw, ['pose','poses']).length   ||
+    pickList(sfw, ['composition','comp']).length ||
+    pickList(sfw, ['view','views']).length;
 
   if (!ready) { setTimeout(initPlannerOnce, 80); return; }
 
   initPlannerOnce._done = true;
+
+  console.log('[planner] render with keys:', Object.keys(sfw));
   renderPlanner();
 
   const btn = document.getElementById("btnPlanOne");
@@ -1273,15 +1280,16 @@ function renderPlannerAcc(){
   const sel = document.getElementById('pl_accSel');
   if (!sel) return;
 
-  const list = pickList(window.SFW || {}, ["accessories", "accessory", "acc", "accs"]);
+  const sfw  = window.SFW || {};
+  const list = pickList(sfw, ['accessories','acc']); // ← 両対応
   sel.innerHTML = '<option value="">（指定なし）</option>' +
     list.map(it => {
       const label = (typeof it === 'string' ? it : (it && it.tag) || '').trim();
       return label ? `<option value="${label}">${label}</option>` : '';
     }).join('');
 
-  // 色ホイール初期化（HTMLのidが plAcc ベースで揃っていること）
   if (typeof initColorWheel === 'function') {
+    // 色ホイールの依存関数（addHueDrag/hslToRgb/colorNameFromHSL）が先に読まれていること
     getPlAccColor = initColorWheel('plAcc', 0, 75, 50);
   }
 }
