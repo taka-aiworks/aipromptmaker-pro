@@ -1382,6 +1382,14 @@ function pmBuildOne(){
   if (typeof fixExclusives==='function') parts = fixExclusives(parts);
   if (typeof ensurePromptOrder==='function') parts = ensurePromptOrder(parts);
 
+  // --- enforce head order (撮影モード) ---
+{
+  const headSolo = 'solo';
+  const headGen  = (typeof getGenderCountTag==='function' ? (getGenderCountTag()||'') : '');
+  parts = parts.filter(t => t !== headSolo && t !== headGen);
+  parts = [headSolo, headGen, ...parts].filter(Boolean);
+}
+
   var neg = (typeof withSoloNeg==='function') ? withSoloNeg(pmGetNeg()) : pmGetNeg();
 
   return [{ seed: seed, pos: parts, neg: neg }];
