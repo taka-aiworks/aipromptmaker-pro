@@ -1184,6 +1184,16 @@ function filterByScope(items, allow) {
 
 // ===== 撮影モード（pm* 名前空間で衝突回避） =====
 
+// ==== SFW/NSFW 辞書取得 ====
+// R18チェックボックス (id="chkR18") の状態で切替
+function pmDict(){
+  const useNSFW = document.getElementById('chkR18')?.checked;
+  if (useNSFW) {
+    return (globalThis.NSFW || {});  // R18モードなら NSFW
+  } else {
+    return (globalThis.SFW  || {});  // 通常は SFW
+  }
+}
 // SFW辞書の安全取得（直グローバル or window どちらでもOK）
 function pmSFW(){
   if (typeof SFW !== 'undefined' && SFW) return SFW;
