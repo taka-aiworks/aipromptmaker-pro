@@ -2639,17 +2639,39 @@ function buildOneLearning(extraSeed = 0){
     parts.push("centered composition");
   }
 
-  // 5) 排他・整形・シード
-parts = fixExclusives(parts);
-let pos = ensurePromptOrder(uniq(parts));
-pos = enforceHeadOrder(pos);            // ★ ここで先頭固定を最終適用
+// ⑤ 排他・整形・シード（置き換え）
+{
+  // 1) 排他整理（あれば使う）
+  if (typeof fixExclusives === 'function') {
+    parts = fixExclusives(parts);
+  }
 
-const seed = seedFromName($("#charName").value || "", extraSeed);
+  // 2) 一意化 → 並び順整形（ensurePromptOrder が無ければ素通し）
+  const uniqParts = Array.from(new Set(parts.filter(Boolean)));
+  let pos = (typeof ensurePromptOrder === 'function')
+    ? ensurePromptOrder(uniqParts)
+    : uniqParts;
 
-const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"];
-const neg = buildNegative([ getNeg(), ...EXTRA_NEG ].filter(Boolean).join(", "));
+  // 3) 先頭固定: solo と 1girl/1boy（enforceHeadOrder が無ければ最小実装で代替）
+  if (typeof enforceHeadOrder === 'function') {
+    pos = enforceHeadOrder(pos);
+  } else {
+    const g = (typeof getGenderCountTag === 'function' ? (getGenderCountTag() || '') : '');
+    const head = ['solo', g].filter(Boolean);
+    pos = head.concat(pos.filter(t => !head.includes(t)));
+  }
 
-return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
+  // 4) Seed
+  const seed = seedFromName($("#charName")?.value || "", extraSeed);
+
+  // 5) ネガティブ（共通ビルダーへ集約）
+  const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"];
+  const baseNeg = [ (typeof getNeg === 'function' ? getNeg() : ""), ...EXTRA_NEG ]
+                    .filter(Boolean).join(", ");
+  const neg = buildNegative(baseNeg);
+
+  // 6) 戻り値
+  return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
 
 // === 横顔の制御（学習用・割合ベース） =======================
