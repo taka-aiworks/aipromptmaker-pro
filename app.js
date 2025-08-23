@@ -85,21 +85,18 @@ function enforceHeadOrder(parts){
   return out;
 }
 
-// どのモードでも共通で使う最小強力セット（20語）
+// どのモードでも共通で使う最小強力セット（≈28語）
 const NEG_TIGHT = [
-  // 複数人を強めに抑止
-  "multiple people","group","background people","another person",
+  // 人物の混入（背景・反射・看板由来も含む）
+  "multiple people","group","crowd","background people","bystanders","another person",
+  "photobomb","reflection","mirror","poster","billboard","tv screen",
 
-  // 解剖学・手崩れ
-  "bad anatomy","bad hands","extra fingers","fused fingers","extra arms","extra legs",
+  // 手・四肢の破綻
+  "bad hands","bad anatomy","extra fingers","extra arms","extra legs",
+  "fused fingers","malformed hands","long fingers",
 
-  // 顔まわり
-  "bad face","asymmetrical eyes",
-
-  // 画質・ノイズ
+  // 画質・文字
   "lowres","blurry","low quality","worst quality","jpeg artifacts",
-
-  // 文字・透かし
   "text","watermark","logo"
 ];
 
