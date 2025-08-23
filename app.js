@@ -2112,31 +2112,37 @@ function renderTextTriplet(baseId, rows, fmtId) {
   if (outNeg) outNeg.textContent = neg;
 }
 
-// コピー小ボタンをバインド
-function bindCopyTripletExplicit(map) {
-  map.forEach(([btnId, outId]) => {
+// ===== 3分割コピー：明示バインド（All / Prompt / Neg の小ボタン用）=====
+function bindCopyTripletExplicit(pairs){
+  // 正しい形: [['btnId','outId'], ...]
+  if (!Array.isArray(pairs)) return;
+  pairs.forEach(pair => {
+    if (!Array.isArray(pair) || pair.length < 2) return;
+    const [btnId, outId] = pair;
     const btn = document.getElementById(btnId);
     const out = document.getElementById(outId);
-    if (btn && out) {
-      btn.addEventListener("click", () => {
-        const text = (out.textContent || "").trim();
-        if (!text) { toast && toast("コピーする内容がありません"); return; }
-        if (navigator.clipboard?.writeText) {
-          navigator.clipboard.writeText(text).then(()=>{
-            toast && toast("コピーしました");
-          });
-        } else {
-          const ta = document.createElement("textarea");
-          ta.value = text;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          ta.remove();
-          toast && toast("コピーしました");
-        }
-      });
-    }
+    if (!btn || !out) return;
+
+    btn.addEventListener('click', () => {
+      const text = (out.textContent || '').trim();
+      if (!text) { window.toast && toast('コピーする内容がありません'); return; }
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(()=> window.toast && toast('コピーしました'))
+          .catch(()=> fallbackCopy(text));
+      } else {
+        fallbackCopy(text);
+      }
+    });
   });
+
+  function fallbackCopy(t){
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+    window.toast && toast('コピーしました');
+  }
 }
 
 // すべてのモードの 3分割コピー小ボタンを一括バインド
