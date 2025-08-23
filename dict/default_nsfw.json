@@ -180,7 +180,8 @@
         { "tag": "photoshoot_studio", "ja": "撮影スタジオ",           "level": "L2" },
         { "tag": "after_party_suite", "ja": "アフターパーティーのスイートルーム", "level": "L2" },
         { "tag": "swim_competition",  "ja": "水泳大会（会場）",       "level": "L1" }
-      ]
+      ],
+      
       "lighting": [
         { "tag": "softbox",        "ja": "ソフトライト",        "level": "L1" },
         { "tag": "rim_light",      "ja": "リムライト",          "level": "L1" },
