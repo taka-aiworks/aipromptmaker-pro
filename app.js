@@ -1435,12 +1435,15 @@ function pmBuildOne(){
   for (var i=0; i<parts.length; i++){ if (parts[i]) cleaned.push(parts[i]); }
   parts = cleaned;
 
+  // 服色と服名を合体（white t-shirt 等）
+  if (typeof pairWearColors === 'function') parts = pairWearColors(parts);
+
   // 既存の整合処理があれば先に
-  if (typeof fixExclusives === 'function') parts = fixExclusives(parts);
+  if (typeof fixExclusives === 'function')     parts = fixExclusives(parts);
   if (typeof ensurePromptOrder === 'function') parts = ensurePromptOrder(parts);
 
-  // ← 最後にこれで頭を固定＆重複除去
-  parts = enforceHeadOrder(parts);
+  // 頭固定＆重複除去
+  if (typeof enforceHeadOrder === 'function')  parts = enforceHeadOrder(parts);
 
   var neg = (typeof withSoloNeg==='function') ? withSoloNeg(pmGetNeg()) : pmGetNeg();
 
@@ -2433,54 +2436,40 @@ if (sel.mode === "onepiece") {
   return uniq(out).filter(Boolean);
 }
 
-// 置き換え：服色と服名をペア化（top/bottom/shoes を実服名へマージ）
+// 共有: 服色と服名をペア化（top/bottom/shoes の色→実服名へ）
 function pairWearColors(parts){
   const P = new Set((parts || []).filter(Boolean));
   const S = s => String(s || "");
 
-  // 実服名の検出
-  const TOP_RE = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer)\b/i;
+  const TOP_RE    = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer)\b/i;
   const BOTTOM_RE = /\b(skirt|pleated\ skirt|long\ skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\ shorts)\b/i;
-  const DRESS_RE = /\b(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|lolita\s+dress|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape)\b/i;
-  const SHOES_RE = /\b(shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori)\b/i;
+  const DRESS_RE  = /\b(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|lolita\s+dress|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape)\b/i;
+  const SHOES_RE  = /\b(shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori)\b/i;
 
   const find = re => [...P].find(t => re.test(S(t)));
   const noun = (hit, re) => { const m = S(hit).match(re); return m ? m[1].toLowerCase() : ""; };
 
-  const topHit    = find(TOP_RE);
-  const bottomHit = find(BOTTOM_RE);
-  const dressHit  = find(DRESS_RE);
-  const shoesHit  = find(SHOES_RE);
+  const topWord    = noun(find(TOP_RE), TOP_RE);
+  const bottomWord = noun(find(BOTTOM_RE), BOTTOM_RE);
+  const dressWord  = noun(find(DRESS_RE), DRESS_RE);
+  const shoesWord  = noun(find(SHOES_RE), SHOES_RE);
 
-  const topWord    = noun(topHit, TOP_RE);
-  const bottomWord = noun(bottomHit, BOTTOM_RE);
-  const dressWord  = noun(dressHit, DRESS_RE);
-  const shoesWord  = noun(shoesHit, SHOES_RE);
-
-  // "xxx top" / "yyy bottom" / "zzz shoes" → 実服名へ合体
   const replaceGeneric = (generic, nounWord) => {
     if (!nounWord) return;
-    const reColor = new RegExp(`^(.+?)\\s+${generic}$`, "i");   // 例: "orange top"
+    const reColor = new RegExp(`^(.+?)\\s+${generic}$`, "i"); // 例: "white top"
     const colorHit = [...P].find(t => reColor.test(S(t)));
     if (!colorHit) return;
-
-    // 色だけ抽出
     const color = S(colorHit).replace(reColor, "$1");
-
-    // 元の色タグとプレースホルダ、そして“素の名詞”を消す
     P.delete(colorHit);
     [...P].forEach(x => {
       if (new RegExp(`\\b${generic}\\b`, "i").test(S(x))) P.delete(x);
       if (new RegExp(`\\b${nounWord}\\b`, "i").test(S(x))) P.delete(x);
     });
-
-    // 合体して追加（例: "orange t-shirt" / "sky blue skirt" / "gray sneakers"）
     P.add(`${color} ${nounWord}`);
   };
 
-  // ワンピ系は元から「色 + dress名」で入るので、top/bottomの置換はスキップ
-  if (!dressWord) {
-    replaceGeneric("top", topWord);
+  if (!dressWord) { // ワンピ採用行は top/bottom の置換は不要
+    replaceGeneric("top",    topWord);
     replaceGeneric("bottom", bottomWord);
   }
   replaceGeneric("shoes", shoesWord);
