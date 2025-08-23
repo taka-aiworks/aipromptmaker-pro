@@ -2667,13 +2667,17 @@ function enforceViewVariant(parts, viewTag){
 
 // === 学習用：視点/構図/表情/背景/光の “割合ミキサー” =======================
 
-// ① グループ内の既存タグを落として target を入れる（ensurePromptOrder まで面倒見） 
+// ① グループ内の既存タグを落として target を入れる（並び直し＋先頭固定まで面倒を見る）
 function replaceGroupTag(parts, groupTags, targetTag){
-  const RE = new RegExp("\\b(" + groupTags.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|") + ")\\b","i");
+  const RE = new RegExp("\\b(" + groupTags.map(t=>t.replace(/[.*+?^${}()|[\\]\\]/g,"\\$&")).join("|") + ")\\b","i");
   const out = [];
   for (const t of (parts||[])) { if (!RE.test(String(t))) out.push(t); }
   if (targetTag) out.push(targetTag);
-  return ensurePromptOrder(out);
+
+  // 並び直し → 先頭固定
+  let arranged = (typeof ensurePromptOrder==='function') ? ensurePromptOrder(out) : out;
+  if (typeof enforceHeadOrder==='function') arranged = enforceHeadOrder(arranged);
+  return arranged;
 }
 
 // ② n枚中、min..max 割合で k 枚をランダムに選んで tag を差し込む
@@ -2685,16 +2689,18 @@ function applyPercentForTag(rows, groupTags, targetTag, pctMin, pctMax){
   const idxs = [...Array(n)].map((_,i)=>i).sort(()=>Math.random()-0.5).slice(0,k);
   for (const i of idxs){
     rows[i].pos  = replaceGroupTag(rows[i].pos, groupTags, targetTag);
+    // 念のためここでも頭固定
+    if (typeof enforceHeadOrder==='function') rows[i].pos = enforceHeadOrder(rows[i].pos);
     rows[i].text = `${rows[i].pos.join(", ")} --neg ${rows[i].neg} seed:${rows[i].seed}`;
   }
 }
 
-// ③ 残りをデフォルトで埋める（“何も入ってない/他に置換された”ケースの保険）
 function fillRemainder(rows, groupTags, fallbackTag){
   for (const r of rows){
     const hasAny = r.pos.some(t => groupTags.includes(String(t)));
     if (!hasAny){
-      r.pos  = replaceGroupTag(r.pos, groupTags, fallbackTag);
+      r.pos = replaceGroupTag(r.pos, groupTags, fallbackTag);
+      if (typeof enforceHeadOrder==='function') r.pos = enforceHeadOrder(r.pos);
       r.text = `${r.pos.join(", ")} --neg ${r.neg} seed:${r.seed}`;
     }
   }
@@ -2733,67 +2739,94 @@ function applyPercentMixToLearning(rule, selected) {
   return [rule.fallback];
 }
 
+// 置き換え
 function buildBatchLearning(n){
+  const out  = [];
   const used = new Set();
-  const out = [];
-  let guard = 0;
+  let guard  = 0;
 
-  // まずはユニークで頑張る
+  // ① まずユニーク優先で生成（ここで軽く頭固定）
   while (out.length < n && guard < n * 300){
     guard++;
-    const o = buildOneLearning(out.length + 1); // 行番号で seed 変化
-    const key = o.pos.join("|");
+    let r = buildOneLearning(out.length + 1);
+    // 予防的に先頭固定（後でもう一度やる）
+    if (typeof enforceHeadOrder === 'function') r.pos = enforceHeadOrder(r.pos || []);
+    const key = (r.pos || []).join("|");
     if (used.has(key)) continue;
     used.add(key);
-    out.push(o);
+    out.push(r);
   }
-  // ユニークが尽きたら重複許容で埋め切る（seed は全部違う）
+  // ② 埋め切り（重複許容）
   while (out.length < n){
-    out.push(buildOneLearning(out.length + 1));
+    let r = buildOneLearning(out.length + 1);
+    if (typeof enforceHeadOrder === 'function') r.pos = enforceHeadOrder(r.pos || []);
+    out.push(r);
   }
-    // ★ 横顔を割合配分で注入// ★ 学習バッチ完成後に割合を適用する
-{
-  const rows = out;
 
-  // VIEW
-  applyPercentForTag(rows, MIX_RULES.view.group, "profile view", ...MIX_RULES.view.targets["profile view"]);
-  applyPercentForTag(rows, MIX_RULES.view.group, "back view",    ...MIX_RULES.view.targets["back view"]);
-  fillRemainder(rows, MIX_RULES.view.group, MIX_RULES.view.fallback);
+  // ③ ここから “割合ミックス” を適用（あなたの元コードそのまま）
+  {
+    const rows = out;
 
-  // COMPOSITION
-  for (const [tag, rng] of Object.entries(MIX_RULES.comp.targets)) {
-    applyPercentForTag(rows, MIX_RULES.comp.group, tag, rng[0], rng[1]);
+    // VIEW
+    applyPercentForTag(rows, MIX_RULES.view.group, "profile view", ...MIX_RULES.view.targets["profile view"]);
+    applyPercentForTag(rows, MIX_RULES.view.group, "back view",    ...MIX_RULES.view.targets["back view"]);
+    fillRemainder(rows, MIX_RULES.view.group, MIX_RULES.view.fallback);
+
+    // COMPOSITION
+    for (const [tag, rng] of Object.entries(MIX_RULES.comp.targets)) {
+      applyPercentForTag(rows, MIX_RULES.comp.group, tag, rng[0], rng[1]);
+    }
+    fillRemainder(rows, MIX_RULES.comp.group, MIX_RULES.comp.fallback);
+
+    // EXPRESSION（UIで選ばれているものだけを母集団に）
+    const selExpr = getMany("expr") || [];
+    const exprGroupBase = selExpr.length ? selExpr : MIX_RULES.expr.group;
+    const exprGroup = Array.from(new Set([...exprGroupBase, "neutral expression"]));
+    for (const [tag, rng] of Object.entries(MIX_RULES.expr.targets)) {
+      if (!exprGroup.includes(tag)) continue;
+      applyPercentForTag(rows, exprGroup, tag, rng[0], rng[1]);
+    }
+    fillRemainder(rows, exprGroup, MIX_RULES.expr.fallback);
+
+    // BACKGROUND
+    for (const [tag, rng] of Object.entries(MIX_RULES.bg.targets)) {
+      applyPercentForTag(rows, MIX_RULES.bg.group, tag, rng[0], rng[1]);
+    }
+    fillRemainder(rows, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
+
+    // LIGHTING
+    for (const [tag, rng] of Object.entries(MIX_RULES.light.targets)) {
+      applyPercentForTag(rows, MIX_RULES.light.group, tag, rng[0], rng[1]);
+    }
+    fillRemainder(rows, MIX_RULES.light.group, MIX_RULES.light.fallback);
   }
-  fillRemainder(rows, MIX_RULES.comp.group, MIX_RULES.comp.fallback);
 
-  // EXPRESSION（UIで選ばれているものだけを母集団に）
-const selExpr = getMany("expr") || [];
-const exprGroupBase = selExpr.length ? selExpr : MIX_RULES.expr.group;
+  // ④ 最終整形（ここが“分からん”と言ってた所：頭固定＆順序正規化＆同期）
+  for (const r of out){
+    // pos を確実に配列化
+    let p = Array.isArray(r.pos) ? r.pos.slice()
+            : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
 
-// neutral を必ず含めつつ、全要素を重複排除
-const exprGroup = Array.from(new Set([...exprGroupBase, "neutral expression"]));
+    if (typeof fixExclusives === 'function')      p = fixExclusives(p);
+    const uniqP = Array.from(new Set(p.filter(Boolean)));
+    if (typeof ensurePromptOrder === 'function')  p = ensurePromptOrder(uniqP);
+    if (typeof enforceHeadOrder === 'function')   p = enforceHeadOrder(p);
 
-for (const [tag, rng] of Object.entries(MIX_RULES.expr.targets)) {
-  if (!exprGroup.includes(tag)) continue;
-  applyPercentForTag(rows, exprGroup, tag, rng[0], rng[1]);
-}
-fillRemainder(rows, exprGroup, MIX_RULES.expr.fallback);
+    r.pos    = p;
+    r.prompt = p.join(", ");
 
-  // BACKGROUND
-  for (const [tag, rng] of Object.entries(MIX_RULES.bg.targets)) {
-    applyPercentForTag(rows, MIX_RULES.bg.group, tag, rng[0], rng[1]);
+    // ネガは共通ビルダーで統一（SOLO_NEG 混入も面倒見てる）
+    const extraNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
+    const baseNeg  = [ (typeof getNeg === 'function' ? getNeg() : ""), extraNeg ].filter(Boolean).join(", ");
+    r.neg    = (typeof buildNegative === 'function') ? buildNegative(baseNeg) : baseNeg;
+
+    // seed / text の同期（seed は既に入ってるはずだが保険）
+    r.seed   = r.seed || seedFromName($("#charName")?.value || "", 1);
+    r.text   = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
   }
-  fillRemainder(rows, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
 
-  // LIGHTING
-  for (const [tag, rng] of Object.entries(MIX_RULES.light.targets)) {
-    applyPercentForTag(rows, MIX_RULES.light.group, tag, rng[0], rng[1]);
-  }
-  fillRemainder(rows, MIX_RULES.light.group, MIX_RULES.light.fallback);
-}
   return out;
 }
-
 // 置き換え: ensurePromptOrder
 function ensurePromptOrder(parts) {
   const set = new Set(parts.filter(Boolean));
