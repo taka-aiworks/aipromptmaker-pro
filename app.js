@@ -3499,7 +3499,7 @@ function bindProduction(){
   });
 }
 
-bindCopyTriplet(document.getElementById('panelProduction') || document, 'outProd');
+bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 'outProd');
 
 /* ===== ここから追記：総合初期化 ===== */
 function initHairEyeAndAccWheels(){
