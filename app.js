@@ -3319,13 +3319,19 @@ function renderProdTable(rows){
   rows.forEach((r,i)=>{ const tr = document.createElement("tr"); tr.innerHTML = `<td>${i+1}</td><td>${r.seed}</td><td>${r.prompt}</td><td>${r.neg}</td>`; frag.appendChild(tr); });
   tb.innerHTML = ""; tb.appendChild(frag);
 }
-function renderProdText(rows){
+
+/* function renderProdText(rows){
   const fmt = getFmt("#fmtProd");
   const lines = rows.map((r,i)=> {
     const p = r.prompt; const n = r.neg; const line = fmt.line(p, n, r.seed);
     return `[${String(i+1).padStart(2,"0")}] ${line}`;
   }).join("\n\n");
   $("#outProd").textContent = lines;
+} */
+
+function renderProdText(rows){
+  // 3分割出力（ボックスが無い場合は従来 #outProd にまとめて出力）
+  renderTextTriplet("outProd", rows);
 }
 
 // 撮影モード：1枚テキスト出力（1枚テストと同じ経路）
@@ -3434,6 +3440,8 @@ function bindProduction(){
     await postCSVtoGAS("production", csv);
   });
 }
+
+bindCopyTriplet(document.getElementById('panelProduction') || document, 'outProd');
 
 /* ===== ここから追記：総合初期化 ===== */
 function initHairEyeAndAccWheels(){
