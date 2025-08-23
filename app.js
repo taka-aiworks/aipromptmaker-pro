@@ -3394,42 +3394,65 @@ function bindLearnTest(){
   */
 }
 
+// ← これで置き換え
 function bindLearnBatch(){
+  // セット生成
   document.getElementById("btnBatchLearn")?.addEventListener("click", ()=>{
-    const cnt = parseInt(document.getElementById("countLearn").value,10) || 24;
+    const cnt  = parseInt(document.getElementById("countLearn")?.value, 10) || 24;
     const rows = buildBatchLearning(cnt);
-    if (rows.error) { toast(rows.error); return; }
+    if (rows?.error){ toast(rows.error); return; }
+
     renderLearnTableTo("#tblLearn tbody", rows);
-    renderTextTriplet('outLearn', rows, 'fmtLearnBatch');   // ← 差し替え
+    // 3分割出力（renderTextTriplet が無ければ内部フォールバック）
+    if (typeof renderTextTriplet === "function"){
+      renderTextTriplet("outLearn", rows, "fmtLearnBatch");
+    }
   });
 
-  // 3分割コピー小ボタンのバインド
-  bindCopyTripletExplicit([
-    ['btnCopyLearnAll',    'outLearnAll'],
-    ['btnCopyLearnPrompt', 'outLearnPrompt'],
-    ['btnCopyLearnNeg',    'outLearnNeg']
-  ]);
-}
-
-  // 「全コピー」ボタンは All をコピーする
+  // 「全コピー」大ボタン（All をコピー）
   document.getElementById("btnCopyLearn")?.addEventListener("click", ()=>{
-    const t = (document.getElementById("outLearnAll")?.textContent||"").trim();
-    if (!t) { toast("学習テキストが空です"); return; }
-    navigator.clipboard.writeText(t).then(()=> toast("学習セットをコピーしました"));
+    const t = (document.getElementById("outLearnAll")?.textContent || "").trim();
+    if (!t){ toast("学習テキストが空です"); return; }
+    if (navigator.clipboard?.writeText){
+      navigator.clipboard.writeText(t).then(()=> toast("学習セットをコピーしました"))
+        .catch(()=> fallbackCopy(t));
+    } else {
+      fallbackCopy(t);
+    }
   });
 
+  // 小ボタン（All / Prompt / Neg）
+  if (typeof bindCopyTripletExplicit === "function"){
+    bindCopyTripletExplicit([
+      ["btnCopyLearnAll",    "outLearnAll"],
+      ["btnCopyLearnPrompt", "outLearnPrompt"],
+      ["btnCopyLearnNeg",    "outLearnNeg"]
+    ]);
+  }
+
+  // CSV保存
   document.getElementById("btnCsvLearn")?.addEventListener("click", ()=>{
     const csv = csvFromLearn("#fmtLearnBatch");
-    if(!csv || csv.split("\n").length<=1){ toast("学習テーブルが空です"); return; }
-    const char = (document.getElementById("charName")?.value||"noname").replace(/[^\w\-]/g,"_");
-    dl(`learning_${char}_${nowStamp()}.csv`, csv); toast("学習セットをローカル（CSV）に保存しました");
+    if (!csv || csv.split("\n").length <= 1){ toast("学習テーブルが空です"); return; }
+    const char = (document.getElementById("charName")?.value || "noname").replace(/[^\w\-]/g,"_");
+    dl(`learning_${char}_${nowStamp()}.csv`, csv);
+    toast("学習セットをローカル（CSV）に保存しました");
   });
 
+  // クラウド保存
   document.getElementById("btnCloudLearn")?.addEventListener("click", async ()=>{
     const csv = csvFromLearn("#fmtLearnBatch");
-    if(!csv || csv.split("\n").length<=1){ toast("学習テーブルが空です"); return; }
+    if (!csv || csv.split("\n").length <= 1){ toast("学習テーブルが空です"); return; }
     await postCSVtoGAS("learning", csv);
   });
+
+  function fallbackCopy(text){
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); ta.remove();
+    toast?.("学習セットをコピーしました");
+  }
 }
 
 
