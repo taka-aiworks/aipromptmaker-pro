@@ -218,52 +218,46 @@
         <input id="loraTag" type="text" placeholder="<lora:YourLoRA:0.8>">
       </div>
 
-<!-- ▼ 基本情報：1枚テスト（統一版） -->
-<div id="slotBasicOneTest">
-  <div class="card" id="learnTestCard">
-    <div class="row">
-      <div id="readyHint" class="mini muted" style="margin-top:.25rem;"></div>
-      <h3 style="margin:0">1枚テスト</h3><span style="flex:1"></span>
-      <label class="inline mini">出力フォーマット
-        <select id="fmtLearn">
-          <option value="a1111" selected>Web UI（汎用）</option>
-          <option value="invoke">InvokeAI（CLI）</option>
-          <option value="comfy">ComfyUI（テキスト）</option>
-          <option value="sdnext">SD.Next（dream.py）</option>
-          <option value="nai">NovelAI</option>
-        </select>
-      </label>
-      <button id="btnOneLearn" class="btn ok">テスト生成</button>
-      <button id="btnCopyLearnTest" class="btn ghost">テストをコピー</button>
-      <button id="btnExportChar" class="btn ghost">キャラ設定エクスポート</button>
-    </div>
-    <div class="grid g2" style="margin-top:10px">
-      <div>
-        <h4 style="margin:0 0 6px">テーブル</h4>
-        <table class="table" id="tblLearnTest">
-            <thead><tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr></thead>
-          <tbody></tbody>
-        </table>
+      <!-- ▼ 基本情報：1枚テスト（統一版） -->
+      <div id="slotBasicOneTest">
+        <div class="card" id="learnTestCard">
+          <div class="row">
+            <div id="readyHint" class="mini muted" style="margin-top:.25rem;"></div>
+            <h3 style="margin:0">1枚テスト</h3><span style="flex:1"></span>
+            <label class="inline mini">出力フォーマット
+              <select id="fmtLearn">
+                <option value="a1111" selected>Web UI（汎用）</option>
+                <option value="invoke">InvokeAI（CLI）</option>
+                <option value="comfy">ComfyUI（テキスト）</option>
+                <option value="sdnext">SD.Next（dream.py）</option>
+                <option value="nai">NovelAI</option>
+              </select>
+            </label>
+            <button id="btnOneLearn" class="btn ok">テスト生成</button>
+            <button id="btnExportChar" class="btn ghost">キャラ設定エクスポート</button>
+          </div>
+      
+          <!-- ★ テキスト（All/Prompt/Neg）だけ表示。テーブルは削除 -->
+          <div class="grid g3" style="margin-top:10px">
+            <div>
+              <div class="mini" style="margin:0 0 .35rem">全部</div>
+              <div class="out" id="outLearnTestAll"></div>
+              <button id="btnCopyLearnTestAll" class="btn ghost small" style="margin-top:6px">全部をコピー</button>
+            </div>
+            <div>
+              <div class="mini" style="margin:0 0 .35rem">Promptのみ</div>
+              <div class="out" id="outLearnTestPrompt"></div>
+              <button id="btnCopyLearnTestPrompt" class="btn ghost small" style="margin-top:6px">Promptだけコピー</button>
+            </div>
+            <div>
+              <div class="mini" style="margin:0 0 .35rem">Negativeのみ</div>
+              <div class="out" id="outLearnTestNeg"></div>
+              <button id="btnCopyLearnTestNeg" class="btn ghost small" style="margin-top:6px">Negativeだけコピー</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div>
-        <h4 style="margin:0 0 6px">テキスト</h4>
-      
-        <div class="mini" style="margin:.25rem 0 .35rem">全部</div>
-        <div class="out" id="outLearnTestAll"></div>
-        <button id="btnCopyLearnTestAll" class="btn ghost small" style="margin-top:6px">全部をコピー</button>
-      
-        <div class="mini" style="margin:.75rem 0 .35rem">Promptのみ</div>
-        <div class="out" id="outLearnTestPrompt"></div>
-        <button id="btnCopyLearnTestPrompt" class="btn ghost small" style="margin-top:6px">Promptだけコピー</button>
-      
-        <div class="mini" style="margin:.75rem 0 .35rem">Negativeのみ</div>
-        <div class="out" id="outLearnTestNeg"></div>
-        <button id="btnCopyLearnTestNeg" class="btn ghost small" style="margin-top:6px">Negativeだけコピー</button>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- ▲ 基本情報：1枚テスト -->
+      <!-- ▲ 基本情報：1枚テスト -->
     </section>
 
 
@@ -345,8 +339,8 @@
       <label class="inline"><input type="checkbox" id="pl_useDefaultNeg" checked> デフォルトのネガティブを使う</label>
     </div>
   </div>
-    <!-- 出力フォーマット（学習/量産と同仕様） -->
-      <div class="row" style="gap:8px;margin-top:10px">
+        <!-- 出力フォーマット（学習/量産と同仕様） -->
+    <div class="row" style="gap:8px;margin-top:10px">
       <button id="btnPlanOne" class="btn ok">1件出力</button>
       <label class="inline mini">出力フォーマット
         <select id="fmtPlanner">
@@ -362,7 +356,8 @@
       <button id="btnCopyPlannerPrompt" class="btn ghost">Promptだけ</button>
       <button id="btnCopyPlannerNeg" class="btn ghost">Negativeだけ</button>
     </div>
-      <div class="grid g3" style="margin-top:10px">
+    
+    <div class="grid g3" style="margin-top:10px">
       <div>
         <div class="mini" style="margin:0 0 .35rem">全部</div>
         <div class="out" id="outPlannerAll"></div>
@@ -489,31 +484,7 @@
           <button id="btnCloudLearn" class="btn ghost" title="学習セットをクラウドへ保存">クラウド保存（CSV）</button>
           <span id="toast" class="toast mini" hidden></span>
         </div>
-        <div class="grid g2" style="margin-top:10px">
-          <div>
-            <h4 style="margin:0 0 6px">テーブル</h4>
-            <table class="table" id="tblLearn">
-              <tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div>
-          <h4 style="margin:0 0 6px">テキスト</h4>
-        
-          <div class="mini" style="margin:.25rem 0 .35rem">全部</div>
-          <div class="out" id="outLearnAll"></div>
-          <button id="btnCopyLearnAll" class="btn ghost small" style="margin-top:6px">全部をコピー</button>
-        
-          <div class="mini" style="margin:.75rem 0 .35rem">Promptのみ</div>
-          <div class="out" id="outLearnPrompt"></div>
-          <button id="btnCopyLearnPrompt" class="btn ghost small" style="margin-top:6px">Promptだけコピー</button>
-        
-          <div class="mini" style="margin:.75rem 0 .35rem">Negativeのみ</div>
-          <div class="out" id="outLearnNeg"></div>
-          <button id="btnCopyLearnNeg" class="btn ghost small" style="margin-top:6px">Negativeだけコピー</button>
-        </div>
-        </div>
-      </div>
+       </div>
     </section>
 
     <!-- 量産モード（従来どおり） -->
@@ -747,26 +718,30 @@
           <button id="btnCsvProd" class="btn ghost" title="量産セットをCSVでローカル保存">ローカル保存（CSV）</button>
           <button id="btnCloudProd" class="btn ghost" title="量産セットをクラウドへ保存">クラウド保存（CSV）</button>
         </div>
-        <div class="grid g2" style="margin-top:10px">
-          <div>
-            <h3>テーブル表示</h3>
-            <table class="table" id="tblProd"><thead><tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr></thead><tbody></tbody></table>
-          </div>
-          <div>
+        <div class="grid g1" style="margin-top:10px">
+        <!-- テキスト（上） -->
+        <div>
           <h3>コピー用（テキスト）</h3>
-        
           <div class="mini" style="margin:.25rem 0 .35rem">全部</div>
           <div class="out" id="outProdAll"></div>
           <button id="btnCopyProdAll" class="btn ghost small" style="margin-top:6px">全部をコピー</button>
-        
+      
           <div class="mini" style="margin:.75rem 0 .35rem">Promptのみ</div>
           <div class="out" id="outProdPrompt"></div>
           <button id="btnCopyProdPrompt" class="btn ghost small" style="margin-top:6px">Promptだけコピー</button>
-        
+      
           <div class="mini" style="margin:.75rem 0 .35rem">Negativeのみ</div>
           <div class="out" id="outProdNeg"></div>
           <button id="btnCopyProdNeg" class="btn ghost small" style="margin-top:6px">Negativeだけコピー</button>
         </div>
+      
+        <!-- テーブル（下） -->
+        <div style="margin-top:12px">
+          <h3>テーブル表示</h3>
+          <table class="table" id="tblProd">
+            <thead><tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </section>
