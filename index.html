@@ -263,9 +263,206 @@
 
 
 
+<!-- ======================= タブナビ（既存の間に追加） ======================= -->
+<!-- 例：基本情報タブの後に差し込む -->
+<button class="tab-btn" id="btnTabWordMode" data-target="#panelWordMode">
+  単語モード
+</button>
 
+<!-- ======================= 単語モード：パネル本体 ======================= -->
+<section id="panelWordMode" class="tab-panel" hidden>
+  <header class="wm-header">
+    <h2>単語モード</h2>
+    <p class="wm-note">
+      辞書からカテゴリ別に単語を選び、下部テーブルに最大20件まで蓄積・コピーできます。
+      表示は <strong>日本語（大）</strong>＋<small>英語（小）</small> で統一。
+    </p>
+  </header>
 
-      
+  <!-- 選択中バー（選択チップを並べる） -->
+  <section class="wm-selected">
+    <div class="wm-selected-head">
+      <strong>選択中 <span id="wm-selected-count">0</span>/20</strong>
+      <div class="wm-selected-actions">
+        <button id="wm-selected-clear" type="button" aria-label="全クリア">Clear</button>
+      </div>
+    </div>
+    <div id="wm-selected-chips" class="wm-chip-area" aria-live="polite"></div>
+  </section>
+
+  <!-- ========== アコーディオン（SFW） ========== -->
+  <section class="wm-accordion" id="wm-accordion-sfw">
+    <h3 class="wm-acc-title">SFW</h3>
+
+    <details class="wm-acc" data-cat="background" open="false">
+      <summary>
+        背景 <span class="wm-count" id="wm-count-background">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-background"><!-- 動的挿入 --></div>
+    </details>
+
+    <details class="wm-acc" data-cat="pose">
+      <summary>
+        ポーズ <span class="wm-count" id="wm-count-pose">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-pose"><!-- 動的挿入 --></div>
+    </details>
+
+    <details class="wm-acc" data-cat="composition">
+      <summary>
+        構図 <span class="wm-count" id="wm-count-composition">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-composition"><!-- 動的挿入 --></div>
+    </details>
+
+    <details class="wm-acc" data-cat="view">
+      <summary>
+        視点 <span class="wm-count" id="wm-count-view">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-view"><!-- 動的挿入 --></div>
+    </details>
+
+    <details class="wm-acc" data-cat="expression-sfw">
+      <summary>
+        表情（SFW） <span class="wm-count" id="wm-count-expression-sfw">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-expression-sfw"><!-- 動的挿入 --></div>
+    </details>
+
+    <details class="wm-acc" data-cat="lighting-sfw">
+      <summary>
+        ライティング（SFW） <span class="wm-count" id="wm-count-lighting-sfw">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-lighting-sfw"><!-- 動的挿入 --></div>
+    </details>
+
+    <details class="wm-acc" data-cat="world">
+      <summary>
+        世界観 <span class="wm-count" id="wm-count-world">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-world"><!-- 動的挿入 --></div>
+    </details>
+
+    <details class="wm-acc" data-cat="personality">
+      <summary>
+        性格 <span class="wm-count" id="wm-count-personality">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-personality"><!-- 動的挿入 --></div>
+    </details>
+
+    <details class="wm-acc" data-cat="relationship">
+      <summary>
+        関係性 <span class="wm-count" id="wm-count-relationship">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-relationship"><!-- 動的挿入 --></div>
+    </details>
+  </section>
+
+  <!-- ========== アコーディオン（NSFW） ========== -->
+  <section class="wm-accordion" id="wm-accordion-nsfw">
+    <h3 class="wm-acc-title">NSFW</h3>
+
+    <details class="wm-acc" data-cat="expression-nsfw">
+      <summary>
+        表情（NSFW） <span class="wm-count" id="wm-count-expression-nsfw">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-expression-nsfw"><!-- 動的挿入 --></div>
+    </details>
+
+    <details class="wm-acc" data-cat="exposure">
+      <summary>
+        露出 <span class="wm-count" id="wm-count-exposure">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-exposure"><!-- 動的挿入 --></div>
+      <p class="wm-tip">※ 露出系（bikini/lingerie/nude）は色込みタグの登録・コピーを推奨</p>
+    </details>
+
+    <details class="wm-acc" data-cat="situation">
+      <summary>
+        シチュエーション <span class="wm-count" id="wm-count-situation">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-situation"><!-- 動的挿入 --></div>
+    </details>
+
+    <details class="wm-acc" data-cat="lighting-nsfw">
+      <summary>
+        ライティング（NSFW） <span class="wm-count" id="wm-count-lighting-nsfw">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-lighting-nsfw"><!-- 動的挿入 --></div>
+    </details>
+  </section>
+
+  <!-- ========== アコーディオン（Color） ========== -->
+  <section class="wm-accordion" id="wm-accordion-color">
+    <h3 class="wm-acc-title">Color</h3>
+    <details class="wm-acc" data-cat="color">
+      <summary>
+        色 <span class="wm-count" id="wm-count-color">0</span>
+      </summary>
+      <div class="wm-items" id="wm-items-color"><!-- 動的挿入 --></div>
+      <p class="wm-tip">※ 露出系と併用時は色込みタグ（例：white bikini）を使い、ここはコピーしない</p>
+    </details>
+  </section>
+
+  <!-- ========== 出力テーブル ========== -->
+  <section class="wm-table-wrap">
+    <div class="wm-table-head">
+      <h3>出力（最大20件）</h3>
+      <div class="wm-table-actions">
+        <button id="wm-copy-en-all" type="button">Copy EN (All)</button>
+        <button id="wm-copy-both-all" type="button">Copy BOTH (All)</button>
+        <button id="wm-table-clear" type="button">Clear</button>
+      </div>
+    </div>
+
+    <table id="wm-table" class="wm-table">
+      <thead>
+        <tr>
+          <th style="width:40%;">日本語</th>
+          <th style="width:40%;">English</th>
+          <th style="width:20%;">コピー</th>
+        </tr>
+      </thead>
+      <tbody id="wm-table-body"><!-- 動的行 --></tbody>
+    </table>
+  </section>
+
+  <!-- ========== テンプレート（JSからcloneして使う） ========== -->
+  <template id="wm-item-tpl">
+    <!-- 単語カード：日本語大／英語小、右にコピー -->
+    <button class="wm-item" type="button" data-en="" data-jp="" data-cat="">
+      <span class="wm-jp">日本語</span>
+      <small class="wm-en">english-tag</small>
+      <span class="wm-actions">
+        <button class="wm-copy-en" type="button" title="英語のみコピー">EN</button>
+        <button class="wm-copy-both" type="button" title="日本語(英語)コピー">BOTH</button>
+      </span>
+    </button>
+  </template>
+
+  <template id="wm-item-tpl-color">
+    <!-- Colorは EN のみコピー（BOTHボタンなし） -->
+    <button class="wm-item wm-item-color" type="button" data-en="" data-jp="" data-cat="color" data-color-only="1">
+      <span class="wm-jp">色名</span>
+      <small class="wm-en">color-tag</small>
+      <span class="wm-actions">
+        <button class="wm-copy-en" type="button" title="英語のみコピー">EN</button>
+      </span>
+    </button>
+  </template>
+
+  <template id="wm-row-tpl">
+    <tr data-en="">
+      <td class="wm-row-jp">日本語</td>
+      <td class="wm-row-en">english-tag</td>
+      <td class="wm-row-actions">
+        <button class="wm-row-copy-en" type="button">EN</button>
+        <button class="wm-row-copy-both" type="button">BOTH</button>
+        <button class="wm-row-remove" type="button" title="削除">×</button>
+      </td>
+    </tr>
+  </template>
+</section>
 
 
 
