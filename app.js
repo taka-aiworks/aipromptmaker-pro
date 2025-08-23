@@ -584,21 +584,22 @@ function runOneTest() {
   const lack = listMissingForOneTest();
   if (lack.length) { toast("1枚テスト 未入力: " + lack.join(" / ")); return; }
 
-  const one = buildOneLearning(); // 既存（BG/PO/EXが無いとerrorを返す）
+  const one = buildOneLearning();
   if (one?.error) { toast(one.error); return; }
 
-  // 既存レンダラを使って、1枚テスト用テーブル/テキストへ
   __lastOneTestRows = [one];
   renderLearnTableTo("#tblLearnTest tbody", __lastOneTestRows);
-  renderTextTriplet('outLearnTest', __lastOneTestRows, 'fmtLearn');   // ← 差し替え
-  }
+  renderTextTriplet('outLearnTest', __lastOneTestRows, 'fmtLearn');
+}
 
-// コピー小ボタンのバインド
-bindCopyTripletExplicit([
-  ['btnCopyLearnTestAll',    'outLearnTestAll'],
-  ['btnCopyLearnTestPrompt', 'outLearnTestPrompt'],
-  ['btnCopyLearnTestNeg',    'outLearnTestNeg']
-])
+// 初期化時に一度だけバインド
+function bindOneTest(){
+  bindCopyTripletExplicit([
+    ['btnCopyLearnTestAll',    'outLearnTestAll'],
+    ['btnCopyLearnTestPrompt', 'outLearnTestPrompt'],
+    ['btnCopyLearnTestNeg',    'outLearnTestNeg']
+  ]);
+}
 
 function copyOneTestText(){
   const el = $("#outLearnTest");
