@@ -2139,6 +2139,36 @@ function bindCopyTripletExplicit(map) {
   });
 }
 
+// すべてのモードの 3分割コピー小ボタンを一括バインド
+function initCopyTripletAllModes(){
+  // 撮影モード
+  bindCopyTripletExplicit?.([
+    ['btnCopyPlannerAll',    'outPlannerAll'],
+    ['btnCopyPlannerPrompt', 'outPlannerPrompt'],
+    ['btnCopyPlannerNeg',    'outPlannerNeg'],
+  ]);
+
+  // 基本情報タブ：1枚テスト
+  bindCopyTripletExplicit?.([
+    ['btnCopyLearnTestAll',    'outLearnTestAll'],
+    ['btnCopyLearnTestPrompt', 'outLearnTestPrompt'],
+    ['btnCopyLearnTestNeg',    'outLearnTestNeg'],
+  ]);
+
+  // 学習モード：セット出力
+  bindCopyTripletExplicit?.([
+    ['btnCopyLearnAll',    'outLearnAll'],
+    ['btnCopyLearnPrompt', 'outLearnPrompt'],
+    ['btnCopyLearnNeg',    'outLearnNeg'],
+  ]);
+
+  // 量産モード
+  bindCopyTripletExplicit?.([
+    ['btnCopyProdAll',    'outProdAll'],
+    ['btnCopyProdPrompt', 'outProdPrompt'],
+    ['btnCopyProdNeg',    'outProdNeg'],
+  ]);
+}
 
 /* ========= CSV 抽出（学習）：新しい4列に対応 ========= */
 function csvFromLearn(fmtSelId = "#fmtLearnBatch") {
@@ -3546,6 +3576,8 @@ function initAll(){
 
     initSkinTone();
     initNSFWStatusBadge();
+    // initAll() の末尾あたり
+    initCopyTripletAllModes();
   });
 }
 
