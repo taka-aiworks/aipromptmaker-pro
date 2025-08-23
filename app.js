@@ -2874,17 +2874,21 @@ function applyPercentMixToLearning(rule, selected) {
 }
 
 /* ============================================================================
- * 学習モード一括生成（置き換え版）
+ * 学習モード一括生成（修正版・置き換え用）
  * 目的：
- *  1) 行ごとにユニーク優先で buildOneLearning を積み上げ、足りない分だけ重複許容で補完
+ *  1) 行ごとにユニーク優先で buildOneLearning を積み上げ、足りない分は重複許容で補完
  *  2) 生成後に「割合ミックス」適用（VIEW / COMP / EXP / BG / LIGHT）
- *  3) 最終整形：排他→一意化→並び順→先頭固定→NEG統一→seed/text同期
- * 注意：
- *  - 既存ユーティリティ（applyPercentForTag, fillRemainder, fixExclusives,
- *    ensurePromptOrder, enforceHeadOrder, getNeg, buildNegative, seedFromName 等）
- *    を前提として呼び出しています。これらが同スコープに存在すること。
- *  - EXPRESSION は UI選択（#expr）があればそれを母集団に、未選択時のみ既定セット＋neutral。
- *    ※ 本スニペットは既存の仕様どおりで、追加のNSFW整理は含めていません（次段で対応想定）。
+ *  3) NSFWがONなら nsfwL_*（表情/露出/シチュ/光）を各カテゴリ1つだけ反映し、
+ *     表情はSFW表情を確実に置換。露出が水着/下着/ヌード系なら服上下＋色プレースホルダを先に排他。
+ *  4) 最終整形：排他→一意化→並び順→先頭固定→NEG統一→seed/text同期
+ *
+ * 前提ユーティリティ（既存）：
+ *  - applyPercentForTag, fillRemainder
+ *  - fixExclusives, ensurePromptOrder, enforceHeadOrder
+ *  - applyNudePriority, enforceOnePieceExclusivity, pairWearColors
+ *  - getNeg, buildNegative, seedFromName
+ *  - getMany(id) … UIの複数選択読み出し
+ *  - #nsfwLearn チェックボックスの状態を参照
  * ========================================================================== */
 function buildBatchLearning(n){
   const out  = [];
@@ -2924,7 +2928,7 @@ function buildBatchLearning(n){
     }
     fillRemainder(rows, MIX_RULES.comp.group, MIX_RULES.comp.fallback);
 
-    // EXPRESSION（UI選択があればそれを母集団に）
+    // EXPRESSION（UI選択があればそれを母集団に、未選択時のみ既定＋neutral）
     const selExpr = getMany("expr") || [];
     const exprGroupBase = selExpr.length ? selExpr : MIX_RULES.expr.group;
     const exprGroup = Array.from(new Set([...exprGroupBase, "neutral expression"]));
@@ -2945,6 +2949,64 @@ function buildBatchLearning(n){
       applyPercentForTag(rows, MIX_RULES.light.group, tag, rng[0], rng[1]);
     }
     fillRemainder(rows, MIX_RULES.light.group, MIX_RULES.light.fallback);
+  }
+
+  // ③.5 NSFW整理（各カテゴリ1件・SFW表情置換・露出優先で服/色排他）
+  {
+    const nsfwOn = !!document.querySelector("#nsfwLearn")?.checked;
+    if (nsfwOn){
+      // UIで選ばれている候補（空なら何もしない）
+      const gExpr = getMany("nsfwL_expr")  || [];
+      const gExpo = getMany("nsfwL_expo")  || [];
+      const gSitu = getMany("nsfwL_situ")  || [];
+      const gLight= getMany("nsfwL_light") || [];
+
+      // 同一プールからは最初の1件だけ残す（ローカルヘルパ）
+      const keepOneFrom = (arr, pool)=>{
+        if (!Array.isArray(arr) || !pool || !pool.length) return arr;
+        let kept = false;
+        const ret = [];
+        for (const t of arr){
+          if (pool.includes(t)) {
+            if (!kept){ ret.push(t); kept = true; }
+            // 2個目以降は捨てる
+          } else {
+            ret.push(t);
+          }
+        }
+        return ret;
+      };
+
+      for (const r of out){
+        let p = Array.isArray(r.pos) ? r.pos.slice()
+              : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+
+        // 露出・シチュ・光は「各カテゴリ1つ」に正規化
+        p = keepOneFrom(p, gExpo);
+        p = keepOneFrom(p, gSitu);
+        p = keepOneFrom(p, gLight);
+
+        // 表情：NSFW表情が指定されていれば、それを1つだけ残し、SFW表情は置換（=除去）
+        if (gExpr.length){
+          // いったんSFW表情グループを全て除去し、nsfw表情のうち先頭1つを追加
+          const sfwExprGroup = Array.from(new Set([...(getMany("expr")||[]), ...MIX_RULES.expr.group, "neutral expression"]));
+          p = p.filter(t => !sfwExprGroup.includes(t));           // SFW表情を除去
+          // 既に複数入っていた場合も keepOneFrom で1つ化
+          p = keepOneFrom(p.concat(gExpr[0]), gExpr);
+        }
+
+        // 露出が水着/下着/ヌード系 → 服上下＋色プレースホルダを先に排他
+        // （applyNudePriority / enforceOnePieceExclusivity に任せる）
+        p = applyNudePriority(p);
+        p = enforceOnePieceExclusivity(p);
+
+        // その後で色と名詞をペアリング
+        p = pairWearColors(p);
+
+        r.pos    = p;
+        r.prompt = p.join(", ");
+      }
+    }
   }
 
   // ④ 最終整形：排他→一意化→順序→先頭固定→NEG統一→同期
