@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AI Prompt Maker – 基本情報 / 撮影モード /学習モード / 量産モード / 設定</title>
+  <title>AI Prompt Maker – 基本情報 / 単語モード / 撮影モード /学習モード / 量産モード / 設定</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <div class="inner">
       <div class="tabbar">
         <div class="tab active" data-mode="basic">👤 基本情報</div>
-      <!-- <div class="tab" data-mode="basic">📖 単語モード</div> -->
+        <div class="tab" data-mode="word">📖 単語モード</div> -->
         <div class="tab" data-mode="planner">📷 撮影モード</div>
         <div class="tab" data-mode="learning">🧠 LoRA学習モード</div>
         <div class="tab" data-mode="production">📦 量産モード</div>
@@ -264,14 +264,13 @@
 
 
 <!-- ======================= タブナビ（既存の間に追加） ======================= -->
-<!-- 例：基本情報タブの後に差し込む -->
-<button class="tab-btn" id="btnTabWordMode" data-target="#panelWordMode">
-  単語モード
-</button>
+<!-- 基本情報 の次に差し込む想定 -->
+<div class="tab" data-mode="word">📖 単語モード</div>
 
 <!-- ======================= 単語モード：パネル本体 ======================= -->
 <section id="panelWordMode" class="tab-panel" hidden>
   <header class="wm-header">
+    <!-- ここから先は、あなたが用意した単語モードの中身を置いてOK -->
     <h2>単語モード</h2>
     <p class="wm-note">
       辞書からカテゴリ別に単語を選び、下部テーブルに最大20件まで蓄積・コピーできます。
@@ -1097,6 +1096,7 @@
 
         const m = tab.dataset.mode;
         $("#panelBasic").hidden      = (m !== "basic");
+        $("#panelWordMode").hidden   = (m !== "word"); 
         $("#panelPlanner").hidden    = (m !== "planner");
         $("#panelLearning").hidden   = (m !== "learning");
         $("#panelProduction").hidden = (m !== "production");
