@@ -3507,46 +3507,50 @@ function bindLearnBatch(){
 
 
 function bindProduction(){
-  $("#btnGenProd")?.addEventListener("click", ()=>{
-    const cnt = parseInt($("#countProd").value,10) || 50;
-    const rows = buildBatchProduction(cnt);
-    renderProdTable(rows);
-    renderTextTriplet('outProd', rows, 'fmtProd');   // ← 差し替え
+  // 生成
+  document.getElementById("btnGenProd")?.addEventListener("click", ()=>{
+    const cnt = parseInt(document.getElementById("countProd").value,10) || 50;
+    const rows = buildBatchProduction(cnt);               // ← あなたの完全置換版を使用
+    // テーブル
+    if (typeof renderProdTableTo === 'function') {
+      renderProdTableTo("#tblProd tbody", rows);
+    } else if (typeof renderProdTable === 'function') {
+      // 旧名が残っている場合の保険
+      renderProdTable(rows);
+    }
+    // ★ 3分割テキスト（All/Prompt/Neg）を出力
+    renderTextTriplet('outProd', rows, 'fmtProd');
   });
 
-  // 3分割コピーを明示バインド
+  // 「全コピー」＝All をコピー
+  document.getElementById("btnCopyProd")?.addEventListener("click", ()=>{
+    const t = (document.getElementById("outProdAll")?.textContent||"").trim();
+    if (!t) { toast("量産テキストが空です"); return; }
+    navigator.clipboard.writeText(t).then(()=> toast("量産セットをコピーしました"));
+  });
+
+  // CSV
+  document.getElementById("btnCsvProd")?.addEventListener("click", ()=>{
+    const csv = csvFromProd("#fmtProd");
+    if(!csv || csv.split("\n").length<=1){ toast("量産テーブルが空です"); return; }
+    const char=(document.getElementById("charName")?.value||"noname").replace(/[^\w\-]/g,"_");
+    dl(`production_${char}_${nowStamp()}.csv`, csv);
+    toast("量産セットをローカル（CSV）に保存しました");
+  });
+
+  // クラウド
+  document.getElementById("btnCloudProd")?.addEventListener("click", async ()=>{
+    const csv = csvFromProd("#fmtProd");
+    if(!csv || csv.split("\n").length<=1){ toast("量産テーブルが空です"); return; }
+    await postCSVtoGAS("production", csv);
+  });
+
+  // ★ 3分割コピー小ボタンの個別バインド（旧 bindCopyTriplet は使わない）
   bindCopyTripletExplicit([
     ['btnCopyProdAll',    'outProdAll'],
     ['btnCopyProdPrompt', 'outProdPrompt'],
     ['btnCopyProdNeg',    'outProdNeg']
   ]);
-
-  // 旧「全コピー」ボタンに互換対応（任意で残すなら）
-  $("#btnCopyProd")?.addEventListener("click", ()=>{
-    const text = ($("#outProdAll")?.textContent || "").trim();
-    if (!text) { toast("コピーする内容がありません"); return; }
-    navigator.clipboard?.writeText(text).then(()=>{
-      toast("量産セットをコピーしました");
-    });
-  });
-
-  $("#btnCsvProd")?.addEventListener("click", ()=>{
-    const csv = csvFromProd("#fmtProd");
-    if(!csv || csv.split("\n").length <= 1){
-      toast("量産テーブルが空です"); return;
-    }
-    const char = ($("#charName")?.value || "noname").replace(/[^\w\-]/g,"_");
-    dl(`production_${char}_${nowStamp()}.csv`, csv);
-    toast("量産セットをローカル（CSV）に保存しました");
-  });
-
-  $("#btnCloudProd")?.addEventListener("click", async ()=>{
-    const csv = csvFromProd("#fmtProd");
-    if(!csv || csv.split("\n").length <= 1){
-      toast("量産テーブルが空です"); return;
-    }
-    await postCSVtoGAS("production", csv);
-  });
 }
 
 bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 'outProd');
