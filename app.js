@@ -1372,6 +1372,8 @@ function pmBuildOne(){
   tmp = pmPickOne('bf_gender'); if (tmp) base.push(tmp);
   tmp = pmPickOne('bf_body');   if (tmp) base.push(tmp);
   tmp = pmPickOne('bf_height'); if (tmp) base.push(tmp);
+  tmp = pmPickOne('hairStyle'); if (tmp) base.push(tmp);   // 髪型
+  tmp = pmPickOne('eyeShape');  if (tmp) base.push(tmp);   // 目の形
 
   tmp = pmTextById('tagH');     if (tmp) base.push(tmp);
   tmp = pmTextById('tagE');     if (tmp) base.push(tmp);
