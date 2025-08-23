@@ -1359,11 +1359,12 @@ function pmRenderPlanner(){
   pmRenderAcc();
 }
 
-/* 1件出力 */
+/* 1件出力（置き換え版） */
 function pmBuildOne(){
   var name = pmValById('charName');
   var seed = (typeof seedFromName === 'function') ? seedFromName(name,1) : 0;
- 
+
+  // ---- 基本情報 ----
   var base = [];
   if (name) base.push(name);
 
@@ -1379,6 +1380,7 @@ function pmBuildOne(){
   tmp = pmTextById('tagE');     if (tmp) base.push(tmp);
   tmp = pmTextById('tagSkin');  if (tmp) base.push(tmp);
 
+  // ---- 差分（SFW） ----
   var bg    = pmPickOne('pl_bg')   || 'plain background';
   var pose  = pmPickOne('pl_pose') || '';
   var comp  = pmPickOne('pl_comp') || 'bust';
@@ -1386,18 +1388,18 @@ function pmBuildOne(){
   var exprS = pmPickOne('pl_expr') || 'neutral expression';
   var liteS = pmPickOne('pl_light')|| 'soft lighting';
 
-  var expr = exprS;
-  var lite = liteS;
-  var nsfwOn = pmChecked('pl_nsfw');
+  // ---- NSFW ----
+  var nsfwOn    = pmChecked('pl_nsfw');
   var nsfwExpr  = nsfwOn ? pmPickOne('pl_nsfw_expr')  : '';
   var nsfwExpo  = nsfwOn ? pmPickOne('pl_nsfw_expo')  : '';
   var nsfwSitu  = nsfwOn ? pmPickOne('pl_nsfw_situ')  : '';
   var nsfwLight = nsfwOn ? pmPickOne('pl_nsfw_light') : '';
-  if (nsfwOn){
-    if (nsfwExpr)  expr = nsfwExpr;
-    if (nsfwLight) lite = nsfwLight;
-  }
 
+  // 表情はNSFWを優先して置換
+  var expr = nsfwOn && nsfwExpr ? nsfwExpr : exprS;
+  var lite = nsfwOn && nsfwLight ? nsfwLight : liteS;
+
+  // ---- アクセ ----
   var accName = pmValById('pl_accSel');
   var acc = '';
   if (accName){
@@ -1405,8 +1407,10 @@ function pmBuildOne(){
     acc = color ? (accName + ', ' + color) : accName;
   }
 
+  // ---- 固定タグ ----
   var fixed = pmGetFixed();
 
+  // ---- ひとまず全て積む ----
   var parts = []
     .concat(['solo'])
     .concat((typeof getGenderCountTag==='function') ? [(getGenderCountTag()||'')] : [])
@@ -1419,23 +1423,51 @@ function pmBuildOne(){
     if (nsfwSitu) parts.push(nsfwSitu);
   }
 
-  // 空除去
-  var cleaned = [];
-  for (var i=0; i<parts.length; i++){ if (parts[i]) cleaned.push(parts[i]); }
-  parts = cleaned;
+  // ---- 空除去 ----
+  parts = parts.filter(Boolean);
 
-  // 服色と服名を合体（white t-shirt 等）
+  // === 服/露出の優先整理（色付けより先に実行） ===
+  // 1) ヌード/露出優先 → 2) ワンピ優先（上下排他）
+  if (typeof applyNudePriority === 'function') parts = applyNudePriority(parts);
+  if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
+
+  // 露出が水着/下着/ヌード系なら、通常服と色プレースホルダを除去し、辞書の色付き露出タグだけを残す
+  var EXPOSURE_EXCLUSIVE_RE = /\b(bikini|swimsuit|lingerie|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple_cover_bikini|crotchless_swimsuit|bodypaint_swimsuit|topless|bottomless|nude)\b/i;
+
+  if (nsfwOn && parts.some(t => EXPOSURE_EXCLUSIVE_RE.test(String(t)))){
+    // 服名（上下・ワンピ等）を除外
+    var CLOTH_NOUN_RE = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
+    // 単独色や「<color> <noun>」形式の色プレースホルダも除外（辞書色付き露出に一本化）
+    var COLOR_WORD_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
+    var COLOR_PLACE_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
+
+    parts = parts.filter(function(t){
+      var s = String(t);
+      if (CLOTH_NOUN_RE.test(s)) return false;
+      if (COLOR_PLACE_RE.test(s)) return false;
+      // 単独色（色だけのトークン）も外す
+      if (COLOR_WORD_RE.test(s) && !/\s/.test(s)) return false;
+      return true;
+    });
+    // ※ 露出の色は辞書（pl_nsfw_expo の値）に含まれている前提なので、ここでは何も足さない
+  }
+
+  // === ここで初めて色ペアリング（通常服のみ影響） ===
   if (typeof pairWearColors === 'function') parts = pairWearColors(parts);
 
-  // 既存の整合処理があれば先に
+  // === 整理：SOLOガード/重複ヒント整理 ===
+  if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
+  if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
+
+  // === 排他 → 並び順 → 先頭固定 ===
   if (typeof fixExclusives === 'function')     parts = fixExclusives(parts);
   if (typeof ensurePromptOrder === 'function') parts = ensurePromptOrder(parts);
-
-  // 頭固定＆重複除去
   if (typeof enforceHeadOrder === 'function')  parts = enforceHeadOrder(parts);
 
+  // ---- ネガティブ ----
   var neg = (typeof withSoloNeg==='function') ? withSoloNeg(pmGetNeg()) : pmGetNeg();
 
+  // ---- 戻り値（従来互換：配列で返す）----
   return [{ seed: seed, pos: parts, neg: neg }];
 }
 
