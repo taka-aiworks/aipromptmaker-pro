@@ -340,6 +340,7 @@
     </div>
   </div>
         <!-- 出力フォーマット（学習/量産と同仕様） -->
+    <!-- 出力フォーマット（学習/量産と同仕様） -->
     <div class="row" style="gap:8px;margin-top:10px">
       <button id="btnPlanOne" class="btn ok">1件出力</button>
       <label class="inline mini">出力フォーマット
@@ -352,25 +353,25 @@
         </select>
       </label>
       <span style="flex:1"></span>
-      <button id="btnCopyPlannerAll" class="btn ghost">全部をコピー</button>
-      <button id="btnCopyPlannerPrompt" class="btn ghost">Promptだけ</button>
-      <button id="btnCopyPlannerNeg" class="btn ghost">Negativeだけ</button>
     </div>
     
-    <div class="grid g3" style="margin-top:10px">
-      <div>
-        <div class="mini" style="margin:0 0 .35rem">全部</div>
-        <div class="out" id="outPlannerAll"></div>
-      </div>
-      <div>
-        <div class="mini" style="margin:0 0 .35rem">Promptのみ</div>
-        <div class="out" id="outPlannerPrompt"></div>
-      </div>
-      <div>
-        <div class="mini" style="margin:0 0 .35rem">Negativeのみ</div>
-        <div class="out" id="outPlannerNeg"></div>
-      </div>
+      <div class="grid g3" style="margin-top:10px">
+    <div>
+      <div class="mini" style="margin:0 0 .35rem">全部</div>
+      <div class="out" id="outPlannerAll"></div>
+      <button id="btnCopyPlannerAll" class="btn ghost small" style="margin-top:6px">全部をコピー</button>
     </div>
+    <div>
+      <div class="mini" style="margin:0 0 .35rem">Promptのみ</div>
+      <div class="out" id="outPlannerPrompt"></div>
+      <button id="btnCopyPlannerPrompt" class="btn ghost small" style="margin-top:6px">Promptだけコピー</button>
+    </div>
+    <div>
+      <div class="mini" style="margin:0 0 .35rem">Negativeのみ</div>
+      <div class="out" id="outPlannerNeg"></div>
+      <button id="btnCopyPlannerNeg" class="btn ghost small" style="margin-top:6px">Negativeだけコピー</button>
+    </div>
+  </div>
 </section>
 
     <!-- 学習モード（バリエーション） -->
