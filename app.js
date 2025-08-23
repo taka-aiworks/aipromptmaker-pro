@@ -65,24 +65,28 @@ function getGenderCountTag() {
   return ""; // 中立系（androgynous 等）は solo のみで制御
 }
 
-// 先頭に solo と 1girl/1boy を強制配置し、重複を除去（元の順序は保持）
+// 先頭を solo と 1girl/1boy に固定しつつ、他の人数/群衆系トークンを全除去
 function enforceHeadOrder(parts){
   const solo = 'solo';
-  const gen  = (typeof getGenderCountTag === 'function' ? (getGenderCountTag() || '') : '');
-  const out = [];
-  const seen = new Set();
+  const want = (typeof getGenderCountTag === 'function' ? (getGenderCountTag() || '') : '');
 
-  // まず head を入れる
-  if (solo) { out.push(solo); seen.add(solo); }
-  if (gen)  { out.push(gen);  seen.add(gen);  }
+  // 「人数・群衆」系はここで全部落とす（後から混入した 1boy も消える）
+  const COUNT_RE = /\b(?:1girl|1boy|[23]\s*girls?|[23]\s*boys?|two people|three people|duo|trio|multiple people|group|crowd|background people|bystanders|another person)\b/i;
 
-  // 残りを順序維持で追加（headと重複はスキップ）
-  for (const t of (parts || [])) {
-    if (!t || seen.has(t)) continue;
-    seen.add(t);
-    out.push(t);
-  }
-  return out;
+  // いったん solo と want を除外し、人数系は全部弾く
+  let rest = (parts || []).filter(t =>
+    t &&
+    t.toLowerCase() !== solo &&
+    t.toLowerCase() !== want.toLowerCase() &&
+    !COUNT_RE.test(String(t))
+  );
+
+  // 先頭に solo と want（空なら入れない）を置く
+  const head = [solo];
+  if (want) head.push(want);
+
+  // 重複防止
+  return [...new Set([...head, ...rest])].filter(Boolean);
 }
 
 // どのモードでも共通で使う最小強力セット（≈28語）
