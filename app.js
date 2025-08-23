@@ -2939,60 +2939,87 @@ function buildBatchLearning(n){
   }
 
   // ③.5 NSFW整理
-  {
-    const nsfwOn = !!document.querySelector("#nsfwLearn")?.checked;
-    if (nsfwOn){
-      const gExpr = getMany("nsfwL_expr")  || [];
-      const gExpo = getMany("nsfwL_expo")  || [];
-      const gSitu = getMany("nsfwL_situ")  || [];
-      const gLight= getMany("nsfwL_light") || [];
+{
+  const nsfwOn = !!document.querySelector("#nsfwLearn")?.checked;
+  if (nsfwOn){
+    const gExpr = getMany("nsfwL_expr")  || [];
+    const gExpo = getMany("nsfwL_expo")  || [];
+    const gSitu = getMany("nsfwL_situ")  || [];
+    const gLight= getMany("nsfwL_light") || [];
 
-      const keepOneFrom = (arr, pool)=>{
-        if (!Array.isArray(arr) || !pool || !pool.length) return arr;
-        let kept = false, ret = [];
-        for (const t of arr){
-          if (pool.includes(t)) {
-            if (!kept){ ret.push(t); kept = true; }
-          } else ret.push(t);
-        }
-        return ret;
-      };
-
-      for (const r of out){
-        let p = Array.isArray(r.pos) ? r.pos.slice()
-              : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
-
-        // 各カテゴリを1つに
-        p = keepOneFrom(p, gExpo);
-        p = keepOneFrom(p, gSitu);
-        p = keepOneFrom(p, gLight);
-
-        // 表情はNSFWを優先してSFWを除去
-        if (gExpr.length){
-          const sfwExprGroup = Array.from(new Set([...(getMany("expr")||[]), ...MIX_RULES.expr.group, "neutral expression"]));
-          p = p.filter(t => !sfwExprGroup.includes(t));
-          p = keepOneFrom(p.concat(gExpr[0]), gExpr);
-        }
-
-        // 服の排他と色付け
-        p = applyNudePriority(p);          // ヌード/露出系優先
-        p = enforceOnePieceExclusivity(p); // ワンピ優先で上下排他
-
-        // ★ 露出（水着/下着/ヌード）は辞書の色付きワードのみ残す
-        if (p.some(t => /\bbikini|lingerie|nude\b/i.test(t))) {
-          p = p.filter(t => !/\b(top|bottom|skirt|pants|dress|t-shirt)\b/i.test(t)); // 上下服除去
-          p = p.filter(t => !/\b(white|black|azure|red|blue|green)\b/i.test(t));     // 色単独タグ除去
-        }
-
-        // 通常服なら pairWearColors 適用
-        p = pairWearColors(p);
-
-        r.pos    = p;
-        r.prompt = p.join(", ");
+    const keepOneFrom = (arr, pool)=>{
+      if (!Array.isArray(arr) || !pool || !pool.length) return arr;
+      let kept = false, ret = [];
+      for (const t of arr){
+        if (pool.includes(t)) {
+          if (!kept){ ret.push(t); kept = true; }
+        } else ret.push(t);
       }
+      return ret;
+    };
+
+    for (const r of out){
+      let p = Array.isArray(r.pos) ? r.pos.slice()
+            : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+
+      // --- 先に「選択済みの先頭1件」を決める（あれば）
+      const chosenExpr  = gExpr.length  ? gExpr[0]  : "";
+      const chosenExpo  = gExpo.length  ? gExpo[0]  : "";
+      const chosenSitu  = gSitu.length  ? gSitu[0]  : "";
+      const chosenLight = gLight.length ? gLight[0] : "";
+
+      // --- 表情：SFW表情を全て外してから NSFW表情を1つ注入
+      if (chosenExpr){
+        const sfwExprGroup = Array.from(new Set([...(getMany("expr")||[]), ...MIX_RULES.expr.group, "neutral expression"]));
+        p = p.filter(t => !sfwExprGroup.includes(t));    // SFW表情を除去
+        if (!p.includes(chosenExpr)) p.push(chosenExpr); // NSFW表情を1つだけ
+      }
+
+      // --- 露出：服/色プレースホルダを先に排他 → 選んだ露出を必ず1つ入れる
+      if (chosenExpo){
+        // ヌード/露出優先（上下・色のプレースを除去する側の既存処理）
+        p = applyNudePriority(p);
+        p = enforceOnePieceExclusivity(p);
+
+        // “bikini/lingerie/nude” 系を使うときは、通常服・色プレースは残さない
+        const isExpoWear = /\b(bikini|lingerie|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple_cover_bikini|crotchless_swimsuit|bodypaint_swimsuit|topless|bottomless|nude)\b/i.test(chosenExpo);
+        if (isExpoWear){
+          // 服プレースホルダ
+          p = p.filter(t => !/\b(top|bottom|skirt|pants|dress|t-?shirt)\b/i.test(t));
+          // 色だけの単独タグ（辞書の色付きワードは残す想定）
+          p = p.filter(t => !/\b(white|black|azure|red|blue|green|pink|yellow|purple|orange|brown|beige|silver|gold)\b/i.test(t));
+        }
+
+        if (!p.includes(chosenExpo)) p.push(chosenExpo); // 露出タグを注入（色付き辞書ならそのまま）
+      } else {
+        // 選ばれていない場合でも既存の複数が混在していたら1つに整理
+        p = keepOneFrom(p, gExpo);
+      }
+
+      // --- シチュ/ライティング：各カテゴリ1つだけ入れる（足りなければ注入）
+      if (chosenSitu){
+        p = keepOneFrom(p, gSitu);
+        if (!p.includes(chosenSitu)) p.push(chosenSitu);
+      } else {
+        p = keepOneFrom(p, gSitu);
+      }
+
+      if (chosenLight){
+        p = keepOneFrom(p, gLight);
+        if (!p.includes(chosenLight)) p.push(chosenLight);
+      } else {
+        p = keepOneFrom(p, gLight);
+      }
+
+      // --- 服と色のペアリング（露出注入後に実行）
+      p = pairWearColors(p);
+
+      // 同期
+      r.pos    = p;
+      r.prompt = p.join(", ");
     }
   }
-
+}
   // ④ 最終整形
   for (const r of out){
     let p = Array.isArray(r.pos) ? r.pos.slice()
