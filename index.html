@@ -485,6 +485,32 @@
           <span id="toast" class="toast mini" hidden></span>
         </div>
        </div>
+       <div class="grid g1" style="margin-top:10px">
+        <!-- 先にテキスト（上） -->
+        <div>
+          <h4 style="margin:0 0 6px">テキスト</h4>
+          <div class="mini" style="margin:.25rem 0 .35rem">全部</div>
+          <div class="out" id="outLearnAll"></div>
+          <button id="btnCopyLearnAll" class="btn ghost small" style="margin-top:6px">全部をコピー</button>
+      
+          <div class="mini" style="margin:.75rem 0 .35rem">Promptのみ</div>
+          <div class="out" id="outLearnPrompt"></div>
+          <button id="btnCopyLearnPrompt" class="btn ghost small" style="margin-top:6px">Promptだけコピー</button>
+      
+          <div class="mini" style="margin:.75rem 0 .35rem">Negativeのみ</div>
+          <div class="out" id="outLearnNeg"></div>
+          <button id="btnCopyLearnNeg" class="btn ghost small" style="margin-top:6px">Negativeだけコピー</button>
+        </div>
+      
+        <!-- 次にテーブル（下） -->
+        <div style="margin-top:12px">
+          <h4 style="margin:0 0 6px">テーブル</h4>
+          <table class="table" id="tblLearn">
+            <thead><tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- 量産モード（従来どおり） -->
