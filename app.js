@@ -591,7 +591,11 @@ function runOneTest() {
   __lastOneTestRows = [one];
   renderLearnTableTo("#tblLearnTest tbody", __lastOneTestRows);
   // #fmtLearn の選択に従ってテキスト化（第3引数はセレクトID）
+  // 既存
   renderLearnTextTo("#outLearnTest", __lastOneTestRows, "fmtLearn");
+
+  // ▼ 追加：3分割出力（ボックスがあれば3枠、なければ従来どおり単一枠）
+  renderTextTriplet("outLearnTest", __lastOneTestRows);
 }
 
 function copyOneTestText(){
@@ -1430,17 +1434,31 @@ function pmInitPlannerOnce(){
   // === 1件出力 ===
   var btn = document.getElementById('btnPlanOne');
   if (btn) btn.addEventListener('click', function () {
-    // rows: [{ seed, pos:[], neg }]
+    // rows: [{ seed, pos[], neg }]
     var rows = pmBuildOne();
     pmRenderTable('#tblPlanner tbody', rows);
 
-    // 共通フォーマッタ経由のテキスト整形（1枚テストと同じ）
-    renderPlannerTextTo('#outPlanner', rows, 'fmtPlanner');
+    // 3分割出力（3枠が無ければ #outPlanner へまとめて出力）
+    if (typeof renderTextTriplet === 'function') {
+      renderTextTriplet('outPlanner', rows);
+    } else {
+      // フォールバック（念のため）
+      var r = rows[0] || {};
+      var pos = Array.isArray(r.pos) ? r.pos.join(', ') : (r.prompt || '');
+      var txt = 'Prompt: ' + pos + '\nNegative prompt: ' + (r.neg||'') + '\nSeed: ' + (r.seed??0);
+      var out = document.getElementById('outPlanner');
+      if (out) out.textContent = txt;
+    }
 
     if (typeof toast === 'function') toast('プランを出力しました');
   });
 
-  // === プロンプトをコピー（常に #outPlanner の素テキストをコピー） ===
+  // 3分割のコピー・ボタン（存在する場合のみ）をバインド
+  if (typeof bindCopyTriplet === 'function') {
+    bindCopyTriplet(document.getElementById('panelPlanner') || document, 'outPlanner');
+  }
+
+  // === 単一ボックス用コピー（旧互換・任意） ===
   var btnCopy = document.getElementById('btnCopyPlanner');
   if (btnCopy) btnCopy.addEventListener('click', function () {
     var text = (document.getElementById('outPlanner')?.textContent || '').trim();
@@ -1466,7 +1484,6 @@ function pmInitPlannerOnce(){
 }
 // 念のため公開
 window.pmInitPlannerOnce = pmInitPlannerOnce;
-
 
 
 // 元の categorizePoseComp はそのまま利用する前提
@@ -2075,6 +2092,82 @@ const getFmt = (selId, fallback="a1111") => FORMATTERS[$(selId)?.value || fallba
 function buildMergedPrompt(p, n) {
   return `${p}\nNegative prompt: ${n}`;
 }
+
+
+/* === 3分割出力 共通ヘルパ === */
+/** rows -> 3本のテキスト（[01] ～の行リスト）に整形 */
+function formatTriples(rows){
+  const pad2 = (n)=> String(n+1).padStart(2,"0");
+  const P = [], N = [], S = [];
+  rows.forEach((r, i) => {
+    const idx = `[${pad2(i)}] `;
+    const pos = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
+    const neg = r.neg || "";
+    const seed = (r.seed ?? 0);
+    P.push(idx + pos);
+    N.push(idx + neg);
+    S.push(idx + String(seed));
+  });
+  return {
+    prompt: P.join("\n\n"),
+    neg:    N.join("\n\n"),
+    seed:   S.join("\n\n")
+  };
+}
+
+/** 指定ベースIDの 3枠 に出力（無ければ従来 #baseId にまとめて出力） */
+function renderTextTriplet(baseId, rows){
+  const outP = document.getElementById(baseId + "Prompt");
+  const outN = document.getElementById(baseId + "Neg");
+  const outS = document.getElementById(baseId + "Seed");
+  const outSingle = document.getElementById(baseId);
+
+  const {prompt, neg, seed} = formatTriples(rows);
+
+  if (outP && outN && outS) {
+    outP.textContent = prompt;  // ← textContent なので %20 問題なし
+    outN.textContent = neg;
+    outS.textContent = seed;
+  } else if (outSingle) {
+    // 3枠がまだ無い場合のフォールバック（従来仕様）
+    const lines = rows.map((r,i)=>{
+      const pos = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
+      return `[${String(i+1).padStart(2,"0")}] Prompt: ${pos}\nNegative prompt: ${r.neg||""}\nSeed: ${r.seed??0}`;
+    }).join("\n\n");
+    outSingle.textContent = lines;
+  }
+}
+
+/** 3つのコピー・ボタンを1発でバインド（ボタンが無ければ何もしない） */
+function bindCopyTriplet(scope, baseId){
+  const q = (id)=> scope.querySelector("#"+id);
+  const getText = (id)=> (q(id)?.textContent || "").trim();
+
+  const map = [
+    ["BtnCopyPrompt", baseId+"Prompt"],
+    ["BtnCopyNeg",    baseId+"Neg"],
+    ["BtnCopySeed",   baseId+"Seed"]
+  ];
+
+  map.forEach(([btnId, outId])=>{
+    const btn = q(btnId);
+    if (!btn) return;
+    btn.addEventListener("click", ()=>{
+      const t = getText(outId);
+      if (!t){ toast && toast("コピーする内容がありません"); return; }
+      (navigator.clipboard?.writeText ? navigator.clipboard.writeText(t) : Promise.reject())
+        .then(()=> toast && toast("コピーしました"))
+        .catch(()=>{
+          const ta = document.createElement("textarea");
+          ta.value = t; ta.style.position="fixed"; ta.style.opacity="0";
+          document.body.appendChild(ta); ta.select();
+          document.execCommand("copy"); ta.remove();
+          toast && toast("コピーしました");
+        });
+    });
+  });
+}
+
 
 /* ========= CSV 抽出（学習）：新しい4列に対応 ========= */
 function csvFromLearn(fmtSelId = "#fmtLearnBatch") {
