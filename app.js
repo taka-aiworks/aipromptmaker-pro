@@ -1237,62 +1237,49 @@ function pmRenderAcc(){
 }
 
 // === 共通：基本情報（固定）を配列で返す ===
-// 髪/瞳/肌・服（トップス/下 or ワンピ）・色タグ（チェックONのみ）を全モード共通で注入
+// 固定/ネガ（撮影モード用）
 function pmGetFixed(){
-  const out = [];
+  // 既存の固定タグ入力欄
+  const base = (document.getElementById('pl_fixed')?.value||'')
+    .split(',').map(s=>s.trim()).filter(Boolean);
 
-  // 髪/瞳/肌（色→タグは既存の #tagH / #tagE / #tagSkin を参照）
-  const h = document.getElementById('tagH')?.textContent?.trim();
-  const e = document.getElementById('tagE')?.textContent?.trim();
-  const s = document.getElementById('tagSkin')?.textContent?.trim();
-  if (h) out.push(h);
-  if (e) out.push(e);
-  if (s) out.push(s);
+  // Basicタブの服選択（チップ）を読むユーティリティ（ローカル）
+  const pickChip = (id) => {
+    const el = document.querySelector(`#${id} input[type="radio"]:checked`);
+    return el ? String(el.value||'').trim() : '';
+  };
 
-  // 服（固定）：上下 or ワンピース
-  // outfit モード
-  const isOnepiece = !!document.querySelector('#panelBasic input[name="outfitMode"]:checked[value="onepiece"]');
-  if (isOnepiece){
-    // ワンピース本体
-    const dress = _selectedChipText('#panelBasic #outfit_dress');
-    if (dress) out.push(dress);
+  // Basicタブの状態
+  const isOnepiece = document.getElementById('outfitModeDress')?.checked;
+  const topName    = pickChip('outfit_top');      // 例: "t-shirt"
+  const pantsName  = pickChip('outfit_pants');    // 例: "shorts"
+  const skirtName  = pickChip('outfit_skirt');    // 例: "skirt"
+  const dressName  = pickChip('outfit_dress');    // 例: "one-piece dress"
+
+  // 色タグ（スウォッチのテキスト）
+  const readTag = (id) => (document.getElementById(id)?.textContent||'').trim();
+  const topColor    = readTag('tag_top');
+  const bottomColor = readTag('tag_bottom');
+  const shoesColor  = readTag('tag_shoes');
+
+  const out = [...base];
+
+  // 服の「実名」をここで入れる（←これが無いと色と合体できない）
+  if (isOnepiece) {
+    if (dressName) out.push(dressName);
   } else {
-    // トップス
-    const top = _selectedChipText('#panelBasic #outfit_top');
-    if (top) out.push(top);
-
-    // 下カテゴリ（ズボン or スカート）
-    const isSkirt = !!document.querySelector('#panelBasic #bottomCat_skirt:checked');
-    const isPants = !!document.querySelector('#panelBasic #bottomCat_pants:checked');
-    if (isSkirt){
-      const skirt = _selectedChipText('#panelBasic #outfit_skirt');
-      if (skirt) out.push(skirt);
-    } else if (isPants){
-      const pants = _selectedChipText('#panelBasic #outfit_pants');
-      if (pants) out.push(pants);
-    }
+    if (topName) out.push(topName);
+    // どちらのカテゴリが有効かは UI 側の選択に依存。両方未選択なら何も入らない
+    const bottomName = document.getElementById('bottomCat_skirt')?.checked ? skirtName : pantsName;
+    if (bottomName) out.push(bottomName);
   }
 
-  // 色タグ（チェックONのものだけ）
-  const useTop = document.getElementById('use_top')?.checked;
-  const useBottom = document.getElementById('useBottomColor')?.checked;
-  const useShoes = document.getElementById('use_shoes')?.checked;
+  // 色タグは generic 名詞付きで入れる（pairWearColors がここを見て結合）
+  if (topColor && topColor !== '—')        out.push(`${topColor} top`);
+  if (!isOnepiece && bottomColor && bottomColor !== '—') out.push(`${bottomColor} bottom`);
+  if (shoesColor && shoesColor !== '—')    out.push(`${shoesColor} shoes`);
 
-  if (useTop){
-    const t = document.getElementById('tag_top')?.textContent?.trim();
-    if (t && t !== '—') out.push(t);
-  }
-  // ワンピース選択時は下色は自動無効（UIと同じ仕様）
-  if (!isOnepiece && useBottom){
-    const t = document.getElementById('tag_bottom')?.textContent?.trim();
-    if (t && t !== '—') out.push(t);
-  }
-  if (useShoes){
-    const t = document.getElementById('tag_shoes')?.textContent?.trim();
-    if (t && t !== '—') out.push(t);
-  }
-
-  return out;
+  return out.filter(Boolean);
 }
 
 // 単一選択スキャフォルド（scroller内で data-checked のチップのテキストを取る）
