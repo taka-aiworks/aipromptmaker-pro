@@ -3418,13 +3418,6 @@ function bindLearnBatch(){
     navigator.clipboard.writeText(t).then(()=> toast("学習セットをコピーしました"));
   });
 
-  // ★ 小ボタン（All/Prompt/Neg）も個別にバインド
-  bindCopyTripletExplicit([
-    ['btnCopyLearnAll',    'outLearnAll'],
-    ['btnCopyLearnPrompt', 'outLearnPrompt'],
-    ['btnCopyLearnNeg',    'outLearnNeg']
-  ]);
-
   document.getElementById("btnCsvLearn")?.addEventListener("click", ()=>{
     const csv = csvFromLearn("#fmtLearnBatch");
     if(!csv || csv.split("\n").length<=1){ toast("学習テーブルが空です"); return; }
