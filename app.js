@@ -2955,13 +2955,11 @@ function buildBatchLearning(n){
   {
     const nsfwOn = !!document.querySelector("#nsfwLearn")?.checked;
     if (nsfwOn){
-      // UIで選ばれている候補（空なら何もしない）
       const gExpr = getMany("nsfwL_expr")  || [];
       const gExpo = getMany("nsfwL_expo")  || [];
       const gSitu = getMany("nsfwL_situ")  || [];
       const gLight= getMany("nsfwL_light") || [];
 
-      // 同一プールからは最初の1件だけ残す（ローカルヘルパ）
       const keepOneFrom = (arr, pool)=>{
         if (!Array.isArray(arr) || !pool || !pool.length) return arr;
         let kept = false;
@@ -2969,7 +2967,6 @@ function buildBatchLearning(n){
         for (const t of arr){
           if (pool.includes(t)) {
             if (!kept){ ret.push(t); kept = true; }
-            // 2個目以降は捨てる
           } else {
             ret.push(t);
           }
@@ -2981,26 +2978,18 @@ function buildBatchLearning(n){
         let p = Array.isArray(r.pos) ? r.pos.slice()
               : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
 
-        // 露出・シチュ・光は「各カテゴリ1つ」に正規化
         p = keepOneFrom(p, gExpo);
         p = keepOneFrom(p, gSitu);
         p = keepOneFrom(p, gLight);
 
-        // 表情：NSFW表情が指定されていれば、それを1つだけ残し、SFW表情は置換（=除去）
         if (gExpr.length){
-          // いったんSFW表情グループを全て除去し、nsfw表情のうち先頭1つを追加
           const sfwExprGroup = Array.from(new Set([...(getMany("expr")||[]), ...MIX_RULES.expr.group, "neutral expression"]));
-          p = p.filter(t => !sfwExprGroup.includes(t));           // SFW表情を除去
-          // 既に複数入っていた場合も keepOneFrom で1つ化
+          p = p.filter(t => !sfwExprGroup.includes(t));
           p = keepOneFrom(p.concat(gExpr[0]), gExpr);
         }
 
-        // 露出が水着/下着/ヌード系 → 服上下＋色プレースホルダを先に排他
-        // （applyNudePriority / enforceOnePieceExclusivity に任せる）
         p = applyNudePriority(p);
         p = enforceOnePieceExclusivity(p);
-
-        // その後で色と名詞をペアリング
         p = pairWearColors(p);
 
         r.pos    = p;
@@ -3009,9 +2998,8 @@ function buildBatchLearning(n){
     }
   }
 
-  // ④ 最終整形：排他→一意化→順序→先頭固定→NEG統一→同期
+  // ④ 最終整形
   for (const r of out){
-    // pos を配列に正規化
     let p = Array.isArray(r.pos) ? r.pos.slice()
           : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
 
@@ -3024,12 +3012,10 @@ function buildBatchLearning(n){
     r.pos    = p;
     r.prompt = p.join(", ");
 
-    // ネガティブ（共通ビルダー）：NEG_TIGHT + 追加（スマホ等）
     const extraNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
     const baseNeg  = [ (typeof getNeg === 'function' ? getNeg() : ""), extraNeg ].filter(Boolean).join(", ");
     r.neg    = (typeof buildNegative === 'function') ? buildNegative(baseNeg) : baseNeg;
 
-    // seed / text を同期
     r.seed   = r.seed || seedFromName($("#charName")?.value || "", 1);
     r.text   = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
   }
