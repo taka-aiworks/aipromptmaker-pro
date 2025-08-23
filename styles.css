@@ -725,3 +725,80 @@ legend { display: none; }
 
 /* 親パネルがfloat子を内包できていない場合の保険 */
 .panel::after { content:""; display:block; clear:both; }
+
+/* ========= Word Mode (単語モード) ========= */
+#panelWordMode { padding: 16px 18px; }
+
+.wm-header h2 { margin: 0 0 6px; font-size: 1.15rem; }
+.wm-note { margin: 0 0 16px; opacity: .8; }
+
+.wm-selected {
+  margin: 12px 0 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px; padding: 10px;
+  background: rgba(255,255,255,.03);
+}
+.wm-selected-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.wm-selected-actions button { font-size:.85rem; padding:6px 10px; }
+.wm-chip-area { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.wm-chip {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 8px; border-radius:999px;
+  border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06);
+  font-size:.9rem;
+}
+.wm-chip small { opacity:.8; }
+.wm-chip .x { margin-left:2px; cursor:pointer; opacity:.8; }
+
+.wm-accordion { margin: 18px 0; }
+.wm-acc-title { margin: 10px 0 6px; font-size: 1rem; opacity:.9; }
+
+.wm-acc { border:1px solid rgba(255,255,255,.12); border-radius:8px; margin:8px 0; overflow:hidden; }
+.wm-acc > summary {
+  list-style:none; cursor:pointer; padding:10px 12px;
+  background:rgba(255,255,255,.04); display:flex; align-items:center; justify-content:space-between;
+}
+.wm-acc[open] > summary { background:rgba(255,255,255,.07); }
+.wm-acc summary::-webkit-details-marker { display:none; }
+.wm-acc .wm-count { font-size:.85rem; opacity:.8; }
+.wm-items {
+  padding:12px; display:grid; gap:10px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+.wm-tip { margin: 6px 12px 12px; opacity:.75; font-size:.9rem; }
+
+.wm-item {
+  width:100%; text-align:left; padding:10px 12px; border-radius:10px;
+  border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.03);
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+}
+.wm-item:hover { background:rgba(255,255,255,.06); }
+.wm-item .wm-jp { font-size: .98rem; line-height:1.2; }
+.wm-item .wm-en { font-size: .78rem; opacity:.85; display:block; }
+.wm-actions { display:flex; align-items:center; gap:6px; margin-left:auto; }
+.wm-actions button { font-size:.78rem; padding:4px 8px; border-radius:8px; }
+.wm-item-color .wm-actions .wm-copy-both { display:none; }
+
+.wm-table-wrap { margin-top:18px; }
+.wm-table-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+.wm-table-actions button { padding:6px 10px; font-size:.9rem; }
+
+.wm-table {
+  width:100%; border-collapse: collapse; overflow:hidden;
+  border:1px solid rgba(255,255,255,.12); border-radius:10px;
+}
+.wm-table th, .wm-table td { padding:10px; border-bottom:1px solid rgba(255,255,255,.08); }
+.wm-table thead th { background:rgba(255,255,255,.06); font-weight:600; }
+.wm-row-actions { display:flex; gap:6px; }
+.wm-row-actions button { padding:4px 8px; font-size:.82rem; }
+.wm-table tr:last-child td { border-bottom:none; }
+
+/* 小さめ端末 */
+@media (max-width: 720px){
+  .wm-items { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .wm-table th:nth-child(1), .wm-table td:nth-child(1) { width:45%; }
+  .wm-table th:nth-child(2), .wm-table td:nth-child(2) { width:35%; }
+}
+
+
+
