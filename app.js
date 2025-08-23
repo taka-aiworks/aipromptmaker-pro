@@ -2879,23 +2879,16 @@ function applyPercentMixToLearning(rule, selected) {
  *  1) 行ごとにユニーク優先で buildOneLearning を積み上げ、足りない分は重複許容で補完
  *  2) 生成後に「割合ミックス」適用（VIEW / COMP / EXP / BG / LIGHT）
  *  3) NSFWがONなら nsfwL_*（表情/露出/シチュ/光）を各カテゴリ1つだけ反映し、
- *     表情はSFW表情を確実に置換。露出が水着/下着/ヌード系なら服上下＋色プレースホルダを先に排他。
+ *     表情はSFW表情を確実に置換。露出が水着/下着/ヌード系なら服上下＋色プレースホルダを削除し、
+ *     辞書にある色付きワードだけ残す。
  *  4) 最終整形：排他→一意化→並び順→先頭固定→NEG統一→seed/text同期
- *
- * 前提ユーティリティ（既存）：
- *  - applyPercentForTag, fillRemainder
- *  - fixExclusives, ensurePromptOrder, enforceHeadOrder
- *  - applyNudePriority, enforceOnePieceExclusivity, pairWearColors
- *  - getNeg, buildNegative, seedFromName
- *  - getMany(id) … UIの複数選択読み出し
- *  - #nsfwLearn チェックボックスの状態を参照
  * ========================================================================== */
 function buildBatchLearning(n){
   const out  = [];
   const used = new Set();
   let guard  = 0;
 
-  // ① ユニーク優先で生成（途中で予防的に先頭固定）
+  // ① ユニーク優先
   while (out.length < n && guard < n * 300){
     guard++;
     let r = buildOneLearning(out.length + 1);
@@ -2906,29 +2899,25 @@ function buildBatchLearning(n){
     out.push(r);
   }
 
-  // ② 足りない分は重複許容で埋める
+  // ② 足りない分は重複許容
   while (out.length < n){
     let r = buildOneLearning(out.length + 1);
     if (typeof enforceHeadOrder === 'function') r.pos = enforceHeadOrder(r.pos || []);
     out.push(r);
   }
 
-  // ③ 割合ミックス適用（VIEW / COMP / EXP / BG / LIGHT）
+  // ③ 割合ミックス適用
   {
     const rows = out;
-
-    // VIEW
     applyPercentForTag(rows, MIX_RULES.view.group, "profile view", ...MIX_RULES.view.targets["profile view"]);
     applyPercentForTag(rows, MIX_RULES.view.group, "back view",    ...MIX_RULES.view.targets["back view"]);
     fillRemainder(rows, MIX_RULES.view.group, MIX_RULES.view.fallback);
 
-    // COMPOSITION
     for (const [tag, rng] of Object.entries(MIX_RULES.comp.targets)) {
       applyPercentForTag(rows, MIX_RULES.comp.group, tag, rng[0], rng[1]);
     }
     fillRemainder(rows, MIX_RULES.comp.group, MIX_RULES.comp.fallback);
 
-    // EXPRESSION（UI選択があればそれを母集団に、未選択時のみ既定＋neutral）
     const selExpr = getMany("expr") || [];
     const exprGroupBase = selExpr.length ? selExpr : MIX_RULES.expr.group;
     const exprGroup = Array.from(new Set([...exprGroupBase, "neutral expression"]));
@@ -2938,20 +2927,18 @@ function buildBatchLearning(n){
     }
     fillRemainder(rows, exprGroup, MIX_RULES.expr.fallback);
 
-    // BACKGROUND
     for (const [tag, rng] of Object.entries(MIX_RULES.bg.targets)) {
       applyPercentForTag(rows, MIX_RULES.bg.group, tag, rng[0], rng[1]);
     }
     fillRemainder(rows, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
 
-    // LIGHTING
     for (const [tag, rng] of Object.entries(MIX_RULES.light.targets)) {
       applyPercentForTag(rows, MIX_RULES.light.group, tag, rng[0], rng[1]);
     }
     fillRemainder(rows, MIX_RULES.light.group, MIX_RULES.light.fallback);
   }
 
-  // ③.5 NSFW整理（各カテゴリ1件・SFW表情置換・露出優先で服/色排他）
+  // ③.5 NSFW整理
   {
     const nsfwOn = !!document.querySelector("#nsfwLearn")?.checked;
     if (nsfwOn){
@@ -2962,14 +2949,11 @@ function buildBatchLearning(n){
 
       const keepOneFrom = (arr, pool)=>{
         if (!Array.isArray(arr) || !pool || !pool.length) return arr;
-        let kept = false;
-        const ret = [];
+        let kept = false, ret = [];
         for (const t of arr){
           if (pool.includes(t)) {
             if (!kept){ ret.push(t); kept = true; }
-          } else {
-            ret.push(t);
-          }
+          } else ret.push(t);
         }
         return ret;
       };
@@ -2978,18 +2962,29 @@ function buildBatchLearning(n){
         let p = Array.isArray(r.pos) ? r.pos.slice()
               : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
 
+        // 各カテゴリを1つに
         p = keepOneFrom(p, gExpo);
         p = keepOneFrom(p, gSitu);
         p = keepOneFrom(p, gLight);
 
+        // 表情はNSFWを優先してSFWを除去
         if (gExpr.length){
           const sfwExprGroup = Array.from(new Set([...(getMany("expr")||[]), ...MIX_RULES.expr.group, "neutral expression"]));
           p = p.filter(t => !sfwExprGroup.includes(t));
           p = keepOneFrom(p.concat(gExpr[0]), gExpr);
         }
 
-        p = applyNudePriority(p);
-        p = enforceOnePieceExclusivity(p);
+        // 服の排他と色付け
+        p = applyNudePriority(p);          // ヌード/露出系優先
+        p = enforceOnePieceExclusivity(p); // ワンピ優先で上下排他
+
+        // ★ 露出（水着/下着/ヌード）は辞書の色付きワードのみ残す
+        if (p.some(t => /\bbikini|lingerie|nude\b/i.test(t))) {
+          p = p.filter(t => !/\b(top|bottom|skirt|pants|dress|t-shirt)\b/i.test(t)); // 上下服除去
+          p = p.filter(t => !/\b(white|black|azure|red|blue|green)\b/i.test(t));     // 色単独タグ除去
+        }
+
+        // 通常服なら pairWearColors 適用
         p = pairWearColors(p);
 
         r.pos    = p;
@@ -3003,11 +2998,10 @@ function buildBatchLearning(n){
     let p = Array.isArray(r.pos) ? r.pos.slice()
           : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
 
-    if (typeof fixExclusives === 'function')      p = fixExclusives(p);
+    if (typeof fixExclusives === 'function') p = fixExclusives(p);
     p = Array.from(new Set(p.filter(Boolean)));
-
-    if (typeof ensurePromptOrder === 'function')  p = ensurePromptOrder(p);
-    if (typeof enforceHeadOrder === 'function')   p = enforceHeadOrder(p);
+    if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
+    if (typeof enforceHeadOrder === 'function')  p = enforceHeadOrder(p);
 
     r.pos    = p;
     r.prompt = p.join(", ");
