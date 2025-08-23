@@ -2873,7 +2873,19 @@ function applyPercentMixToLearning(rule, selected) {
   return [rule.fallback];
 }
 
-// 置き換え// === 置き換え版：学習モード一括生成 ===
+/* ============================================================================
+ * 学習モード一括生成（置き換え版）
+ * 目的：
+ *  1) 行ごとにユニーク優先で buildOneLearning を積み上げ、足りない分だけ重複許容で補完
+ *  2) 生成後に「割合ミックス」適用（VIEW / COMP / EXP / BG / LIGHT）
+ *  3) 最終整形：排他→一意化→並び順→先頭固定→NEG統一→seed/text同期
+ * 注意：
+ *  - 既存ユーティリティ（applyPercentForTag, fillRemainder, fixExclusives,
+ *    ensurePromptOrder, enforceHeadOrder, getNeg, buildNegative, seedFromName 等）
+ *    を前提として呼び出しています。これらが同スコープに存在すること。
+ *  - EXPRESSION は UI選択（#expr）があればそれを母集団に、未選択時のみ既定セット＋neutral。
+ *    ※ 本スニペットは既存の仕様どおりで、追加のNSFW整理は含めていません（次段で対応想定）。
+ * ========================================================================== */
 function buildBatchLearning(n){
   const out  = [];
   const used = new Set();
@@ -2962,6 +2974,7 @@ function buildBatchLearning(n){
 
   return out;
 }
+
 // 置き換え: ensurePromptOrder
 function ensurePromptOrder(parts) {
   const set = new Set(parts.filter(Boolean));
