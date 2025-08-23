@@ -2833,31 +2833,31 @@ function applyPercentMixToLearning(rule, selected) {
   return [rule.fallback];
 }
 
-// 置き換え
+// 置き換え// === 置き換え版：学習モード一括生成 ===
 function buildBatchLearning(n){
   const out  = [];
   const used = new Set();
   let guard  = 0;
 
-  // ① まずユニーク優先で生成（ここで軽く頭固定）
+  // ① ユニーク優先で生成（途中で予防的に先頭固定）
   while (out.length < n && guard < n * 300){
     guard++;
     let r = buildOneLearning(out.length + 1);
-    // 予防的に先頭固定（後でもう一度やる）
     if (typeof enforceHeadOrder === 'function') r.pos = enforceHeadOrder(r.pos || []);
     const key = (r.pos || []).join("|");
     if (used.has(key)) continue;
     used.add(key);
     out.push(r);
   }
-  // ② 埋め切り（重複許容）
+
+  // ② 足りない分は重複許容で埋める
   while (out.length < n){
     let r = buildOneLearning(out.length + 1);
     if (typeof enforceHeadOrder === 'function') r.pos = enforceHeadOrder(r.pos || []);
     out.push(r);
   }
 
-  // ③ ここから “割合ミックス” を適用（あなたの元コードそのまま）
+  // ③ 割合ミックス適用（VIEW / COMP / EXP / BG / LIGHT）
   {
     const rows = out;
 
@@ -2872,7 +2872,7 @@ function buildBatchLearning(n){
     }
     fillRemainder(rows, MIX_RULES.comp.group, MIX_RULES.comp.fallback);
 
-    // EXPRESSION（UIで選ばれているものだけを母集団に）
+    // EXPRESSION（UI選択があればそれを母集団に）
     const selExpr = getMany("expr") || [];
     const exprGroupBase = selExpr.length ? selExpr : MIX_RULES.expr.group;
     const exprGroup = Array.from(new Set([...exprGroupBase, "neutral expression"]));
@@ -2895,26 +2895,27 @@ function buildBatchLearning(n){
     fillRemainder(rows, MIX_RULES.light.group, MIX_RULES.light.fallback);
   }
 
-  // ④ 最終整形（ここが“分からん”と言ってた所：頭固定＆順序正規化＆同期）
+  // ④ 最終整形：排他→一意化→順序→先頭固定→NEG統一→同期
   for (const r of out){
-    // pos を確実に配列化
+    // pos を配列に正規化
     let p = Array.isArray(r.pos) ? r.pos.slice()
-            : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+          : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
 
     if (typeof fixExclusives === 'function')      p = fixExclusives(p);
-    const uniqP = Array.from(new Set(p.filter(Boolean)));
-    if (typeof ensurePromptOrder === 'function')  p = ensurePromptOrder(uniqP);
+    p = Array.from(new Set(p.filter(Boolean)));
+
+    if (typeof ensurePromptOrder === 'function')  p = ensurePromptOrder(p);
     if (typeof enforceHeadOrder === 'function')   p = enforceHeadOrder(p);
 
     r.pos    = p;
     r.prompt = p.join(", ");
 
-    // ネガは共通ビルダーで統一（SOLO_NEG 混入も面倒見てる）
+    // ネガティブ（共通ビルダー）：NEG_TIGHT + 追加（スマホ等）
     const extraNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
     const baseNeg  = [ (typeof getNeg === 'function' ? getNeg() : ""), extraNeg ].filter(Boolean).join(", ");
     r.neg    = (typeof buildNegative === 'function') ? buildNegative(baseNeg) : baseNeg;
 
-    // seed / text の同期（seed は既に入ってるはずだが保険）
+    // seed / text を同期
     r.seed   = r.seed || seedFromName($("#charName")?.value || "", 1);
     r.text   = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
   }
