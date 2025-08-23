@@ -1236,17 +1236,72 @@ function pmRenderAcc(){
   }
 }
 
-/* 固定・ネガ */
+// === 共通：基本情報（固定）を配列で返す ===
+// 髪/瞳/肌・服（トップス/下 or ワンピ）・色タグ（チェックONのみ）を全モード共通で注入
 function pmGetFixed(){
-  var el = pmById('pl_fixed');
-  var txt = el && typeof el.value !== 'undefined' ? String(el.value) : '';
-  var arr = txt.split(',');
-  var out = [];
-  for (var i=0; i<arr.length; i++){
-    var s = String(arr[i]).trim();
-    if (s) out.push(s);
+  const out = [];
+
+  // 髪/瞳/肌（色→タグは既存の #tagH / #tagE / #tagSkin を参照）
+  const h = document.getElementById('tagH')?.textContent?.trim();
+  const e = document.getElementById('tagE')?.textContent?.trim();
+  const s = document.getElementById('tagSkin')?.textContent?.trim();
+  if (h) out.push(h);
+  if (e) out.push(e);
+  if (s) out.push(s);
+
+  // 服（固定）：上下 or ワンピース
+  // outfit モード
+  const isOnepiece = !!document.querySelector('#panelBasic input[name="outfitMode"]:checked[value="onepiece"]');
+  if (isOnepiece){
+    // ワンピース本体
+    const dress = _selectedChipText('#panelBasic #outfit_dress');
+    if (dress) out.push(dress);
+  } else {
+    // トップス
+    const top = _selectedChipText('#panelBasic #outfit_top');
+    if (top) out.push(top);
+
+    // 下カテゴリ（ズボン or スカート）
+    const isSkirt = !!document.querySelector('#panelBasic #bottomCat_skirt:checked');
+    const isPants = !!document.querySelector('#panelBasic #bottomCat_pants:checked');
+    if (isSkirt){
+      const skirt = _selectedChipText('#panelBasic #outfit_skirt');
+      if (skirt) out.push(skirt);
+    } else if (isPants){
+      const pants = _selectedChipText('#panelBasic #outfit_pants');
+      if (pants) out.push(pants);
+    }
   }
+
+  // 色タグ（チェックONのものだけ）
+  const useTop = document.getElementById('use_top')?.checked;
+  const useBottom = document.getElementById('useBottomColor')?.checked;
+  const useShoes = document.getElementById('use_shoes')?.checked;
+
+  if (useTop){
+    const t = document.getElementById('tag_top')?.textContent?.trim();
+    if (t && t !== '—') out.push(t);
+  }
+  // ワンピース選択時は下色は自動無効（UIと同じ仕様）
+  if (!isOnepiece && useBottom){
+    const t = document.getElementById('tag_bottom')?.textContent?.trim();
+    if (t && t !== '—') out.push(t);
+  }
+  if (useShoes){
+    const t = document.getElementById('tag_shoes')?.textContent?.trim();
+    if (t && t !== '—') out.push(t);
+  }
+
   return out;
+}
+
+// 単一選択スキャフォルド（scroller内で data-checked のチップのテキストを取る）
+function _selectedChipText(rootSel){
+  const root = document.querySelector(rootSel);
+  if (!root) return '';
+  const chip = root.querySelector('.chip[data-checked="true"], .chip.is-checked');
+  // チップの表示テキスト（タグ文字列）を採用
+  return (chip?.textContent || '').trim();
 }
 
 function pmGetNeg(){
