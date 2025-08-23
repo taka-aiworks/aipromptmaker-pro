@@ -590,13 +590,15 @@ function runOneTest() {
   // 既存レンダラを使って、1枚テスト用テーブル/テキストへ
   __lastOneTestRows = [one];
   renderLearnTableTo("#tblLearnTest tbody", __lastOneTestRows);
-  // #fmtLearn の選択に従ってテキスト化（第3引数はセレクトID）
-  // 既存
-  renderLearnTextTo("#outLearnTest", __lastOneTestRows, "fmtLearn");
+  renderTextTriplet('outLearnTest', __lastOneTestRows, 'fmtLearn');   // ← 差し替え
+  }
 
-  // ▼ 追加：3分割出力（ボックスがあれば3枠、なければ従来どおり単一枠）
-  renderTextTriplet("outLearnTest", __lastOneTestRows);
-}
+// コピー小ボタンのバインド
+bindCopyTripletExplicit([
+  ['btnCopyLearnTestAll',    'outLearnTestAll'],
+  ['btnCopyLearnTestPrompt', 'outLearnTestPrompt'],
+  ['btnCopyLearnTestNeg',    'outLearnTestNeg']
+])
 
 function copyOneTestText(){
   const el = $("#outLearnTest");
@@ -1431,20 +1433,16 @@ function pmInitPlannerOnce(){
   // 撮影モードの NSFW UI（実装がある場合だけ呼ぶ）
   if (typeof pmBindNSFWPlanner === 'function') pmBindNSFWPlanner();
 
-     // === 1件出力 ===
+      // === 1件出力 ===
    var btn = document.getElementById('btnPlanOne');
    if (btn) btn.addEventListener('click', function () {
-     // rows: [{ seed, pos[], neg }]
      var rows = pmBuildOne();
      pmRenderTable('#tblPlanner tbody', rows);
-   
-     // ★ 3分割（All / Prompt / Neg）をフォーマッタに合わせて出力
-     renderTextTriplet('outPlanner', rows, 'fmtPlanner');
-   
-     if (typeof toast === 'function') toast('プランを出力しました');
+     renderTextTriplet('outPlanner', rows, 'fmtPlanner');   // ← 追加
+     toast && toast('プランを出力しました');
    });
    
-   // ★ 3分割コピーを明示バインド（撮影モード）
+   // 3分割コピー小ボタンのバインド
    bindCopyTripletExplicit([
      ['btnCopyPlannerAll',    'outPlannerAll'],
      ['btnCopyPlannerPrompt', 'outPlannerPrompt'],
@@ -2087,55 +2085,56 @@ function buildMergedPrompt(p, n) {
 }
 
 
-/* === 3分割出力 共通ヘルパ === */
-function renderTextTriplet(baseId, rows, fmtSelId){
-  const pad2 = (n)=> String(n+1).padStart(2,"0");
+// ===== 共通関数：3分割出力 & コピー =====
+// rows: [{ pos[], neg, seed, text }]
+function renderTextTriplet(baseId, rows, fmtId) {
+  if (!rows || !rows.length) return;
+  const r = rows[0]; // 単発前提（バッチでも最初の行を表示する用途）
+  const prompt = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
+  const neg    = r.neg || "";
+  const seed   = r.seed || 0;
 
-  // テキスト化
-  const P = [], N = [], S = [], LINES = [];
-  const fmt = fmtSelId ? getFmt("#"+fmtSelId) : FORMATTERS.a1111;
+  // "全部" のテキスト
+  const fmt = (typeof getFmt === 'function') ? getFmt(`#${fmtId||'fmtPlanner'}`) : null;
+  const allText = fmt && typeof formatLines === 'function'
+    ? formatLines(rows, fmt)
+    : `Prompt: ${prompt}\nNegative prompt: ${neg}\nSeed: ${seed}`;
 
-  rows.forEach((r, i) => {
-    const idx  = `[${pad2(i)}] `;
-    const pos  = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
-    const neg  = r.neg || "";
-    const seed = (r.seed ?? 0);
+  // 各ボックスへ出力
+  const outAll = document.getElementById(`${baseId}All`);
+  if (outAll) outAll.textContent = allText;
 
-    P.push(idx + pos);
-    N.push(idx + neg);
-    S.push(idx + String(seed));
-    // All は選択フォーマットの 1行をそのまま採用
-    LINES.push(idx + fmt.line(pos, neg, seed));
-  });
+  const outPrompt = document.getElementById(`${baseId}Prompt`);
+  if (outPrompt) outPrompt.textContent = prompt;
 
-  const put = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-
-  // ★ HTMLのIDに合わせて出力（All/Prompt/Neg が基本）
-  put(baseId + "All",     LINES.join("\n\n")); // 例: outPlannerAll / outLearnAll / outProdAll
-  put(baseId + "Prompt",  P.join("\n\n"));     // 例: outPlannerPrompt など
-  put(baseId + "Neg",     N.join("\n\n"));
-
-  // 任意で Seed 枠があれば埋める（存在しなければ無視）
-  put(baseId + "Seed",    S.join("\n\n"));
+  const outNeg = document.getElementById(`${baseId}Neg`);
+  if (outNeg) outNeg.textContent = neg;
 }
 
-// --- 3分割コピーの汎用バインド（明示マップ渡し） ---
-function bindCopyTripletExplicit(pairs){
-  const copy = async (txt) => {
-    if (!txt) { toast && toast("コピーする内容がありません"); return; }
-    try { await navigator.clipboard.writeText(txt); toast && toast("コピーしました"); }
-    catch {
-      const ta = document.createElement("textarea");
-      ta.value = txt; ta.style.position="fixed"; ta.style.opacity="0";
-      document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove();
-      toast && toast("コピーしました");
-    }
-  };
-  pairs.forEach(([btnId, outId])=>{
+// コピー小ボタンをバインド
+function bindCopyTripletExplicit(map) {
+  map.forEach(([btnId, outId]) => {
     const btn = document.getElementById(btnId);
     const out = document.getElementById(outId);
-    if (!btn || !out) return;
-    btn.addEventListener("click", ()=> copy((out.textContent||"").trim()));
+    if (btn && out) {
+      btn.addEventListener("click", () => {
+        const text = (out.textContent || "").trim();
+        if (!text) { toast && toast("コピーする内容がありません"); return; }
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(text).then(()=>{
+            toast && toast("コピーしました");
+          });
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          toast && toast("コピーしました");
+        }
+      });
+    }
   });
 }
 
@@ -3369,12 +3368,17 @@ function bindLearnBatch(){
     const cnt = parseInt(document.getElementById("countLearn").value,10) || 24;
     const rows = buildBatchLearning(cnt);
     if (rows.error) { toast(rows.error); return; }
-
     renderLearnTableTo("#tblLearn tbody", rows);
-
-    // ★ 3分割（All / Prompt / Neg）
-    renderTextTriplet('outLearn', rows, 'fmtLearnBatch');
+    renderTextTriplet('outLearn', rows, 'fmtLearnBatch');   // ← 差し替え
   });
+
+  // 3分割コピー小ボタンのバインド
+  bindCopyTripletExplicit([
+    ['btnCopyLearnAll',    'outLearnAll'],
+    ['btnCopyLearnPrompt', 'outLearnPrompt'],
+    ['btnCopyLearnNeg',    'outLearnNeg']
+  ]);
+}
 
   // 「全コピー」ボタンは All をコピーする
   document.getElementById("btnCopyLearn")?.addEventListener("click", ()=>{
@@ -3407,23 +3411,43 @@ function bindLearnBatch(){
 
 function bindProduction(){
   $("#btnGenProd")?.addEventListener("click", ()=>{
-    const cnt=parseInt($("#countProd").value,10)||50;
+    const cnt = parseInt($("#countProd").value,10) || 50;
     const rows = buildBatchProduction(cnt);
-    renderProdTable(rows); renderProdText(rows);
+    renderProdTable(rows);
+    renderTextTriplet('outProd', rows, 'fmtProd');   // ← 差し替え
   });
+
+  // 3分割コピーを明示バインド
+  bindCopyTripletExplicit([
+    ['btnCopyProdAll',    'outProdAll'],
+    ['btnCopyProdPrompt', 'outProdPrompt'],
+    ['btnCopyProdNeg',    'outProdNeg']
+  ]);
+
+  // 旧「全コピー」ボタンに互換対応（任意で残すなら）
   $("#btnCopyProd")?.addEventListener("click", ()=>{
-    const r=document.createRange(); r.selectNodeContents($("#outProd")); const s=getSelection();
-    s.removeAllRanges(); s.addRange(r); document.execCommand("copy"); s.removeAllRanges(); toast("量産セットをコピーしました");
+    const text = ($("#outProdAll")?.textContent || "").trim();
+    if (!text) { toast("コピーする内容がありません"); return; }
+    navigator.clipboard?.writeText(text).then(()=>{
+      toast("量産セットをコピーしました");
+    });
   });
+
   $("#btnCsvProd")?.addEventListener("click", ()=>{
     const csv = csvFromProd("#fmtProd");
-    if(!csv || csv.split("\n").length<=1){ toast("量産テーブルが空です"); return; }
-    const char = ($("#charName")?.value||"noname").replace(/[^\w\-]/g,"_");
-    dl(`production_${char}_${nowStamp()}.csv`, csv); toast("量産セットをローカル（CSV）に保存しました");
+    if(!csv || csv.split("\n").length <= 1){
+      toast("量産テーブルが空です"); return;
+    }
+    const char = ($("#charName")?.value || "noname").replace(/[^\w\-]/g,"_");
+    dl(`production_${char}_${nowStamp()}.csv`, csv);
+    toast("量産セットをローカル（CSV）に保存しました");
   });
+
   $("#btnCloudProd")?.addEventListener("click", async ()=>{
     const csv = csvFromProd("#fmtProd");
-    if(!csv || csv.split("\n").length<=1){ toast("量産テーブルが空です"); return; }
+    if(!csv || csv.split("\n").length <= 1){
+      toast("量産テーブルが空です"); return;
+    }
     await postCSVtoGAS("production", csv);
   });
 }
