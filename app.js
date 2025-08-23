@@ -3194,9 +3194,9 @@ function buildBatchProduction(n){
   const neg   = getNegProd();
   const O     = readProductionOutfits();     // {top, pants, skirt, dress, shoes}
   const bgs   = getMany("p_bg");
-  const poses = getMany("p_pose");           // ★ ポーズ（動作・ジェスチャ）
-  const comps = getMany("p_comp");           // ★ 構図（距離・フレーミング）
-  const views = getMany("p_view");           // ★ 視点（向き・アングル）
+  const poses = getMany("p_pose");
+  const comps = getMany("p_comp");
+  const views = getMany("p_view");
   const exprs = getMany("p_expr");
   const lights= getMany("p_light");
   const acc   = readAccessorySlots();
@@ -3225,7 +3225,7 @@ function buildBatchProduction(n){
     let usedDress = false;
     let chosenDress = "";
 
-    // --- 服の選定（ワンピ優先の枝と上下の枝）
+    // --- 服の選定
     if (O.dress.length && Math.random() < 0.35) {
       chosenDress = pick(O.dress);
       parts.push(chosenDress);
@@ -3247,63 +3247,55 @@ function buildBatchProduction(n){
         const noun = (chosenDress.match(RE_ONE)?.[1] || "").toLowerCase();
         if (noun) parts.push(`${PC.top} ${noun}`);
       }
-      // 下は無し（破棄）
     } else {
       if (PC.top)    parts.push(`${PC.top} top`);
       if (PC.bottom) parts.push(`${PC.bottom} bottom`);
     }
     if (PC.shoes) parts.push(`${PC.shoes} shoes`);
 
-    // --- アクセ/シーン系
+    // --- アクセ/シーン
     if (acc.length) parts.push(...acc);
     if (bgs.length) parts.push(pick(bgs));
-
-    // ★ ポーズ・構図・視点は分離して個別に採用
-    if (poses.length) parts.push(pick(poses));     // 例: standing / sitting / hand gestures
-    if (comps.length) parts.push(pick(comps));     // 例: full body / bust / waist up / portrait
-    if (views.length) parts.push(pick(views));     // 例: front view / 3-quarters / from below
-
-    // 構図が1つも無いときはセンター補完（学習安定化と同様の考え方）
+    if (poses.length) parts.push(pick(poses));
+    if (comps.length) parts.push(pick(comps));
+    if (views.length) parts.push(pick(views));
     if (!comps.length) parts.push("centered composition");
 
-    // 表情：選択があればその1つ、無ければ neutral
     if (exprs.length) parts.push(pick(exprs));
     else parts.push("neutral expression");
 
     if (lights.length) parts.push(pick(lights));
     if (nsfwAdd.length)parts.push(...nsfwAdd);
 
-    // --- 服の整合 → SOLO ガード
+    // --- 整合処理
     let all = uniq([...fixed, ...parts]).filter(Boolean);
     all = applyNudePriority(all);
     all = enforceOnePieceExclusivity(all);
-    all = pairWearColors(all);
-
+    all = pairWearColors(all);   // ★ 色＋服名のペア化
     all = stripMultiHints(all);
     all = forceSoloPos(all);
 
-        // ★ 表情/構図/視点の排他整理 → 並び順整形
     all = fixExclusives(all);
     all = ensurePromptOrder(all);
-    all = enforceHeadOrder(all);      // ← 先に配列を整えて
-    const prompt = all.join(", ");    // ← その結果で文字列化
+    all = enforceHeadOrder(all);
 
     const seed = (seedMode === "fixed")
       ? baseSeed
       : seedFromName($("#charName").value||"", i);
 
-    return { key: `${prompt}|${seed}`, seed, prompt, neg: withSoloNeg(neg) };
+    return { seed, pos: all, neg: withSoloNeg(neg) };  // ★ pos 配列形式で返す
   };
 
   // ユニーク優先生成
   while (out.length < n && guard < n * 400) {
     guard++;
     const r = makeOne(out.length + 1);
-    if (seen.has(r.key)) continue;
-    seen.add(r.key);
+    const key = r.pos.join("|") + "|" + r.seed;
+    if (seen.has(key)) continue;
+    seen.add(key);
     out.push(r);
   }
-  // フォールバック（同一でも穴埋め）
+  // フォールバック
   while (out.length < n) out.push(makeOne(out.length + 1));
 
   return out;
