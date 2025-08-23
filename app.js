@@ -1431,32 +1431,25 @@ function pmInitPlannerOnce(){
   // 撮影モードの NSFW UI（実装がある場合だけ呼ぶ）
   if (typeof pmBindNSFWPlanner === 'function') pmBindNSFWPlanner();
 
-  // === 1件出力 ===
-  var btn = document.getElementById('btnPlanOne');
-  if (btn) btn.addEventListener('click', function () {
-    // rows: [{ seed, pos[], neg }]
-    var rows = pmBuildOne();
-    pmRenderTable('#tblPlanner tbody', rows);
-
-    // 3分割出力（3枠が無ければ #outPlanner へまとめて出力）
-    if (typeof renderTextTriplet === 'function') {
-      renderTextTriplet('outPlanner', rows);
-    } else {
-      // フォールバック（念のため）
-      var r = rows[0] || {};
-      var pos = Array.isArray(r.pos) ? r.pos.join(', ') : (r.prompt || '');
-      var txt = 'Prompt: ' + pos + '\nNegative prompt: ' + (r.neg||'') + '\nSeed: ' + (r.seed??0);
-      var out = document.getElementById('outPlanner');
-      if (out) out.textContent = txt;
-    }
-
-    if (typeof toast === 'function') toast('プランを出力しました');
-  });
-
-  // 3分割のコピー・ボタン（存在する場合のみ）をバインド
-  if (typeof bindCopyTriplet === 'function') {
-    bindCopyTriplet(document.getElementById('panelPlanner') || document, 'outPlanner');
-  }
+     // === 1件出力 ===
+   var btn = document.getElementById('btnPlanOne');
+   if (btn) btn.addEventListener('click', function () {
+     // rows: [{ seed, pos[], neg }]
+     var rows = pmBuildOne();
+     pmRenderTable('#tblPlanner tbody', rows);
+   
+     // ★ 3分割（All / Prompt / Neg）をフォーマッタに合わせて出力
+     renderTextTriplet('outPlanner', rows, 'fmtPlanner');
+   
+     if (typeof toast === 'function') toast('プランを出力しました');
+   });
+   
+   // ★ 3分割コピーを明示バインド（撮影モード）
+   bindCopyTripletExplicit([
+     ['btnCopyPlannerAll',    'outPlannerAll'],
+     ['btnCopyPlannerPrompt', 'outPlannerPrompt'],
+     ['btnCopyPlannerNeg',    'outPlannerNeg']
+   ]);
 
   // === 単一ボックス用コピー（旧互換・任意） ===
   var btnCopy = document.getElementById('btnCopyPlanner');
@@ -2095,76 +2088,54 @@ function buildMergedPrompt(p, n) {
 
 
 /* === 3分割出力 共通ヘルパ === */
-/** rows -> 3本のテキスト（[01] ～の行リスト）に整形 */
-function formatTriples(rows){
+function renderTextTriplet(baseId, rows, fmtSelId){
   const pad2 = (n)=> String(n+1).padStart(2,"0");
-  const P = [], N = [], S = [];
+
+  // テキスト化
+  const P = [], N = [], S = [], LINES = [];
+  const fmt = fmtSelId ? getFmt("#"+fmtSelId) : FORMATTERS.a1111;
+
   rows.forEach((r, i) => {
-    const idx = `[${pad2(i)}] `;
-    const pos = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
-    const neg = r.neg || "";
+    const idx  = `[${pad2(i)}] `;
+    const pos  = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
+    const neg  = r.neg || "";
     const seed = (r.seed ?? 0);
+
     P.push(idx + pos);
     N.push(idx + neg);
     S.push(idx + String(seed));
+    // All は選択フォーマットの 1行をそのまま採用
+    LINES.push(idx + fmt.line(pos, neg, seed));
   });
-  return {
-    prompt: P.join("\n\n"),
-    neg:    N.join("\n\n"),
-    seed:   S.join("\n\n")
+
+  const put = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+
+  // ★ HTMLのIDに合わせて出力（All/Prompt/Neg が基本）
+  put(baseId + "All",     LINES.join("\n\n")); // 例: outPlannerAll / outLearnAll / outProdAll
+  put(baseId + "Prompt",  P.join("\n\n"));     // 例: outPlannerPrompt など
+  put(baseId + "Neg",     N.join("\n\n"));
+
+  // 任意で Seed 枠があれば埋める（存在しなければ無視）
+  put(baseId + "Seed",    S.join("\n\n"));
+}
+
+// --- 3分割コピーの汎用バインド（明示マップ渡し） ---
+function bindCopyTripletExplicit(pairs){
+  const copy = async (txt) => {
+    if (!txt) { toast && toast("コピーする内容がありません"); return; }
+    try { await navigator.clipboard.writeText(txt); toast && toast("コピーしました"); }
+    catch {
+      const ta = document.createElement("textarea");
+      ta.value = txt; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove();
+      toast && toast("コピーしました");
+    }
   };
-}
-
-/** 指定ベースIDの 3枠 に出力（無ければ従来 #baseId にまとめて出力） */
-function renderTextTriplet(baseId, rows){
-  const outP = document.getElementById(baseId + "Prompt");
-  const outN = document.getElementById(baseId + "Neg");
-  const outS = document.getElementById(baseId + "Seed");
-  const outSingle = document.getElementById(baseId);
-
-  const {prompt, neg, seed} = formatTriples(rows);
-
-  if (outP && outN && outS) {
-    outP.textContent = prompt;  // ← textContent なので %20 問題なし
-    outN.textContent = neg;
-    outS.textContent = seed;
-  } else if (outSingle) {
-    // 3枠がまだ無い場合のフォールバック（従来仕様）
-    const lines = rows.map((r,i)=>{
-      const pos = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
-      return `[${String(i+1).padStart(2,"0")}] Prompt: ${pos}\nNegative prompt: ${r.neg||""}\nSeed: ${r.seed??0}`;
-    }).join("\n\n");
-    outSingle.textContent = lines;
-  }
-}
-
-/** 3つのコピー・ボタンを1発でバインド（ボタンが無ければ何もしない） */
-function bindCopyTriplet(scope, baseId){
-  const q = (id)=> scope.querySelector("#"+id);
-  const getText = (id)=> (q(id)?.textContent || "").trim();
-
-  const map = [
-    ["BtnCopyPrompt", baseId+"Prompt"],
-    ["BtnCopyNeg",    baseId+"Neg"],
-    ["BtnCopySeed",   baseId+"Seed"]
-  ];
-
-  map.forEach(([btnId, outId])=>{
-    const btn = q(btnId);
-    if (!btn) return;
-    btn.addEventListener("click", ()=>{
-      const t = getText(outId);
-      if (!t){ toast && toast("コピーする内容がありません"); return; }
-      (navigator.clipboard?.writeText ? navigator.clipboard.writeText(t) : Promise.reject())
-        .then(()=> toast && toast("コピーしました"))
-        .catch(()=>{
-          const ta = document.createElement("textarea");
-          ta.value = t; ta.style.position="fixed"; ta.style.opacity="0";
-          document.body.appendChild(ta); ta.select();
-          document.execCommand("copy"); ta.remove();
-          toast && toast("コピーしました");
-        });
-    });
+  pairs.forEach(([btnId, outId])=>{
+    const btn = document.getElementById(btnId);
+    const out = document.getElementById(outId);
+    if (!btn || !out) return;
+    btn.addEventListener("click", ()=> copy((out.textContent||"").trim()));
   });
 }
 
@@ -3394,29 +3365,45 @@ function bindLearnTest(){
 }
 
 function bindLearnBatch(){
-  $("#btnBatchLearn")?.addEventListener("click", ()=>{
-    const cnt=parseInt($("#countLearn").value,10)||24;
+  document.getElementById("btnBatchLearn")?.addEventListener("click", ()=>{
+    const cnt = parseInt(document.getElementById("countLearn").value,10) || 24;
     const rows = buildBatchLearning(cnt);
-    if(rows.error){ toast(rows.error); return; }
+    if (rows.error) { toast(rows.error); return; }
+
     renderLearnTableTo("#tblLearn tbody", rows);
-    renderLearnTextTo("#outLearn", rows, "fmtLearnBatch");
+
+    // ★ 3分割（All / Prompt / Neg）
+    renderTextTriplet('outLearn', rows, 'fmtLearnBatch');
   });
-  $("#btnCopyLearn")?.addEventListener("click", ()=>{
-    const r=document.createRange(); r.selectNodeContents($("#outLearn")); const s=getSelection();
-    s.removeAllRanges(); s.addRange(r); document.execCommand("copy"); s.removeAllRanges(); toast("学習セットをコピーしました");
+
+  // 「全コピー」ボタンは All をコピーする
+  document.getElementById("btnCopyLearn")?.addEventListener("click", ()=>{
+    const t = (document.getElementById("outLearnAll")?.textContent||"").trim();
+    if (!t) { toast("学習テキストが空です"); return; }
+    navigator.clipboard.writeText(t).then(()=> toast("学習セットをコピーしました"));
   });
-  $("#btnCsvLearn")?.addEventListener("click", ()=>{
+
+  // ★ 小ボタン（All/Prompt/Neg）も個別にバインド
+  bindCopyTripletExplicit([
+    ['btnCopyLearnAll',    'outLearnAll'],
+    ['btnCopyLearnPrompt', 'outLearnPrompt'],
+    ['btnCopyLearnNeg',    'outLearnNeg']
+  ]);
+
+  document.getElementById("btnCsvLearn")?.addEventListener("click", ()=>{
     const csv = csvFromLearn("#fmtLearnBatch");
     if(!csv || csv.split("\n").length<=1){ toast("学習テーブルが空です"); return; }
-    const char = ($("#charName")?.value||"noname").replace(/[^\w\-]/g,"_");
+    const char = (document.getElementById("charName")?.value||"noname").replace(/[^\w\-]/g,"_");
     dl(`learning_${char}_${nowStamp()}.csv`, csv); toast("学習セットをローカル（CSV）に保存しました");
   });
-  $("#btnCloudLearn")?.addEventListener("click", async ()=>{
+
+  document.getElementById("btnCloudLearn")?.addEventListener("click", async ()=>{
     const csv = csvFromLearn("#fmtLearnBatch");
     if(!csv || csv.split("\n").length<=1){ toast("学習テーブルが空です"); return; }
     await postCSVtoGAS("learning", csv);
   });
 }
+
 
 function bindProduction(){
   $("#btnGenProd")?.addEventListener("click", ()=>{
