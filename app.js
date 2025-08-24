@@ -431,26 +431,86 @@ function categorizeOutfit(list){
    return { top, pants, skirt, dress, shoes }; // ← 追加
 }
 
+// ========== 置き換え: NSFW 正規化（拡張カテゴリ対応） ==========
 function normNSFW(ns) {
-  // --- 新: nsfw_tags 形式を吸収 ---
+  // --- フラットな nsfw_tags 形式（R15/R18/R18G）に対応：とりあえず situation に寄せる ---
   if (ns?.nsfw_tags) {
     const m = ns.nsfw_tags;
     const pack = (arr, lv) => (arr || []).map(t => ({ tag: String(t), label: String(t), level: lv }));
-    // とりあえず “カテゴリー未分割” のフラットなタグなので、situation に寄せる（UI で使えるようになる）
     const situation = [
       ...pack(m.R15,  "L1"),
       ...pack(m.R18,  "L2"),
       ...pack(m.R18G, "L3"),
     ];
-    // ライティング/表情/露出は空のまま
     return {
-      expression: [],
-      exposure:   [],
-      situation,
-      lighting:   [],
-      // ここでは NEGATIVE_* は触らない（必要なら getNeg に統合する）
+      expression: [], exposure: [], situation,
+      lighting: [], background: [],
+      // 拡張キーは空で返す（merge側で安全に扱える）
+      pose: [], accessory: [], outfit: [], body: [], nipples: []
     };
   }
+
+  // --- 従来: NSFW.categories または 直下キー ---
+  const src = (ns && ns.categories) ? ns.categories : (ns || {});
+  // 日本語キー・別名の吸収
+  const ALIAS = {
+    expression: ['expression','表情'],
+    exposure:   ['exposure','露出'],
+    situation:  ['situation','シチュ','scenario','context'],
+    lighting:   ['lighting','ライティング','light'],
+    background: ['background','背景'],
+    pose:       ['pose','poses','ポーズ'],
+    accessory:  ['accessory','accessories','acc','アクセ','アクセサリー'],
+    outfit:     ['outfit','outfits','costume','clothes','衣装'],
+    body:       ['body','anatomy','feature','features','body_features','body_shape','身体','体型'],
+    nipples:    ['nipples','nipple','乳首','乳首系']
+  };
+  const pickBy = (names)=> {
+    for (const k of names) {
+      if (Array.isArray(src?.[k])) return normList(src[k]);
+    }
+    return [];
+  };
+
+  return {
+    expression: pickBy(ALIAS.expression),
+    exposure:   pickBy(ALIAS.exposure),
+    situation:  pickBy(ALIAS.situation),
+    lighting:   pickBy(ALIAS.lighting),
+    background: pickBy(ALIAS.background),
+    pose:       pickBy(ALIAS.pose),
+    accessory:  pickBy(ALIAS.accessory),
+    outfit:     pickBy(ALIAS.outfit),
+    body:       pickBy(ALIAS.body),
+    nipples:    pickBy(ALIAS.nipples),
+  };
+}
+
+// ========== 置き換え: NSFW マージ（拡張カテゴリ対応） ==========
+function mergeIntoNSFW(json) {
+  const src = json?.NSFW ? normNSFW(json.NSFW) : normNSFW(json);
+
+  // まだ無ければ空配列を用意（初期化保険）
+  NSFW = NSFW || {};
+  const ensure = (k)=> { if (!Array.isArray(NSFW[k])) NSFW[k] = []; };
+  [
+    'expression','exposure','situation','lighting','background',
+    'pose','accessory','outfit','body','nipples'
+  ].forEach(ensure);
+
+  NSFW = {
+    expression: dedupeByTag([...(NSFW.expression||[]), ...(src.expression||[])]),
+    exposure:   dedupeByTag([...(NSFW.exposure||[]),   ...(src.exposure||[])]),
+    situation:  dedupeByTag([...(NSFW.situation||[]),  ...(src.situation||[])]),
+    lighting:   dedupeByTag([...(NSFW.lighting||[]),   ...(src.lighting||[])]),
+    background: dedupeByTag([...(NSFW.background||[]), ...(src.background||[])]),
+    pose:       dedupeByTag([...(NSFW.pose||[]),       ...(src.pose||[])]),
+    accessory:  dedupeByTag([...(NSFW.accessory||[]),  ...(src.accessory||[])]),
+    outfit:     dedupeByTag([...(NSFW.outfit||[]),     ...(src.outfit||[])]),
+    body:       dedupeByTag([...(NSFW.body||[]),       ...(src.body||[])]),
+    nipples:    dedupeByTag([...(NSFW.nipples||[]),    ...(src.nipples||[])]),
+  };
+}
 
   // --- 従来: categories or 直接キー形式 ---
   const src = (ns && ns.categories) ? ns.categories : (ns || {});
@@ -506,15 +566,6 @@ function mergeIntoSFW(json) {
 }
 
 
-function mergeIntoNSFW(json) {
-  const src = json?.NSFW ? normNSFW(json.NSFW) : normNSFW(json);
-  NSFW = {
-    expression: dedupeByTag([...(NSFW.expression||[]), ...src.expression]),
-    exposure:   dedupeByTag([...(NSFW.exposure||[]),   ...src.exposure]),
-    situation:  dedupeByTag([...(NSFW.situation||[]),  ...src.situation]),
-    lighting:   dedupeByTag([...(NSFW.lighting||[]),   ...src.lighting]),
-  };
-}
 let __bottomCat = "pants"; // 既定はパンツ
 // ▼ 下カテゴリ（パンツ/スカート）切替：fieldset だけで制御
 function bindBottomCategoryRadios(){
@@ -1285,33 +1336,41 @@ function filterByScope(items, allow) {
     }
 
     // ---- Build UI ----
-    async function renderAll(){
-      const dict = await getWordModeDict();
-
-      // SFW
-      fillCat('background', dict.sfw.background);
-      fillCat('pose', dict.sfw.pose);
-      fillCat('composition', dict.sfw.composition);
-      fillCat('view', dict.sfw.view);
-      fillCat('expression-sfw', dict.sfw.expression);
-      fillCat('lighting-sfw', dict.sfw.lighting);
-      fillCat('world', dict.sfw.world);
-      fillCat('personality', dict.sfw.personality);
-      fillCat('relationship', dict.sfw.relationship);
-      fillCat('accessories', dict.sfw.accessories);        // ← 追加
-
-      // NSFW
-      fillCat('expression-nsfw', dict.nsfw.expression);
-      fillCat('exposure', dict.nsfw.exposure);
-      fillCat('situation', dict.nsfw.situation);
-      fillCat('lighting-nsfw', dict.nsfw.lighting);
-
-      // Color（SFW側の colors が正式。color に書かれていても拾う）
-      fillCat('color', dict.sfw?.colors || dict.sfw?.color || [], true);
-
-      restoreRows();
-      updateSelectedView();
-    }
+   async function renderAll(){
+     const dict = await getWordModeDict();
+   
+     // SFW
+     fillCat('background', dict.sfw.background);
+     fillCat('pose', dict.sfw.pose);
+     fillCat('composition', dict.sfw.composition);
+     fillCat('view', dict.sfw.view);
+     fillCat('expression-sfw', dict.sfw.expression);
+     fillCat('lighting-sfw', dict.sfw.lighting);
+     fillCat('world', dict.sfw.world);
+     fillCat('personality', dict.sfw.personality);
+     fillCat('relationship', dict.sfw.relationship);
+     fillCat('accessories', dict.sfw.accessories);
+   
+     // NSFW（★ここを追加）
+     fillCat('expression-nsfw', dict.nsfw.expression);
+     fillCat('exposure',        dict.nsfw.exposure);
+     fillCat('situation',       dict.nsfw.situation);
+     fillCat('lighting-nsfw',   dict.nsfw.lighting);
+   
+     // 追加カテゴリ
+     fillCat('pose-nsfw',       dict.nsfw.pose);
+     fillCat('accessory-nsfw',  dict.nsfw.accessory);
+     fillCat('outfit-nsfw',     dict.nsfw.outfit);
+     fillCat('body-nsfw',       dict.nsfw.body);
+     // 乳首を独立させるなら（HTMLにdetailsを追加した場合のみ）
+     fillCat('nipples-nsfw',    dict.nsfw.nipples || []);
+   
+     // Color（SFW側）
+     fillCat('color', dict.sfw?.colors || dict.sfw?.color || [], true);
+   
+     restoreRows();
+     updateSelectedView();
+   }
 
     function fillCat(catKey, items, isColor=false){
       const host = elItems[catKey];
