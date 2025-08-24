@@ -1196,73 +1196,74 @@ function filterByScope(items, allow) {
     const MAX_ROWS = 20;
     const LS_KEY = "wm_rows_v1";
 
-    // ---- DOM refs ----
+    // ---- DOM refs（無くても落ちない）----
+    const el = id => document.getElementById(id);
     const elItems = {
-      background:        document.getElementById('wm-items-background'),
-      pose:              document.getElementById('wm-items-pose'),
-      composition:       document.getElementById('wm-items-composition'),
-      view:              document.getElementById('wm-items-view'),
-      'expression-sfw':  document.getElementById('wm-items-expression-sfw'),
-      'lighting-sfw':    document.getElementById('wm-items-lighting-sfw'),
-      world:             document.getElementById('wm-items-world'),
-      personality:       document.getElementById('wm-items-personality'),
-      relationship:      document.getElementById('wm-items-relationship'),
-      accessories:       document.getElementById('wm-items-accessories'),
+      background:        el('wm-items-background'),
+      pose:              el('wm-items-pose'),
+      composition:       el('wm-items-composition'),
+      view:              el('wm-items-view'),
+      'expression-sfw':  el('wm-items-expression-sfw'),
+      'lighting-sfw':    el('wm-items-lighting-sfw'),
+      world:             el('wm-items-world'),
+      personality:       el('wm-items-personality'),
+      relationship:      el('wm-items-relationship'),
+      accessories:       el('wm-items-accessories'),
 
-      'expression-nsfw': document.getElementById('wm-items-expression-nsfw'),
-      exposure:          document.getElementById('wm-items-exposure'),
-      situation:         document.getElementById('wm-items-situation'),
-      'lighting-nsfw':   document.getElementById('wm-items-lighting-nsfw'),
+      'expression-nsfw': el('wm-items-expression-nsfw'),
+      exposure:          el('wm-items-exposure'),
+      situation:         el('wm-items-situation'),
+      'lighting-nsfw':   el('wm-items-lighting-nsfw'),
 
-      'pose-nsfw':       document.getElementById('wm-items-pose-nsfw'),
-      'accessory-nsfw':  document.getElementById('wm-items-accessory-nsfw'),
-      'outfit-nsfw':     document.getElementById('wm-items-outfit-nsfw'),
-      'body-nsfw':       document.getElementById('wm-items-body-nsfw'),
-      'nipple-nsfw':     document.getElementById('wm-items-nipple-nsfw'), // ← 統一
-      'underwear-nsfw':  document.getElementById('wm-items-underwear-nsfw'),
+      'pose-nsfw':       el('wm-items-pose-nsfw'),
+      'accessory-nsfw':  el('wm-items-accessory-nsfw'),
+      'outfit-nsfw':     el('wm-items-outfit-nsfw'),
+      'body-nsfw':       el('wm-items-body-nsfw'),
+      'nipple-nsfw':     el('wm-items-nipple-nsfw'),
+      'underwear-nsfw':  el('wm-items-underwear-nsfw'),
 
-      color:             document.getElementById('wm-items-color'),
+      color:             el('wm-items-color'),
     };
 
     const elCounts = {
-      background:        document.getElementById('wm-count-background'),
-      pose:              document.getElementById('wm-count-pose'),
-      composition:       document.getElementById('wm-count-composition'),
-      view:              document.getElementById('wm-count-view'),
-      'expression-sfw':  document.getElementById('wm-count-expression-sfw'),
-      'lighting-sfw':    document.getElementById('wm-count-lighting-sfw'),
-      world:             document.getElementById('wm-count-world'),
-      personality:       document.getElementById('wm-count-personality'),
-      relationship:      document.getElementById('wm-count-relationship'),
-      accessories:       document.getElementById('wm-count-accessories'),
+      background:        el('wm-count-background'),
+      pose:              el('wm-count-pose'),
+      composition:       el('wm-count-composition'),
+      view:              el('wm-count-view'),
+      'expression-sfw':  el('wm-count-expression-sfw'),
+      'lighting-sfw':    el('wm-count-lighting-sfw'),
+      world:             el('wm-count-world'),
+      personality:       el('wm-count-personality'),
+      relationship:      el('wm-count-relationship'),
+      accessories:       el('wm-count-accessories'),
 
-      'expression-nsfw': document.getElementById('wm-count-expression-nsfw'),
-      exposure:          document.getElementById('wm-count-exposure'),
-      situation:         document.getElementById('wm-count-situation'),
-      'lighting-nsfw':   document.getElementById('wm-count-lighting-nsfw'),
+      'expression-nsfw': el('wm-count-expression-nsfw'),
+      exposure:          el('wm-count-exposure'),
+      situation:         el('wm-count-situation'),
+      'lighting-nsfw':   el('wm-count-lighting-nsfw'),
 
-      'pose-nsfw':       document.getElementById('wm-count-pose-nsfw'),
-      'accessory-nsfw':  document.getElementById('wm-count-accessory-nsfw'),
-      'outfit-nsfw':     document.getElementById('wm-count-outfit-nsfw'),
-      'body-nsfw':       document.getElementById('wm-count-body-nsfw'),
-      'nipple-nsfw':     document.getElementById('wm-count-nipple-nsfw'),  // ← 統一
-      'underwear-nsfw':  document.getElementById('wm-count-underwear-nsfw'),
+      'pose-nsfw':       el('wm-count-pose-nsfw'),
+      'accessory-nsfw':  el('wm-count-accessory-nsfw'),
+      'outfit-nsfw':     el('wm-count-outfit-nsfw'),
+      'body-nsfw':       el('wm-count-body-nsfw'),
+      'nipple-nsfw':     el('wm-count-nipple-nsfw'),
+      'underwear-nsfw':  el('wm-count-underwear-nsfw'),
 
-      color:             document.getElementById('wm-count-color'),
+      color:             el('wm-count-color'),
     };
 
-    const tplItem = document.getElementById('wm-item-tpl');
-    const tplItemColor = document.getElementById('wm-item-tpl-color');
-    const tplRow = document.getElementById('wm-row-tpl');
+    const tplItem      = el('wm-item-tpl');
+    const tplItemColor = el('wm-item-tpl-color');
+    const tplRow       = el('wm-row-tpl');
 
-    const tblBody = document.getElementById('wm-table-body');
-    const btnCopyENAll = document.getElementById('wm-copy-en-all');
-    const btnCopyBothAll = document.getElementById('wm-copy-both-all');
-    const btnTableClear = document.getElementById('wm-table-clear');
+    const tblBody       = el('wm-table-body');
+    const btnCopyENAll  = el('wm-copy-en-all');
+    const btnCopyBothAll= el('wm-copy-both-all');
+    const btnTableClear = el('wm-table-clear');
 
-    const chipArea = document.getElementById('wm-selected-chips');
-    const chipCount = document.getElementById('wm-selected-count');
-    const btnSelectedClear = document.getElementById('wm-selected-clear');
+    const chipArea      = el('wm-selected-chips');
+    const chipCount     = el('wm-selected-count');
+    const btnSelectedClear = el('wm-selected-clear');
 
     // ---- Clipboard helper ----
     async function copyText(text){
@@ -1283,7 +1284,7 @@ function filterByScope(items, allow) {
       setTimeout(()=> panel.style.boxShadow = "", 180);
     }
 
-    // ---- 辞書受け口 ----
+    // ---- 辞書の受け口（SFW / NSFW を何でも拾えるように）----
     async function loadFallbackJSON(path){
       try{
         const r = await fetch(path, {cache:"no-store"});
@@ -1291,29 +1292,23 @@ function filterByScope(items, allow) {
         return await r.json();
       }catch(_){ return null; }
     }
-    function firstNonNull(...vals){ return vals.find(v => v != null); }
-    function sniffGlobalDict(nameCandidates){
-      for (const key of nameCandidates){
+    const firstNonNull=(...v)=> v.find(x=>x!=null);
+    function getByPath(root, path){
+      return path.split('.').reduce((a,k)=> (a?a[k]:null), root);
+    }
+    function sniffGlobalDict(cands){
+      for (const key of cands){
         const obj = getByPath(window, key);
         if (obj && typeof obj === 'object') return obj;
       }
       return null;
     }
-    function getByPath(root, path){
-      const parts = path.split('.');
-      let cur = root;
-      for (const p of parts){
-        if (!cur) return null;
-        cur = cur[p];
-      }
-      return cur;
-    }
     function normalizeEntries(arr){
-      return (Array.isArray(arr) ? arr : []).map(x => ({
+      return (Array.isArray(arr)?arr:[]).map(x=>({
         ja: firstNonNull(x.ja, x.jp, x.label, x.name, ""),
         en: firstNonNull(x.en, x.tag, x.value, ""),
-        level: x.level
-      })).filter(o => o.ja && o.en);
+        level: x.level || ""
+      })).filter(o=>o.ja && o.en);
     }
     function pickCat(dict, ...names){
       for (const n of names){
@@ -1321,118 +1316,100 @@ function filterByScope(items, allow) {
       }
       return [];
     }
-    function pickNSFW(ns, key){
+    function pickNSFW(ns, keys){
       if (!ns) return [];
-      const fromCat = ns.categories && Array.isArray(ns.categories[key]) ? ns.categories[key] : null;
-      const flat    = Array.isArray(ns[key]) ? ns[key] : null;
-      return firstNonNull(fromCat, flat, []);
+      for (const k of keys){
+        const fromCat = ns.categories && Array.isArray(ns.categories[k]) ? ns.categories[k] : null;
+        const flat    = Array.isArray(ns[k]) ? ns[k] : null;
+        if (fromCat) return fromCat;
+        if (flat) return flat;
+      }
+      return [];
     }
 
-    // ← ここを拡張：NSFWの追加カテゴリも受け取る
-   async function getWordModeDict(){
-     const sfwRaw = sniffGlobalDict([
-       'SFW','sfw','DICT_SFW','dictSfw','app.dict.sfw','APP_DICT.SFW'
-     ]);
-     const nsfwRaw = sniffGlobalDict([
-       'NSFW','nsfw','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW'
-     ]);
-   
-     const sfw = sfwRaw || await loadFallbackJSON('dict/default_sfw.json') || {};
-     const nsfw = nsfwRaw || await loadFallbackJSON('dict/default_nsfw.json') || {};
-   
-     const sfwTop  = sfw.sfw  || sfw.SFW  || sfw;
-     const nsfwTop = nsfw.NSFW || nsfw.nsfw || nsfw;
-   
-     // 汎用
-     const normalizeEntries = (arr)=> (Array.isArray(arr)?arr:[]).map(x=>({
-       ja: firstNonNull(x.ja, x.jp, x.label, x.name, ""),
-       en: firstNonNull(x.en, x.tag, x.value, ""),
-       level: x.level || ""
-     })).filter(o=>o.ja && o.en);
-   
-     // NSFW: categories.* を優先、無ければ直下キー。エイリアス吸収。
-     const pickNSFW = (root, keys)=>{
-       if(!root) return [];
-       for(const k of keys){
-         if (root.categories && Array.isArray(root.categories[k])) return root.categories[k];
-         if (Array.isArray(root[k])) return root[k];
-       }
-       return [];
-     };
-   
-     return {
-       sfw: {
-         background:   normalizeEntries(sfwTop.background),
-         pose:         normalizeEntries(sfwTop.pose),
-         composition:  normalizeEntries(sfwTop.composition),
-         view:         normalizeEntries(sfwTop.view),
-         expression:   normalizeEntries(sfwTop.expression || sfwTop.expressions),
-         lighting:     normalizeEntries(sfwTop.lighting),
-         world:        normalizeEntries(sfwTop.world || sfwTop.worldview),
-         personality:  normalizeEntries(sfwTop.personality),
-         relationship: normalizeEntries(sfwTop.relationship),
-         accessories:  normalizeEntries(sfwTop.accessories || sfwTop.accessory),
-         color:        normalizeEntries(sfwTop.color || sfwTop.colors)
-       },
-       nsfw: {
-         expression: normalizeEntries(pickNSFW(nsfwTop, ['expression'])),
-         exposure:   normalizeEntries(pickNSFW(nsfwTop, ['exposure'])),
-         situation:  normalizeEntries(pickNSFW(nsfwTop, ['situation'])),
-         lighting:   normalizeEntries(pickNSFW(nsfwTop, ['lighting'])),
-         // ★ 追加カテゴリ全部
-         pose:       normalizeEntries(pickNSFW(nsfwTop, ['pose','poses','ポーズ'])),
-         accessory:  normalizeEntries(pickNSFW(nsfwTop, ['accessory','accessories','acc','アクセ','アクセサリー'])),
-         outfit:     normalizeEntries(pickNSFW(nsfwTop, ['outfit','outfits','costume','clothes','衣装'])),
-         body:       normalizeEntries(pickNSFW(nsfwTop, ['body','anatomy','feature','features','body_features','身体','体型'])),
-         nipples:    normalizeEntries(pickNSFW(nsfwTop, ['nipples','nipple','乳首','乳首系'])),
-         underwear:  normalizeEntries(pickNSFW(nsfwTop, ['underwear','lingerie','下着','インナー'])),
-       }
-     };
-   }
-   
-   async function renderAll(){
-     const dict = await getWordModeDict();
-   
-     // --- SFW ---
-     fillCat('background', dict.sfw.background);
-     fillCat('pose', dict.sfw.pose);
-     fillCat('composition', dict.sfw.composition);
-     fillCat('view', dict.sfw.view);
-     fillCat('expression-sfw', dict.sfw.expression);
-     fillCat('lighting-sfw', dict.sfw.lighting);
-     fillCat('world', dict.sfw.world);
-     fillCat('personality', dict.sfw.personality);
-     fillCat('relationship', dict.sfw.relationship);
-     fillCat('accessories', dict.sfw.accessories);
-   
-     // --- NSFW 既存4種 ---
-     fillCat('expression-nsfw', dict.nsfw.expression);
-     fillCat('exposure',        dict.nsfw.exposure);
-     fillCat('situation',       dict.nsfw.situation);
-     fillCat('lighting-nsfw',   dict.nsfw.lighting);
-   
-     // --- ★ NSFW 追加カテゴリ（単語モードも出す） ---
-     fillCat('pose-nsfw',       dict.nsfw.pose);
-     fillCat('accessory-nsfw',  dict.nsfw.accessory);   // ← これが無かった
-     fillCat('outfit-nsfw',     dict.nsfw.outfit);
-     fillCat('body-nsfw',       dict.nsfw.body);
-     fillCat('nipple-nsfw',     dict.nsfw.nipples);
-     fillCat('underwear-nsfw',  dict.nsfw.underwear);
-   
-     // 色（SFW）
-     fillCat('color', dict.sfw.color, true);
-   
-     restoreRows();
-     updateSelectedView();
-   }
+    async function getWordModeDict(){
+      const sfwRaw  = sniffGlobalDict(['SFW','sfw','DICT_SFW','dictSfw','app.dict.sfw','APP_DICT.SFW']);
+      const nsfwRaw = sniffGlobalDict(['NSFW','nsfw','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW']);
+
+      const sfw  = sfwRaw  || await loadFallbackJSON('dict/default_sfw.json')  || {};
+      const nsfw = nsfwRaw || await loadFallbackJSON('dict/default_nsfw.json') || {};
+
+      const sfwTop  = sfw.sfw  || sfw.SFW  || sfw;
+      const nsfwTop = nsfw.NSFW|| nsfw.nsfw|| nsfw;
+
+      return {
+        sfw: {
+          background:   normalizeEntries(pickCat(sfwTop, 'background')),
+          pose:         normalizeEntries(pickCat(sfwTop, 'pose')),
+          composition:  normalizeEntries(pickCat(sfwTop, 'composition')),
+          view:         normalizeEntries(pickCat(sfwTop, 'view')),
+          expression:   normalizeEntries(pickCat(sfwTop, 'expression','expressions')),
+          lighting:     normalizeEntries(pickCat(sfwTop, 'lighting')),
+          world:        normalizeEntries(pickCat(sfwTop, 'world','worldview')),
+          personality:  normalizeEntries(pickCat(sfwTop, 'personality')),
+          relationship: normalizeEntries(pickCat(sfwTop, 'relationship')),
+          accessories:  normalizeEntries(pickCat(sfwTop, 'accessories','accessory')),
+          color:        normalizeEntries(pickCat(sfwTop, 'color','colors')),
+        },
+        nsfw: {
+          expression: normalizeEntries(pickNSFW(nsfwTop, ['expression','表情'])),
+          exposure:   normalizeEntries(pickNSFW(nsfwTop, ['exposure','露出'])),
+          situation:  normalizeEntries(pickNSFW(nsfwTop, ['situation','シチュ','scenario'])),
+          lighting:   normalizeEntries(pickNSFW(nsfwTop, ['lighting','light','ライティング'])),
+          pose:       normalizeEntries(pickNSFW(nsfwTop, ['pose','poses','ポーズ'])),
+          accessory:  normalizeEntries(pickNSFW(nsfwTop, ['accessory','accessories','acc','アクセ','アクセサリー'])),
+          outfit:     normalizeEntries(pickNSFW(nsfwTop, ['outfit','outfits','costume','clothes','衣装'])),
+          body:       normalizeEntries(pickNSFW(nsfwTop, ['body','anatomy','features','身体','体型'])),
+          nipples:    normalizeEntries(pickNSFW(nsfwTop, ['nipples','nipple','乳首'])),
+          underwear:  normalizeEntries(pickNSFW(nsfwTop, ['underwear','lingerie','下着','インナー'])),
+        }
+      };
+    }
+
+    // ---- UI 構築 ----
+    async function renderAll(){
+      const dict = await getWordModeDict();
+
+      // SFW
+      fillCat('background', dict.sfw.background);
+      fillCat('pose', dict.sfw.pose);
+      fillCat('composition', dict.sfw.composition);
+      fillCat('view', dict.sfw.view);
+      fillCat('expression-sfw', dict.sfw.expression);
+      fillCat('lighting-sfw', dict.sfw.lighting);
+      fillCat('world', dict.sfw.world);
+      fillCat('personality', dict.sfw.personality);
+      fillCat('relationship', dict.sfw.relationship);
+      fillCat('accessories', dict.sfw.accessories);
+
+      // NSFW（基本）
+      fillCat('expression-nsfw', dict.nsfw.expression);
+      fillCat('exposure',        dict.nsfw.exposure);
+      fillCat('situation',       dict.nsfw.situation);
+      fillCat('lighting-nsfw',   dict.nsfw.lighting);
+
+      // NSFW（追加）
+      fillCat('pose-nsfw',       dict.nsfw.pose);
+      fillCat('accessory-nsfw',  dict.nsfw.accessory);
+      fillCat('outfit-nsfw',     dict.nsfw.outfit);
+      fillCat('body-nsfw',       dict.nsfw.body);
+      fillCat('nipple-nsfw',     dict.nsfw.nipples);
+      fillCat('underwear-nsfw',  dict.nsfw.underwear);
+
+      // 色（SFW）
+      fillCat('color', dict.sfw.color, true);
+
+      restoreRows();
+      updateSelectedView();
+    }
 
     function fillCat(catKey, items, isColor=false){
       const host = elItems[catKey];
-      if (!host) return; // ホストが無ければ何もしない
+      if (!host) return; // 対応ブロックが無いならスキップ
 
       host.innerHTML = "";
       const useTpl = isColor ? tplItemColor : tplItem;
-      if (!useTpl || !useTpl.content) { // テンプレ無ければ早期return
+      if (!useTpl || !useTpl.content) {
         if (elCounts[catKey]) elCounts[catKey].textContent = String(items?.length || 0);
         return;
       }
@@ -1472,12 +1449,13 @@ function filterByScope(items, allow) {
         host.appendChild(node);
       });
 
-         if (elCounts[catKey]) {
-           const count = Array.isArray(items) ? items.length : 0;
-           elCounts[catKey].textContent = String(count);
-        }
+      if (elCounts[catKey]) {
+        const count = Array.isArray(items) ? items.length : 0;
+        elCounts[catKey].textContent = String(count);
+      }
     }
 
+    // ---- Table ops ----
     function currentRows(){
       const rows = [];
       tblBody?.querySelectorAll?.('tr')?.forEach(tr=>{
