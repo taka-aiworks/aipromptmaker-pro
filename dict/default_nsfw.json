@@ -24,25 +24,13 @@
         { "tag": "off_shoulder", "ja": "オフショルダー", "level": "L1" },
         { "tag": "bare_back", "ja": "背中見せ", "level": "L1" },
         { "tag": "leggy", "ja": "脚見せ", "level": "L1" },
-        { "tag": "garter_belt", "ja": "ガーターベルト", "level": "L2" },
-        { "tag": "thighhighs", "ja": "絶対領域/タイツ", "level": "L2" },
-        { "tag": "lingerie", "ja": "ランジェリー", "level": "L2" },
-        { "tag": "bikini", "ja": "ビキニ", "level": "L2" },
         { "tag": "wet_clothes", "ja": "濡れた服", "level": "L2" },
         { "tag": "see_through", "ja": "シースルー", "level": "L2" },
         { "tag": "sideboob", "ja": "サイド露出", "level": "L2" },
         { "tag": "underboob", "ja": "アンダー露出", "level": "L2" },
         { "tag": "topless", "ja": "上半身裸", "level": "L2" },
         { "tag": "bottomless", "ja": "下半身裸", "level": "L2" },
-        { "tag": "nude", "ja": "全裸", "level": "L2" },
-        { "tag": "bondage_wear", "ja": "ボンデージ衣装", "level": "L2" },
-        { "tag": "micro_bikini", "ja": "マイクロビキニ", "level": "L2" },
-        { "tag": "string_bikini", "ja": "紐ビキニ", "level": "L2" },
-        { "tag": "sling_bikini", "ja": "スリングショットビキニ", "level": "L2" },
-        { "tag": "wet_swimsuit", "ja": "濡れた水着", "level": "L2" },
-        { "tag": "nipple_cover_bikini", "ja": "ニップルカバービキニ", "level": "L2" },
-        { "tag": "crotchless_swimsuit", "ja": "クロッチレス水着", "level": "L2" },
-        { "tag": "bodypaint_swimsuit", "ja": "ボディペイント水着", "level": "L2" }
+        { "tag": "nude", "ja": "全裸", "level": "L2" }
       ],
 
       "situation": [
@@ -112,22 +100,33 @@
       ],
 
       "pose": [
-      { "tag": "spread_legs",     "ja": "脚を広げる",       "level": "L2" },
-      { "tag": "arched_back",     "ja": "背中を反らす",     "level": "L2" },
-      { "tag": "on_all_fours",    "ja": "四つん這い",       "level": "L2" },
-      { "tag": "straddling",      "ja": "またがる",         "level": "L2" },
-      { "tag": "bent_over",       "ja": "前屈み",           "level": "L2" },
-      { "tag": "against_wall",    "ja": "壁に寄りかかる",   "level": "L2" },
-      { "tag": "hands_tied",      "ja": "手を縛られる",     "level": "L3" },
-      { "tag": "legs_tied",       "ja": "脚を縛られる",     "level": "L3" },
-      { "tag": "hogtied",         "ja": "亀甲縛り/後手拘束","level": "L3" },
-      { "tag": "forced_kneeling", "ja": "強制的に跪かされる", "level": "L3" },
-      { "tag": "spanking_pose",   "ja": "お仕置き体勢",     "level": "L3" },
-      { "tag": "whipping_pose",     "ja": "鞭打ち体勢",      "level": "L2" },
-      { "tag": "suspension_bondage","ja": "吊り緊縛",        "level": "L2" },
-      { "tag": "spread_eagle",      "ja": "大の字拘束",      "level": "L2" },
-      { "tag": "stocks_pose",       "ja": "拘束台に固定",    "level": "L2" }
-    ],
+        { "tag": "spread_legs",       "ja": "脚を広げる",        "level": "L2" },
+        { "tag": "arched_back",       "ja": "背中を反らす",      "level": "L2" },
+        { "tag": "on_all_fours",      "ja": "四つん這い",        "level": "L2" },
+        { "tag": "straddling",        "ja": "またがる",          "level": "L2" },
+        { "tag": "bent_over",         "ja": "前屈み",            "level": "L2" },
+        { "tag": "against_wall",      "ja": "壁に寄りかかる",    "level": "L2" },
+      
+        { "tag": "legs_over_shoulders","ja": "脚を肩に乗せる体位","level": "L3" },
+        { "tag": "missionary_pose",   "ja": "正常位ポーズ",      "level": "L3" },
+        { "tag": "cowgirl_pose",      "ja": "騎乗位ポーズ",      "level": "L3" },
+        { "tag": "reverse_cowgirl",   "ja": "バック騎乗位ポーズ","level": "L3" },
+        { "tag": "doggy_style",       "ja": "バックポーズ（後背位）","level": "L3" },
+        { "tag": "spooning_pose",     "ja": "添い寝体位（スプーン）","level": "L3" },
+        { "tag": "oral_pose",         "ja": "オーラル体勢",      "level": "L3" },
+        { "tag": "facesitting",       "ja": "顔面騎乗位",        "level": "L3" },
+        { "tag": "sixty_nine",        "ja": "69体勢",            "level": "L3" },
+      
+        { "tag": "hands_tied",        "ja": "手を縛られる",      "level": "L3" },
+        { "tag": "legs_tied",         "ja": "脚を縛られる",      "level": "L3" },
+        { "tag": "hogtied",           "ja": "亀甲縛り/後手拘束", "level": "L3" },
+        { "tag": "forced_kneeling",   "ja": "強制的に跪かされる","level": "L3" },
+        { "tag": "spanking_pose",     "ja": "お仕置き体勢",      "level": "L3" },
+        { "tag": "whipping_pose",     "ja": "鞭打ち体勢",        "level": "L2" },
+        { "tag": "suspension_bondage","ja": "吊り緊縛",          "level": "L2" },
+        { "tag": "spread_eagle",      "ja": "大の字拘束",        "level": "L2" },
+        { "tag": "stocks_pose",       "ja": "拘束台に固定",      "level": "L2" }
+      ],
     
     "accessories": [
       { "tag": "choker",           "ja": "チョーカー",     "level": "L1" },
@@ -165,7 +164,16 @@
       { "tag": "stripper_stage",   "ja": "ストリップ舞台衣装", "level": "L3" },
       { "tag": "fetish_catsuit",  "ja": "フェティッシュ全身スーツ", "level": "L2" },
       { "tag": "bondage_straps",  "ja": "拘束ベルト衣装",           "level": "L2" },
-      { "tag": "gimp_suit",       "ja": "ギンプスーツ",             "level": "L2" }
+      { "tag": "gimp_suit",       "ja": "ギンプスーツ",             "level": "L2" },
+      { "tag": "bikini", "ja": "ビキニ", "level": "L2" },
+      { "tag": "micro_bikini", "ja": "マイクロビキニ", "level": "L2" },
+      { "tag": "string_bikini", "ja": "紐ビキニ", "level": "L2" },
+      { "tag": "sling_bikini", "ja": "スリングショットビキニ", "level": "L2" },
+      { "tag": "wet_swimsuit", "ja": "濡れた水着", "level": "L2" },
+      { "tag": "nipple_cover_bikini", "ja": "ニップルカバービキニ", "level": "L2" },
+      { "tag": "crotchless_swimsuit", "ja": "クロッチレス水着", "level": "L2" },
+      { "tag": "bodypaint_swimsuit", "ja": "ボディペイント水着", "level": "L2" },
+      { "tag": "bondage_wear", "ja": "ボンデージ衣装", "level": "L2" }
     ],
     "underwear": [
         { "tag": "lingerie_set", "ja": "ランジェリーセット", "level": "L2" },
@@ -175,18 +183,24 @@
         { "tag": "stockings", "ja": "ストッキング", "level": "L1" },
         { "tag": "transparent_lingerie", "ja": "透けランジェリー", "level": "L2" },
         { "tag": "open_cup_bra", "ja": "オープンカップブラ", "level": "L3" },
-        { "tag": "crotchless_panties", "ja": "クロッチレスショーツ", "level": "L3" }
+        { "tag": "crotchless_panties", "ja": "クロッチレスショーツ", "level": "L3" },
+        { "tag": "thighhighs", "ja": "絶対領域/タイツ", "level": "L2" }
       ],
     "body": [
-      { "tag": "big_breasts",       "ja": "爆乳", "level": "L2" },
-      { "tag": "huge_breasts",      "ja": "超乳", "level": "L2" },
-      { "tag": "milky_breasts",     "ja": "母乳体型", "level": "L2" },
-      { "tag": "pregnant_body",     "ja": "妊娠体型（お腹ふくらみ）", "level": "L2" },
-      { "tag": "lactating",         "ja": "母乳分泌", "level": "L2" },
-      { "tag": "thicc",             "ja": "極太もも・豊満", "level": "L2" },
-      { "tag": "bubble_butt",       "ja": "まんまる尻", "level": "L2" },
-      { "tag": "wide_hips",         "ja": "極端に広い腰回り", "level": "L2" },
-      { "tag": "slim_thick",        "ja": "上半身スリム＋下半身豊満", "level": "L2" },
+      { "tag": "flat_chest",       "ja": "貧乳", "level": "L1" },
+      { "tag": "small_breasts",    "ja": "小胸", "level": "L1" },
+      { "tag": "petite_bust",      "ja": "控えめバスト", "level": "L1" },
+    
+      { "tag": "big_breasts",      "ja": "爆乳", "level": "L2" },
+      { "tag": "huge_breasts",     "ja": "超乳", "level": "L2" },
+      { "tag": "milky_breasts",    "ja": "母乳体型", "level": "L2" },
+      { "tag": "pregnant_body",    "ja": "妊娠体型（お腹ふくらみ）", "level": "L2" },
+      { "tag": "lactating",        "ja": "母乳分泌", "level": "L2" },
+    
+      { "tag": "thicc",            "ja": "極太もも・豊満", "level": "L2" },
+      { "tag": "bubble_butt",      "ja": "まんまる尻", "level": "L2" },
+      { "tag": "wide_hips",        "ja": "極端に広い腰回り", "level": "L2" },
+      { "tag": "slim_thick",       "ja": "上半身スリム＋下半身豊満", "level": "L2" },
       { "tag": "hourglass_exaggerated", "ja": "極端な砂時計体型", "level": "L2" }
     ],
   
