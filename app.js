@@ -1464,12 +1464,6 @@ function filterByScope(items, allow) {
           copyText(en);
         });
 
-        const bBoth = node.querySelector('.wm-copy-both');
-        if (bBoth) bBoth.addEventListener('click', (ev)=>{
-          ev.stopPropagation();
-          copyText(`${jp} (${en})`);
-        });
-
         host.appendChild(node);
       });
 
@@ -1508,7 +1502,6 @@ function filterByScope(items, allow) {
       tr.querySelector('.wm-row-en')?.append(document.createTextNode(item.en || ""));
 
       tr.querySelector('.wm-row-copy-en')?.addEventListener('click', ()=> copyText(item.en));
-      tr.querySelector('.wm-row-copy-both')?.addEventListener('click', ()=> copyText(`${item.jp} (${item.en})`));
       tr.querySelector('.wm-row-remove')?.addEventListener('click', ()=>{
         tr.remove(); persistRows(); updateSelectedView();
       });
