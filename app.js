@@ -3677,7 +3677,7 @@ function getProdWearColorTag(idBase){
   return (txt && txt !== "—") ? txt : "";
 }
 
-// ② 完全置き換え版：buildBatchProduction（基本情報 + SFW/NSFW 正規化 + 服色ペアリング）
+// ② 完全置き換え版：buildBatchProduction（基本情報 + SFW/NSFW 正規化 + 服色ペアリング + 単一ライト/単一背景）
 function buildBatchProduction(n){
   const seedMode = document.querySelector('input[name="seedMode"]:checked')?.value || "fixed";
 
@@ -3694,7 +3694,7 @@ function buildBatchProduction(n){
   const comps  = getMany("p_comp");
   const views  = getMany("p_view");
   const exprs  = getMany("p_expr");
-  const lights = getMany("p_light");
+  const lights = getMany("p_light");          // ← SFWライト
   const acc    = readAccessorySlots();
 
   // NSFW（ON のときだけ各カテゴリから最大1つ）
@@ -3702,7 +3702,7 @@ function buildBatchProduction(n){
   const nsfwExpr = nsfwOn ? getMany("nsfwP_expr")  : [];
   const nsfwExpo = nsfwOn ? getMany("nsfwP_expo")  : [];
   const nsfwSitu = nsfwOn ? getMany("nsfwP_situ")  : [];
-  const nsfwLite = nsfwOn ? getMany("nsfwP_light") : [];
+  const nsfwLite = nsfwOn ? getMany("nsfwP_light") : [];  // ← NSFWライト
 
   // 服色（top/bottom/shoes のプレースホルダ → 通常服のみ pairWearColors で合体）
   const PC = {
@@ -3753,16 +3753,14 @@ function buildBatchProduction(n){
       parts.push(chosenDress);
       usedDress = true;
     } else {
-      if (O.top.length) {
-        parts.push(pick(O.top));        // トップスから1つ
-      }
+      if (O.top.length) parts.push(pick(O.top));            // トップス 1
       let bottomPool = [];
       if (O.pants.length && O.skirt.length) bottomPool = (Math.random() < 0.5) ? O.pants : O.skirt;
       else if (O.pants.length) bottomPool = O.pants;
       else if (O.skirt.length) bottomPool = O.skirt;
-      if (bottomPool.length) parts.push(pick(bottomPool)); // ボトムから1つ
+      if (bottomPool.length) parts.push(pick(bottomPool));   // ボトム 1
     }
-    if (O.shoes && O.shoes.length) parts.push(pick(O.shoes)); // 靴も1つ
+    if (O.shoes && O.shoes.length) parts.push(pick(O.shoes)); // 靴 1
 
     // --- 服色の付与（この段階ではプレースホルダ） ---
     if (usedDress) {
@@ -3792,7 +3790,8 @@ function buildBatchProduction(n){
       parts.push(exprs.length ? pick(exprs) : "neutral expression");
     }
 
-    // --- ライティング ---
+    // --- ライティング（SFW/NSFW をまとめて 1 個に統一） ---
+    // いったん両方を parts に入れておき、後段で unifyLightingOnce() で 1 つに絞る
     if (lights.length) parts.push(pick(lights));
     if (nsfwOn && nsfwLite.length) parts.push(pickOne(nsfwLite));
 
@@ -3815,14 +3814,17 @@ function buildBatchProduction(n){
     if (hasExposure) {
       // 既存の上下服・ワンピ・靴・色プレースホルダを除去（色は露出タグ側の色込みに任せる）
       const CLOTH_NOUN_RE =
-        /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown|shoes)\b/i;
+        /\b(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|windbreaker|dress|one[-\s]?piece|cheongsam|qipao|yukata|kimono|hanbok|gown|tracksuit|jersey|robe|poncho|cape|leotard|uniform)\b/i;
+      const SHOES_RE =
+        /\b(boots|sneakers|loafers|mary\s+janes|heels|sandals|shoes)\b/i;
       const COLOR_WORD_RE =
-        /\b(white|black|red|blue|azure|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta)\b/i;
+        /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
       const COLOR_PLACE_RE =
-        /\b(white|black|red|blue|azure|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta)\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown|shoes)\b/i;
+        /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\s+janes|heels|sandals)\b/i;
 
       all = all.filter(s =>
         !CLOTH_NOUN_RE.test(s) &&
+        !SHOES_RE.test(s) &&
         !COLOR_PLACE_RE.test(s) &&
         !(COLOR_WORD_RE.test(s) && !/\s/.test(s)) // 単独色タグも除去
       );
@@ -3831,6 +3833,12 @@ function buildBatchProduction(n){
       all = ensureSingleWearPerRow(all);
       if (typeof pairWearColors === 'function') all = pairWearColors(all);
     }
+
+    // --- 背景は 1 つだけ（empty background は他があれば落とす）---
+    all = enforceSingleBackground(all);
+
+    // --- ライティングは最終的に 1 つだけ ---
+    all = unifyLightingOnce(all);
 
     // SOLOガードやヒント整理
     if (typeof stripMultiHints === 'function') all = stripMultiHints(all);
@@ -3863,7 +3871,7 @@ function buildBatchProduction(n){
 }
 
 
-// 服カテゴリは 1 行につき 1 つだけに制限する保険
+// 服カテゴリは 1 行につき 1 つだけに制限する保険（既存をそのまま使う）
 function ensureSingleWearPerRow(arr){
   const kept = new Set();
   const out = [];
@@ -3872,7 +3880,7 @@ function ensureSingleWearPerRow(arr){
     ["dress",  /\b(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\s+dress)\b/i],
     ["top",    /\b(t-?shirt|tank\s+top|blouse|shirt|hoodie|sweater|cardigan|jacket|coat|parka|windbreaker|camisole|crop\s+top|turtleneck|uniform|jersey)\b/i],
     ["bottom", /\b(pants|trousers|shorts|jeans|cargo\s+pants|skirt|hakama)\b/i],
-    ["shoes",  /\b(boots|sneakers|loafers|mary\s+janes|shoes|sandals)\b/i],
+    ["shoes",  /\b(boots|sneakers|loafers|mary\s+janes|heels|sandals|shoes)\b/i],
   ];
   for (const t of arr){
     const s = String(t);
@@ -3884,6 +3892,52 @@ function ensureSingleWearPerRow(arr){
     out.push(t);
   }
   return out;
+}
+
+
+// ライティング（SFW/NSFW 含む）を“最終的に 1 つだけ”残す
+function unifyLightingOnce(arr){
+  const LIGHT_RE = /\b(normal lighting|even lighting|flat studio lighting|soft lighting|softbox lighting|clamshell lighting|backlighting|backlit|rim light|dramatic lighting|golden hour|neon lighting|window light|moonlight|candlelight|spotlight|overcast|volumetric light|moody)\b/i;
+  const picked = [];
+  // 末尾の方を優先したいなら後ろから走査して先に見つけたものを採用
+  for (let i = arr.length - 1; i >= 0; i--){
+    const s = String(arr[i]);
+    if (LIGHT_RE.test(s)){
+      picked.push(s);
+      break;
+    }
+  }
+  if (!picked.length) return arr;
+  // いったん全ライト語を除去 → 1つだけ末尾に再挿入
+  const cleaned = arr.filter(s => !LIGHT_RE.test(String(s)));
+  cleaned.push(picked[0]);
+  return cleaned;
+}
+
+
+// 背景は 1 つだけ。empty background は他があれば落とす
+function enforceSingleBackground(arr){
+  const BG_RE = /\b(plain background|white background|solid background|studio background|white seamless|gray seamless|gradient background|bedroom|classroom|street at night|beach|forest|shrine|sci-fi lab|cafe|library|rooftop|train platform|festival stalls|shrine festival|classroom after school|snowy town|autumn park|spring cherry blossoms|space interior|poolside|swimming pool|water park|beach daytime|beach sunset|empty background)\b/i;
+
+  const bg = arr.filter(s => BG_RE.test(String(s)));
+  if (bg.length <= 1) return arr;
+
+  // empty background が混じっていて、他にも背景があるなら empty を落とす
+  const hasNonEmpty = bg.some(s => !/empty background/i.test(String(s)));
+  let keep = "";
+  if (hasNonEmpty){
+    // 非 empty の中から最後に現れた 1つを採用
+    for (let i = arr.length - 1; i >= 0; i--){
+      const s = String(arr[i]);
+      if (BG_RE.test(s) && !/empty background/i.test(s)) { keep = s; break; }
+    }
+  } else {
+    // empty しか無いなら empty を 1つだけ残す
+    keep = "empty background";
+  }
+  const cleaned = arr.filter(s => !BG_RE.test(String(s)));
+  if (keep) cleaned.push(keep);
+  return cleaned;
 }
 
 
