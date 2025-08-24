@@ -1746,7 +1746,7 @@ function pmRenderPlanner(){
   pmRenderAcc();
 }
 
-/* 1件出力（置き換え版） */
+/* 1件出力（置き換え版 + 靴ガード） */
 function pmBuildOne(){
   var name = pmValById('charName');
   var seed = (typeof seedFromName === 'function') ? seedFromName(name,1) : 0;
@@ -1814,30 +1814,49 @@ function pmBuildOne(){
   parts = parts.filter(Boolean);
 
   // === 服/露出の優先整理（色付けより先に実行） ===
-  // 1) ヌード/露出優先 → 2) ワンピ優先（上下排他）
   if (typeof applyNudePriority === 'function') parts = applyNudePriority(parts);
   if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
 
-  // 露出が水着/下着/ヌード系なら、通常服と色プレースホルダを除去し、辞書の色付き露出タグだけを残す
-  var EXPOSURE_EXCLUSIVE_RE = /\b(bikini|swimsuit|lingerie|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple_cover_bikini|crotchless_swimsuit|bodypaint_swimsuit|topless|bottomless|nude)\b/i;
-
+  // === 露出系の時は通常服＆色プレースホルダを除去（辞書の色付き露出タグだけ残す） ===
+  var EXPOSURE_EXCLUSIVE_RE = /\b(bikini|swimsuit|lingerie|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude)\b/i;
   if (nsfwOn && parts.some(t => EXPOSURE_EXCLUSIVE_RE.test(String(t)))){
-    // 服名（上下・ワンピ等）を除外
-    var CLOTH_NOUN_RE = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
-    // 単独色や「<color> <noun>」形式の色プレースホルダも除外（辞書色付き露出に一本化）
-    var COLOR_WORD_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
+    var CLOTH_NOUN_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
+    var COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
     var COLOR_PLACE_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
+    var FOOTWEAR_RE    = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
 
     parts = parts.filter(function(t){
       var s = String(t);
-      if (CLOTH_NOUN_RE.test(s)) return false;
-      if (COLOR_PLACE_RE.test(s)) return false;
+      if (CLOTH_NOUN_RE.test(s))  return false;       // 通常服名詞を落とす
+      if (COLOR_PLACE_RE.test(s)) return false;       // 色+服のプレースホルダを落とす
+      if (FOOTWEAR_RE.test(s))    return false;       // 露出時は靴も強制で落とす
       // 単独色（色だけのトークン）も外す
       if (COLOR_WORD_RE.test(s) && !/\s/.test(s)) return false;
       return true;
     });
-    // ※ 露出の色は辞書（pl_nsfw_expo の値）に含まれている前提なので、ここでは何も足さない
+    // 露出の色は辞書タグ（pl_nsfw_expo）に含まれている前提なので追記不要
   }
+
+  // === 靴“勝手混入”防止（露出でない場合も評価） ===
+  (function shoeGuard(){
+    // 基本タブの「靴色を使う」チェック（無ければ false 扱いにしない＝undefined対策で !! せず参照）
+    var useShoesFlag = document.getElementById('use_shoes') ? !!document.getElementById('use_shoes').checked : true;
+
+    // 露出系フラグ（上で除去済みでも true/false は見ておく）
+    var isExposure = parts.some(t => EXPOSURE_EXCLUSIVE_RE.test(String(t)));
+
+    // 配列に靴の名詞があるか（色ペアリング前の素片も拾う）
+    var HAS_FOOTWEAR_NOUN_RE = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
+    var hasFootwearNoun = parts.some(t => HAS_FOOTWEAR_NOUN_RE.test(String(t)));
+
+    // 靴らしきトークン（色付きや名詞部を含む）を検出
+    var looksShoeToken = (s)=> /\b(?:[\w-]+\s+)?(?:shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i.test(String(s));
+
+    // 条件：露出系 or 靴色フラグOFF or 靴名詞が無い → 靴関連を一掃
+    if (isExposure || !useShoesFlag || !hasFootwearNoun){
+      parts = parts.filter(t => !looksShoeToken(t));
+    }
+  })();
 
   // === ここで初めて色ペアリング（通常服のみ影響） ===
   if (typeof pairWearColors === 'function') parts = pairWearColors(parts);
