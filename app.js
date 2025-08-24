@@ -1170,7 +1170,8 @@ function filterByScope(items, allow) {
  *  - getWordModeDict: NSFW拡張カテゴリを返す
  *  - renderAll: nipple-nsfw に統一（nipples-nsfw を削除）
  *  - fillCat: テンプレ/ホストが無い場合でも安全
- * =========================================================== */(function(){
+ * =========================================================== */
+(function(){
   let initialized = false;
 
   // ▼ 辞書が更新されたら単語モードを再描画
