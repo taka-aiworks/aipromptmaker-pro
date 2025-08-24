@@ -1785,7 +1785,7 @@ function pmRenderPlanner(){
   pmRenderAcc();
 }
 
-/* 1件出力（置き換え版 + 靴ガード） */
+/* 1件出力（置き換え版 + 靴ガード + NSFW拡張） */
 function pmBuildOne(){
   var name = pmValById('charName');
   var seed = (typeof seedFromName === 'function') ? seedFromName(name,1) : 0;
@@ -1821,11 +1821,18 @@ function pmBuildOne(){
   var nsfwSitu  = nsfwOn ? pmPickOne('pl_nsfw_situ')  : '';
   var nsfwLight = nsfwOn ? pmPickOne('pl_nsfw_light') : '';
 
-  // 表情はNSFWを優先して置換
+  // 追加カテゴリ（存在しなければ空文字でOK）
+  var nsfwPose   = nsfwOn ? (pmPickOne('pl_nsfw_pose')    || '') : '';
+  var nsfwAcc    = nsfwOn ? (pmPickOne('pl_nsfw_acc')     || '') : '';
+  var nsfwOutfit = nsfwOn ? (pmPickOne('pl_nsfw_outfit')  || '') : '';
+  var nsfwBody   = nsfwOn ? (pmPickOne('pl_nsfw_body')    || '') : '';
+  var nsfwNipple = nsfwOn ? (pmPickOne('pl_nsfw_nipple')  || '') : ''; // UIが無ければそのまま空
+
+  // 表情/ライティングはNSFWを優先して置換
   var expr = nsfwOn && nsfwExpr ? nsfwExpr : exprS;
   var lite = nsfwOn && nsfwLight ? nsfwLight : liteS;
 
-  // ---- アクセ ----
+  // ---- アクセ（通常の固定アクセ） ----
   var accName = pmValById('pl_accSel');
   var acc = '';
   if (accName){
@@ -1845,8 +1852,15 @@ function pmBuildOne(){
     .concat([bg, pose, comp, view, expr, lite, acc]);
 
   if (nsfwOn){
-    if (nsfwExpo) parts.push(nsfwExpo);
-    if (nsfwSitu) parts.push(nsfwSitu);
+    // 露出/シチュは従来どおり
+    if (nsfwExpo)  parts.push(nsfwExpo);
+    if (nsfwSitu)  parts.push(nsfwSitu);
+    // 追加分
+    if (nsfwPose)   parts.push(nsfwPose);
+    if (nsfwAcc)    parts.push(nsfwAcc);
+    if (nsfwOutfit) parts.push(nsfwOutfit);
+    if (nsfwBody)   parts.push(nsfwBody);
+    if (nsfwNipple) parts.push(nsfwNipple);
   }
 
   // ---- 空除去 ----
@@ -1866,45 +1880,33 @@ function pmBuildOne(){
 
     parts = parts.filter(function(t){
       var s = String(t);
-      if (CLOTH_NOUN_RE.test(s))  return false;       // 通常服名詞を落とす
-      if (COLOR_PLACE_RE.test(s)) return false;       // 色+服のプレースホルダを落とす
-      if (FOOTWEAR_RE.test(s))    return false;       // 露出時は靴も強制で落とす
-      // 単独色（色だけのトークン）も外す
-      if (COLOR_WORD_RE.test(s) && !/\s/.test(s)) return false;
+      if (CLOTH_NOUN_RE.test(s))  return false;
+      if (COLOR_PLACE_RE.test(s)) return false;
+      if (FOOTWEAR_RE.test(s))    return false;
+      if (COLOR_WORD_RE.test(s) && !/\s/.test(s)) return false; // 単独の色名も除去
       return true;
     });
-    // 露出の色は辞書タグ（pl_nsfw_expo）に含まれている前提なので追記不要
   }
 
-  // === 靴“勝手混入”防止（露出でない場合も評価） ===
+  // === 靴“勝手混入”防止 ===
   (function shoeGuard(){
-    // 基本タブの「靴色を使う」チェック（無ければ false 扱いにしない＝undefined対策で !! せず参照）
     var useShoesFlag = document.getElementById('use_shoes') ? !!document.getElementById('use_shoes').checked : true;
-
-    // 露出系フラグ（上で除去済みでも true/false は見ておく）
     var isExposure = parts.some(t => EXPOSURE_EXCLUSIVE_RE.test(String(t)));
-
-    // 配列に靴の名詞があるか（色ペアリング前の素片も拾う）
     var HAS_FOOTWEAR_NOUN_RE = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
     var hasFootwearNoun = parts.some(t => HAS_FOOTWEAR_NOUN_RE.test(String(t)));
-
-    // 靴らしきトークン（色付きや名詞部を含む）を検出
     var looksShoeToken = (s)=> /\b(?:[\w-]+\s+)?(?:shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i.test(String(s));
-
-    // 条件：露出系 or 靴色フラグOFF or 靴名詞が無い → 靴関連を一掃
     if (isExposure || !useShoesFlag || !hasFootwearNoun){
       parts = parts.filter(t => !looksShoeToken(t));
     }
   })();
 
-  // === ここで初めて色ペアリング（通常服のみ影響） ===
+  // === 色ペアリング（通常服のみ） ===
   if (typeof pairWearColors === 'function') parts = pairWearColors(parts);
 
-  // === 整理：SOLOガード/重複ヒント整理 ===
+  // === 整理 ===
   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
   if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
 
-  // === 排他 → 並び順 → 先頭固定 ===
   if (typeof fixExclusives === 'function')     parts = fixExclusives(parts);
   if (typeof ensurePromptOrder === 'function') parts = ensurePromptOrder(parts);
   if (typeof enforceHeadOrder === 'function')  parts = enforceHeadOrder(parts);
@@ -1912,7 +1914,6 @@ function pmBuildOne(){
   // ---- ネガティブ ----
   var neg = (typeof withSoloNeg==='function') ? withSoloNeg(pmGetNeg()) : pmGetNeg();
 
-  // ---- 戻り値（従来互換：配列で返す）----
   return [{ seed: seed, pos: parts, neg: neg }];
 }
 
