@@ -1170,15 +1170,15 @@ function filterByScope(items, allow) {
  *  - getWordModeDict: NSFW拡張カテゴリを返す
  *  - renderAll: nipple-nsfw に統一（nipples-nsfw を削除）
  *  - fillCat: テンプレ/ホストが無い場合でも安全
- * =========================================================== */
-(function(){
+ * =========================================================== */(function(){
   let initialized = false;
 
-     // ▼ これを追加：辞書が更新されたら単語モードを再描画
-    document.addEventListener('dict:updated', () => {
-    if (initialized) refreshWordMode();   // 初期化済みのときだけ再描画
-    });
-   document.addEventListener('DOMContentLoaded', () => {
+  // ▼ 辞書が更新されたら単語モードを再描画
+  document.addEventListener('dict:updated', () => {
+    if (initialized) refreshWordMode();
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
     const tab = document.querySelector('.tab[data-mode="word"]');
     if (!tab) return;
     tab.addEventListener('click', async () => {
@@ -1200,7 +1200,7 @@ function filterByScope(items, allow) {
     const MAX_ROWS = 20;
     const LS_KEY = "wm_rows_v1";
 
-    // ---- DOM refs（無くても落ちない）----
+    // ---- DOM refs ----
     const el = id => document.getElementById(id);
     const elItems = {
       background:        el('wm-items-background'),
@@ -1228,7 +1228,6 @@ function filterByScope(items, allow) {
 
       color:             el('wm-items-color'),
     };
-
     const elCounts = {
       background:        el('wm-count-background'),
       pose:              el('wm-count-pose'),
@@ -1260,42 +1259,27 @@ function filterByScope(items, allow) {
     const tplItemColor = el('wm-item-tpl-color');
     const tplRow       = el('wm-row-tpl');
 
-    const tblBody       = el('wm-table-body');
-    const btnCopyENAll  = el('wm-copy-en-all');
-    const btnCopyBothAll= el('wm-copy-both-all');
-    const btnTableClear = el('wm-table-clear');
+    const tblBody        = el('wm-table-body');
+    const btnCopyENAll   = el('wm-copy-en-all');
+    const btnCopyBothAll = el('wm-copy-both-all'); // ← 後で消す
+    const btnTableClear  = el('wm-table-clear');
 
-    const chipArea      = el('wm-selected-chips');
-    const chipCount     = el('wm-selected-count');
+    const chipArea       = el('wm-selected-chips');
+    const chipCount      = el('wm-selected-count');
     const btnSelectedClear = el('wm-selected-clear');
 
-      // ▼ これを追加：再描画だけ行う軽量関数
-     async function refreshWordMode(){
-       try {
-         // initWordMode 内の UI 初期化はやらず、リストだけ差し替える
-         // 必要なのは renderAll() の呼び出しだけ
-         await (async function renderAllAgain(){
-           // initWordMode 内の renderAll と同じ関数を再利用してください
-           // 既に定義済みの renderAll() があるならそれを呼ぶだけでOK
-           await renderAll();
-         })();
-       } catch (e) {
-         console.warn('Word mode refresh failed:', e);
-       }
-     }
-     
+    // ▼ 軽量再描画（辞書更新イベントで使う）
+    async function refreshWordMode(){
+      try { await renderAll(); } catch(e){ console.warn('Word mode refresh failed:', e); }
+    }
+
     // ---- Clipboard helper ----
     async function copyText(text){
-      try {
-        await navigator.clipboard.writeText(text);
-        flashOK();
-      } catch(e){
+      try { await navigator.clipboard.writeText(text); flashOK(); }
+      catch(e){
         const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select(); document.execCommand('copy');
-        document.body.removeChild(ta);
-        flashOK();
+        ta.value = text; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy'); ta.remove(); flashOK();
       }
     }
     function flashOK(){
@@ -1303,43 +1287,25 @@ function filterByScope(items, allow) {
       setTimeout(()=> panel.style.boxShadow = "", 180);
     }
 
-    // ---- 辞書の受け口（SFW / NSFW を何でも拾えるように）----
+    // ---- 辞書受け口 ----
     async function loadFallbackJSON(path){
-      try{
-        const r = await fetch(path, {cache:"no-store"});
-        if(!r.ok) throw new Error('bad status');
-        return await r.json();
-      }catch(_){ return null; }
+      try{ const r = await fetch(path, {cache:"no-store"}); if(!r.ok) throw 0; return await r.json(); }
+      catch(_){ return null; }
     }
     const firstNonNull=(...v)=> v.find(x=>x!=null);
-    function getByPath(root, path){
-      return path.split('.').reduce((a,k)=> (a?a[k]:null), root);
-    }
+    const getByPath=(root, path)=> path.split('.').reduce((a,k)=> (a?a[k]:null), root);
     function sniffGlobalDict(cands){
-      for (const key of cands){
-        const obj = getByPath(window, key);
-        if (obj && typeof obj === 'object') return obj;
-      }
+      for (const key of cands){ const obj = getByPath(window, key); if (obj && typeof obj === 'object') return obj; }
       return null;
     }
     function normalizeEntries(arr){
-     return (Array.isArray(arr) ? arr : []).map(x => {
-       // ja/en を素直に取る。prefix は削除
-       const ja = (x.ja || x.jp || x.label || x.name || "").replace(/^日本語[-:]/i, "");
-       const en = (x.en || x.tag || x.value || "").replace(/^english[-:]/i, "");
-       return {
-         ja: ja.trim(),
-         en: en.trim(),
-         level: x.level || ""
-       };
-     }).filter(o => o.ja && o.en);
-   }
-    function pickCat(dict, ...names){
-      for (const n of names){
-        if (dict && Array.isArray(dict[n])) return dict[n];
-      }
-      return [];
+      return (Array.isArray(arr) ? arr : []).map(x => {
+        const en = (x.en || x.tag || x.value || "").replace(/^english[-:]/i, "").trim();
+        // 日本語列は使わないが、空で通す
+        return { ja:"", en, level: x.level || "" };
+      }).filter(o => o.en);
     }
+    function pickCat(dict, ...names){ for (const n of names){ if (dict && Array.isArray(dict[n])) return dict[n]; } return []; }
     function pickNSFW(ns, keys){
       if (!ns) return [];
       for (const k of keys){
@@ -1427,153 +1393,144 @@ function filterByScope(items, allow) {
       updateSelectedView();
     }
 
-    // ▼▼ ここから置き換え ▼▼
-   function fillCat(catKey, items, isColor=false){
-     const host = elItems[catKey];
-     if (!host) return; // 対応ブロックが無いならスキップ
-   
-     host.innerHTML = "";
-     const useTpl = isColor ? tplItemColor : tplItem;
-     if (!useTpl || !useTpl.content) {
-       if (elCounts[catKey]) elCounts[catKey].textContent = String(items?.length || 0);
-       return;
-     }
-   
-     (items || []).forEach(obj=>{
-       const en = obj.en || "";
-       if (!en) return;
-   
-       const node = useTpl.content.firstElementChild.cloneNode(true);
-       node.dataset.en  = en;
-       node.dataset.jp  = "";        // 日本語は使わない
-       node.dataset.cat = catKey;
-   
-       // 表示は英語のみ
-       const jpEl = node.querySelector('.wm-jp');
-       const enEl = node.querySelector('.wm-en');
-       if (jpEl) jpEl.textContent = "";
-       if (enEl) enEl.textContent = en;
-   
-       // 行追加（英語のみ）
-       node.addEventListener('click', (ev)=>{
-         if (ev.target.closest?.('.wm-actions')) return;
-         addRow({ jp:"", en, cat:catKey });
-       });
-   
-       // コピーは EN のみ
-       node.querySelector('.wm-copy-en')?.addEventListener('click', (ev)=>{
-         ev.stopPropagation();
-         copyText(en);
-       });
-       // BOTH ボタンがテンプレにあっても削除
-       node.querySelector('.wm-copy-both')?.remove();
-   
-       host.appendChild(node);
-     });
-   
-     if (elCounts[catKey]) {
-       const count = Array.isArray(items) ? items.length : 0;
-       elCounts[catKey].textContent = String(count);
-     }
-   }
-   
-   // ---- Table ops ----
-   function currentRows(){
-     const rows = [];
-     tblBody?.querySelectorAll?.('tr')?.forEach(tr=>{
-       rows.push({
-         en:  tr.dataset.en || tr.querySelector('.wm-row-en')?.textContent || "",
-         jp:  "", // 日本語は保持しない
-         cat: tr.dataset.cat || ""
-       });
-     });
-     return rows;
-   }
-   function hasRow(en){
-     const esc = (typeof CSS!=='undefined' && CSS.escape) ? CSS.escape(en) : String(en).replace(/"/g,'\\"');
-     return !!tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
-   }
-   function addRow(item){
-     if (!item || !item.en || !tplRow || !tplRow.content || !tblBody) return;
-     if (hasRow(item.en)) return;
-     const rows = currentRows();
-     if (rows.length >= MAX_ROWS) { flashOK(); return; }
-   
-     const tr = tplRow.content.firstElementChild.cloneNode(true);
-     tr.dataset.en  = item.en;
-     tr.dataset.cat = item.cat || "";
-   
-     const jpCell = tr.querySelector('.wm-row-jp');
-     const enCell = tr.querySelector('.wm-row-en');
-     if (jpCell) jpCell.textContent = "";           // ← 追記ではなく毎回上書き
-     if (enCell) enCell.textContent = item.en;      // ← 英語のみ表示
-   
-     tr.querySelector('.wm-row-copy-en')?.addEventListener('click', ()=> copyText(item.en));
-     // BOTH コピー削除
-     tr.querySelector('.wm-row-copy-both')?.remove();
-   
-     tr.querySelector('.wm-row-remove')?.addEventListener('click', ()=>{
-       tr.remove(); persistRows(); updateSelectedView();
-     });
-   
-     tblBody.appendChild(tr);
-     persistRows();
-     updateSelectedView();
-   }
-   function persistRows(){
-     // 英語のみ保存してスリム化
-     const rows = currentRows().map(r => ({ en:r.en, cat:r.cat }));
-     try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch(e){}
-   }
-   function restoreRows(){
-     try {
-       const s = localStorage.getItem(LS_KEY);
-       if (!s) return;
-       const rows = JSON.parse(s);
-       rows.forEach(r => addRow({ jp:"", en:r.en, cat:r.cat }));
-     } catch(e){}
-   }
-   function clearRows(){
-     if (!tblBody) return;
-     tblBody.innerHTML = "";
-     persistRows();
-     updateSelectedView();
-   }
-   
-   // 両方コピーは廃止（使わない）
-   function copyAllBoth(){ /* no-op */ }
-   
-   // 選択中チップも英語のみ表示
-   function updateSelectedView(){
-     const rows = currentRows();
-     if (chipCount) chipCount.textContent = String(rows.length);
-     if (!chipArea) return;
-     chipArea.innerHTML = "";
-     rows.forEach(r=>{
-       const chip = document.createElement('span');
-       chip.className = "wm-chip";
-       chip.innerHTML = `<span>${escapeHTML(r.en)}</span> <span class="x" title="削除">×</span>`;
-       chip.querySelector('.x')?.addEventListener('click', ()=>{
-         const esc = (typeof CSS!=='undefined' && CSS.escape) ? CSS.escape(r.en) : String(r.en).replace(/"/g,'\\"');
-         const tr = tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
-         if (tr) tr.remove();
-         persistRows(); updateSelectedView();
-       });
-       chipArea.appendChild(chip);
-     });
-   }
-   
-   function escapeHTML(s){
-     return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-   }
-   
-   // ---- Global buttons ----
-   btnCopyENAll?.addEventListener('click', copyAllEN);
-   // BOTH(All) ボタンも削除しておく
-   btnCopyBothAll?.remove();
-   btnTableClear?.addEventListener('click', clearRows);
-   btnSelectedClear?.addEventListener('click', clearRows);
-   // ▲▲ ここまで置き換え ▲▲
+    // ==== ここから英語のみ表示・コピー版 ====
+    function fillCat(catKey, items, isColor=false){
+      const host = elItems[catKey];
+      if (!host) return;
+
+      host.innerHTML = "";
+      const useTpl = isColor ? tplItemColor : tplItem;
+      if (!useTpl || !useTpl.content) {
+        if (elCounts[catKey]) elCounts[catKey].textContent = String(items?.length || 0);
+        return;
+      }
+
+      (items || []).forEach(obj=>{
+        const en = obj.en || "";
+        if (!en) return;
+
+        const node = useTpl.content.firstElementChild.cloneNode(true);
+        node.dataset.en  = en;
+        node.dataset.jp  = "";        // 日本語は使わない
+        node.dataset.cat = catKey;
+
+        // 表示は英語のみ
+        node.querySelector('.wm-jp')?.replaceChildren();
+        const enEl = node.querySelector('.wm-en');
+        if (enEl) enEl.textContent = en;
+
+        node.addEventListener('click', (ev)=>{
+          if (ev.target.closest?.('.wm-actions')) return;
+          addRow({ jp:"", en, cat:catKey });
+        });
+
+        // コピーは EN のみ、BOTH は除去
+        node.querySelector('.wm-copy-en')?.addEventListener('click', (ev)=>{
+          ev.stopPropagation(); copyText(en);
+        });
+        node.querySelector('.wm-copy-both')?.remove();
+
+        host.appendChild(node);
+      });
+
+      if (elCounts[catKey]) elCounts[catKey].textContent = String(Array.isArray(items)?items.length:0);
+    }
+
+    // ---- Table ops ----
+    function currentRows(){
+      const rows = [];
+      tblBody?.querySelectorAll?.('tr')?.forEach(tr=>{
+        rows.push({
+          en:  tr.dataset.en || tr.querySelector('.wm-row-en')?.textContent || "",
+          jp:  "", // 日本語は保持しない
+          cat: tr.dataset.cat || ""
+        });
+      });
+      return rows;
+    }
+    function hasRow(en){
+      const esc = (typeof CSS!=='undefined' && CSS.escape) ? CSS.escape(en) : String(en).replace(/"/g,'\\"');
+      return !!tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
+    }
+    function addRow(item){
+      if (!item || !item.en || !tplRow || !tplRow.content || !tblBody) return;
+      if (hasRow(item.en)) return;
+      const rows = currentRows();
+      if (rows.length >= MAX_ROWS) { flashOK(); return; }
+
+      const tr = tplRow.content.firstElementChild.cloneNode(true);
+      tr.dataset.en  = item.en;
+      tr.dataset.cat = item.cat || "";
+
+      tr.querySelector('.wm-row-jp')?.replaceChildren();   // 常に空
+      const enCell = tr.querySelector('.wm-row-en');
+      if (enCell) enCell.textContent = item.en;
+
+      tr.querySelector('.wm-row-copy-en')?.addEventListener('click', ()=> copyText(item.en));
+      tr.querySelector('.wm-row-copy-both')?.remove(); // 不要ボタン除去
+      tr.querySelector('.wm-row-remove')?.addEventListener('click', ()=>{
+        tr.remove(); persistRows(); updateSelectedView();
+      });
+
+      tblBody.appendChild(tr);
+      persistRows();
+      updateSelectedView();
+    }
+    function persistRows(){
+      const rows = currentRows().map(r => ({ en:r.en, cat:r.cat }));
+      try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch(e){}
+    }
+    function restoreRows(){
+      try {
+        const s = localStorage.getItem(LS_KEY);
+        if (!s) return;
+        const rows = JSON.parse(s);
+        rows.forEach(r => addRow({ jp:"", en:r.en, cat:r.cat }));
+      } catch(e){}
+    }
+    function clearRows(){
+      if (!tblBody) return;
+      tblBody.innerHTML = "";
+      persistRows();
+      updateSelectedView();
+    }
+
+    function updateSelectedView(){
+      const rows = currentRows();
+      if (chipCount) chipCount.textContent = String(rows.length);
+      if (!chipArea) return;
+      chipArea.innerHTML = "";
+      rows.forEach(r=>{
+        const chip = document.createElement('span');
+        chip.className = "wm-chip";
+        chip.innerHTML = `<span>${escapeHTML(r.en)}</span> <span class="x" title="削除">×</span>`;
+        chip.querySelector('.x')?.addEventListener('click', ()=>{
+          const esc = (typeof CSS!=='undefined' && CSS.escape) ? CSS.escape(r.en) : String(r.en).replace(/"/g,'\\"');
+          const tr = tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
+          if (tr) tr.remove();
+          persistRows(); updateSelectedView();
+        });
+        chipArea.appendChild(chip);
+      });
+    }
+    function escapeHTML(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+    // ---- Global buttons ----
+    function copyAllEN(){
+      const tags = currentRows().map(r=>r.en).filter(Boolean);
+      if (!tags.length) return;
+      copyText(tags.join(", "));
+    }
+    btnCopyENAll?.addEventListener('click', copyAllEN);
+    btnCopyBothAll?.remove(); // BOTH(All) を確実に消す
+    btnTableClear?.addEventListener('click', clearRows);
+    btnSelectedClear?.addEventListener('click', clearRows);
+
+    // ---- Render now ----
+    await renderAll();
+  }
+
+})();
 
 
 
