@@ -2193,13 +2193,27 @@ function getBasicSelectedOutfit(){
 /* ========= 辞書 I/O ========= */
 function isNSFWDict(json){
   const j = json?.NSFW || json || {};
-  return !!(
-    j.categories ||
-    j.expression || j.exposure || j.situation || j.lighting ||
-    j["表情"] || j["露出"] || j["シチュ"] || j["ライティング"] ||
-    j.nsfw_tags
-  );
+  const cat = j.categories || {};
+
+  // 新旧＋和名エイリアスも検出
+  const KEYS = [
+    // 旧来
+    'expression','exposure','situation','lighting',
+    // 追加カテゴリ
+    'background','pose','accessory','outfit','body','nipples','underwear',
+    // 和名・別名
+    '表情','露出','シチュ','ライティング','背景','ポーズ',
+    'アクセ','アクセサリー','衣装','身体','体型','乳首','下着','インナー',
+    // フラット形式
+    'nsfw_tags'
+  ];
+
+  const hasArr = (o, k) => Array.isArray(o?.[k]) && o[k].length > 0;
+
+  // 直下 or categories のどちらかに上記キー配列が存在すれば NSFW と判定
+  return KEYS.some(k => hasArr(j, k) || hasArr(cat, k));
 }
+
 function bindDictIO(){
   const input = document.getElementById("importDict");
   if (!input) return;
@@ -2210,15 +2224,20 @@ function bindDictIO(){
       const json = JSON.parse(raw);
       if (isNSFWDict(json)) {
         mergeIntoNSFW(json);
-        renderNSFWProduction(); renderNSFWLearning();
+        renderNSFWProduction();
+        renderNSFWLearning();
         toast("NSFW辞書を追記しました");
       } else {
         mergeIntoSFW(json);
-        renderSFW(); fillAccessorySlots();
+        renderSFW();
+        fillAccessorySlots();
         toast("SFW辞書を追記しました");
       }
-    } catch { toast("辞書の読み込みに失敗（JSONを確認）"); }
-    finally { e.target.value = ""; }
+    } catch {
+      toast("辞書の読み込みに失敗（JSONを確認）");
+    } finally {
+      e.target.value = "";
+    }
   });
 
   $("#btnExport")?.addEventListener("click", ()=>{
@@ -2254,14 +2273,35 @@ function applyLearnAccessoryPreset(obj){
   if(obj.color){ setColorTag("#tag_learnAcc", obj.color); }
 }
 function applyNSFWLearningPreset(p){
-  if(!p) return;
-  if(typeof p.on==="boolean"){ $("#nsfwLearn").checked=p.on; $("#nsfwLearnPanel").style.display=p.on?"":"none"; }
-  if(p.level) setRadio("nsfwLevelLearn", p.level);
+  if (!p) return;
+
+  // ON/OFF とレベル
+  if (typeof p.on === "boolean") {
+    const t = $("#nsfwLearn");
+    const panel = $("#nsfwLearnPanel");
+    if (t) t.checked = p.on;
+    if (panel) panel.style.display = p.on ? "" : "none";
+  }
+  if (p.level) setRadio("nsfwLevelLearn", p.level);
+
+  // リストを再描画（上限やフィルタ反映）
   renderNSFWLearning();
-  if(p.selected){
-    if(p.selected.expression) setChecks("nsfwL_expr", p.selected.expression);
-    if(p.selected.exposure)   setChecks("nsfwL_expo", p.selected.exposure);
-    if(p.selected.situation)  setChecks("nsfwL_situ", p.selected.situation);
+
+  // 選択適用（存在するIDだけ安全に反映）
+  if (p.selected) {
+    const S = p.selected;
+    if (S.expression) setChecks("nsfwL_expr", S.expression);
+    if (S.exposure)   setChecks("nsfwL_expo", S.exposure);
+    if (S.situation)  setChecks("nsfwL_situ", S.situation);
+
+    // 追加カテゴリ
+    if (S.lighting)   setChecks("nsfwL_light", S.lighting);
+    if (S.pose)       setChecks("nsfwL_pose", S.pose);
+    if (S.accessory)  setChecks("nsfwL_acc", S.accessory);
+    if (S.outfit)     setChecks("nsfwL_outfit", S.outfit);
+    if (S.body)       setChecks("nsfwL_body", S.body);
+    if (S.nipples || S.nipple) setChecks("nsfwL_nipple", S.nipples || S.nipple);
+    if (S.underwear)  setChecks("nsfwL_underwear", S.underwear); // 学習UIに設置済みなら反映
   }
 }
 
@@ -2428,12 +2468,11 @@ function collectCharacterPreset(){
 
     // シーン
     background:  getMany("bg"),
-    pose: getMany("pose"),
-    comp: getMany("comp"),
-    view: getMany("view"),
-    expressions: getMany("expr"),
-    // ★ 追加：構図とライティング（学習タブ）
+    pose:        getMany("pose"),
     comp:        getMany("comp"),
+    view:        getMany("view"),
+    expressions: getMany("expr"),
+    // ★ 追加：学習タブのライティング
     lightLearn:  getMany("lightLearn"),
 
     // 色（髪/瞳/肌）
@@ -2447,8 +2486,6 @@ function collectCharacterPreset(){
       gender:     getOne("bf_gender"),
       body:       getOne("bf_body"),
       height:     getOne("bf_height"),
-      // personality:getOne("bf_person"),
-      // tone:       getOne("bf_tone"),
     },
 
     // ★ outfit（分割&モード）
@@ -2473,7 +2510,10 @@ function collectCharacterPreset(){
     },
 
     // アクセ（学習）
-    learnAccessory:{ tag:$("#learn_acc")?.value||"", color:$("#tag_learnAcc")?.textContent||"" },
+    learnAccessory:{ 
+      tag:   $("#learn_acc")?.value||"", 
+      color: $("#tag_learnAcc")?.textContent||"" 
+    },
 
     // NSFW（学習）
     nsfwLearn:{
@@ -2482,7 +2522,14 @@ function collectCharacterPreset(){
       selected: {
         expression: $$('input[name="nsfwL_expr"]:checked').map(x=>x.value),
         exposure:   $$('input[name="nsfwL_expo"]:checked').map(x=>x.value),
-        situation:  $$('input[name="nsfwL_situ"]:checked').map(x=>x.value)
+        situation:  $$('input[name="nsfwL_situ"]:checked').map(x=>x.value),
+        lighting:   $$('input[name="nsfwL_light"]:checked').map(x=>x.value),
+        pose:       $$('input[name="nsfwL_pose"]:checked').map(x=>x.value),
+        accessory:  $$('input[name="nsfwL_acc"]:checked').map(x=>x.value),
+        outfit:     $$('input[name="nsfwL_outfit"]:checked').map(x=>x.value),
+        body:       $$('input[name="nsfwL_body"]:checked').map(x=>x.value),
+        nipples:    $$('input[name="nsfwL_nipple"]:checked').map(x=>x.value),
+        underwear:  $$('input[name="nsfwL_underwear"]:checked').map(x=>x.value)
       }
     }
   };
@@ -2506,28 +2553,48 @@ function bindCharIO(){
 }
 
 
-// === 学習用 NSFW ホワイトリスト（JSONと一致 & 学習向きだけ） ===
+// === 学習用 NSFW ホワイトリスト（軽度な特徴だけ残す） ===
 const NSFW_LEARN_SCOPE = {
   expression: [
     "aroused","flushed","embarrassed","seductive_smile",
-    "half_lidded_eyes","bedroom_eyes","lip_bite"
+    "half_lidded_eyes","bedroom_eyes","lip_bite",
+    "bashful","moaning_face","pouting"
   ],
   exposure: [
     "mild_cleavage","off_shoulder","bare_back","leggy",
     "garter_belt","thighhighs","lingerie","bikini",
-    "wet_clothes","see_through","sideboob","underboob"
+    "wet_clothes","see_through","sideboob","underboob",
+    "pantyhose","lace_panties","bra_peek","unzipped_skirt"
   ],
   situation: [
     "suggestive_pose","mirror_selfie","after_shower","towel_wrap",
-    "in_bed_sheets","undressing","zipper_down","covered_nudity","censored_bars","massage_oil",
-    "beach","poolside","sunbathing","swim_competition","waterpark",
-    "shower_outdoor","changing_room","beach_night","foam_party",
-    "private_pool","photoshoot_studio","after_party_suite"
+    "in_bed_sheets","undressing","zipper_down","covered_nudity",
+    "censored_bars","massage_oil","photoshoot_studio",
+    "private_pool","beach","poolside","sunbathing",
+    "changing_room","beach_night","after_party_suite"
   ],
   lighting: [
     "softbox","rim_light","backlit","window_glow","golden_hour",
     "neon","candlelight","low_key","hard_light","colored_gels",
     "film_noir","dappled_light","spotlight","moody"
+  ],
+  // 追加カテゴリも軽度な範囲だけ
+  pose: [
+    "seductive_pose","lying_on_bed","stretching","crossed_legs","arched_back"
+  ],
+  outfit: [
+    "lace_lingerie","bra_peek","panties_peek","nightgown","babydoll",
+    "bikini","camisole","crop_top","see_through_top"
+  ],
+  body: [
+    "big_breasts","thicc","bubble_butt","slim_thick",
+    "hourglass_exaggerated","soft_body","wide_hips"
+  ],
+  nipples: [
+    "puffy_nipples","inverted_nipples","large_areolae","dark_areolae"
+  ],
+  underwear: [
+    "lace_panties","sheer_panties","thong","gstring","lace_bra","sports_bra"
   ]
 };
 
@@ -2547,61 +2614,124 @@ function isLevelAllowedForLearn(cap, lv){
   return lvN <= capN;
 }
 
+// 学習タブ：NSFW一覧を描画（ホワイトリスト + レベル上限、L3は遮断）
 function renderNSFWLearning(){
-  // 学習は常にホワイトリスト＆R-18G遮断＋レベル上限
   const cap = (document.querySelector('input[name="nsfwLevelLearn"]:checked')?.value) || "L1";
+
+  // 学習では L3 は常に不可にする前提のフィルタ
+  function isLevelAllowedForLearn(capLevel, itemLevel){
+    const rank = { L1:1, L2:2, L3:3 };
+    // L3は遮断（capに関わらず）
+    if ((itemLevel||"L1") === "L3") return false;
+    return (rank[itemLevel||"L1"]||1) <= (rank[capLevel||"L1"]||1);
+  }
+
+  // WL に載っていて、かつレベル許容されたものだけ通す
   const allowWL = (arr, name) => {
     const wl = new Set(NSFW_LEARN_SCOPE[name] || []);
     return normList(arr).filter(it =>
       wl.has(it.tag) && isLevelAllowedForLearn(cap, it.level)
     );
   };
+
+  // チップHTML（学習はチェックボックス）
   const chips = (arr,name)=> arr.map(o => {
-    const lvlLabel = (o.level === "L2" ? "R-18" : "R-15"); // L3 はここまでに落ちている
+    const lvlLabel = (o.level === "L2" ? "R-18" : "R-15"); // L3はここまでに落ちている
     return `<label class="chip">
       <input type="checkbox" name="nsfwL_${name}" value="${o.tag}">
       ${o.label}<span class="mini"> ${lvlLabel}</span>
     </label>`;
   }).join("");
 
-  $("#nsfwL_expr")  && ($("#nsfwL_expr").innerHTML  = chips(allowWL(NSFW.expression,"expression"), "expr"));
-  $("#nsfwL_expo")  && ($("#nsfwL_expo").innerHTML  = chips(allowWL(NSFW.exposure,  "exposure"),   "expo"));
-  $("#nsfwL_situ")  && ($("#nsfwL_situ").innerHTML  = chips(allowWL(NSFW.situation, "situation"),  "situ"));
-  $("#nsfwL_light") && ($("#nsfwL_light").innerHTML = chips(allowWL(NSFW.lighting,  "lighting"),   "light"));
+  // ---- 従来4カテゴリ ----
+  const M = [
+    ["nsfwL_expr",  "expression", "expr"],
+    ["nsfwL_expo",  "exposure",   "expo"],
+    ["nsfwL_situ",  "situation",  "situ"],
+    ["nsfwL_light", "lighting",   "light"],
+  ];
+
+  // ---- 追加６カテゴリ ----
+  // UI側IDとデータ側キーのマップ（nipples -> nsfwL_nipple）
+  M.push(
+    ["nsfwL_pose",    "pose",       "pose"],
+    ["nsfwL_acc",     "accessory",  "acc"],
+    ["nsfwL_outfit",  "outfit",     "outfit"],
+    ["nsfwL_body",    "body",       "body"],
+    ["nsfwL_nipple",  "nipples",    "nipple"],
+    ["nsfwL_underwear","underwear", "underwear"],
+  );
+
+  // 一括レンダ
+  for (const [elId, nsKey, shortName] of M){
+    const host = document.getElementById(elId);
+    if (!host) continue;
+    const srcArr = allowWL(NSFW[nsKey] || [], nsKey);
+    host.innerHTML = chips(srcArr, shortName);
+  }
 }
 
+/* 取得：学習タブで選んだ NSFW を最終確定（WL + レベル上限） */
 function getSelectedNSFW_Learn(){
-  if (!$("#nsfwLearn").checked) return [];
+  if (!$("#nsfwLearn")?.checked) return [];
   const cap = (document.querySelector('input[name="nsfwLevelLearn"]:checked')?.value) || "L1";
 
+  // いったん UI から全部集める（従来4 + 追加6）
   const picked = [
     ...$$('input[name="nsfwL_expr"]:checked').map(x=>x.value),
     ...$$('input[name="nsfwL_expo"]:checked').map(x=>x.value),
     ...$$('input[name="nsfwL_situ"]:checked').map(x=>x.value),
-    ...$$('input[name="nsfwL_light"]:checked').map(x=>x.value)
+    ...$$('input[name="nsfwL_light"]:checked').map(x=>x.value),
+
+    ...$$('input[name="nsfwL_pose"]:checked').map(x=>x.value),
+    ...$$('input[name="nsfwL_acc"]:checked').map(x=>x.value),
+    ...$$('input[name="nsfwL_outfit"]:checked').map(x=>x.value),
+    ...$$('input[name="nsfwL_body"]:checked').map(x=>x.value),
+    ...$$('input[name="nsfwL_nipple"]:checked').map(x=>x.value),
+    ...$$('input[name="nsfwL_underwear"]:checked').map(x=>x.value),
   ];
 
-  // ★ホワイトリスト最終適用＋レベル上限でフィルタ
+  // メタ参照インデックス（全部のカテゴリ）
   const idx = {
     expression: new Map(normList(NSFW.expression).map(o=>[o.tag,o])),
     exposure:   new Map(normList(NSFW.exposure).map(o=>[o.tag,o])),
     situation:  new Map(normList(NSFW.situation).map(o=>[o.tag,o])),
-    lighting:   new Map(normList(NSFW.lighting).map(o=>[o.tag,o]))
+    lighting:   new Map(normList(NSFW.lighting).map(o=>[o.tag,o])),
+    pose:       new Map(normList(NSFW.pose).map(o=>[o.tag,o])),
+    accessory:  new Map(normList(NSFW.accessory).map(o=>[o.tag,o])),
+    outfit:     new Map(normList(NSFW.outfit).map(o=>[o.tag,o])),
+    body:       new Map(normList(NSFW.body).map(o=>[o.tag,o])),
+    nipples:    new Map(normList(NSFW.nipples).map(o=>[o.tag,o])),
+    underwear:  new Map(normList(NSFW.underwear).map(o=>[o.tag,o])),
   };
 
+  // WL収載チェック（全部のカテゴリを見る）
   const inWL = (tag)=>{
     return (
-      NSFW_LEARN_SCOPE.expression.includes(tag) ||
-      NSFW_LEARN_SCOPE.exposure.includes(tag)   ||
-      NSFW_LEARN_SCOPE.situation.includes(tag)  ||
-      NSFW_LEARN_SCOPE.lighting.includes(tag)
+      (NSFW_LEARN_SCOPE.expression||[]).includes(tag) ||
+      (NSFW_LEARN_SCOPE.exposure  ||[]).includes(tag) ||
+      (NSFW_LEARN_SCOPE.situation ||[]).includes(tag) ||
+      (NSFW_LEARN_SCOPE.lighting  ||[]).includes(tag) ||
+
+      (NSFW_LEARN_SCOPE.pose      ||[]).includes(tag) ||
+      (NSFW_LEARN_SCOPE.accessory ||[]).includes(tag) ||
+      (NSFW_LEARN_SCOPE.outfit    ||[]).includes(tag) ||
+      (NSFW_LEARN_SCOPE.body      ||[]).includes(tag) ||
+      (NSFW_LEARN_SCOPE.nipples   ||[]).includes(tag) ||
+      (NSFW_LEARN_SCOPE.underwear ||[]).includes(tag)
     );
   };
 
   const ok = [];
   for (const t of picked){
     if (!inWL(t)) continue;
-    const meta = idx.expression.get(t) || idx.exposure.get(t) || idx.situation.get(t) || idx.lighting.get(t);
+
+    // どのカテゴリに属するかを順に探索
+    const meta =
+      idx.expression.get(t) || idx.exposure.get(t) || idx.situation.get(t) || idx.lighting.get(t) ||
+      idx.pose.get(t)       || idx.accessory.get(t)|| idx.outfit.get(t)    || idx.body.get(t)     ||
+      idx.nipples.get(t)    || idx.underwear.get(t);
+
     if (!meta) continue;
     if (!isLevelAllowedForLearn(cap, meta.level)) continue; // L3遮断含む
     ok.push(t);
@@ -2610,17 +2740,32 @@ function getSelectedNSFW_Learn(){
 }
 
 
+/* 量産タブ：NSFW一覧を描画（レベル上限のみ。WLは無し） */
 function renderNSFWProduction(){
   const cap = document.querySelector('input[name="nsfwLevelProd"]:checked')?.value || "L1";
   const order = {L1:1,L2:2,L3:3};
-  const allow = (lv)=> order[(lv||"L1")] <= order[cap];
+  const allow = (lv)=> (order[(lv||"L1")]||1) <= (order[cap]||1);
   const lvl = (x)=>({L1:"R-15",L2:"R-18",L3:"R-18G"}[(x||"L1")] || "R-15");
   const filt = (arr)=> normList(arr).filter(x=> allow(x.level));
-  $("#nsfwP_expr")  && ($("#nsfwP_expr").innerHTML  = filt(NSFW.expression).map(o=>`<label class="chip"><input type="checkbox" name="nsfwP_expr" value="${o.tag}">${o.label}<span class="mini"> ${lvl(o.level)}</span></label>`).join(""));
-  $("#nsfwP_expo")  && ($("#nsfwP_expo").innerHTML  = filt(NSFW.exposure).map(o=>`<label class="chip"><input type="checkbox" name="nsfwP_expo" value="${o.tag}">${o.label}<span class="mini"> ${lvl(o.level)}</span></label>`).join(""));
-  $("#nsfwP_situ")  && ($("#nsfwP_situ").innerHTML  = filt(NSFW.situation).map(o=>`<label class="chip"><input type="checkbox" name="nsfwP_situ" value="${o.tag}">${o.label}<span class="mini"> ${lvl(o.level)}</span></label>`).join(""));
-  $("#nsfwP_light") && ($("#nsfwP_light").innerHTML = filt(NSFW.lighting).map(o=>`<label class="chip"><input type="checkbox" name="nsfwP_light" value="${o.tag}">${o.label}<span class="mini"> ${lvl(o.level)}</span></label>`).join(""));
+  const chips = (o,name)=> `<label class="chip"><input type="checkbox" name="${name}" value="${o.tag}">${o.label}<span class="mini"> ${lvl(o.level)}</span></label>`;
+
+  // 従来4カテゴリ
+  $("#nsfwP_expr")  && ($("#nsfwP_expr").innerHTML  = filt(NSFW.expression).map(o=>chips(o,"nsfwP_expr")).join(""));
+  $("#nsfwP_expo")  && ($("#nsfwP_expo").innerHTML  = filt(NSFW.exposure).map(o=>chips(o,"nsfwP_expo")).join(""));
+  $("#nsfwP_situ")  && ($("#nsfwP_situ").innerHTML  = filt(NSFW.situation).map(o=>chips(o,"nsfwP_situ")).join(""));
+  $("#nsfwP_light") && ($("#nsfwP_light").innerHTML = filt(NSFW.lighting).map(o=>chips(o,"nsfwP_light")).join(""));
+
+  // 追加6カテゴリ
+  $("#nsfwP_pose")     && ($("#nsfwP_pose").innerHTML     = filt(NSFW.pose).map(o=>chips(o,"nsfwP_pose")).join(""));
+  $("#nsfwP_acc")      && ($("#nsfwP_acc").innerHTML      = filt(NSFW.accessory).map(o=>chips(o,"nsfwP_acc")).join(""));
+  $("#nsfwP_outfit")   && ($("#nsfwP_outfit").innerHTML   = filt(NSFW.outfit).map(o=>chips(o,"nsfwP_outfit")).join(""));
+  $("#nsfwP_body")     && ($("#nsfwP_body").innerHTML     = filt(NSFW.body).map(o=>chips(o,"nsfwP_body")).join(""));
+  $("#nsfwP_nipple")   && ($("#nsfwP_nipple").innerHTML   = filt(NSFW.nipples).map(o=>chips(o,"nsfwP_nipple")).join(""));
+  $("#nsfwP_underwear")&& ($("#nsfwP_underwear").innerHTML= filt(NSFW.underwear).map(o=>chips(o,"nsfwP_underwear")).join(""));
 }
+
+
+/* 18禁トグルのバインド（学習/量産 両方） */
 function bindNSFWToggles(){
   $("#nsfwLearn")?.addEventListener("change", e=>{
     $("#nsfwLearnPanel").style.display = e.target.checked ? "" : "none";
@@ -2629,8 +2774,15 @@ function bindNSFWToggles(){
   $$('input[name="nsfwLevelLearn"]').forEach(x=> x.addEventListener('change', ()=>{
     if ($("#nsfwLearn")?.checked) renderNSFWLearning();
   }));
+
+  // 量産：レベル変更で再描画
   $$('input[name="nsfwLevelProd"]').forEach(x=> x.addEventListener('change', renderNSFWProduction));
-  $("#nsfwProd")?.addEventListener("change", e=> $("#nsfwProdPanel").style.display = e.target.checked ? "" : "none");
+
+  // 量産：ON にした瞬間に中身も描画
+  $("#nsfwProd")?.addEventListener("change", e=>{
+    $("#nsfwProdPanel").style.display = e.target.checked ? "" : "none";
+    if (e.target.checked) renderNSFWProduction();
+  });
 }
 
 /* ========= 肌トーン描画 ========= */
@@ -3423,14 +3575,7 @@ function applyPercentMixToLearning(rule, selected) {
 }
 
 /* ============================================================================
- * 学習モード一括生成（修正版・置き換え用）
- * 目的：
- *  1) 行ごとにユニーク優先で buildOneLearning を積み上げ、足りない分は重複許容で補完
- *  2) 生成後に「割合ミックス」適用（VIEW / COMP / EXP / BG / LIGHT）
- *  3) NSFWがONなら nsfwL_*（表情/露出/シチュ/光）を各カテゴリ1つだけ反映し、
- *     表情はSFW表情を確実に置換。露出が水着/下着/ヌード系なら服上下＋色プレースホルダを削除し、
- *     辞書にある色付きワードだけ残す。
- *  4) 最終整形：排他→一意化→並び順→先頭固定→NEG統一→seed/text同期
+ * 学習モード一括生成（修正版・置き換え用 / 追加NSFW6カテゴリ対応）
  * ========================================================================== */
 function buildBatchLearning(n){
   const out  = [];
@@ -3455,18 +3600,21 @@ function buildBatchLearning(n){
     out.push(r);
   }
 
-  // ③ 割合ミックス適用
+  // ③ 割合ミックス適用（VIEW / COMP / EXP / BG / LIGHT）
   {
     const rows = out;
+    // view
     applyPercentForTag(rows, MIX_RULES.view.group, "profile view", ...MIX_RULES.view.targets["profile view"]);
     applyPercentForTag(rows, MIX_RULES.view.group, "back view",    ...MIX_RULES.view.targets["back view"]);
     fillRemainder(rows, MIX_RULES.view.group, MIX_RULES.view.fallback);
 
+    // comp
     for (const [tag, rng] of Object.entries(MIX_RULES.comp.targets)) {
       applyPercentForTag(rows, MIX_RULES.comp.group, tag, rng[0], rng[1]);
     }
     fillRemainder(rows, MIX_RULES.comp.group, MIX_RULES.comp.fallback);
 
+    // expr（SFW基準）
     const selExpr = getMany("expr") || [];
     const exprGroupBase = selExpr.length ? selExpr : MIX_RULES.expr.group;
     const exprGroup = Array.from(new Set([...exprGroupBase, "neutral expression"]));
@@ -3476,99 +3624,123 @@ function buildBatchLearning(n){
     }
     fillRemainder(rows, exprGroup, MIX_RULES.expr.fallback);
 
+    // bg
     for (const [tag, rng] of Object.entries(MIX_RULES.bg.targets)) {
       applyPercentForTag(rows, MIX_RULES.bg.group, tag, rng[0], rng[1]);
     }
     fillRemainder(rows, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
 
+    // light
     for (const [tag, rng] of Object.entries(MIX_RULES.light.targets)) {
       applyPercentForTag(rows, MIX_RULES.light.group, tag, rng[0], rng[1]);
     }
     fillRemainder(rows, MIX_RULES.light.group, MIX_RULES.light.fallback);
   }
 
-  // ③.5 NSFW整理
-{
-  const nsfwOn = !!document.querySelector("#nsfwLearn")?.checked;
-  if (nsfwOn){
-    const gExpr = getMany("nsfwL_expr")  || [];
-    const gExpo = getMany("nsfwL_expo")  || [];
-    const gSitu = getMany("nsfwL_situ")  || [];
-    const gLight= getMany("nsfwL_light") || [];
+  // ③.5 NSFW整理（学習は UI 選択分を各カテゴリ1つだけ反映）
+  {
+    const nsfwOn = !!document.querySelector("#nsfwLearn")?.checked;
+    if (nsfwOn){
+      // 従来4 + 追加6 を収集
+      const gExpr   = getMany("nsfwL_expr")     || [];
+      const gExpo   = getMany("nsfwL_expo")     || [];
+      const gSitu   = getMany("nsfwL_situ")     || [];
+      const gLight  = getMany("nsfwL_light")    || [];
+      const gPose   = getMany("nsfwL_pose")     || [];
+      const gAcc    = getMany("nsfwL_acc")      || [];
+      const gOutfit = getMany("nsfwL_outfit")   || [];
+      const gBody   = getMany("nsfwL_body")     || [];
+      const gNip    = getMany("nsfwL_nipple")   || [];
+      const gUnder  = getMany("nsfwL_underwear")|| [];
 
-    const keepOneFrom = (arr, pool)=>{
-      if (!Array.isArray(arr) || !pool || !pool.length) return arr;
-      let kept = false, ret = [];
-      for (const t of arr){
-        if (pool.includes(t)) {
-          if (!kept){ ret.push(t); kept = true; }
-        } else ret.push(t);
-      }
-      return ret;
-    };
+      const keepOneFrom = (arr, pool)=>{
+        if (!Array.isArray(arr) || !pool || !pool.length) return arr;
+        let kept = false, ret = [];
+        for (const t of arr){
+          if (pool.includes(t)) {
+            if (!kept){ ret.push(t); kept = true; }
+          } else ret.push(t);
+        }
+        return ret;
+      };
 
-    for (const r of out){
-      let p = Array.isArray(r.pos) ? r.pos.slice()
-            : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+      for (const r of out){
+        let p = Array.isArray(r.pos) ? r.pos.slice()
+              : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
 
-      // --- 先に「選択済みの先頭1件」を決める（あれば）
-      const chosenExpr  = gExpr.length  ? gExpr[0]  : "";
-      const chosenExpo  = gExpo.length  ? gExpo[0]  : "";
-      const chosenSitu  = gSitu.length  ? gSitu[0]  : "";
-      const chosenLight = gLight.length ? gLight[0] : "";
+        // --- 選択済みの「先頭1件」
+        const chosenExpr   = gExpr[0]   || "";
+        const chosenExpo   = gExpo[0]   || "";
+        const chosenSitu   = gSitu[0]   || "";
+        const chosenLight  = gLight[0]  || "";
+        const chosenPose   = gPose[0]   || "";
+        const chosenAcc    = gAcc[0]    || "";
+        const chosenOutfit = gOutfit[0] || "";
+        const chosenBody   = gBody[0]   || "";
+        const chosenNip    = gNip[0]    || "";
+        const chosenUnder  = gUnder[0]  || "";
 
-      // --- 表情：SFW表情を全て外してから NSFW表情を1つ注入
-      if (chosenExpr){
-        const sfwExprGroup = Array.from(new Set([...(getMany("expr")||[]), ...MIX_RULES.expr.group, "neutral expression"]));
-        p = p.filter(t => !sfwExprGroup.includes(t));    // SFW表情を除去
-        if (!p.includes(chosenExpr)) p.push(chosenExpr); // NSFW表情を1つだけ
-      }
-
-      // --- 露出：服/色プレースホルダを先に排他 → 選んだ露出を必ず1つ入れる
-      if (chosenExpo){
-        // ヌード/露出優先（上下・色のプレースを除去する側の既存処理）
-        p = applyNudePriority(p);
-        p = enforceOnePieceExclusivity(p);
-
-        // “bikini/lingerie/nude” 系を使うときは、通常服・色プレースは残さない
-        const isExpoWear = /\b(bikini|lingerie|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple_cover_bikini|crotchless_swimsuit|bodypaint_swimsuit|topless|bottomless|nude)\b/i.test(chosenExpo);
-        if (isExpoWear){
-          // 服プレースホルダ
-          p = p.filter(t => !/\b(top|bottom|skirt|pants|dress|t-?shirt)\b/i.test(t));
-          // 色だけの単独タグ（辞書の色付きワードは残す想定）
-          p = p.filter(t => !/\b(white|black|azure|red|blue|green|pink|yellow|purple|orange|brown|beige|silver|gold)\b/i.test(t));
+        // --- 表情：SFW表情を除去 → NSFW表情1つ注入
+        if (chosenExpr){
+          const sfwExprGroup = Array.from(new Set([...(getMany("expr")||[]), ...MIX_RULES.expr.group, "neutral expression"]));
+          p = p.filter(t => !sfwExprGroup.includes(t));
+          if (!p.includes(chosenExpr)) p.push(chosenExpr);
+        } else {
+          // NSFW表情未選択でも、既存に複数混入していたら 1 つへ
+          p = keepOneFrom(p, gExpr);
         }
 
-        if (!p.includes(chosenExpo)) p.push(chosenExpo); // 露出タグを注入（色付き辞書ならそのまま）
-      } else {
-        // 選ばれていない場合でも既存の複数が混在していたら1つに整理
-        p = keepOneFrom(p, gExpo);
+        // --- 露出：服/色プレース排他 → 露出 1 つ
+        if (chosenExpo){
+          if (typeof applyNudePriority === 'function') p = applyNudePriority(p);
+          if (typeof enforceOnePieceExclusivity === 'function') p = enforceOnePieceExclusivity(p);
+
+          // 露出ワードなら通常服・色プレースを除外
+          const IS_EXPOSURE_WEAR = /\b(bikini|swimsuit|lingerie|underwear|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude)\b/i;
+          if (IS_EXPOSURE_WEAR.test(chosenExpo)){
+            const CLOTH_NOUN_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
+            const COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
+            const COLOR_PLACE_RE = new RegExp(`${COLOR_WORD_RE.source}\\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\\s]?piece|gown)`,`i`);
+            const FOOTWEAR_RE    = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
+
+            p = p.filter(s=>{
+              const x = String(s);
+              if (CLOTH_NOUN_RE.test(x))  return false;
+              if (COLOR_PLACE_RE.test(x)) return false;
+              if (FOOTWEAR_RE.test(x))    return false;
+              if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false;
+              return true;
+            });
+          }
+          if (!p.includes(chosenExpo)) p.push(chosenExpo);
+        } else {
+          p = keepOneFrom(p, gExpo);
+        }
+
+        // --- シチュ/光：各1
+        if (chosenSitu){ p = keepOneFrom(p, gSitu);  if (!p.includes(chosenSitu))  p.push(chosenSitu); }
+        else            { p = keepOneFrom(p, gSitu); }
+        if (chosenLight){ p = keepOneFrom(p, gLight); if (!p.includes(chosenLight)) p.push(chosenLight); }
+        else             { p = keepOneFrom(p, gLight); }
+
+        // --- 追加：ポーズ/アクセ/衣装/身体/乳首/下着：各1（選ばれていれば入れる）
+        if (gPose.length)   { p = keepOneFrom(p, gPose);   if (chosenPose   && !p.includes(chosenPose))   p.push(chosenPose); }
+        if (gAcc.length)    { p = keepOneFrom(p, gAcc);    if (chosenAcc    && !p.includes(chosenAcc))    p.push(chosenAcc); }
+        if (gOutfit.length) { p = keepOneFrom(p, gOutfit); if (chosenOutfit && !p.includes(chosenOutfit)) p.push(chosenOutfit); }
+        if (gBody.length)   { p = keepOneFrom(p, gBody);   if (chosenBody   && !p.includes(chosenBody))   p.push(chosenBody); }
+        if (gNip.length)    { p = keepOneFrom(p, gNip);    if (chosenNip    && !p.includes(chosenNip))    p.push(chosenNip); }
+        if (gUnder.length)  { p = keepOneFrom(p, gUnder);  if (chosenUnder  && !p.includes(chosenUnder))  p.push(chosenUnder); }
+
+        // --- 服と色のペアリング（露出注入後に実行）
+        if (typeof pairWearColors === 'function') p = pairWearColors(p);
+
+        // 同期
+        r.pos    = p;
+        r.prompt = p.join(", ");
       }
-
-      // --- シチュ/ライティング：各カテゴリ1つだけ入れる（足りなければ注入）
-      if (chosenSitu){
-        p = keepOneFrom(p, gSitu);
-        if (!p.includes(chosenSitu)) p.push(chosenSitu);
-      } else {
-        p = keepOneFrom(p, gSitu);
-      }
-
-      if (chosenLight){
-        p = keepOneFrom(p, gLight);
-        if (!p.includes(chosenLight)) p.push(chosenLight);
-      } else {
-        p = keepOneFrom(p, gLight);
-      }
-
-      // --- 服と色のペアリング（露出注入後に実行）
-      p = pairWearColors(p);
-
-      // 同期
-      r.pos    = p;
-      r.prompt = p.join(", ");
     }
   }
-}
+
   // ④ 最終整形
   for (const r of out){
     let p = Array.isArray(r.pos) ? r.pos.slice()
@@ -3593,13 +3765,16 @@ function buildBatchLearning(n){
   return out;
 }
 
-// 置き換え: ensurePromptOrder
+
+/* ============================================================================
+ * 置き換え: ensurePromptOrder（構図/view + NSFW追加6カテゴリに対応）
+ * ========================================================================== */
 function ensurePromptOrder(parts) {
   const set = new Set(parts.filter(Boolean));
-
-  // 所属マップ
   const asSet = (arr) => new Set((arr||[]).map(x => (typeof x==='string'? x : x.tag)));
+
   const S = {
+    // 基本属性
     age:        asSet(SFW.age),
     gender:     asSet(SFW.gender),
     body_basic: asSet(SFW.body_type),
@@ -3608,24 +3783,38 @@ function ensurePromptOrder(parts) {
     world:      asSet(SFW.worldview),
     tone:       asSet(SFW.speech_tone),
 
+    // 形
     hair_style: asSet(SFW.hair_style),
     eyes_shape: asSet(SFW.eyes),
     face:       asSet(SFW.face),
     skin_body:  asSet(SFW.skin_body),
     art_style:  asSet(SFW.art_style),
+
+    // 服・アクセ
     outfit:     asSet(SFW.outfit),
     acc:        asSet(SFW.accessories),
-    background: asSet(SFW.background),
-    pose:       asSet(SFW.pose),
-    composition:asSet(SFW.composition),   // ★追加
-    view:       asSet(SFW.view),          // ★追加
-    expr:       asSet(SFW.expressions),
-    light:      asSet(SFW.lighting),
 
+    // シーン（SFW）
+    background:  asSet(SFW.background),
+    pose:        asSet(SFW.pose),
+    composition: asSet(SFW.composition), // ★
+    view:        asSet(SFW.view),        // ★
+    expr:        asSet(SFW.expressions),
+    light:       asSet(SFW.lighting),
+
+    // NSFW（従来）
     nsfw_expr:  asSet(NSFW.expression),
     nsfw_expo:  asSet(NSFW.exposure),
     nsfw_situ:  asSet(NSFW.situation),
     nsfw_light: asSet(NSFW.lighting),
+
+    // NSFW（追加）
+    nsfw_pose:     asSet(NSFW.pose),
+    nsfw_acc:      asSet(NSFW.accessory),
+    nsfw_outfit:   asSet(NSFW.outfit),
+    nsfw_body:     asSet(NSFW.body),
+    nsfw_nipples:  asSet(NSFW.nipples),
+    nsfw_under:    asSet(NSFW.underwear),
   };
 
   const isHairColor = (t)=> /\bhair$/.test(t) && !S.hair_style.has(t);
@@ -3634,36 +3823,48 @@ function ensurePromptOrder(parts) {
 
   const buckets = {
     lora:[], name:[],
+
     // 人となり
     b_age:[], b_gender:[], b_body:[], b_height:[], b_person:[], b_world:[], b_tone:[],
+
     // 色
     c_hair:[], c_eye:[], c_skin:[],
+
     // 形
     s_hair:[], s_eye:[], s_face:[], s_body:[], s_art:[],
+
     // 服・アクセ
     wear:[], acc:[],
+
     // シーン
-    bg:[], pose:[], expr:[], light:[],
-    // NSFW
+    bg:[], comp:[], pose:[], view:[], expr:[], light:[],
+
+    // NSFW（従来）
     n_expr:[], n_expo:[], n_situ:[], n_light:[],
+
+    // NSFW（追加6）
+    n_pose:[], n_acc:[], n_outfit:[], n_body:[], n_nipples:[], n_under:[],
+
     other:[]
   };
 
   const charName = ($("#charName")?.value || "").trim();
+  const WEAR_NAME_RE = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer|skirt|pleated\ skirt|long\ skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\ shorts|dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori)\b/i;
 
   for (const t of set) {
     if (!t) continue;
+
     if (t.startsWith("<lora:") || /\b(?:LoRA|<lyco:)/i.test(t)) { buckets.lora.push(t); continue; }
     if (charName && t === charName) { buckets.name.push(t); continue; }
 
     // 人となり
-    if (S.age.has(t))      { buckets.b_age.push(t); continue; }
-    if (S.gender.has(t))   { buckets.b_gender.push(t); continue; }
-    if (S.body_basic.has(t)){ buckets.b_body.push(t); continue; }
-    if (S.height.has(t))   { buckets.b_height.push(t); continue; }
-    if (S.person.has(t))   { buckets.b_person.push(t); continue; }
-    if (S.world.has(t))    { buckets.b_world.push(t); continue; }
-    if (S.tone.has(t))     { buckets.b_tone.push(t); continue; }
+    if (S.age.has(t))        { buckets.b_age.push(t); continue; }
+    if (S.gender.has(t))     { buckets.b_gender.push(t); continue; }
+    if (S.body_basic.has(t)) { buckets.b_body.push(t); continue; }
+    if (S.height.has(t))     { buckets.b_height.push(t); continue; }
+    if (S.person.has(t))     { buckets.b_person.push(t); continue; }
+    if (S.world.has(t))      { buckets.b_world.push(t); continue; }
+    if (S.tone.has(t))       { buckets.b_tone.push(t); continue; }
 
     // 色
     if (isHairColor(t)) { buckets.c_hair.push(t); continue; }
@@ -3677,53 +3878,56 @@ function ensurePromptOrder(parts) {
     if (S.skin_body.has(t))  { buckets.s_body.push(t); continue; }
     if (S.art_style.has(t))  { buckets.s_art.push(t);  continue; }
 
-    // 服・アクセ（色付き服も outfit に寄せる想定）
-    const WEAR_NAME_RE = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer|skirt|pleated\ skirt|long\ skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\ shorts|dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori)\b/i;
+    // 服・アクセ
     if (S.outfit.has(t) || WEAR_NAME_RE.test(t)) { buckets.wear.push(t); continue; }
     if (S.acc.has(t)) { buckets.acc.push(t); continue; }
 
     // シーン
-    if (S.background.has(t)) { buckets.bg.push(t);   continue; }
-    if (S.pose.has(t))       { buckets.pose.push(t); continue; }
-    if (S.expr.has(t))       { buckets.expr.push(t); continue; }
-    if (S.light.has(t))      { buckets.light.push(t);continue; }
+    if (S.background.has(t))  { buckets.bg.push(t);   continue; }
+    if (S.composition.has(t)) { buckets.comp.push(t); continue; }
+    if (S.pose.has(t))        { buckets.pose.push(t); continue; }
+    if (S.view.has(t))        { buckets.view.push(t); continue; }
+    if (S.expr.has(t))        { buckets.expr.push(t); continue; }
+    if (S.light.has(t))       { buckets.light.push(t);continue; }
 
-    // NSFW
-    if (S.nsfw_expr.has(t))  { buckets.n_expr.push(t);  continue; }
-    if (S.nsfw_expo.has(t))  { buckets.n_expo.push(t);  continue; }
-    if (S.nsfw_situ.has(t))  { buckets.n_situ.push(t);  continue; }
-    if (S.nsfw_light.has(t)) { buckets.n_light.push(t); continue; }
+    // NSFW（従来）
+    if (S.nsfw_expr.has(t))   { buckets.n_expr.push(t);  continue; }
+    if (S.nsfw_expo.has(t))   { buckets.n_expo.push(t);  continue; }
+    if (S.nsfw_situ.has(t))   { buckets.n_situ.push(t);  continue; }
+    if (S.nsfw_light.has(t))  { buckets.n_light.push(t); continue; }
+
+    // NSFW（追加）
+    if (S.nsfw_pose.has(t))     { buckets.n_pose.push(t);     continue; }
+    if (S.nsfw_acc.has(t))      { buckets.n_acc.push(t);      continue; }
+    if (S.nsfw_outfit.has(t))   { buckets.n_outfit.push(t);   continue; }
+    if (S.nsfw_body.has(t))     { buckets.n_body.push(t);     continue; }
+    if (S.nsfw_nipples.has(t))  { buckets.n_nipples.push(t);  continue; }
+    if (S.nsfw_under.has(t))    { buckets.n_under.push(t);    continue; }
 
     buckets.other.push(t);
   }
 
-  // --- 最終ガード：表情/構図/視点をグローバルに正規化 ---
-
-  // 1) 表情：SFW と NSFW を統合して 1 つだけ残す
+  // --- グローバル正規化（表情/構図/視点） ---
+  // 1) 表情：SFW/NSFW 横断で 1つだけ
   {
     const ALL_EXPR = [...buckets.expr, ...buckets.n_expr];
     if (ALL_EXPR.length > 0) {
       const PREFER_EXPR = ["smiling","neutral expression","slight blush","surprised (mild)","pouting (slight)"];
       const keepExpr = PREFER_EXPR.find(t => ALL_EXPR.includes(t)) || ALL_EXPR[0];
       buckets.expr = [keepExpr];
-      buckets.n_expr = []; // 吸収済み
+      buckets.n_expr = [];
     }
   }
-
-  // 2) 構図/距離/視点：全バケツ横断でヒット収集 → 1 つだけ残す
+  // 2) 構図/視点：横断収集 → 1つだけ
   {
     const COMP_VIEW_ORDER = [
-      // 距離・フレーミング優先
       "full body","wide shot","waist up","upper body","bust","portrait","close-up",
-      // 視点
       "three-quarters view","front view","profile view","back view","side view"
     ];
     const keys = Object.keys(buckets);
     const hits = [];
     for (const k of keys) {
-      for (const t of buckets[k]) {
-        if (COMP_VIEW_ORDER.includes(t)) hits.push(t);
-      }
+      for (const t of buckets[k]) if (COMP_VIEW_ORDER.includes(t)) hits.push(t);
     }
     if (hits.length > 1) {
       const keep = COMP_VIEW_ORDER.find(t => hits.includes(t)) || hits[0];
@@ -3733,7 +3937,8 @@ function ensurePromptOrder(parts) {
     }
   }
 
-  const out = [
+  // 最終並び（学習向けの順）
+  const orderedOut = [
     ...buckets.lora, ...buckets.name,
     // 人となり
     ...buckets.b_age, ...buckets.b_gender, ...buckets.b_body, ...buckets.b_height,
@@ -3745,15 +3950,16 @@ function ensurePromptOrder(parts) {
     // 服・アクセ
     ...buckets.wear, ...buckets.acc,
     // シーン
-    ...buckets.bg, ...buckets.pose, ...buckets.expr, ...buckets.light,
-    // NSFW
-    ...buckets.n_expr, ...buckets.n_expo, ...buckets.n_situ, ...buckets.n_light,
+    ...buckets.bg, ...buckets.comp, ...buckets.pose, ...buckets.view, ...buckets.expr, ...buckets.light,
+    // NSFW（従来）
+    ...buckets.n_expo, ...buckets.n_situ, ...buckets.n_light,
+    // NSFW（追加）
+    ...buckets.n_pose, ...buckets.n_acc, ...buckets.n_outfit, ...buckets.n_body, ...buckets.n_nipples, ...buckets.n_under,
     // その他
     ...buckets.other
   ].filter(Boolean);
 
-  // 念押しの一意化
-  return Array.from(new Set(out));
+  return Array.from(new Set(orderedOut));
 }
 
 /* === ヌード優先ルール（全裸 / 上半身裸 / 下半身裸） === */
