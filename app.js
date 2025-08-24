@@ -512,17 +512,6 @@ function mergeIntoNSFW(json) {
   };
 }
 
-  // --- 従来: categories or 直接キー形式 ---
-  const src = (ns && ns.categories) ? ns.categories : (ns || {});
-  const JP2EN = { "表情":"expression", "露出":"exposure", "シチュ":"situation", "ライティング":"lighting" };
-  const keys = ["expression","exposure","situation","lighting"];
-  const out = {};
-  keys.forEach(k=>{
-    const jpKey = Object.keys(JP2EN).find(j=>JP2EN[j]===k);
-    out[k] = normList(src[k] || (jpKey ? src[jpKey] : []) || []);
-  });
-  return out;
-}
 /* ========= 追記マージ ========= */
 function dedupeByTag(list) {
   const seen = new Set(); const out=[];
