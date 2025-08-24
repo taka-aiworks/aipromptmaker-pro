@@ -463,7 +463,7 @@ function normNSFW(ns) {
       expression: [], exposure: [], situation,
       lighting: [], background: [],
       // 拡張キーは空で返す（merge側で安全に扱える）
-      pose: [], accessory: [], outfit: [], body: [], nipples: []
+      pose: [], accessory: [], outfit: [], body: [], nipples: [], underwear: []
     };
   }
 
@@ -480,7 +480,8 @@ function normNSFW(ns) {
     accessory:  ['accessory','accessories','acc','アクセ','アクセサリー'],
     outfit:     ['outfit','outfits','costume','clothes','衣装'],
     body:       ['body','anatomy','feature','features','body_features','body_shape','身体','体型'],
-    nipples:    ['nipples','nipple','乳首','乳首系']
+    nipples:    ['nipples','nipple','乳首','乳首系'],
+    underwear:  ['underwear','lingerie','下着','インナー']   // ★追加
   };
   const pickBy = (names)=> {
     for (const k of names) {
@@ -500,6 +501,7 @@ function normNSFW(ns) {
     outfit:     pickBy(ALIAS.outfit),
     body:       pickBy(ALIAS.body),
     nipples:    pickBy(ALIAS.nipples),
+    underwear:  pickBy(ALIAS.underwear), // ★追加
   };
 }
 
@@ -512,7 +514,7 @@ function mergeIntoNSFW(json) {
   const ensure = (k)=> { if (!Array.isArray(NSFW[k])) NSFW[k] = []; };
   [
     'expression','exposure','situation','lighting','background',
-    'pose','accessory','outfit','body','nipples'
+    'pose','accessory','outfit','body','nipples','underwear'  // ★追加
   ].forEach(ensure);
 
   NSFW = {
@@ -526,6 +528,7 @@ function mergeIntoNSFW(json) {
     outfit:     dedupeByTag([...(NSFW.outfit||[]),     ...(src.outfit||[])]),
     body:       dedupeByTag([...(NSFW.body||[]),       ...(src.body||[])]),
     nipples:    dedupeByTag([...(NSFW.nipples||[]),    ...(src.nipples||[])]),
+    underwear:  dedupeByTag([...(NSFW.underwear||[]),  ...(src.underwear||[])]), // ★追加
   };
 }
 
