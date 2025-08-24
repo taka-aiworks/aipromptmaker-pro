@@ -193,7 +193,10 @@ function trimByBucketForLearning(parts){
     s_hair:[], s_eye:[], s_face:[], s_body:[], s_art:[],
     wear:[], acc:[],
     bg:[], comp:[], pose:[], view:[], expr:[], light:[],
+    // NSFW（従来）
     n_expr:[], n_expo:[], n_situ:[], n_light:[],
+    // NSFW（追加カテゴリ）
+    n_pose:[], n_acc:[], n_outfit:[], n_body:[], n_nipples:[],
     other:[]
   };
 
@@ -222,10 +225,18 @@ function trimByBucketForLearning(parts){
     expr:       new Set((SFW.expressions||[]).map(x=>x.tag||x)),
     light:      new Set((SFW.lighting||[]).map(x=>x.tag||x)),
 
+    // NSFW 従来
     nsfw_expr:  new Set((NSFW.expression||[]).map(x=>x.tag||x)),
     nsfw_expo:  new Set((NSFW.exposure||[]).map(x=>x.tag||x)),
     nsfw_situ:  new Set((NSFW.situation||[]).map(x=>x.tag||x)),
     nsfw_light: new Set((NSFW.lighting||[]).map(x=>x.tag||x)),
+
+    // NSFW 追加
+    nsfw_pose:     new Set((NSFW.pose||[]).map(x=>x.tag||x)),
+    nsfw_acc:      new Set((NSFW.accessory||[]).map(x=>x.tag||x)),
+    nsfw_outfit:   new Set((NSFW.outfit||[]).map(x=>x.tag||x)),
+    nsfw_body:     new Set((NSFW.body||[]).map(x=>x.tag||x)),
+    nsfw_nipples:  new Set((NSFW.nipples||[]).map(x=>x.tag||x)),
   };
 
   const isHairColor = (t)=> /\bhair$/.test(t) && !S.hair_style.has(t);
@@ -268,10 +279,16 @@ function trimByBucketForLearning(parts){
     if (S.expr.has(t))       { buckets.expr.push(t); continue; }
     if (S.light.has(t))      { buckets.light.push(t);continue; }
 
-    if (S.nsfw_expr.has(t))  { buckets.n_expr.push(t);  continue; }
-    if (S.nsfw_expo.has(t))  { buckets.n_expo.push(t);  continue; }
-    if (S.nsfw_situ.has(t))  { buckets.n_situ.push(t);  continue; }
-    if (S.nsfw_light.has(t)) { buckets.n_light.push(t); continue; }
+    // === NSFW: 従来 + 追加カテゴリ ===
+    if (S.nsfw_expr.has(t))     { buckets.n_expr.push(t);     continue; }
+    if (S.nsfw_expo.has(t))     { buckets.n_expo.push(t);     continue; }
+    if (S.nsfw_situ.has(t))     { buckets.n_situ.push(t);     continue; }
+    if (S.nsfw_light.has(t))    { buckets.n_light.push(t);    continue; }
+    if (S.nsfw_pose.has(t))     { buckets.n_pose.push(t);     continue; }
+    if (S.nsfw_acc.has(t))      { buckets.n_acc.push(t);      continue; }
+    if (S.nsfw_outfit.has(t))   { buckets.n_outfit.push(t);   continue; }
+    if (S.nsfw_body.has(t))     { buckets.n_body.push(t);     continue; }
+    if (S.nsfw_nipples.has(t))  { buckets.n_nipples.push(t);  continue; }
 
     buckets.other.push(t);
   }
