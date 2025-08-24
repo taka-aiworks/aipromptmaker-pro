@@ -2,21 +2,30 @@
   "NSFW": {
     "categories": {
       "expression": [
-        { "tag": "aroused", "ja": "上気した表情", "level": "L1" },
-        { "tag": "flushed", "ja": "頬を赤らめる", "level": "L1" },
-        { "tag": "embarrassed", "ja": "照れ", "level": "L1" },
-        { "tag": "seductive_smile", "ja": "誘惑の微笑み", "level": "L1" },
+        { "tag": "aroused",          "ja": "上気した表情", "level": "L1" },
+        { "tag": "flushed",          "ja": "頬を赤らめる", "level": "L1" },
+        { "tag": "embarrassed",      "ja": "照れ", "level": "L1" },
+        { "tag": "seductive_smile",  "ja": "誘惑の微笑み", "level": "L1" },
         { "tag": "half_lidded_eyes", "ja": "とろんとした目", "level": "L1" },
-        { "tag": "bedroom_eyes", "ja": "潤んだ目", "level": "L1" },
-        { "tag": "lip_bite", "ja": "唇を噛む", "level": "L1" },
-        { "tag": "pouting", "ja": "むくれ顔", "level": "L1" },
-        { "tag": "tongue_out", "ja": "舌を出す", "level": "L2" },
-        { "tag": "panting", "ja": "息を荒くする", "level": "L2" },
-        { "tag": "moist_lips", "ja": "艶のある唇", "level": "L2" },
-        { "tag": "ecstasy", "ja": "恍惚", "level": "L2" },
-        { "tag": "tearful", "ja": "涙目", "level": "L2" },
-        { "tag": "terror", "ja": "恐怖", "level": "L3" },
-        { "tag": "agony", "ja": "苦悶", "level": "L3" }
+        { "tag": "bedroom_eyes",     "ja": "潤んだ目", "level": "L1" },
+        { "tag": "lip_bite",         "ja": "唇を噛む", "level": "L1" },
+        { "tag": "pouting",          "ja": "むくれ顔", "level": "L1" },
+      
+        { "tag": "tongue_out",       "ja": "舌を出す", "level": "L2" },
+        { "tag": "panting",          "ja": "息を荒くする", "level": "L2" },
+        { "tag": "moist_lips",       "ja": "艶のある唇", "level": "L2" },
+        { "tag": "ecstasy",          "ja": "恍惚", "level": "L2" },
+        { "tag": "tearful",          "ja": "涙目", "level": "L2" },
+      
+        { "tag": "blowjob_face",     "ja": "フェラ顔", "level": "L2" },
+        { "tag": "ahegao",           "ja": "アヘ顔", "level": "L2" },
+        { "tag": "rolling_eyes",     "ja": "目を白目にむく", "level": "L2" },
+        { "tag": "drooling",         "ja": "よだれを垂らす", "level": "L2" },
+        { "tag": "orgasmic",         "ja": "絶頂の表情", "level": "L2" },
+        { "tag": "crying_pleasure",  "ja": "快楽泣き", "level": "L2" },
+      
+        { "tag": "terror",           "ja": "恐怖", "level": "L3" },
+        { "tag": "agony",            "ja": "苦悶", "level": "L3" }
       ],
 
       "exposure": [
