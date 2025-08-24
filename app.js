@@ -1395,6 +1395,7 @@ function filterByScope(items, allow) {
      fillCat('outfit-nsfw',     dict.nsfw.outfit);
      fillCat('body-nsfw',       dict.nsfw.body);
      // 乳首を独立させるなら（HTMLにdetailsを追加した場合のみ）
+     fillCat('nipple-nsfw',     dict.nsfw.nipples || []);
      fillCat('nipples-nsfw',    dict.nsfw.nipples || []);
      fillCat('underwear-nsfw',   dict.nsfw.underwear);
 
@@ -2168,26 +2169,6 @@ function getBasicSelectedOutfit(){
     bottom = skirtVal || pantsVal; // どちらかだけ選ばれている場合
   }
   return { mode, top, bottom, dress:null, bottomCat: (bottom===skirtVal ? "skirt" : "pants") };
-}
-
-/* ========= タブ切替 ========= */
-/* function initTabs(){
-  $$(".tab").forEach(t=> t.addEventListener("click", ()=>{
-    $$(".tab").forEach(x=>x.classList.remove("active"));
-    t.classList.add("active");
-    const m=t.dataset.mode;
-    $("#panelBasic").hidden      = (m !== "basic");
-    $("#panelPlanner").hidden    = (m !== "planner");   // ← 追加
-    $("#panelLearning").hidden   = (m !== "learning");
-    $("#panelProduction").hidden = (m !== "production");
-    $("#panelSettings").hidden   = (m !== "settings");
-
-    if (m === "planner") initPlannerOnce();             // ← 追加
-  }));
-
-  // 初期アクティブを強制クリック（状態反映）
-  const active = $$(".tab.active")[0] || $$(".tab")[0];
-  if (active) active.click();
 }
 
 /* ========= 辞書 I/O ========= */
