@@ -1174,7 +1174,11 @@ function filterByScope(items, allow) {
 (function(){
   let initialized = false;
 
-  document.addEventListener('DOMContentLoaded', () => {
+     // ▼ これを追加：辞書が更新されたら単語モードを再描画
+    document.addEventListener('dict:updated', () => {
+    if (initialized) refreshWordMode();   // 初期化済みのときだけ再描画
+    });
+   document.addEventListener('DOMContentLoaded', () => {
     const tab = document.querySelector('.tab[data-mode="word"]');
     if (!tab) return;
     tab.addEventListener('click', async () => {
@@ -1265,6 +1269,21 @@ function filterByScope(items, allow) {
     const chipCount     = el('wm-selected-count');
     const btnSelectedClear = el('wm-selected-clear');
 
+      // ▼ これを追加：再描画だけ行う軽量関数
+     async function refreshWordMode(){
+       try {
+         // initWordMode 内の UI 初期化はやらず、リストだけ差し替える
+         // 必要なのは renderAll() の呼び出しだけ
+         await (async function renderAllAgain(){
+           // initWordMode 内の renderAll と同じ関数を再利用してください
+           // 既に定義済みの renderAll() があるならそれを呼ぶだけでOK
+           await renderAll();
+         })();
+       } catch (e) {
+         console.warn('Word mode refresh failed:', e);
+       }
+     }
+     
     // ---- Clipboard helper ----
     async function copyText(text){
       try {
@@ -2221,6 +2240,7 @@ function bindDictIO(){
         renderSFW();
         fillAccessorySlots();
         toast("SFW辞書を追記しました");
+        document.dispatchEvent(new CustomEvent('dict:updated', { detail:{ kind:'sfw' }}));
       }
     } catch {
       toast("辞書の読み込みに失敗（JSONを確認）");
