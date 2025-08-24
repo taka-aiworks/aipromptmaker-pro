@@ -4609,7 +4609,7 @@ function bindProduction(){
 bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 'outProd');
 
 // ===========================================================
-// 追加パッチ：NSFW拡張（pose/acc/outfit/body）＋ 単語SFWアクセ
+// 追加パッチ：NSFW拡張（pose/acc/outfit/body/nipples/underwear）＋ 単語SFWアクセ
 // 依存：このHTML内のID（pl_*/nsfwL_*/nsfwP_* / wm-*）のみ
 // 辞書：window.SFW / window.NSFW（無ければ簡易フォールバックJSONは無し）
 // 既存getMany等に触らず、チェックボックスUIを自前で構築
@@ -4623,33 +4623,37 @@ bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 
     const dict = getDictView();
 
     // ---- 撮影モード（NSFW） ----
-    mountChecklist('#pl_nsfw_pose',    dict.nsfw.pose);
-    mountChecklist('#pl_nsfw_acc',     dict.nsfw.accessory);
-    mountChecklist('#pl_nsfw_outfit',  dict.nsfw.outfit);
-    mountChecklist('#pl_nsfw_body',    dict.nsfw.body);
-    mountChecklist('#pl_nsfw_nipple',  dict.nsfw.nipple);   // ★追加
+    mountChecklist('#pl_nsfw_pose',       dict.nsfw.pose);
+    mountChecklist('#pl_nsfw_acc',        dict.nsfw.accessory);
+    mountChecklist('#pl_nsfw_outfit',     dict.nsfw.outfit);
+    mountChecklist('#pl_nsfw_body',       dict.nsfw.body);
+    mountChecklist('#pl_nsfw_nipple',     dict.nsfw.nipples);    // ← 複数キーに統一
+    mountChecklist('#pl_nsfw_underwear',  dict.nsfw.underwear);  // ← 下着
 
     // ---- 学習モード（NSFW） ----
-    mountChecklist('#nsfwL_pose',      dict.nsfw.pose);
-    mountChecklist('#nsfwL_acc',       dict.nsfw.accessory);
-    mountChecklist('#nsfwL_outfit',    dict.nsfw.outfit);
-    mountChecklist('#nsfwL_body',      dict.nsfw.body);
-    mountChecklist('#nsfwL_nipple',    dict.nsfw.nipple);   // ★追加
+    mountChecklist('#nsfwL_pose',         dict.nsfw.pose);
+    mountChecklist('#nsfwL_acc',          dict.nsfw.accessory);
+    mountChecklist('#nsfwL_outfit',       dict.nsfw.outfit);
+    mountChecklist('#nsfwL_body',         dict.nsfw.body);
+    mountChecklist('#nsfwL_nipple',       dict.nsfw.nipples);    // ← 複数キーに統一
+    mountChecklist('#nsfwL_underwear',    dict.nsfw.underwear);  // ← 下着（IDがあれば）
 
     // ---- 量産モード（NSFW） ----
-    mountChecklist('#nsfwP_pose',      dict.nsfw.pose);
-    mountChecklist('#nsfwP_acc',       dict.nsfw.accessory);
-    mountChecklist('#nsfwP_outfit',    dict.nsfw.outfit);
-    mountChecklist('#nsfwP_body',      dict.nsfw.body);
-    mountChecklist('#nsfwP_nipple',    dict.nsfw.nipple);   // ★追加
+    mountChecklist('#nsfwP_pose',         dict.nsfw.pose);
+    mountChecklist('#nsfwP_acc',          dict.nsfw.accessory);
+    mountChecklist('#nsfwP_outfit',       dict.nsfw.outfit);
+    mountChecklist('#nsfwP_body',         dict.nsfw.body);
+    mountChecklist('#nsfwP_nipple',       dict.nsfw.nipples);    // ← 複数キーに統一
+    mountChecklist('#nsfwP_underwear',    dict.nsfw.underwear);  // ← 下着（IDがあれば）
 
-    // ---- 単語モード：SFWアクセ / NSFW各種（必要分だけ）----
+    // ---- 単語モード：SFWアクセ / NSFW（必要分だけ）----
     mountWordItems('#wm-items-accessories', '#wm-count-accessories', dict.sfw.accessories);
 
-    // NSFW（単語モード）に nipple を追加
-    mountWordItems('#wm-items-nipple-nsfw', '#wm-count-nipple-nsfw', dict.nsfw.nipple);
-    // 既存の expression/exposure/situation/lighting/pose/outfit/body は
-    // すでに別所で流し込んでいるなら不要。未実装なら同様に mountWordItems(...) を呼ぶ。
+    // NSFW（単語モード）に nipples / underwear も流し込み（コンテナがあれば）
+    mountWordItems('#wm-items-nipple-nsfw',    '#wm-count-nipple-nsfw',    dict.nsfw.nipples);
+    mountWordItems('#wm-items-underwear-nsfw', '#wm-count-underwear-nsfw', dict.nsfw.underwear);
+    // ※ 既に expression/exposure/situation/lighting/pose/outfit/body を別処理で入れているなら不要
+    //   未実装なら同じ mountWordItems(...) を呼んで追加してください。
   }
 
   // ====== dict 正規化 ======
@@ -4663,12 +4667,15 @@ bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 
     const sfw = {
       accessories: normalize(pick(sfwTop, 'accessories','accessory','acc','items','props'))
     };
+
+    // NSFW は別名も吸収して配列[{tag,label,level}]化
     const nsfw = {
-      pose:      normalizeNSFW(nsfwTop,'pose'),
-      accessory: normalizeNSFW(nsfwTop,'accessories','accessory','acc'),
-      outfit:    normalizeNSFW(nsfwTop,'outfit','outfits','costume','clothes'),
-      body:      normalizeNSFW(nsfwTop,'body','anatomy','feature','features'),
-      nipple:    normalizeNSFW(nsfwTop,'nipple','nipples')  // ★追加
+      pose:       normalizeNSFW(nsfwTop, 'pose','poses','ポーズ'),
+      accessory:  normalizeNSFW(nsfwTop, 'accessory','accessories','acc','アクセ','アクセサリー'),
+      outfit:     normalizeNSFW(nsfwTop, 'outfit','outfits','costume','clothes','衣装'),
+      body:       normalizeNSFW(nsfwTop, 'body','anatomy','feature','features','body_features','身体','体型'),
+      nipples:    normalizeNSFW(nsfwTop, 'nipples','nipple','乳首','乳首系'),       // ← 複数キー
+      underwear:  normalizeNSFW(nsfwTop, 'underwear','lingerie','下着','インナー') // ← 下着
     };
     return {sfw, nsfw};
   }
