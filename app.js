@@ -3677,7 +3677,7 @@ function getProdWearColorTag(idBase){
   return (txt && txt !== "—") ? txt : "";
 }
 
-// ② 完全置き換え版：buildBatchProduction（基本情報 + SFW/NSFW 正規化 + 服色ペアリング + 単一ライト/単一背景）
+// ② 完全置き換え版：buildBatchProduction（基本情報 + SFW/NSFW 正規化 + 服色ペアリング + 単一ライト/単一背景 + プレースホルダ除去）
 function buildBatchProduction(n){
   const seedMode = document.querySelector('input[name="seedMode"]:checked')?.value || "fixed";
 
@@ -3694,7 +3694,7 @@ function buildBatchProduction(n){
   const comps  = getMany("p_comp");
   const views  = getMany("p_view");
   const exprs  = getMany("p_expr");
-  const lights = getMany("p_light");          // ← SFWライト
+  const lights = getMany("p_light");          // SFWライト
   const acc    = readAccessorySlots();
 
   // NSFW（ON のときだけ各カテゴリから最大1つ）
@@ -3702,7 +3702,7 @@ function buildBatchProduction(n){
   const nsfwExpr = nsfwOn ? getMany("nsfwP_expr")  : [];
   const nsfwExpo = nsfwOn ? getMany("nsfwP_expo")  : [];
   const nsfwSitu = nsfwOn ? getMany("nsfwP_situ")  : [];
-  const nsfwLite = nsfwOn ? getMany("nsfwP_light") : [];  // ← NSFWライト
+  const nsfwLite = nsfwOn ? getMany("nsfwP_light") : [];  // NSFWライト
 
   // 服色（top/bottom/shoes のプレースホルダ → 通常服のみ pairWearColors で合体）
   const PC = {
@@ -3791,7 +3791,6 @@ function buildBatchProduction(n){
     }
 
     // --- ライティング（SFW/NSFW をまとめて 1 個に統一） ---
-    // いったん両方を parts に入れておき、後段で unifyLightingOnce() で 1 つに絞る
     if (lights.length) parts.push(pick(lights));
     if (nsfwOn && nsfwLite.length) parts.push(pickOne(nsfwLite));
 
@@ -3832,6 +3831,8 @@ function buildBatchProduction(n){
       // 通常服：色合体の前に“カテゴリ1個だけ”を最終保証してから合体
       all = ensureSingleWearPerRow(all);
       if (typeof pairWearColors === 'function') all = pairWearColors(all);
+      // 色プレースホルダ（color + top/bottom/shoes）と生の top/bottom は最終的に落とす
+      all = removeWearPlaceholders(all);
     }
 
     // --- 背景は 1 つだけ（empty background は他があれば落とす）---
@@ -3875,7 +3876,6 @@ function buildBatchProduction(n){
 function ensureSingleWearPerRow(arr){
   const kept = new Set();
   const out = [];
-  // カテゴリ検出用の代表名詞（必要なら語彙を足してください）
   const MAP = [
     ["dress",  /\b(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\s+dress)\b/i],
     ["top",    /\b(t-?shirt|tank\s+top|blouse|shirt|hoodie|sweater|cardigan|jacket|coat|parka|windbreaker|camisole|crop\s+top|turtleneck|uniform|jersey)\b/i],
@@ -3887,59 +3887,62 @@ function ensureSingleWearPerRow(arr){
     let cat = null;
     for (const [c, re] of MAP){ if (re.test(s)) { cat = c; break; } }
     if (!cat) { out.push(t); continue; }
-    if (kept.has(cat)) continue;   // 同カテゴリは2個目以降カット
+    if (kept.has(cat)) continue;
     kept.add(cat);
     out.push(t);
   }
   return out;
 }
 
+// 色プレースホルダ（color + top/bottom/shoes）と生の top/bottom/shoes を削除
+// ※ white shirt / blue skirt / black sneakers 等の“具体服”は削らない
+function removeWearPlaceholders(arr){
+  const COLOR = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
+  const PLACE = /\b(top|bottom|shoes)\b/i; // ← プレースホルダ名詞のみ
+  return arr.filter(t=>{
+    const s = String(t);
+    // color + placeholder（例: orange top / blue bottom / black shoes）
+    if (COLOR.test(s) && PLACE.test(s)) return false;
+    // 単独 placeholder（rare だが一応）
+    if (/^(top|bottom|shoes)$/i.test(s.trim())) return false;
+    return true;
+  });
+}
 
 // ライティング（SFW/NSFW 含む）を“最終的に 1 つだけ”残す
 function unifyLightingOnce(arr){
-  const LIGHT_RE = /\b(normal lighting|even lighting|flat studio lighting|soft lighting|softbox lighting|clamshell lighting|backlighting|backlit|rim light|dramatic lighting|golden hour|neon lighting|window light|moonlight|candlelight|spotlight|overcast|volumetric light|moody)\b/i;
-  const picked = [];
-  // 末尾の方を優先したいなら後ろから走査して先に見つけたものを採用
+  const LIGHT_RE = /\b(normal lighting|even lighting|flat studio lighting|soft lighting|softbox lighting|clamshell lighting|backlighting|backlit|rim light|dramatic lighting|golden hour|neon lighting|window light|moonlight|candlelight|spotlight|overcast|volumetric light|moody|hard_light|soft_light)\b/i;
+  let keep = "";
   for (let i = arr.length - 1; i >= 0; i--){
     const s = String(arr[i]);
-    if (LIGHT_RE.test(s)){
-      picked.push(s);
-      break;
-    }
+    if (LIGHT_RE.test(s)){ keep = s; break; }
   }
-  if (!picked.length) return arr;
-  // いったん全ライト語を除去 → 1つだけ末尾に再挿入
+  if (!keep) return arr;
   const cleaned = arr.filter(s => !LIGHT_RE.test(String(s)));
-  cleaned.push(picked[0]);
+  cleaned.push(keep);
   return cleaned;
 }
 
-
 // 背景は 1 つだけ。empty background は他があれば落とす
 function enforceSingleBackground(arr){
-  const BG_RE = /\b(plain background|white background|solid background|studio background|white seamless|gray seamless|gradient background|bedroom|classroom|street at night|beach|forest|shrine|sci-fi lab|cafe|library|rooftop|train platform|festival stalls|shrine festival|classroom after school|snowy town|autumn park|spring cherry blossoms|space interior|poolside|swimming pool|water park|beach daytime|beach sunset|empty background)\b/i;
-
+  const BG_RE = /\b(plain background|white background|solid background|studio background|white seamless|gray seamless|gradient background|bedroom|classroom|street at night|beach|forest|shrine|sci-fi lab|cafe|library|rooftop|train platform|festival stalls|shrine festival|classroom after school|snowy town|autumn park|spring cherry blossoms|space interior|poolside|swimming pool|water park|beach daytime|beach sunset|empty background|autumn park|forest|swimming pool)\b/i;
   const bg = arr.filter(s => BG_RE.test(String(s)));
   if (bg.length <= 1) return arr;
 
-  // empty background が混じっていて、他にも背景があるなら empty を落とす
   const hasNonEmpty = bg.some(s => !/empty background/i.test(String(s)));
   let keep = "";
   if (hasNonEmpty){
-    // 非 empty の中から最後に現れた 1つを採用
     for (let i = arr.length - 1; i >= 0; i--){
       const s = String(arr[i]);
       if (BG_RE.test(s) && !/empty background/i.test(s)) { keep = s; break; }
     }
   } else {
-    // empty しか無いなら empty を 1つだけ残す
     keep = "empty background";
   }
   const cleaned = arr.filter(s => !BG_RE.test(String(s)));
   if (keep) cleaned.push(keep);
   return cleaned;
 }
-
 
 function getNegProd(){
   const custom = ($("#p_neg").value||"").trim();
