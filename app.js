@@ -169,16 +169,19 @@ function categorizePoseComp(list){
 const LEARN_EXCLUDE_RE = /\b(?:fisheye|wide[-\s]?angle|ultra[-\s]?wide|dutch\s?angle|extreme\s?(?:close[-\s]?up|zoom|perspective)|motion\s?blur|long\s?exposure|bokeh\s?balls|tilt[-\s]?shift|depth\s?of\s?field|hdr|high\s?contrast|dynamic\s?lighting|dramatic\s?lighting|backlight(?:ing)?|rim\s?light(?:ing)?|fireworks|sparks|confetti|holding\s+\w+|wielding\s+\w+|carrying\s+\w+|using\s+\w+|smartphone|cell\s?phone|microphone|camera|sign|banner|weapon)\b/i;
 
 // カテゴリ単位で“最大数”を制限（学習時）
- const LEARN_BUCKET_CAP = {
-   lora:  2, name: 1,
-   b_age:1, b_gender:1, b_body:1, b_height:1, b_person:1, b_world:1, b_tone:1,
-   c_hair:1, c_eye:1, c_skin:1,
-   s_hair:1, s_eye:1, s_face:1, s_body:1, s_art:1,
-   wear:2, acc:0,
-   bg:1, pose:1, comp:1, view:1, expr:1, light:1,  // ★ comp / view を追加
-   n_expr:1, n_expo:1, n_situ:1, n_light:1,
-   other:0
- };
+const LEARN_BUCKET_CAP = {
+  lora:  2, name: 1,
+  b_age:1, b_gender:1, b_body:1, b_height:1, b_person:1, b_world:1, b_tone:1,
+  c_hair:1, c_eye:1, c_skin:1,
+  s_hair:1, s_eye:1, s_face:1, s_body:1, s_art:1,
+  wear:2, acc:0,
+  bg:1, pose:1, comp:1, view:1, expr:1, light:1,  // ★ comp / view を追加
+  n_expr:1, n_expo:1, n_situ:1, n_light:1,
+  n_pose:1, n_acc:1, n_outfit:1, n_body:1, n_nipples:1,
+  // ★ 追加：下着
+  n_underwear:1,
+  other:0
+};
 
 // ensurePromptOrder と同じ仕分けを流用して“刈る”
 // 学習テーブル用：カテゴリ別に仕分けして必要分だけ残す（置き換え）
@@ -197,6 +200,8 @@ function trimByBucketForLearning(parts){
     n_expr:[], n_expo:[], n_situ:[], n_light:[],
     // NSFW（追加カテゴリ）
     n_pose:[], n_acc:[], n_outfit:[], n_body:[], n_nipples:[],
+    // ★ 追加：下着（NSFW）
+    n_underwear:[],
     other:[]
   };
 
@@ -237,6 +242,8 @@ function trimByBucketForLearning(parts){
     nsfw_outfit:   new Set((NSFW.outfit||[]).map(x=>x.tag||x)),
     nsfw_body:     new Set((NSFW.body||[]).map(x=>x.tag||x)),
     nsfw_nipples:  new Set((NSFW.nipples||[]).map(x=>x.tag||x)),
+    // ★ 追加：下着
+    nsfw_underwear:new Set((NSFW.underwear||[]).map(x=>x.tag||x)),
   };
 
   const isHairColor = (t)=> /\bhair$/.test(t) && !S.hair_style.has(t);
@@ -289,6 +296,8 @@ function trimByBucketForLearning(parts){
     if (S.nsfw_outfit.has(t))   { buckets.n_outfit.push(t);   continue; }
     if (S.nsfw_body.has(t))     { buckets.n_body.push(t);     continue; }
     if (S.nsfw_nipples.has(t))  { buckets.n_nipples.push(t);  continue; }
+    // ★ 追加：下着
+    if (S.nsfw_underwear.has(t)){ buckets.n_underwear.push(t);continue; }
 
     buckets.other.push(t);
   }
@@ -302,6 +311,7 @@ function trimByBucketForLearning(parts){
   }
   return capped;
 }
+
 
 /* === 学習アンカー：不足時の自動補完（安定化） === */
 const LEARN_DEFAULTS = {
