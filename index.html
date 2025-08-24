@@ -293,7 +293,7 @@
   <section class="wm-accordion" id="wm-accordion-sfw">
     <h3 class="wm-acc-title">SFW</h3>
 
-    <details class="wm-acc" data-cat="background"">
+    <details class="wm-acc" data-cat="background">
       <summary>
         背景 <span class="wm-count" id="wm-count-background">0</span>
       </summary>
@@ -383,6 +383,38 @@
       </summary>
       <div class="wm-items" id="wm-items-lighting-nsfw"><!-- 動的挿入 --></div>
     </details>
+    <!-- 追加：ポーズ（NSFW） -->
+<details class="wm-acc" data-cat="pose-nsfw">
+  <summary>
+    ポーズ（NSFW） <span class="wm-count" id="wm-count-pose-nsfw">0</span>
+  </summary>
+  <div class="wm-items" id="wm-items-pose-nsfw"><!-- 動的挿入 --></div>
+</details>
+
+<!-- 追加：アクセサリー（NSFW） -->
+<details class="wm-acc" data-cat="accessory-nsfw">
+  <summary>
+    アクセサリー（NSFW） <span class="wm-count" id="wm-count-accessory-nsfw">0</span>
+  </summary>
+  <div class="wm-items" id="wm-items-accessory-nsfw"><!-- 動的挿入 --></div>
+</details>
+
+<!-- 追加：衣装（NSFW） -->
+<details class="wm-acc" data-cat="outfit-nsfw">
+  <summary>
+    衣装（NSFW） <span class="wm-count" id="wm-count-outfit-nsfw">0</span>
+  </summary>
+  <div class="wm-items" id="wm-items-outfit-nsfw"><!-- 動的挿入 --></div>
+</details>
+
+<!-- 追加：身体特徴（NSFW） -->
+<details class="wm-acc" data-cat="body-nsfw">
+  <summary>
+    身体特徴（NSFW） <span class="wm-count" id="wm-count-body-nsfw">0</span>
+  </summary>
+  <div class="wm-items" id="wm-items-body-nsfw"><!-- 動的挿入 --></div>
+</details>
+    
   </section>
 
   <!-- ========== アコーディオン（Color） ========== -->
@@ -503,6 +535,14 @@
         <div><b class="mini">露出</b><div id="pl_nsfw_expo" class="scroller"></div></div>
         <div><b class="mini">シチュ</b><div id="pl_nsfw_situ" class="scroller"></div></div>
         <div><b class="mini">ライティング</b><div id="pl_nsfw_light" class="scroller"></div></div>
+        <!-- 追加：ポーズ（NSFW/撮影） -->
+        <div><b class="mini">ポーズ</b><div id="pl_nsfw_pose" class="scroller"></div></div>
+        <!-- 追加：アクセサリー（NSFW/撮影） -->
+        <div><b class="mini">アクセ</b><div id="pl_nsfw_acc" class="scroller"></div></div>
+        <!-- 追加：衣装（NSFW/撮影） -->
+        <div><b class="mini">衣装</b><div id="pl_nsfw_outfit" class="scroller"></div></div>
+        <!-- 追加：身体特徴（NSFW/撮影） -->
+        <div><b class="mini">身体</b><div id="pl_nsfw_body" class="scroller"></div></div>
       </div>
       <div class="mini" style="margin-top:6px">※ リストはレベル上限の範囲で表示されます</div>
     </div>
@@ -644,6 +684,14 @@
             <div><b class="mini">露出</b><div id="nsfwL_expo" class="scroller"></div></div>
             <div><b class="mini">シチュ</b><div id="nsfwL_situ" class="scroller"></div></div>
             <div><b class="mini">ライティング</b><div id="nsfwL_light" class="scroller"></div></div>
+            <!-- 追加：ポーズ（NSFW/学習） -->
+            <div><b class="mini">ポーズ</b><div id="nsfwL_pose" class="scroller"></div></div>
+            <!-- 追加：アクセ（NSFW/学習） -->
+            <div><b class="mini">アクセ</b><div id="nsfwL_acc" class="scroller"></div></div>
+            <!-- 追加：衣装（NSFW/学習） -->
+            <div><b class="mini">衣装</b><div id="nsfwL_outfit" class="scroller"></div></div>
+            <!-- 追加：身体（NSFW/学習） -->
+            <div><b class="mini">身体</b><div id="nsfwL_body" class="scroller"></div></div>  
           </div>
           <div class="mini" style="margin-top:6px">※ リストはレベル上限の範囲で表示されます</div>
         </div>
@@ -887,6 +935,14 @@
             <div><b class="mini">露出</b><div id="nsfwP_expo" class="scroller"></div></div>
             <div><b class="mini">シチュ</b><div id="nsfwP_situ" class="scroller"></div></div>
             <div><b class="mini">ライティング</b><div id="nsfwP_light" class="scroller"></div></div>
+            <!-- 追加：ポーズ（NSFW/量産） -->
+            <div><b class="mini">ポーズ</b><div id="nsfwP_pose" class="scroller"></div></div>
+            <!-- 追加：アクセ（NSFW/量産） -->
+            <div><b class="mini">アクセ</b><div id="nsfwP_acc" class="scroller"></div></div>
+            <!-- 追加：衣装（NSFW/量産） -->
+            <div><b class="mini">衣装</b><div id="nsfwP_outfit" class="scroller"></div></div>
+            <!-- 追加：身体（NSFW/量産） -->
+            <div><b class="mini">身体</b><div id="nsfwP_body" class="scroller"></div></div>
           </div>
         </div>
       </div>
