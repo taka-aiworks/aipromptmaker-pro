@@ -1699,6 +1699,11 @@ function pmRenderNSFWPlanner(){
   e = pmById('pl_nsfw_expo');  if (e) e.innerHTML  = chips(ns.exposure,   'expo');
   e = pmById('pl_nsfw_situ');  if (e) e.innerHTML  = chips(ns.situation,  'situ');
   e = pmById('pl_nsfw_light'); if (e) e.innerHTML  = chips(ns.lighting,   'light');
+  e = pmById('pl_nsfw_pose');  if (e) e.innerHTML  = chips(ns.pose,      'pose');
+  e = pmById('pl_nsfw_acc');   if (e) e.innerHTML  = chips(ns.accessory, 'acc');
+  e = pmById('pl_nsfw_outfit');if (e) e.innerHTML  = chips(ns.outfit,    'outfit');
+  e = pmById('pl_nsfw_body');  if (e) e.innerHTML  = chips(ns.body,      'body');
+  e = pmById('pl_nsfw_nipple');  if (e) e.innerHTML  = chips(ns.nipple,      'nipple');
 }
 function pmBindNSFWPlanner(){
   var tgl = pmById('pl_nsfw');
