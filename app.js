@@ -3707,8 +3707,7 @@ function buildBatchProduction(n){
   const seedMode = document.querySelector('input[name="seedMode"]:checked')?.value || "fixed";
 
   // 固定タグ（先頭側に混ぜる）
-  const fixed = ($("#p_fixed").value||"")
-    .split(",").map(s=>s.trim()).filter(Boolean);
+  const fixed = ($("#p_fixed").value||"").split(",").map(s=>s.trim()).filter(Boolean);
 
   const neg = getNegProd();
 
@@ -3731,7 +3730,7 @@ function buildBatchProduction(n){
   const nsfwSitu = nsfwOn ? getMany("nsfwP_situ")  : [];
   const nsfwLite = nsfwOn ? getMany("nsfwP_light") : [];
 
-  // 服色（top/bottom/shoes のプレースホルダ→ 後で通常服のみ pairWearColors で合体）
+  // 服色（top/bottom/shoes のプレースホルダ → 通常服のみ pairWearColors で合体）
   const PC = {
     top:    getProdWearColorTag("top"),
     bottom: getProdWearColorTag("bottom"),
@@ -3739,9 +3738,9 @@ function buildBatchProduction(n){
   };
 
   const baseSeed = seedFromName($("#charName").value||"", 0);
-  const out = [];
+  const out  = [];
   const seen = new Set();
-  let guard = 0;
+  let guard  = 0;
 
   const pickOne = (arr)=> (arr && arr.length ? pick(arr) : "");
 
@@ -3822,40 +3821,46 @@ function buildBatchProduction(n){
     if (nsfwOn && nsfwLite.length) parts.push(pickOne(nsfwLite));
 
     // --- NSFW：露出/シチュ（各1）---
-    let pickedExpo = "";
-    if (nsfwOn && nsfwExpo.length) {
-      pickedExpo = pickOne(nsfwExpo);
-      if (pickedExpo) parts.push(pickedExpo);
-    }
+    if (nsfwOn && nsfwExpo.length) parts.push(pickOne(nsfwExpo));
     if (nsfwOn && nsfwSitu.length) parts.push(pickOne(nsfwSitu));
 
     // --- 整合処理（順序が重要） ---
     let all = uniq([...fixed, ...parts]).filter(Boolean);
 
     // 露出/ワンピ優先（上下や色プレースホルダの除去はここで）
-    all = applyNudePriority(all);
-    all = enforceOnePieceExclusivity(all);
+    if (typeof applyNudePriority === 'function')        all = applyNudePriority(all);
+    if (typeof enforceOnePieceExclusivity === 'function') all = enforceOnePieceExclusivity(all);
 
-    // ★ 水着/下着/ヌード系の露出なら、上下服＆色プレースホルダを除去し、辞書の色付き露出タグだけを残す
-    const isSwimLingerieNude =
-      pickedExpo && /\b(bikini|swimsuit|lingerie|topless|bottomless|nude)\b/i.test(pickedExpo);
+    // ★ 露出検出は pickedExpo ではなく、最終配列 all 全体をスキャンして判定（固定タグ経由も拾う）
+    const EXPOSURE_EXCLUSIVE_RE =
+      /\b(bikini|swimsuit|lingerie|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple_cover_bikini|crotchless_swimsuit|bodypaint_swimsuit|topless|bottomless|nude)\b/i;
 
-    if (isSwimLingerieNude) {
-      // 既存の上下服・色プレースホルダを除去
-      all = all.filter(t =>
-        !/\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|dress)\b/i.test(t)
-        && !/\b(white|black|red|blue|azure|green|yellow|orange|pink|purple|brown|gray|grey|silver|gold)\b(?:\s+(top|bottom|shoes))?/i.test(t)
+    const hasExposure = all.some(t => EXPOSURE_EXCLUSIVE_RE.test(String(t)));
+
+    if (hasExposure) {
+      // 既存の上下服・ワンピ・靴・色プレースホルダを除去
+      const CLOTH_NOUN_RE =
+        /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown|shoes)\b/i;
+      const COLOR_WORD_RE =
+        /\b(white|black|red|blue|azure|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta)\b/i;
+      const COLOR_PLACE_RE =
+        /\b(white|black|red|blue|azure|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta)\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown|shoes)\b/i;
+
+      all = all.filter(s =>
+        !CLOTH_NOUN_RE.test(s) &&
+        !COLOR_PLACE_RE.test(s) &&
+        // 単独色タグも除去（露出は辞書の色込みタグで表現）
+        !(COLOR_WORD_RE.test(s) && !/\s/.test(s))
       );
-      // exposure は辞書の色付きワード（pickedExpo）だけ残っていればOK
-      // （ここで何も足さない＝そのまま維持）
+      // 露出の色は辞書（色込みタグ）に任せる
     } else {
       // 通常服のときだけ、色タグと服名を合体
-      all = pairWearColors(all);
+      if (typeof pairWearColors === 'function') all = pairWearColors(all);
     }
 
     // SOLOガードやヒント整理
-    all = stripMultiHints(all);
-    all = forceSoloPos(all);
+    if (typeof stripMultiHints === 'function') all = stripMultiHints(all);
+    if (typeof forceSoloPos === 'function')    all = forceSoloPos(all);
 
     // 排他カテゴリの整理 → 並び順 → 先頭固定
     if (typeof fixExclusives === 'function')     all = fixExclusives(all);
