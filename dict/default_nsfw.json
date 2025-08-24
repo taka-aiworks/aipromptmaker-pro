@@ -271,6 +271,16 @@
       { "tag": "bondage_straps",  "ja": "拘束ベルト衣装",           "level": "L2" },
       { "tag": "gimp_suit",       "ja": "ギンプスーツ",             "level": "L2" }
     ],
+    "underwear": [
+        { "tag": "lingerie_set", "ja": "ランジェリーセット", "level": "L2" },
+        { "tag": "bra", "ja": "ブラジャー", "level": "L1" },
+        { "tag": "panties", "ja": "パンティ", "level": "L1" },
+        { "tag": "garter_belt", "ja": "ガーターベルト", "level": "L2" },
+        { "tag": "stockings", "ja": "ストッキング", "level": "L1" },
+        { "tag": "transparent_lingerie", "ja": "透けランジェリー", "level": "L2" },
+        { "tag": "open_cup_bra", "ja": "オープンカップブラ", "level": "L3" },
+        { "tag": "crotchless_panties", "ja": "クロッチレスショーツ", "level": "L3" }
+      ],
     "body": [
       { "tag": "big_breasts",       "ja": "爆乳", "level": "L2" },
       { "tag": "huge_breasts",      "ja": "超乳", "level": "L2" },
