@@ -1096,25 +1096,39 @@ function filterByScope(items, allow) {
 
 /* ===========================================================
  * 単語モード JS（辞書→UI描画、テーブル追加、コピー、保存）
- * 依存：対応するHTML & CSS。辞書は「既存の SFW/NSFW 辞書」をそのまま参照（変換しない）
+ * 依存：対応するHTML & CSS。辞書は既存の SFW/NSFW をそのまま参照。
  * 保存：localStorage "wm_rows_v1" に {jp,en,cat} の配列で保存。
- * 公開：window.WordMode.renderAll() で外部から再描画可能
+ * 仕様：辞書の文字列は変換しない（キー名やプロパティ名の“受け口”だけ用意）
  * =========================================================== */
 (function(){
-  const onReady = (fn)=> {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', fn, { once:true });
-    } else { fn(); }
-  };
+  // ---- lazy init：初回に「単語」タブへ切り替わった時だけ描画 ----
+  let initialized = false;
 
-  onReady(() => {
+  // “単語”タブが押された時に呼ばれるフックを仕込む
+  document.addEventListener('DOMContentLoaded', () => {
+    const tab = document.querySelector('.tab[data-mode="word"]');
+    if (!tab) return;
+    tab.addEventListener('click', async () => {
+      if (!initialized) {
+        initialized = true;
+        await initWordMode();
+      }
+    });
+    // もし最初から単語タブが active なら即初期化
+    if (tab.classList.contains('active')) {
+      initialized = true;
+      initWordMode();
+    }
+  });
+
+  async function initWordMode(){
+    const panel = document.getElementById('panelWordMode');
+    if (!panel) return; // パネルがないページは何もしない
+
     const MAX_ROWS = 20;
     const LS_KEY = "wm_rows_v1";
 
     // ---- DOM refs ----
-    const panel = document.getElementById('panelWordMode');
-    if (!panel) return;
-
     const elItems = {
       background:        document.getElementById('wm-items-background'),
       pose:              document.getElementById('wm-items-pose'),
@@ -1185,52 +1199,130 @@ function filterByScope(items, allow) {
       setTimeout(()=> panel.style.boxShadow = "", 180);
     }
 
-    // ---- 既存辞書の参照（変換しない）----
-    // よくあるグローバル名を多段参照。あなたの実体名に合わせて最初の候補が拾われます。
-    function getSfwDictRaw(){
-      return (
-        window.SFW_DICT ||
-        window.DICT_SFW ||
-        window.sfwDict ||
-        window.SFW || 
-        {} // 無ければ空
-      );
+    // =========================================================
+    // ここから：辞書の“受け口”だけを用意（内容は加工しない）
+    // =========================================================
+    async function loadFallbackJSON(path){
+      try{
+        const r = await fetch(path, {cache:"no-store"});
+        if(!r.ok) throw new Error('bad status');
+        return await r.json();
+      }catch(_){ return null; }
     }
-    function getNsfwDictRaw(){
-      return (
-        window.NSFW_DICT ||
-        window.DICT_NSFW ||
-        window.nsfwDict ||
-        window.NSFW || 
-        {}
-      );
+
+    function firstNonNull(...vals){ return vals.find(v => v != null); }
+
+    // グローバルから“それっぽい”SFW/NSFWを探す
+    function sniffGlobalDict(nameCandidates){
+      for (const key of nameCandidates){
+        const obj = getByPath(window, key);
+        if (obj && typeof obj === 'object') return obj;
+      }
+      return null;
+    }
+    function getByPath(root, path){
+      const parts = path.split('.');
+      let cur = root;
+      for (const p of parts){
+        if (!cur) return null;
+        cur = cur[p];
+      }
+      return cur;
+    }
+
+    // 要素配列を {ja, en} に“詰め替え”だけする（文字列は触らない）
+    function normalizeEntries(arr){
+      return (Array.isArray(arr) ? arr : []).map(x => ({
+        ja: firstNonNull(x.ja, x.jp, x.label, x.name, ""),
+        en: firstNonNull(x.en, x.tag, x.value, ""),
+        level: x.level // そのまま保持（使わないが落とさない）
+      })).filter(o => o.ja && o.en);
+    }
+
+    // カテゴリ名の差異を吸収（存在すれば拾う／無ければ空）
+    function pickCat(dict, ...names){
+      for (const n of names){
+        if (dict && Array.isArray(dict[n])) return dict[n];
+      }
+      return [];
+    }
+
+    // NSFWの入れ子（categories.*）にも対応
+    function pickNSFW(ns, key){
+      if (!ns) return [];
+      // 例: key="expression" → ns.categories.expression / ns.expression
+      const fromCat = ns.categories && Array.isArray(ns.categories[key]) ? ns.categories[key] : null;
+      const flat    = Array.isArray(ns[key]) ? ns[key] : null;
+      return firstNonNull(fromCat, flat, []);
+    }
+
+    async function getWordModeDict(){
+      // 1) 既存のどこかに SFW/NSFW がある想定で総当たり
+      const sfwRaw = sniffGlobalDict([
+        'SFW','sfw','DICT_SFW','dictSfw','app.dict.sfw','APP_DICT.SFW'
+      ]);
+      const nsfwRaw = sniffGlobalDict([
+        'NSFW','nsfw','DICT_NSFQ','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW'
+      ]);
+
+      // 2) 見つからない場合のみフォールバックで既定JSONを読む
+      const sfw = sfwRaw || await loadFallbackJSON('dict/default_sfw.json') || {};
+      const nsfw = nsfwRaw || await loadFallbackJSON('dict/default_nsfw.json') || {};
+
+      // 3) 大文字/小文字のトップキー差異を吸収
+      const sfwTop = sfw.sfw || sfw.SFW || sfw;     // どれでもOKにする
+      const nsfwTop= nsfw.nsfw|| nsfw.NSFW|| nsfw; // どれでもOKにする
+
+      // 4) 単語モード用に最小限のビューを作る（内容は詰め替えるだけ）
+      const out = {
+        sfw: {
+          background:   normalizeEntries(pickCat(sfwTop, 'background')),
+          pose:         normalizeEntries(pickCat(sfwTop, 'pose')),
+          composition:  normalizeEntries(pickCat(sfwTop, 'composition')),
+          view:         normalizeEntries(pickCat(sfwTop, 'view')),
+          // expressions / expression どちらでもOK
+          expression:   normalizeEntries(pickCat(sfwTop, 'expression','expressions')),
+          lighting:     normalizeEntries(pickCat(sfwTop, 'lighting')),
+          world:        normalizeEntries(pickCat(sfwTop, 'world','worldview')),
+          personality:  normalizeEntries(pickCat(sfwTop, 'personality')),
+          relationship: normalizeEntries(pickCat(sfwTop, 'relationship')),
+          color:        normalizeEntries(pickCat(sfwTop, 'color','colors'))
+        },
+        nsfw: {
+          expression: normalizeEntries(pickNSFW(nsfwTop, 'expression')),
+          exposure:   normalizeEntries(pickNSFW(nsfwTop, 'exposure')),
+          situation:  normalizeEntries(pickNSFW(nsfwTop, 'situation')),
+          lighting:   normalizeEntries(pickNSFW(nsfwTop, 'lighting')),
+        }
+      };
+      return out;
     }
 
     // ---- Build UI ----
-    function renderAll(){
-      const sfw = getSfwDictRaw() || {};
-      const nsfw = getNsfwDictRaw() || {};
+    async function renderAll(){
+      const dict = await getWordModeDict();
 
-      // SFW（辞書のキー名はそのまま。各要素は {ja,en} or {ja,tag} など想定）
-      fillCat('background',       sfw.background || []);
-      fillCat('pose',             sfw.pose || []);
-      fillCat('composition',      sfw.composition || []);
-      fillCat('view',             sfw.view || []);
-      fillCat('expression-sfw',   sfw.expression || []);
-      fillCat('lighting-sfw',     sfw.lighting || []);
-      fillCat('world',            sfw.world || []);
-      fillCat('personality',      sfw.personality || []);
-      fillCat('relationship',     sfw.relationship || []);
+      // SFW
+      fillCat('background', dict.sfw.background);
+      fillCat('pose', dict.sfw.pose);
+      fillCat('composition', dict.sfw.composition);
+      fillCat('view', dict.sfw.view);
+      fillCat('expression-sfw', dict.sfw.expression);
+      fillCat('lighting-sfw', dict.sfw.lighting);
+      fillCat('world', dict.sfw.world);
+      fillCat('personality', dict.sfw.personality);
+      fillCat('relationship', dict.sfw.relationship);
 
       // NSFW
-      fillCat('expression-nsfw',  nsfw.expression || []);
-      fillCat('exposure',         nsfw.exposure || []);
-      fillCat('situation',        nsfw.situation || []);
-      fillCat('lighting-nsfw',    nsfw.lighting || []);
+      fillCat('expression-nsfw', dict.nsfw.expression);
+      fillCat('exposure', dict.nsfw.exposure);
+      fillCat('situation', dict.nsfw.situation);
+      fillCat('lighting-nsfw', dict.nsfw.lighting);
 
-      // Color（SFW側 color）
-      fillCat('color',            sfw.color || [], true);
+      // Color（SFW側の color）
+      fillCat('color', dict.sfw.color, true);
 
+      // 保存データ復元
       restoreRows();
       updateSelectedView();
     }
@@ -1241,9 +1333,8 @@ function filterByScope(items, allow) {
       host.innerHTML = "";
       const useTpl = isColor ? tplItemColor : tplItem;
       (items || []).forEach(obj=>{
-        // ★ 変換はせず、表示時のみ柔軟に読み取る
-        const jp = obj.ja || obj.jp || obj.name || obj.label || "";
-        const en = obj.en || obj.tag || obj.key || obj.value || "";
+        const jp = obj.ja || obj.jp || "";
+        const en = obj.en || "";
         if (!jp || !en) return;
 
         const node = useTpl.content.firstElementChild.cloneNode(true);
@@ -1254,20 +1345,23 @@ function filterByScope(items, allow) {
         node.querySelector('.wm-jp').textContent = jp;
         node.querySelector('.wm-en').textContent = en;
 
-        // クリックでテーブルに追加（ボタン群は stopPropagation 済み）
+        // クリックでテーブルに追加
         node.addEventListener('click', (ev)=>{
           if (ev.target.closest('.wm-actions')) return;
           addRow({jp, en, cat:catKey});
         });
 
+        // ENコピー / BOTHコピー
         const bEn = node.querySelector('.wm-copy-en');
         if (bEn) bEn.addEventListener('click', (ev)=>{
-          ev.stopPropagation(); copyText(en);
+          ev.stopPropagation();
+          copyText(en);
         });
 
         const bBoth = node.querySelector('.wm-copy-both');
         if (bBoth) bBoth.addEventListener('click', (ev)=>{
-          ev.stopPropagation(); copyText(`${jp} (${en})`);
+          ev.stopPropagation();
+          copyText(`${jp} (${en})`);
         });
 
         host.appendChild(node);
@@ -1295,7 +1389,7 @@ function filterByScope(items, allow) {
 
     function addRow(item){
       if (!item || !item.en) return;
-      if (hasRow(item.en)) return;
+      if (hasRow(item.en)) return; // 重複防止
       const rows = currentRows();
       if (rows.length >= MAX_ROWS) { flashOK(); return; }
 
@@ -1347,7 +1441,7 @@ function filterByScope(items, allow) {
       copyText(lines.join("\n"));
     }
 
-    // ---- Selected chips ----
+    // ---- Selected chips (上部の視覚要約) ----
     function updateSelectedView(){
       const rows = currentRows();
       chipCount.textContent = String(rows.length);
@@ -1369,9 +1463,7 @@ function filterByScope(items, allow) {
     function escapeHTML(s){
       return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
-    function cssEscape(s){
-      return String(s).replace(/"/g, '\\"');
-    }
+    function cssEscape(s){ return String(s).replace(/"/g, '\\"'); }
 
     // ---- Global buttons ----
     btnCopyENAll?.addEventListener('click', copyAllEN);
@@ -1379,16 +1471,10 @@ function filterByScope(items, allow) {
     btnTableClear?.addEventListener('click', clearRows);
     btnSelectedClear?.addEventListener('click', clearRows);
 
-    // ---- 初期化（他タブからも呼べるよう公開） ----
-    renderAll();
-    window.WordMode = Object.assign(window.WordMode || {}, {
-      renderAll,    // 再描画
-      addRow,       // 任意：外部から行追加したい時に
-      clearRows,    // 任意：外部からクリア
-      copyAllEN,    // 任意
-      copyAllBoth   // 任意
-    });
-  });
+    // ---- Render now ----
+    await renderAll();
+  }
+
 })();
 
 
