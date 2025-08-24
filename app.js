@@ -1165,13 +1165,13 @@ function filterByScope(items, allow) {
 
 
 /* ===========================================================
- * 単語モード JS（辞書→UI描画、テーブル追加、コピー、保存）
- * 依存：対応するHTML & CSS。辞書は既存の SFW/NSFW をそのまま参照。
- * 保存：localStorage "wm_rows_v1" に {jp,en,cat} の配列で保存。
- * 仕様：辞書の文字列は変換しない（キー名やプロパティ名の“受け口”だけ用意）
+ * 単語モード（置き換え版）
+ * 変更点:
+ *  - getWordModeDict: NSFW拡張カテゴリを返す
+ *  - renderAll: nipple-nsfw に統一（nipples-nsfw を削除）
+ *  - fillCat: テンプレ/ホストが無い場合でも安全
  * =========================================================== */
 (function(){
-  // ---- lazy init：初回に「単語」タブへ切り替わった時だけ描画 ----
   let initialized = false;
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -1197,58 +1197,59 @@ function filterByScope(items, allow) {
     const LS_KEY = "wm_rows_v1";
 
     // ---- DOM refs ----
-    // ---- DOM refs ----
-   const elItems = {
-     background:        document.getElementById('wm-items-background'),
-     pose:              document.getElementById('wm-items-pose'),
-     composition:       document.getElementById('wm-items-composition'),
-     view:              document.getElementById('wm-items-view'),
-     'expression-sfw':  document.getElementById('wm-items-expression-sfw'),
-     'lighting-sfw':    document.getElementById('wm-items-lighting-sfw'),
-     world:             document.getElementById('wm-items-world'),
-     personality:       document.getElementById('wm-items-personality'),
-     relationship:      document.getElementById('wm-items-relationship'),
-     accessories:       document.getElementById('wm-items-accessories'),
-   
-     'expression-nsfw': document.getElementById('wm-items-expression-nsfw'),
-     exposure:          document.getElementById('wm-items-exposure'),
-     situation:         document.getElementById('wm-items-situation'),
-     'lighting-nsfw':   document.getElementById('wm-items-lighting-nsfw'),
-     'pose-nsfw':       document.getElementById('wm-items-pose-nsfw'),
-     'accessory-nsfw':  document.getElementById('wm-items-accessory-nsfw'),
-     'outfit-nsfw':     document.getElementById('wm-items-outfit-nsfw'),
-     'body-nsfw':       document.getElementById('wm-items-body-nsfw'),
-     'nipple-nsfw':     document.getElementById('wm-items-nipple-nsfw'),
-     'underwear-nsfw':  document.getElementById('wm-items-underwear-nsfw'),
-   
-     color:             document.getElementById('wm-items-color'),
-   };
-   
-   const elCounts = {
-     background:        document.getElementById('wm-count-background'),
-     pose:              document.getElementById('wm-count-pose'),
-     composition:       document.getElementById('wm-count-composition'),
-     view:              document.getElementById('wm-count-view'),
-     'expression-sfw':  document.getElementById('wm-count-expression-sfw'),
-     'lighting-sfw':    document.getElementById('wm-count-lighting-sfw'),
-     world:             document.getElementById('wm-count-world'),
-     personality:       document.getElementById('wm-count-personality'),
-     relationship:      document.getElementById('wm-count-relationship'),
-     accessories:       document.getElementById('wm-count-accessories'),
-   
-     'expression-nsfw': document.getElementById('wm-count-expression-nsfw'),
-     exposure:          document.getElementById('wm-count-exposure'),
-     situation:         document.getElementById('wm-count-situation'),
-     'lighting-nsfw':   document.getElementById('wm-count-lighting-nsfw'),
-     'pose-nsfw':       document.getElementById('wm-count-pose-nsfw'),
-     'accessory-nsfw':  document.getElementById('wm-count-accessory-nsfw'),
-     'outfit-nsfw':     document.getElementById('wm-count-outfit-nsfw'),
-     'body-nsfw':       document.getElementById('wm-count-body-nsfw'),
-     'nipple-nsfw':     document.getElementById('wm-count-nipple-nsfw'),
-     'underwear-nsfw':  document.getElementById('wm-count-underwear-nsfw'),
-   
-     color:             document.getElementById('wm-count-color'),
-   };
+    const elItems = {
+      background:        document.getElementById('wm-items-background'),
+      pose:              document.getElementById('wm-items-pose'),
+      composition:       document.getElementById('wm-items-composition'),
+      view:              document.getElementById('wm-items-view'),
+      'expression-sfw':  document.getElementById('wm-items-expression-sfw'),
+      'lighting-sfw':    document.getElementById('wm-items-lighting-sfw'),
+      world:             document.getElementById('wm-items-world'),
+      personality:       document.getElementById('wm-items-personality'),
+      relationship:      document.getElementById('wm-items-relationship'),
+      accessories:       document.getElementById('wm-items-accessories'),
+
+      'expression-nsfw': document.getElementById('wm-items-expression-nsfw'),
+      exposure:          document.getElementById('wm-items-exposure'),
+      situation:         document.getElementById('wm-items-situation'),
+      'lighting-nsfw':   document.getElementById('wm-items-lighting-nsfw'),
+
+      'pose-nsfw':       document.getElementById('wm-items-pose-nsfw'),
+      'accessory-nsfw':  document.getElementById('wm-items-accessory-nsfw'),
+      'outfit-nsfw':     document.getElementById('wm-items-outfit-nsfw'),
+      'body-nsfw':       document.getElementById('wm-items-body-nsfw'),
+      'nipple-nsfw':     document.getElementById('wm-items-nipple-nsfw'), // ← 統一
+      'underwear-nsfw':  document.getElementById('wm-items-underwear-nsfw'),
+
+      color:             document.getElementById('wm-items-color'),
+    };
+
+    const elCounts = {
+      background:        document.getElementById('wm-count-background'),
+      pose:              document.getElementById('wm-count-pose'),
+      composition:       document.getElementById('wm-count-composition'),
+      view:              document.getElementById('wm-count-view'),
+      'expression-sfw':  document.getElementById('wm-count-expression-sfw'),
+      'lighting-sfw':    document.getElementById('wm-count-lighting-sfw'),
+      world:             document.getElementById('wm-count-world'),
+      personality:       document.getElementById('wm-count-personality'),
+      relationship:      document.getElementById('wm-count-relationship'),
+      accessories:       document.getElementById('wm-count-accessories'),
+
+      'expression-nsfw': document.getElementById('wm-count-expression-nsfw'),
+      exposure:          document.getElementById('wm-count-exposure'),
+      situation:         document.getElementById('wm-count-situation'),
+      'lighting-nsfw':   document.getElementById('wm-count-lighting-nsfw'),
+
+      'pose-nsfw':       document.getElementById('wm-count-pose-nsfw'),
+      'accessory-nsfw':  document.getElementById('wm-count-accessory-nsfw'),
+      'outfit-nsfw':     document.getElementById('wm-count-outfit-nsfw'),
+      'body-nsfw':       document.getElementById('wm-count-body-nsfw'),
+      'nipple-nsfw':     document.getElementById('wm-count-nipple-nsfw'),  // ← 統一
+      'underwear-nsfw':  document.getElementById('wm-count-underwear-nsfw'),
+
+      color:             document.getElementById('wm-count-color'),
+    };
 
     const tplItem = document.getElementById('wm-item-tpl');
     const tplItemColor = document.getElementById('wm-item-tpl-color');
@@ -1282,9 +1283,7 @@ function filterByScope(items, allow) {
       setTimeout(()=> panel.style.boxShadow = "", 180);
     }
 
-    // =========================================================
-    // ここから：辞書の“受け口”だけを用意（内容は加工しない）
-    // =========================================================
+    // ---- 辞書受け口 ----
     async function loadFallbackJSON(path){
       try{
         const r = await fetch(path, {cache:"no-store"});
@@ -1329,6 +1328,7 @@ function filterByScope(items, allow) {
       return firstNonNull(fromCat, flat, []);
     }
 
+    // ← ここを拡張：NSFWの追加カテゴリも受け取る
     async function getWordModeDict(){
       const sfwRaw = sniffGlobalDict([
         'SFW','sfw','DICT_SFW','dictSfw','app.dict.sfw','APP_DICT.SFW'
@@ -1354,64 +1354,75 @@ function filterByScope(items, allow) {
           world:        normalizeEntries(pickCat(sfwTop, 'world','worldview')),
           personality:  normalizeEntries(pickCat(sfwTop, 'personality')),
           relationship: normalizeEntries(pickCat(sfwTop, 'relationship')),
-          accessories:  normalizeEntries(pickCat(sfwTop, 'accessories','accessory')), // ← 追加
+          accessories:  normalizeEntries(pickCat(sfwTop, 'accessories','accessory')),
           color:        normalizeEntries(pickCat(sfwTop, 'color','colors'))
         },
         nsfw: {
+          // 既存
           expression: normalizeEntries(pickNSFW(nsfwTop, 'expression')),
           exposure:   normalizeEntries(pickNSFW(nsfwTop, 'exposure')),
           situation:  normalizeEntries(pickNSFW(nsfwTop, 'situation')),
           lighting:   normalizeEntries(pickNSFW(nsfwTop, 'lighting')),
+          // 追加（存在すれば描画、無ければ空）
+          pose:       normalizeEntries(pickNSFW(nsfwTop, 'pose')),
+          accessory:  normalizeEntries(pickNSFW(nsfwTop, 'accessory')),
+          outfit:     normalizeEntries(pickNSFW(nsfwTop, 'outfit')),
+          body:       normalizeEntries(pickNSFW(nsfwTop, 'body')),
+          nipples:    normalizeEntries(pickNSFW(nsfwTop, 'nipples')), // ← nipples
+          underwear:  normalizeEntries(pickNSFW(nsfwTop, 'underwear')),
         }
       };
       return out;
     }
 
     // ---- Build UI ----
-   async function renderAll(){
-     const dict = await getWordModeDict();
-   
-     // SFW
-     fillCat('background', dict.sfw.background);
-     fillCat('pose', dict.sfw.pose);
-     fillCat('composition', dict.sfw.composition);
-     fillCat('view', dict.sfw.view);
-     fillCat('expression-sfw', dict.sfw.expression);
-     fillCat('lighting-sfw', dict.sfw.lighting);
-     fillCat('world', dict.sfw.world);
-     fillCat('personality', dict.sfw.personality);
-     fillCat('relationship', dict.sfw.relationship);
-     fillCat('accessories', dict.sfw.accessories);
-   
-     // NSFW（★ここを追加）
-     fillCat('expression-nsfw', dict.nsfw.expression);
-     fillCat('exposure',        dict.nsfw.exposure);
-     fillCat('situation',       dict.nsfw.situation);
-     fillCat('lighting-nsfw',   dict.nsfw.lighting);
-   
-     // 追加カテゴリ
-     fillCat('pose-nsfw',       dict.nsfw.pose);
-     fillCat('accessory-nsfw',  dict.nsfw.accessory);
-     fillCat('outfit-nsfw',     dict.nsfw.outfit);
-     fillCat('body-nsfw',       dict.nsfw.body);
-     // 乳首を独立させるなら（HTMLにdetailsを追加した場合のみ）
-     fillCat('nipple-nsfw',     dict.nsfw.nipples || []);
-     fillCat('nipples-nsfw',    dict.nsfw.nipples || []);
-     fillCat('underwear-nsfw',   dict.nsfw.underwear);
+    async function renderAll(){
+      const dict = await getWordModeDict();
 
-   
-     // Color（SFW側）
-     fillCat('color', dict.sfw?.colors || dict.sfw?.color || [], true);
-   
-     restoreRows();
-     updateSelectedView();
-   }
+      // SFW
+      fillCat('background', dict.sfw.background);
+      fillCat('pose', dict.sfw.pose);
+      fillCat('composition', dict.sfw.composition);
+      fillCat('view', dict.sfw.view);
+      fillCat('expression-sfw', dict.sfw.expression);
+      fillCat('lighting-sfw', dict.sfw.lighting);
+      fillCat('world', dict.sfw.world);
+      fillCat('personality', dict.sfw.personality);
+      fillCat('relationship', dict.sfw.relationship);
+      fillCat('accessories', dict.sfw.accessories);
+
+      // NSFW（既存）
+      fillCat('expression-nsfw', dict.nsfw.expression);
+      fillCat('exposure',        dict.nsfw.exposure);
+      fillCat('situation',       dict.nsfw.situation);
+      fillCat('lighting-nsfw',   dict.nsfw.lighting);
+
+      // 追加カテゴリ（存在しなければ空扱い）
+      fillCat('pose-nsfw',       dict.nsfw.pose || []);
+      fillCat('accessory-nsfw',  dict.nsfw.accessory || []);
+      fillCat('outfit-nsfw',     dict.nsfw.outfit || []);
+      fillCat('body-nsfw',       dict.nsfw.body || []);
+      fillCat('nipple-nsfw',     dict.nsfw.nipples || []);   // ← 統一（HTML側は singular）
+      fillCat('underwear-nsfw',  dict.nsfw.underwear || []);
+
+      // Color（SFW側）
+      fillCat('color', dict.sfw?.colors || dict.sfw?.color || [], true);
+
+      restoreRows();
+      updateSelectedView();
+    }
 
     function fillCat(catKey, items, isColor=false){
       const host = elItems[catKey];
-      if (!host) return;
+      if (!host) return; // ホストが無ければ何もしない
+
       host.innerHTML = "";
       const useTpl = isColor ? tplItemColor : tplItem;
+      if (!useTpl || !useTpl.content) { // テンプレ無ければ早期return
+        if (elCounts[catKey]) elCounts[catKey].textContent = String(items?.length || 0);
+        return;
+      }
+
       (items || []).forEach(obj=>{
         const jp = obj.ja || obj.jp || "";
         const en = obj.en || "";
@@ -1422,11 +1433,13 @@ function filterByScope(items, allow) {
         node.dataset.jp = jp;
         node.dataset.cat = catKey;
 
-        node.querySelector('.wm-jp').textContent = jp;
-        node.querySelector('.wm-en').textContent = en;
+        const jpEl = node.querySelector('.wm-jp');
+        const enEl = node.querySelector('.wm-en');
+        if (jpEl) jpEl.textContent = jp;
+        if (enEl) enEl.textContent = en;
 
         node.addEventListener('click', (ev)=>{
-          if (ev.target.closest('.wm-actions')) return;
+          if (ev.target.closest?.('.wm-actions')) return;
           addRow({jp, en, cat:catKey});
         });
 
@@ -1445,13 +1458,12 @@ function filterByScope(items, allow) {
         host.appendChild(node);
       });
 
-      if (elCounts[catKey]) elCounts[catKey].textContent = String(items.length || 0);
+      if (elCounts[catKey]) elCounts[catKey].textContent = String(items?.length || 0);
     }
 
-    // ---- Table ops ----
     function currentRows(){
       const rows = [];
-      tblBody.querySelectorAll('tr').forEach(tr=>{
+      tblBody?.querySelectorAll?.('tr')?.forEach(tr=>{
         rows.push({
           jp: tr.querySelector('.wm-row-jp')?.textContent || "",
           en: tr.dataset.en || tr.querySelector('.wm-row-en')?.textContent || "",
@@ -1461,10 +1473,11 @@ function filterByScope(items, allow) {
       return rows;
     }
     function hasRow(en){
-      return !!tblBody.querySelector(`tr[data-en="${cssEscape(en)}"]`);
+      const esc = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(en) : String(en).replace(/"/g, '\\"');
+      return !!tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
     }
     function addRow(item){
-      if (!item || !item.en) return;
+      if (!item || !item.en || !tplRow || !tplRow.content || !tblBody) return;
       if (hasRow(item.en)) return;
       const rows = currentRows();
       if (rows.length >= MAX_ROWS) { flashOK(); return; }
@@ -1472,12 +1485,12 @@ function filterByScope(items, allow) {
       const tr = tplRow.content.firstElementChild.cloneNode(true);
       tr.dataset.en = item.en;
       tr.dataset.cat = item.cat || "";
-      tr.querySelector('.wm-row-jp').textContent = item.jp || "";
-      tr.querySelector('.wm-row-en').textContent = item.en || "";
+      tr.querySelector('.wm-row-jp')?.append(document.createTextNode(item.jp || ""));
+      tr.querySelector('.wm-row-en')?.append(document.createTextNode(item.en || ""));
 
-      tr.querySelector('.wm-row-copy-en').addEventListener('click', ()=> copyText(item.en));
-      tr.querySelector('.wm-row-copy-both').addEventListener('click', ()=> copyText(`${item.jp} (${item.en})`));
-      tr.querySelector('.wm-row-remove').addEventListener('click', ()=>{
+      tr.querySelector('.wm-row-copy-en')?.addEventListener('click', ()=> copyText(item.en));
+      tr.querySelector('.wm-row-copy-both')?.addEventListener('click', ()=> copyText(`${item.jp} (${item.en})`));
+      tr.querySelector('.wm-row-remove')?.addEventListener('click', ()=>{
         tr.remove(); persistRows(); updateSelectedView();
       });
 
@@ -1498,6 +1511,7 @@ function filterByScope(items, allow) {
       } catch(e){}
     }
     function clearRows(){
+      if (!tblBody) return;
       tblBody.innerHTML = "";
       persistRows();
       updateSelectedView();
@@ -1513,17 +1527,18 @@ function filterByScope(items, allow) {
       copyText(lines.join("\n"));
     }
 
-    // ---- Selected chips ----
     function updateSelectedView(){
       const rows = currentRows();
-      chipCount.textContent = String(rows.length);
+      if (chipCount) chipCount.textContent = String(rows.length);
+      if (!chipArea) return;
       chipArea.innerHTML = "";
       rows.forEach(r=>{
         const chip = document.createElement('span');
         chip.className = "wm-chip";
         chip.innerHTML = `<span>${escapeHTML(r.jp)}</span> <small>${escapeHTML(r.en)}</small> <span class="x" title="削除">×</span>`;
-        chip.querySelector('.x').addEventListener('click', ()=>{
-          const tr = tblBody.querySelector(`tr[data-en="${cssEscape(r.en)}"]`);
+        chip.querySelector('.x')?.addEventListener('click', ()=>{
+          const esc = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(r.en) : String(r.en).replace(/"/g, '\\"');
+          const tr = tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
           if (tr) tr.remove();
           persistRows(); updateSelectedView();
         });
@@ -1531,9 +1546,7 @@ function filterByScope(items, allow) {
       });
     }
 
-    // ---- Utils ----
     function escapeHTML(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function cssEscape(s){ return String(s).replace(/"/g, '\\"'); }
 
     // ---- Global buttons ----
     btnCopyENAll?.addEventListener('click', copyAllEN);
