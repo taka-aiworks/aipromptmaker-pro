@@ -1364,12 +1364,28 @@ function filterByScope(items, allow) {
           situation:  normalizeEntries(pickNSFW(nsfwTop, 'situation')),
           lighting:   normalizeEntries(pickNSFW(nsfwTop, 'lighting')),
           // 追加（存在すれば描画、無ければ空）
-          pose:       normalizeEntries(pickNSFW(nsfwTop, 'pose')),
-          accessory:  normalizeEntries(pickNSFW(nsfwTop, 'accessory')),
-          outfit:     normalizeEntries(pickNSFW(nsfwTop, 'outfit')),
-          body:       normalizeEntries(pickNSFW(nsfwTop, 'body')),
-          nipples:    normalizeEntries(pickNSFW(nsfwTop, 'nipples')), // ← nipples
-          underwear:  normalizeEntries(pickNSFW(nsfwTop, 'underwear')),
+          // ★ ここから追加（categories.* または 直下キー。別名も吸収）
+          pose:       normalizeEntries(preferNonEmpty(
+                         pickNSFW(nsfwTop, 'pose')
+                       )),
+          accessory:  normalizeEntries(preferNonEmpty(
+                         pickNSFW(nsfwTop, 'accessories'), pickNSFW(nsfwTop, 'accessory')
+                       )),
+          outfit:     normalizeEntries(preferNonEmpty(
+                         pickNSFW(nsfwTop, 'outfit'), pickNSFW(nsfwTop, 'outfits'),
+                         pickNSFW(nsfwTop, 'costume'), pickNSFW(nsfwTop, 'clothes')
+                       )),
+          body:       normalizeEntries(preferNonEmpty(
+                         pickNSFW(nsfwTop, 'body'), pickNSFW(nsfwTop, 'anatomy'),
+                         pickNSFW(nsfwTop, 'feature'), pickNSFW(nsfwTop, 'features'),
+                         pickNSFW(nsfwTop, 'body_features')
+                       )),
+          nipples:    normalizeEntries(preferNonEmpty(
+                         pickNSFW(nsfwTop, 'nipples'), pickNSFW(nsfwTop, 'nipple')
+                       )),
+          underwear:  normalizeEntries(preferNonEmpty(
+                         pickNSFW(nsfwTop, 'underwear'), pickNSFW(nsfwTop, 'lingerie')
+                       )),
         }
       };
       return out;
@@ -1402,7 +1418,7 @@ function filterByScope(items, allow) {
       fillCat('accessory-nsfw',  dict.nsfw.accessory || []);
       fillCat('outfit-nsfw',     dict.nsfw.outfit || []);
       fillCat('body-nsfw',       dict.nsfw.body || []);
-      fillCat('nipple-nsfw',     dict.nsfw.nipples || []);   // ← 統一（HTML側は singular）
+      fillCat('nipple-nsfw',     (dict.nsfw.nipples || []));
       fillCat('underwear-nsfw',  dict.nsfw.underwear || []);
 
       // Color（SFW側）
@@ -1458,7 +1474,10 @@ function filterByScope(items, allow) {
         host.appendChild(node);
       });
 
-      if (elCounts[catKey]) elCounts[catKey].textContent = String(items?.length || 0);
+         if (elCounts[catKey]) {
+           const count = Array.isArray(items) ? items.length : 0;
+           elCounts[catKey].textContent = String(count);
+        }
     }
 
     function currentRows(){
