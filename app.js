@@ -1321,17 +1321,29 @@ function filterByScope(items, allow) {
     }
     return null;
   }
+
+  // 日本語/英語の先頭ラベル除去（例: 「日本語-」「Japanese:」「English-」「日本語固有名:」）
+  function stripLabelPrefix(s){
+    s = String(s||"");
+    s = s.replace(/^\s*(?:日本語(?:固有名)?|Japanese|English)\s*[-:：]\s*/i, "");
+    s = s.replace(/\s*\(?(?:日本語|Japanese|English)\)?\s*$/i, "");
+    return s.trim();
+  }
+
+  // === JP/ENを保持して正規化（コピーはEN、表示はJP大/EN小、テーブルJPは固有名のみ）===
   function normalizeEntries(arr){
     arr = Array.isArray(arr) ? arr : [];
     var out = [];
     for (var i=0;i<arr.length;i++){
       var x = arr[i] || {};
-      var en = (x.en || x.tag || x.value || "").replace(/^english[-:]/i, "").trim();
-      if (!en) continue;
-      out.push({ ja:"", en:en, level: x.level || "" });
+      var ja = stripLabelPrefix(firstNonNull(x.ja, x.jp, x.label, x.name, ""));
+      var en = stripLabelPrefix(firstNonNull(x.en, x.tag, x.value, ""));
+      if (!en) continue;               // EN空はスキップ（コピーできないため）
+      out.push({ ja: ja, en: en, level: x.level || "" });
     }
     return out;
   }
+
   function pickCat(dict, names){
     for (var i=0;i<names.length;i++){
       var n = names[i];
@@ -1432,7 +1444,7 @@ function filterByScope(items, allow) {
     });
   }
 
-  // ====== fillCat (英語のみ表示/コピー) ======
+  // ====== fillCat（一覧は JP大 / EN小。クリックで行追加：JPも保存、コピーはENのみ） ======
   function fillCat(catKey, items, isColor){
     var host = elItems[catKey];
     if (!host) return;
@@ -1446,36 +1458,38 @@ function filterByScope(items, allow) {
 
     items = Array.isArray(items) ? items : [];
     for (var i=0;i<items.length;i++){
-      var obj = items[i] || {};
-      var en = obj.en || "";
-      if (!en) continue;
+      (function(obj){
+        var jp = obj.ja || "";
+        var en = obj.en || "";
+        if (!en) return;
 
-      var node = useTpl.content.firstElementChild.cloneNode(true);
-      node.dataset.en  = en;
-      node.dataset.jp  = "";
-      node.dataset.cat = catKey;
+        var node = useTpl.content.firstElementChild.cloneNode(true);
+        node.dataset.en  = en;
+        node.dataset.jp  = jp;
+        node.dataset.cat = catKey;
 
-      var jpEl = node.querySelector('.wm-jp');
-      var enEl = node.querySelector('.wm-en');
-      if (jpEl) jpEl.textContent = "";
-      if (enEl) enEl.textContent = en;
+        var jpEl = node.querySelector('.wm-jp');
+        var enEl = node.querySelector('.wm-en');
+        if (jpEl) jpEl.textContent = jp;
+        if (enEl) enEl.textContent = en;
 
-      node.addEventListener('click', function(ev){
-        if (closest(ev.target, '.wm-actions')) return;
-        addRow({ jp:"", en: this.dataset.en, cat: this.dataset.cat });
-      });
+        node.addEventListener('click', function(ev){
+          if (closest(ev.target, '.wm-actions')) return;
+          addRow({ jp: jp, en: en, cat: catKey });
+        });
 
-      var bEn = node.querySelector('.wm-copy-en');
-      if (bEn){
-        bEn.addEventListener('click', function(ev){
-          ev.stopPropagation();
-          copyText(en);
-        }.bind(null, {en:en}));
-      }
-      var bBoth = node.querySelector('.wm-copy-both');
-      if (bBoth && bBoth.parentNode) bBoth.parentNode.removeChild(bBoth);
+        var bEn = node.querySelector('.wm-copy-en');
+        if (bEn){
+          bEn.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            copyText(en);
+          });
+        }
+        var bBoth = node.querySelector('.wm-copy-both');
+        if (bBoth && bBoth.parentNode) bBoth.parentNode.removeChild(bBoth);
 
-      host.appendChild(node);
+        host.appendChild(node);
+      })(items[i] || {});
     }
 
     if (elCounts[catKey]) elCounts[catKey].textContent = String(items.length);
@@ -1488,10 +1502,9 @@ function filterByScope(items, allow) {
     var trs = tblBody.querySelectorAll('tr');
     for (var i=0;i<trs.length;i++){
       var tr = trs[i];
-      var enCell = tr.querySelector('.wm-row-en');
       rows.push({
-        en:  tr.getAttribute('data-en') || (enCell ? enCell.textContent : ""),
-        jp:  "",
+        jp:  (tr.querySelector('.wm-row-jp') ? tr.querySelector('.wm-row-jp').textContent : ""),
+        en:  tr.getAttribute('data-en') || (tr.querySelector('.wm-row-en') ? tr.querySelector('.wm-row-en').textContent : ""),
         cat: tr.getAttribute('data-cat') || ""
       });
     }
@@ -1508,14 +1521,17 @@ function filterByScope(items, allow) {
     var rows = currentRows();
     if (rows.length >= MAX_ROWS) { flashOK(); return; }
 
+    // JPのラベル語は念押し除去（固有名のみ残す）
+    var jpClean = stripLabelPrefix(item.jp || "");
+
     var tr = tplRow.content.firstElementChild.cloneNode(true);
     tr.setAttribute('data-en', item.en);
     tr.setAttribute('data-cat', item.cat || "");
 
     var jpCell = tr.querySelector('.wm-row-jp');
     var enCell = tr.querySelector('.wm-row-en');
-    if (jpCell) jpCell.textContent = "";
-    if (enCell) enCell.textContent = item.en;
+    if (jpCell) jpCell.textContent = jpClean;     // ← 固有名のみ
+    if (enCell) enCell.textContent = item.en;     // ← 実際のプロンプト
 
     var bEn = tr.querySelector('.wm-row-copy-en');
     if (bEn) bEn.addEventListener('click', function(){ copyText(item.en); });
@@ -1532,7 +1548,7 @@ function filterByScope(items, allow) {
     updateSelectedView();
   }
   function persistRows(){
-    var rows = currentRows().map(function(r){ return { en:r.en, cat:r.cat }; });
+    var rows = currentRows().map(function(r){ return { jp:r.jp, en:r.en, cat:r.cat }; });
     try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch(e){}
   }
   function restoreRows(){
@@ -1542,7 +1558,7 @@ function filterByScope(items, allow) {
       var rows = JSON.parse(s);
       for (var i=0;i<rows.length;i++){
         var r = rows[i];
-        addRow({ jp:"", en:r.en, cat:r.cat });
+        addRow({ jp:r.jp, en:r.en, cat:r.cat });
       }
     }catch(e){}
   }
@@ -1559,6 +1575,7 @@ function filterByScope(items, allow) {
     copyText(tags.join(", "));
   }
 
+  // 選択中チップ：JP大/EN小（コピーUIなし、削除のみ）
   function updateSelectedView(){
     if (!chipArea) return;
     var rows = currentRows();
@@ -1568,7 +1585,11 @@ function filterByScope(items, allow) {
       (function(r){
         var chip = document.createElement('span');
         chip.className = "wm-chip";
-        chip.innerHTML = '<span>'+escapeHTML(r.en)+'</span> <span class="x" title="削除">×</span>';
+        var jpClean = stripLabelPrefix(r.jp || "");
+        chip.innerHTML =
+          '<span>'+escapeHTML(jpClean)+'</span> ' +
+          '<small>'+escapeHTML(r.en)+'</small> ' +
+          '<span class="x" title="削除">×</span>';
         var x = chip.querySelector('.x');
         if (x) x.addEventListener('click', function(){
           if (!tblBody) return;
@@ -1597,7 +1618,7 @@ function filterByScope(items, allow) {
     if (!panel) return;
     panel.style.boxShadow = "0 0 0 2px rgba(120,200,255,.35) inset";
     setTimeout(function(){ panel.style.boxShadow = ""; }, 180);
-  }
+    }
   function copyText(text){
     if (navigator && navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(text).then(flashOK).catch(function(){
@@ -1618,7 +1639,6 @@ function filterByScope(items, allow) {
   }
 
 })();
-
 
 
 /* =========================================
