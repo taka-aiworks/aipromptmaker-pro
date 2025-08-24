@@ -1104,7 +1104,6 @@ function filterByScope(items, allow) {
   // ---- lazy init：初回に「単語」タブへ切り替わった時だけ描画 ----
   let initialized = false;
 
-  // “単語”タブが押された時に呼ばれるフックを仕込む
   document.addEventListener('DOMContentLoaded', () => {
     const tab = document.querySelector('.tab[data-mode="word"]');
     if (!tab) return;
@@ -1114,7 +1113,6 @@ function filterByScope(items, allow) {
         await initWordMode();
       }
     });
-    // もし最初から単語タブが active なら即初期化
     if (tab.classList.contains('active')) {
       initialized = true;
       initWordMode();
@@ -1123,7 +1121,7 @@ function filterByScope(items, allow) {
 
   async function initWordMode(){
     const panel = document.getElementById('panelWordMode');
-    if (!panel) return; // パネルがないページは何もしない
+    if (!panel) return;
 
     const MAX_ROWS = 20;
     const LS_KEY = "wm_rows_v1";
@@ -1139,6 +1137,7 @@ function filterByScope(items, allow) {
       world:             document.getElementById('wm-items-world'),
       personality:       document.getElementById('wm-items-personality'),
       relationship:      document.getElementById('wm-items-relationship'),
+      accessories:       document.getElementById('wm-items-accessories'),   // ← 追加
 
       'expression-nsfw': document.getElementById('wm-items-expression-nsfw'),
       exposure:          document.getElementById('wm-items-exposure'),
@@ -1158,6 +1157,7 @@ function filterByScope(items, allow) {
       world:             document.getElementById('wm-count-world'),
       personality:       document.getElementById('wm-count-personality'),
       relationship:      document.getElementById('wm-count-relationship'),
+      accessories:       document.getElementById('wm-count-accessories'),   // ← 追加
 
       'expression-nsfw': document.getElementById('wm-count-expression-nsfw'),
       exposure:          document.getElementById('wm-count-exposure'),
@@ -1209,10 +1209,7 @@ function filterByScope(items, allow) {
         return await r.json();
       }catch(_){ return null; }
     }
-
     function firstNonNull(...vals){ return vals.find(v => v != null); }
-
-    // グローバルから“それっぽい”SFW/NSFWを探す
     function sniffGlobalDict(nameCandidates){
       for (const key of nameCandidates){
         const obj = getByPath(window, key);
@@ -1229,63 +1226,52 @@ function filterByScope(items, allow) {
       }
       return cur;
     }
-
-    // 要素配列を {ja, en} に“詰め替え”だけする（文字列は触らない）
     function normalizeEntries(arr){
       return (Array.isArray(arr) ? arr : []).map(x => ({
         ja: firstNonNull(x.ja, x.jp, x.label, x.name, ""),
         en: firstNonNull(x.en, x.tag, x.value, ""),
-        level: x.level // そのまま保持（使わないが落とさない）
+        level: x.level
       })).filter(o => o.ja && o.en);
     }
-
-    // カテゴリ名の差異を吸収（存在すれば拾う／無ければ空）
     function pickCat(dict, ...names){
       for (const n of names){
         if (dict && Array.isArray(dict[n])) return dict[n];
       }
       return [];
     }
-
-    // NSFWの入れ子（categories.*）にも対応
     function pickNSFW(ns, key){
       if (!ns) return [];
-      // 例: key="expression" → ns.categories.expression / ns.expression
       const fromCat = ns.categories && Array.isArray(ns.categories[key]) ? ns.categories[key] : null;
       const flat    = Array.isArray(ns[key]) ? ns[key] : null;
       return firstNonNull(fromCat, flat, []);
     }
 
     async function getWordModeDict(){
-      // 1) 既存のどこかに SFW/NSFW がある想定で総当たり
       const sfwRaw = sniffGlobalDict([
         'SFW','sfw','DICT_SFW','dictSfw','app.dict.sfw','APP_DICT.SFW'
       ]);
       const nsfwRaw = sniffGlobalDict([
-        'NSFW','nsfw','DICT_NSFQ','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW'
+        'NSFW','nsfw','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW'
       ]);
 
-      // 2) 見つからない場合のみフォールバックで既定JSONを読む
       const sfw = sfwRaw || await loadFallbackJSON('dict/default_sfw.json') || {};
       const nsfw = nsfwRaw || await loadFallbackJSON('dict/default_nsfw.json') || {};
 
-      // 3) 大文字/小文字のトップキー差異を吸収
-      const sfwTop = sfw.sfw || sfw.SFW || sfw;     // どれでもOKにする
-      const nsfwTop= nsfw.nsfw|| nsfw.NSFW|| nsfw; // どれでもOKにする
+      const sfwTop = sfw.sfw || sfw.SFW || sfw;
+      const nsfwTop= nsfw.nsfw|| nsfw.NSFW|| nsfw;
 
-      // 4) 単語モード用に最小限のビューを作る（内容は詰め替えるだけ）
       const out = {
         sfw: {
           background:   normalizeEntries(pickCat(sfwTop, 'background')),
           pose:         normalizeEntries(pickCat(sfwTop, 'pose')),
           composition:  normalizeEntries(pickCat(sfwTop, 'composition')),
           view:         normalizeEntries(pickCat(sfwTop, 'view')),
-          // expressions / expression どちらでもOK
           expression:   normalizeEntries(pickCat(sfwTop, 'expression','expressions')),
           lighting:     normalizeEntries(pickCat(sfwTop, 'lighting')),
           world:        normalizeEntries(pickCat(sfwTop, 'world','worldview')),
           personality:  normalizeEntries(pickCat(sfwTop, 'personality')),
           relationship: normalizeEntries(pickCat(sfwTop, 'relationship')),
+          accessories:  normalizeEntries(pickCat(sfwTop, 'accessories','accessory')), // ← 追加
           color:        normalizeEntries(pickCat(sfwTop, 'color','colors'))
         },
         nsfw: {
@@ -1312,6 +1298,7 @@ function filterByScope(items, allow) {
       fillCat('world', dict.sfw.world);
       fillCat('personality', dict.sfw.personality);
       fillCat('relationship', dict.sfw.relationship);
+      fillCat('accessories', dict.sfw.accessories);        // ← 追加
 
       // NSFW
       fillCat('expression-nsfw', dict.nsfw.expression);
@@ -1319,11 +1306,9 @@ function filterByScope(items, allow) {
       fillCat('situation', dict.nsfw.situation);
       fillCat('lighting-nsfw', dict.nsfw.lighting);
 
-
       // Color（SFW側の colors が正式。color に書かれていても拾う）
       fillCat('color', dict.sfw?.colors || dict.sfw?.color || [], true);
 
-      // 保存データ復元
       restoreRows();
       updateSelectedView();
     }
@@ -1346,13 +1331,11 @@ function filterByScope(items, allow) {
         node.querySelector('.wm-jp').textContent = jp;
         node.querySelector('.wm-en').textContent = en;
 
-        // クリックでテーブルに追加
         node.addEventListener('click', (ev)=>{
           if (ev.target.closest('.wm-actions')) return;
           addRow({jp, en, cat:catKey});
         });
 
-        // ENコピー / BOTHコピー
         const bEn = node.querySelector('.wm-copy-en');
         if (bEn) bEn.addEventListener('click', (ev)=>{
           ev.stopPropagation();
@@ -1383,14 +1366,12 @@ function filterByScope(items, allow) {
       });
       return rows;
     }
-
     function hasRow(en){
       return !!tblBody.querySelector(`tr[data-en="${cssEscape(en)}"]`);
     }
-
     function addRow(item){
       if (!item || !item.en) return;
-      if (hasRow(item.en)) return; // 重複防止
+      if (hasRow(item.en)) return;
       const rows = currentRows();
       if (rows.length >= MAX_ROWS) { flashOK(); return; }
 
@@ -1410,12 +1391,10 @@ function filterByScope(items, allow) {
       persistRows();
       updateSelectedView();
     }
-
     function persistRows(){
       const rows = currentRows();
       try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch(e){}
     }
-
     function restoreRows(){
       try {
         const s = localStorage.getItem(LS_KEY);
@@ -1424,13 +1403,11 @@ function filterByScope(items, allow) {
         rows.forEach(addRow);
       } catch(e){}
     }
-
     function clearRows(){
       tblBody.innerHTML = "";
       persistRows();
       updateSelectedView();
     }
-
     function copyAllEN(){
       const tags = currentRows().map(r=>r.en).filter(Boolean);
       if (!tags.length) return;
@@ -1442,7 +1419,7 @@ function filterByScope(items, allow) {
       copyText(lines.join("\n"));
     }
 
-    // ---- Selected chips (上部の視覚要約) ----
+    // ---- Selected chips ----
     function updateSelectedView(){
       const rows = currentRows();
       chipCount.textContent = String(rows.length);
@@ -1461,9 +1438,7 @@ function filterByScope(items, allow) {
     }
 
     // ---- Utils ----
-    function escapeHTML(s){
-      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
+    function escapeHTML(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function cssEscape(s){ return String(s).replace(/"/g, '\\"'); }
 
     // ---- Global buttons ----
