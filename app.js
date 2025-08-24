@@ -1172,38 +1172,55 @@ function filterByScope(items, allow) {
  *  - fillCat: テンプレ/ホストが無い場合でも安全
  * =========================================================== */
 (function(){
-  let initialized = false;
+  // ====== state ======
+  var initialized = false;
 
-  // ▼ 辞書が更新されたら単語モードを再描画
-  document.addEventListener('dict:updated', () => {
-    if (initialized) refreshWordMode();
+  // DOM handles（initで埋める）
+  var elItems = {}, elCounts = {};
+  var tplItem = null, tplItemColor = null, tplRow = null;
+  var tblBody = null, btnCopyENAll = null, btnCopyBothAll = null, btnTableClear = null;
+  var chipArea = null, chipCount = null, btnSelectedClear = null;
+  var panel = null;
+
+  var MAX_ROWS = 20;
+  var LS_KEY = "wm_rows_v1";
+
+  // ====== events ======
+  document.addEventListener('dict:updated', function(){
+    refreshWordMode();
   });
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const tab = document.querySelector('.tab[data-mode="word"]');
+  document.addEventListener('DOMContentLoaded', function(){
+    var tab = document.querySelector('.tab[data-mode="word"]');
     if (!tab) return;
-    tab.addEventListener('click', async () => {
+
+    tab.addEventListener('click', function(){
       if (!initialized) {
         initialized = true;
-        await initWordMode();
+        initWordMode();
       }
     });
+
     if (tab.classList.contains('active')) {
       initialized = true;
       initWordMode();
     }
   });
 
-  async function initWordMode(){
-    const panel = document.getElementById('panelWordMode');
+  // ====== refresh (辞書更新で呼ぶ) ======
+  function refreshWordMode(){
+    if (!initialized) return;
+    renderAll().catch(function(e){ console.warn('Word mode refresh failed:', e); });
+  }
+
+  // ====== init ======
+  function initWordMode(){
+    panel = document.getElementById('panelWordMode');
     if (!panel) return;
 
-    const MAX_ROWS = 20;
-    const LS_KEY = "wm_rows_v1";
+    var el = function(id){ return document.getElementById(id); };
 
-    // ---- DOM refs ----
-    const el = id => document.getElementById(id);
-    const elItems = {
+    elItems = {
       background:        el('wm-items-background'),
       pose:              el('wm-items-pose'),
       composition:       el('wm-items-composition'),
@@ -1227,9 +1244,10 @@ function filterByScope(items, allow) {
       'nipple-nsfw':     el('wm-items-nipple-nsfw'),
       'underwear-nsfw':  el('wm-items-underwear-nsfw'),
 
-      color:             el('wm-items-color'),
+      color:             el('wm-items-color')
     };
-    const elCounts = {
+
+    elCounts = {
       background:        el('wm-count-background'),
       pose:              el('wm-count-pose'),
       composition:       el('wm-count-composition'),
@@ -1253,94 +1271,113 @@ function filterByScope(items, allow) {
       'nipple-nsfw':     el('wm-count-nipple-nsfw'),
       'underwear-nsfw':  el('wm-count-underwear-nsfw'),
 
-      color:             el('wm-count-color'),
+      color:             el('wm-count-color')
     };
 
-    const tplItem      = el('wm-item-tpl');
-    const tplItemColor = el('wm-item-tpl-color');
-    const tplRow       = el('wm-row-tpl');
+    tplItem      = el('wm-item-tpl');
+    tplItemColor = el('wm-item-tpl-color');
+    tplRow       = el('wm-row-tpl');
 
-    const tblBody        = el('wm-table-body');
-    const btnCopyENAll   = el('wm-copy-en-all');
-    const btnCopyBothAll = el('wm-copy-both-all'); // ← 後で消す
-    const btnTableClear  = el('wm-table-clear');
+    tblBody         = el('wm-table-body');
+    btnCopyENAll    = el('wm-copy-en-all');
+    btnCopyBothAll  = el('wm-copy-both-all');
+    btnTableClear   = el('wm-table-clear');
 
-    const chipArea       = el('wm-selected-chips');
-    const chipCount      = el('wm-selected-count');
-    const btnSelectedClear = el('wm-selected-clear');
+    chipArea        = el('wm-selected-chips');
+    chipCount       = el('wm-selected-count');
+    btnSelectedClear= el('wm-selected-clear');
 
-    // ▼ 軽量再描画（辞書更新イベントで使う）
-    async function refreshWordMode(){
-      try { await renderAll(); } catch(e){ console.warn('Word mode refresh failed:', e); }
+    if (btnCopyENAll) btnCopyENAll.addEventListener('click', copyAllEN);
+    if (btnCopyBothAll && btnCopyBothAll.parentNode) btnCopyBothAll.parentNode.removeChild(btnCopyBothAll);
+    if (btnTableClear) btnTableClear.addEventListener('click', clearRows);
+    if (btnSelectedClear) btnSelectedClear.addEventListener('click', clearRows);
+
+    renderAll().catch(function(e){ console.error(e); });
+  }
+
+  // ====== fetch dicts ======
+  function loadFallbackJSON(path){
+    return fetch(path, {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .catch(function(){ return null; });
+  }
+  function firstNonNull(){
+    for (var i=0;i<arguments.length;i++){ if (arguments[i]!=null) return arguments[i]; }
+    return null;
+  }
+  function getByPath(root, path){
+    var parts = path.split('.');
+    var cur = root;
+    for (var i=0;i<parts.length;i++){
+      if (!cur) return null;
+      cur = cur[parts[i]];
     }
+    return cur;
+  }
+  function sniffGlobalDict(cands){
+    for (var i=0;i<cands.length;i++){
+      var obj = getByPath(window, cands[i]);
+      if (obj && typeof obj === 'object') return obj;
+    }
+    return null;
+  }
+  function normalizeEntries(arr){
+    arr = Array.isArray(arr) ? arr : [];
+    var out = [];
+    for (var i=0;i<arr.length;i++){
+      var x = arr[i] || {};
+      var en = (x.en || x.tag || x.value || "").replace(/^english[-:]/i, "").trim();
+      if (!en) continue;
+      out.push({ ja:"", en:en, level: x.level || "" });
+    }
+    return out;
+  }
+  function pickCat(dict, names){
+    for (var i=0;i<names.length;i++){
+      var n = names[i];
+      if (dict && Array.isArray(dict[n])) return dict[n];
+    }
+    return [];
+  }
+  function pickNSFW(ns, keys){
+    if (!ns) return [];
+    for (var i=0;i<keys.length;i++){
+      var k = keys[i];
+      var fromCat = ns.categories && Array.isArray(ns.categories[k]) ? ns.categories[k] : null;
+      var flat    = Array.isArray(ns[k]) ? ns[k] : null;
+      if (fromCat) return fromCat;
+      if (flat) return flat;
+    }
+    return [];
+  }
 
-    // ---- Clipboard helper ----
-    async function copyText(text){
-      try { await navigator.clipboard.writeText(text); flashOK(); }
-      catch(e){
-        const ta = document.createElement('textarea');
-        ta.value = text; document.body.appendChild(ta);
-        ta.select(); document.execCommand('copy'); ta.remove(); flashOK();
-      }
-    }
-    function flashOK(){
-      panel.style.boxShadow = "0 0 0 2px rgba(120,200,255,.35) inset";
-      setTimeout(()=> panel.style.boxShadow = "", 180);
-    }
+  function getWordModeDict(){
+    var sfwRaw  = sniffGlobalDict(['SFW','sfw','DICT_SFW','dictSfw','app.dict.sfw','APP_DICT.SFW']);
+    var nsfwRaw = sniffGlobalDict(['NSFW','nsfw','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW']);
 
-    // ---- 辞書受け口 ----
-    async function loadFallbackJSON(path){
-      try{ const r = await fetch(path, {cache:"no-store"}); if(!r.ok) throw 0; return await r.json(); }
-      catch(_){ return null; }
-    }
-    const firstNonNull=(...v)=> v.find(x=>x!=null);
-    const getByPath=(root, path)=> path.split('.').reduce((a,k)=> (a?a[k]:null), root);
-    function sniffGlobalDict(cands){
-      for (const key of cands){ const obj = getByPath(window, key); if (obj && typeof obj === 'object') return obj; }
-      return null;
-    }
-    function normalizeEntries(arr){
-      return (Array.isArray(arr) ? arr : []).map(x => {
-        const en = (x.en || x.tag || x.value || "").replace(/^english[-:]/i, "").trim();
-        // 日本語列は使わないが、空で通す
-        return { ja:"", en, level: x.level || "" };
-      }).filter(o => o.en);
-    }
-    function pickCat(dict, ...names){ for (const n of names){ if (dict && Array.isArray(dict[n])) return dict[n]; } return []; }
-    function pickNSFW(ns, keys){
-      if (!ns) return [];
-      for (const k of keys){
-        const fromCat = ns.categories && Array.isArray(ns.categories[k]) ? ns.categories[k] : null;
-        const flat    = Array.isArray(ns[k]) ? ns[k] : null;
-        if (fromCat) return fromCat;
-        if (flat) return flat;
-      }
-      return [];
-    }
+    var sfwP = (sfwRaw ? Promise.resolve(sfwRaw) : loadFallbackJSON('dict/default_sfw.json'));
+    var nsfwP= (nsfwRaw? Promise.resolve(nsfwRaw): loadFallbackJSON('dict/default_nsfw.json'));
 
-    async function getWordModeDict(){
-      const sfwRaw  = sniffGlobalDict(['SFW','sfw','DICT_SFW','dictSfw','app.dict.sfw','APP_DICT.SFW']);
-      const nsfwRaw = sniffGlobalDict(['NSFW','nsfw','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW']);
+    return Promise.all([sfwP, nsfwP]).then(function(res){
+      var sfw  = res[0] || {};
+      var nsfw = res[1] || {};
 
-      const sfw  = sfwRaw  || await loadFallbackJSON('dict/default_sfw.json')  || {};
-      const nsfw = nsfwRaw || await loadFallbackJSON('dict/default_nsfw.json') || {};
-
-      const sfwTop  = sfw.sfw  || sfw.SFW  || sfw;
-      const nsfwTop = nsfw.NSFW|| nsfw.nsfw|| nsfw;
+      var sfwTop  = sfw.sfw  || sfw.SFW  || sfw;
+      var nsfwTop = nsfw.NSFW|| nsfw.nsfw|| nsfw;
 
       return {
         sfw: {
-          background:   normalizeEntries(pickCat(sfwTop, 'background')),
-          pose:         normalizeEntries(pickCat(sfwTop, 'pose')),
-          composition:  normalizeEntries(pickCat(sfwTop, 'composition')),
-          view:         normalizeEntries(pickCat(sfwTop, 'view')),
-          expression:   normalizeEntries(pickCat(sfwTop, 'expression','expressions')),
-          lighting:     normalizeEntries(pickCat(sfwTop, 'lighting')),
-          world:        normalizeEntries(pickCat(sfwTop, 'world','worldview')),
-          personality:  normalizeEntries(pickCat(sfwTop, 'personality')),
-          relationship: normalizeEntries(pickCat(sfwTop, 'relationship')),
-          accessories:  normalizeEntries(pickCat(sfwTop, 'accessories','accessory')),
-          color:        normalizeEntries(pickCat(sfwTop, 'color','colors')),
+          background:   normalizeEntries(pickCat(sfwTop, ['background'])),
+          pose:         normalizeEntries(pickCat(sfwTop, ['pose'])),
+          composition:  normalizeEntries(pickCat(sfwTop, ['composition'])),
+          view:         normalizeEntries(pickCat(sfwTop, ['view'])),
+          expression:   normalizeEntries(pickCat(sfwTop, ['expression','expressions'])),
+          lighting:     normalizeEntries(pickCat(sfwTop, ['lighting'])),
+          world:        normalizeEntries(pickCat(sfwTop, ['world','worldview'])),
+          personality:  normalizeEntries(pickCat(sfwTop, ['personality'])),
+          relationship: normalizeEntries(pickCat(sfwTop, ['relationship'])),
+          accessories:  normalizeEntries(pickCat(sfwTop, ['accessories','accessory'])),
+          color:        normalizeEntries(pickCat(sfwTop, ['color','colors']))
         },
         nsfw: {
           expression: normalizeEntries(pickNSFW(nsfwTop, ['expression','表情'])),
@@ -1352,15 +1389,15 @@ function filterByScope(items, allow) {
           outfit:     normalizeEntries(pickNSFW(nsfwTop, ['outfit','outfits','costume','clothes','衣装'])),
           body:       normalizeEntries(pickNSFW(nsfwTop, ['body','anatomy','features','身体','体型'])),
           nipples:    normalizeEntries(pickNSFW(nsfwTop, ['nipples','nipple','乳首'])),
-          underwear:  normalizeEntries(pickNSFW(nsfwTop, ['underwear','lingerie','下着','インナー'])),
+          underwear:  normalizeEntries(pickNSFW(nsfwTop, ['underwear','lingerie','下着','インナー']))
         }
       };
-    }
+    });
+  }
 
-    // ---- UI 構築 ----
-    async function renderAll(){
-      const dict = await getWordModeDict();
-
+  // ====== render ======
+  function renderAll(){
+    return getWordModeDict().then(function(dict){
       // SFW
       fillCat('background', dict.sfw.background);
       fillCat('pose', dict.sfw.pose);
@@ -1373,13 +1410,13 @@ function filterByScope(items, allow) {
       fillCat('relationship', dict.sfw.relationship);
       fillCat('accessories', dict.sfw.accessories);
 
-      // NSFW（基本）
+      // NSFW 基本
       fillCat('expression-nsfw', dict.nsfw.expression);
       fillCat('exposure',        dict.nsfw.exposure);
       fillCat('situation',       dict.nsfw.situation);
       fillCat('lighting-nsfw',   dict.nsfw.lighting);
 
-      // NSFW（追加）
+      // NSFW 追加
       fillCat('pose-nsfw',       dict.nsfw.pose);
       fillCat('accessory-nsfw',  dict.nsfw.accessory);
       fillCat('outfit-nsfw',     dict.nsfw.outfit);
@@ -1387,148 +1424,197 @@ function filterByScope(items, allow) {
       fillCat('nipple-nsfw',     dict.nsfw.nipples);
       fillCat('underwear-nsfw',  dict.nsfw.underwear);
 
-      // 色（SFW）
+      // 色
       fillCat('color', dict.sfw.color, true);
 
       restoreRows();
       updateSelectedView();
+    });
+  }
+
+  // ====== fillCat (英語のみ表示/コピー) ======
+  function fillCat(catKey, items, isColor){
+    var host = elItems[catKey];
+    if (!host) return;
+
+    host.innerHTML = "";
+    var useTpl = isColor ? tplItemColor : tplItem;
+    if (!useTpl || !useTpl.content) {
+      if (elCounts[catKey]) elCounts[catKey].textContent = String(items && items.length ? items.length : 0);
+      return;
     }
 
-    // ==== ここから英語のみ表示・コピー版 ====
-    function fillCat(catKey, items, isColor=false){
-      const host = elItems[catKey];
-      if (!host) return;
+    items = Array.isArray(items) ? items : [];
+    for (var i=0;i<items.length;i++){
+      var obj = items[i] || {};
+      var en = obj.en || "";
+      if (!en) continue;
 
-      host.innerHTML = "";
-      const useTpl = isColor ? tplItemColor : tplItem;
-      if (!useTpl || !useTpl.content) {
-        if (elCounts[catKey]) elCounts[catKey].textContent = String(items?.length || 0);
-        return;
+      var node = useTpl.content.firstElementChild.cloneNode(true);
+      node.dataset.en  = en;
+      node.dataset.jp  = "";
+      node.dataset.cat = catKey;
+
+      var jpEl = node.querySelector('.wm-jp');
+      var enEl = node.querySelector('.wm-en');
+      if (jpEl) jpEl.textContent = "";
+      if (enEl) enEl.textContent = en;
+
+      node.addEventListener('click', function(ev){
+        if (closest(ev.target, '.wm-actions')) return;
+        addRow({ jp:"", en: this.dataset.en, cat: this.dataset.cat });
+      });
+
+      var bEn = node.querySelector('.wm-copy-en');
+      if (bEn){
+        bEn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          copyText(en);
+        }.bind(null, {en:en}));
       }
+      var bBoth = node.querySelector('.wm-copy-both');
+      if (bBoth && bBoth.parentNode) bBoth.parentNode.removeChild(bBoth);
 
-      (items || []).forEach(obj=>{
-        const en = obj.en || "";
-        if (!en) return;
+      host.appendChild(node);
+    }
 
-        const node = useTpl.content.firstElementChild.cloneNode(true);
-        node.dataset.en  = en;
-        node.dataset.jp  = "";        // 日本語は使わない
-        node.dataset.cat = catKey;
+    if (elCounts[catKey]) elCounts[catKey].textContent = String(items.length);
+  }
 
-        // 表示は英語のみ
-        node.querySelector('.wm-jp')?.replaceChildren();
-        const enEl = node.querySelector('.wm-en');
-        if (enEl) enEl.textContent = en;
-
-        node.addEventListener('click', (ev)=>{
-          if (ev.target.closest?.('.wm-actions')) return;
-          addRow({ jp:"", en, cat:catKey });
-        });
-
-        // コピーは EN のみ、BOTH は除去
-        node.querySelector('.wm-copy-en')?.addEventListener('click', (ev)=>{
-          ev.stopPropagation(); copyText(en);
-        });
-        node.querySelector('.wm-copy-both')?.remove();
-
-        host.appendChild(node);
+  // ====== table ops ======
+  function currentRows(){
+    var rows = [];
+    if (!tblBody) return rows;
+    var trs = tblBody.querySelectorAll('tr');
+    for (var i=0;i<trs.length;i++){
+      var tr = trs[i];
+      var enCell = tr.querySelector('.wm-row-en');
+      rows.push({
+        en:  tr.getAttribute('data-en') || (enCell ? enCell.textContent : ""),
+        jp:  "",
+        cat: tr.getAttribute('data-cat') || ""
       });
-
-      if (elCounts[catKey]) elCounts[catKey].textContent = String(Array.isArray(items)?items.length:0);
     }
+    return rows;
+  }
+  function hasRow(en){
+    if (!tblBody) return false;
+    var sel = 'tr[data-en="' + cssEscape(en) + '"]';
+    return !!tblBody.querySelector(sel);
+  }
+  function addRow(item){
+    if (!item || !item.en || !tplRow || !tplRow.content || !tblBody) return;
+    if (hasRow(item.en)) return;
+    var rows = currentRows();
+    if (rows.length >= MAX_ROWS) { flashOK(); return; }
 
-    // ---- Table ops ----
-    function currentRows(){
-      const rows = [];
-      tblBody?.querySelectorAll?.('tr')?.forEach(tr=>{
-        rows.push({
-          en:  tr.dataset.en || tr.querySelector('.wm-row-en')?.textContent || "",
-          jp:  "", // 日本語は保持しない
-          cat: tr.dataset.cat || ""
-        });
-      });
-      return rows;
-    }
-    function hasRow(en){
-      const esc = (typeof CSS!=='undefined' && CSS.escape) ? CSS.escape(en) : String(en).replace(/"/g,'\\"');
-      return !!tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
-    }
-    function addRow(item){
-      if (!item || !item.en || !tplRow || !tplRow.content || !tblBody) return;
-      if (hasRow(item.en)) return;
-      const rows = currentRows();
-      if (rows.length >= MAX_ROWS) { flashOK(); return; }
+    var tr = tplRow.content.firstElementChild.cloneNode(true);
+    tr.setAttribute('data-en', item.en);
+    tr.setAttribute('data-cat', item.cat || "");
 
-      const tr = tplRow.content.firstElementChild.cloneNode(true);
-      tr.dataset.en  = item.en;
-      tr.dataset.cat = item.cat || "";
+    var jpCell = tr.querySelector('.wm-row-jp');
+    var enCell = tr.querySelector('.wm-row-en');
+    if (jpCell) jpCell.textContent = "";
+    if (enCell) enCell.textContent = item.en;
 
-      tr.querySelector('.wm-row-jp')?.replaceChildren();   // 常に空
-      const enCell = tr.querySelector('.wm-row-en');
-      if (enCell) enCell.textContent = item.en;
+    var bEn = tr.querySelector('.wm-row-copy-en');
+    if (bEn) bEn.addEventListener('click', function(){ copyText(item.en); });
+    var bBoth = tr.querySelector('.wm-row-copy-both');
+    if (bBoth && bBoth.parentNode) bBoth.parentNode.removeChild(bBoth);
 
-      tr.querySelector('.wm-row-copy-en')?.addEventListener('click', ()=> copyText(item.en));
-      tr.querySelector('.wm-row-copy-both')?.remove(); // 不要ボタン除去
-      tr.querySelector('.wm-row-remove')?.addEventListener('click', ()=>{
-        tr.remove(); persistRows(); updateSelectedView();
-      });
+    var bDel = tr.querySelector('.wm-row-remove');
+    if (bDel) bDel.addEventListener('click', function(){
+      tr.remove(); persistRows(); updateSelectedView();
+    });
 
-      tblBody.appendChild(tr);
-      persistRows();
-      updateSelectedView();
-    }
-    function persistRows(){
-      const rows = currentRows().map(r => ({ en:r.en, cat:r.cat }));
-      try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch(e){}
-    }
-    function restoreRows(){
-      try {
-        const s = localStorage.getItem(LS_KEY);
-        if (!s) return;
-        const rows = JSON.parse(s);
-        rows.forEach(r => addRow({ jp:"", en:r.en, cat:r.cat }));
-      } catch(e){}
-    }
-    function clearRows(){
-      if (!tblBody) return;
-      tblBody.innerHTML = "";
-      persistRows();
-      updateSelectedView();
-    }
+    tblBody.appendChild(tr);
+    persistRows();
+    updateSelectedView();
+  }
+  function persistRows(){
+    var rows = currentRows().map(function(r){ return { en:r.en, cat:r.cat }; });
+    try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch(e){}
+  }
+  function restoreRows(){
+    try{
+      var s = localStorage.getItem(LS_KEY);
+      if (!s) return;
+      var rows = JSON.parse(s);
+      for (var i=0;i<rows.length;i++){
+        var r = rows[i];
+        addRow({ jp:"", en:r.en, cat:r.cat });
+      }
+    }catch(e){}
+  }
+  function clearRows(){
+    if (!tblBody) return;
+    tblBody.innerHTML = "";
+    persistRows();
+    updateSelectedView();
+  }
 
-    function updateSelectedView(){
-      const rows = currentRows();
-      if (chipCount) chipCount.textContent = String(rows.length);
-      if (!chipArea) return;
-      chipArea.innerHTML = "";
-      rows.forEach(r=>{
-        const chip = document.createElement('span');
+  function copyAllEN(){
+    var tags = currentRows().map(function(r){ return r.en; }).filter(Boolean);
+    if (!tags.length) return;
+    copyText(tags.join(", "));
+  }
+
+  function updateSelectedView(){
+    if (!chipArea) return;
+    var rows = currentRows();
+    if (chipCount) chipCount.textContent = String(rows.length);
+    chipArea.innerHTML = "";
+    for (var i=0;i<rows.length;i++){
+      (function(r){
+        var chip = document.createElement('span');
         chip.className = "wm-chip";
-        chip.innerHTML = `<span>${escapeHTML(r.en)}</span> <span class="x" title="削除">×</span>`;
-        chip.querySelector('.x')?.addEventListener('click', ()=>{
-          const esc = (typeof CSS!=='undefined' && CSS.escape) ? CSS.escape(r.en) : String(r.en).replace(/"/g,'\\"');
-          const tr = tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
+        chip.innerHTML = '<span>'+escapeHTML(r.en)+'</span> <span class="x" title="削除">×</span>';
+        var x = chip.querySelector('.x');
+        if (x) x.addEventListener('click', function(){
+          if (!tblBody) return;
+          var tr = tblBody.querySelector('tr[data-en="'+cssEscape(r.en)+'"]');
           if (tr) tr.remove();
           persistRows(); updateSelectedView();
         });
         chipArea.appendChild(chip);
+      })(rows[i]);
+    }
+  }
+
+  // ====== utils ======
+  function escapeHTML(s){
+    return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+  }
+  function cssEscape(s){ return String(s).replace(/"/g, '\\"'); }
+  function closest(el, sel){
+    while (el){
+      if (el.matches && el.matches(sel)) return el;
+      el = el.parentNode;
+    }
+    return null;
+  }
+  function flashOK(){
+    if (!panel) return;
+    panel.style.boxShadow = "0 0 0 2px rgba(120,200,255,.35) inset";
+    setTimeout(function(){ panel.style.boxShadow = ""; }, 180);
+  }
+  function copyText(text){
+    if (navigator && navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(flashOK).catch(function(){
+        fallbackCopy(text);
       });
+    } else {
+      fallbackCopy(text);
     }
-    function escapeHTML(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-    // ---- Global buttons ----
-    function copyAllEN(){
-      const tags = currentRows().map(r=>r.en).filter(Boolean);
-      if (!tags.length) return;
-      copyText(tags.join(", "));
-    }
-    btnCopyENAll?.addEventListener('click', copyAllEN);
-    btnCopyBothAll?.remove(); // BOTH(All) を確実に消す
-    btnTableClear?.addEventListener('click', clearRows);
-    btnSelectedClear?.addEventListener('click', clearRows);
-
-    // ---- Render now ----
-    await renderAll();
+  }
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e){}
+    ta.remove();
+    flashOK();
   }
 
 })();
