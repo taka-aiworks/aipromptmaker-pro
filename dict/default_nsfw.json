@@ -200,8 +200,6 @@
         { "tag": "moody", "ja": "ムーディ", "level": "L1" }
       ],
 
-      /* ========= ここから “がっつり” 追加分 ========= */
-
       "pose": [
         { "tag": "hand_on_hip", "ja": "腰に手を当てる", "level": "L1" },
         { "tag": "hands_behind_head", "ja": "頭の後ろで両手", "level": "L1" },
