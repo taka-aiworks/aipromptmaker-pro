@@ -4185,7 +4185,6 @@ bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 
 // 辞書：window.SFW / window.NSFW（無ければ簡易フォールバックJSONは無し）
 // 既存getMany等に触らず、チェックボックスUIを自前で構築
 // ===========================================================
-
 (function(){
   let initialized = false;
   document.addEventListener('DOMContentLoaded', initOnce);
@@ -4195,48 +4194,52 @@ bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 
     const dict = getDictView();
 
     // ---- 撮影モード（NSFW） ----
-    mountChecklist('#pl_nsfw_pose',   dict.nsfw.pose);
-    mountChecklist('#pl_nsfw_acc',    dict.nsfw.accessory);
-    mountChecklist('#pl_nsfw_outfit', dict.nsfw.outfit);
-    mountChecklist('#pl_nsfw_body',   dict.nsfw.body);
+    mountChecklist('#pl_nsfw_pose',    dict.nsfw.pose);
+    mountChecklist('#pl_nsfw_acc',     dict.nsfw.accessory);
+    mountChecklist('#pl_nsfw_outfit',  dict.nsfw.outfit);
+    mountChecklist('#pl_nsfw_body',    dict.nsfw.body);
+    mountChecklist('#pl_nsfw_nipple',  dict.nsfw.nipple);   // ★追加
 
     // ---- 学習モード（NSFW） ----
-    mountChecklist('#nsfwL_pose',     dict.nsfw.pose);
-    mountChecklist('#nsfwL_acc',      dict.nsfw.accessory);
-    mountChecklist('#nsfwL_outfit',   dict.nsfw.outfit);
-    mountChecklist('#nsfwL_body',     dict.nsfw.body);
+    mountChecklist('#nsfwL_pose',      dict.nsfw.pose);
+    mountChecklist('#nsfwL_acc',       dict.nsfw.accessory);
+    mountChecklist('#nsfwL_outfit',    dict.nsfw.outfit);
+    mountChecklist('#nsfwL_body',      dict.nsfw.body);
+    mountChecklist('#nsfwL_nipple',    dict.nsfw.nipple);   // ★追加
 
     // ---- 量産モード（NSFW） ----
-    mountChecklist('#nsfwP_pose',     dict.nsfw.pose);
-    mountChecklist('#nsfwP_acc',      dict.nsfw.accessory);
-    mountChecklist('#nsfwP_outfit',   dict.nsfw.outfit);
-    mountChecklist('#nsfwP_body',     dict.nsfw.body);
+    mountChecklist('#nsfwP_pose',      dict.nsfw.pose);
+    mountChecklist('#nsfwP_acc',       dict.nsfw.accessory);
+    mountChecklist('#nsfwP_outfit',    dict.nsfw.outfit);
+    mountChecklist('#nsfwP_body',      dict.nsfw.body);
+    mountChecklist('#nsfwP_nipple',    dict.nsfw.nipple);   // ★追加
 
-    // ---- 単語モード：SFWアクセサリー ----
+    // ---- 単語モード：SFWアクセ / NSFW各種（必要分だけ）----
     mountWordItems('#wm-items-accessories', '#wm-count-accessories', dict.sfw.accessories);
+
+    // NSFW（単語モード）に nipple を追加
+    mountWordItems('#wm-items-nipple-nsfw', '#wm-count-nipple-nsfw', dict.nsfw.nipple);
+    // 既存の expression/exposure/situation/lighting/pose/outfit/body は
+    // すでに別所で流し込んでいるなら不要。未実装なら同様に mountWordItems(...) を呼ぶ。
   }
 
-  // =========================================================
-  // 辞書の吸い上げ＆正規化（必要最低限）
-  // =========================================================
+  // ====== dict 正規化 ======
   function getDictView(){
     const sfwRoot  = sniffGlobalDict(['SFW','sfw','DICT_SFW','dictSfw','app.dict.sfw','APP_DICT.SFW']) || {};
     const nsfwRoot = sniffGlobalDict(['NSFW','nsfw','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW']) || {};
 
     const sfwTop  = sfwRoot.sfw  || sfwRoot.SFW  || sfwRoot;
-    const nsfwTop = nsfwRoot.nsfw || nsfwRoot.NSFW || nsfwRoot;
+    const nsfwTop = nsfwRoot.NSFW || nsfwRoot.nsfw || nsfwRoot;
 
-    // SFW
     const sfw = {
       accessories: normalize(pick(sfwTop, 'accessories','accessory','acc','items','props'))
     };
-
-    // NSFW（flat / categories.* の両対応）
     const nsfw = {
-      pose:      normalize(pickNSFW(nsfwTop, 'pose','poses')),
-      accessory: normalize(pickNSFW(nsfwTop, 'accessory','accessories','acc')),
-      outfit:    normalize(pickNSFW(nsfwTop, 'outfit','outfits','costume','clothes')),
-      body:      normalize(pickNSFW(nsfwTop, 'body','anatomy','feature','features')),
+      pose:      normalizeNSFW(nsfwTop,'pose'),
+      accessory: normalizeNSFW(nsfwTop,'accessories','accessory','acc'),
+      outfit:    normalizeNSFW(nsfwTop,'outfit','outfits','costume','clothes'),
+      body:      normalizeNSFW(nsfwTop,'body','anatomy','feature','features'),
+      nipple:    normalizeNSFW(nsfwTop,'nipple','nipples')  // ★追加
     };
     return {sfw, nsfw};
   }
@@ -4258,30 +4261,31 @@ bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 
     for (const n of names){ if (obj && Array.isArray(obj[n])) return obj[n]; }
     return [];
   }
-  function pickNSFW(ns, keyA, keyB){
-    if (!ns) return [];
-    const cat = ns.categories && Array.isArray(ns.categories[keyA]) ? ns.categories[keyA] : null;
-    const alt = keyB && ns.categories && Array.isArray(ns.categories[keyB]) ? ns.categories[keyB] : null;
-    const flat= Array.isArray(ns[keyA]) ? ns[keyA] : (keyB && Array.isArray(ns[keyB]) ? ns[keyB] : null);
-    return normalize(cat || alt || flat || []);
+  function normalizeNSFW(nsroot, ...keys){
+    if (!nsroot) return [];
+    // categories.* 優先、無ければ直下キー
+    for (const k of keys){
+      const fromCat = nsroot.categories && Array.isArray(nsroot.categories[k]) ? nsroot.categories[k] : null;
+      if (fromCat) return normalize(fromCat, true);
+      if (Array.isArray(nsroot[k])) return normalize(nsroot[k], true);
+    }
+    return [];
   }
-  function normalize(arr){
+  function normalize(arr, withLevel=false){
     return (Array.isArray(arr) ? arr : []).map(x => ({
       ja: firstNonNull(x.ja, x.jp, x.label, x.name, ""),
-      en: firstNonNull(x.en, x.tag, x.value, "")
+      en: firstNonNull(x.en, x.tag, x.value, ""),
+      level: x.level || ""
     })).filter(o => o.ja && o.en);
   }
   function firstNonNull(...v){ return v.find(x => x != null); }
 
-  // =========================================================
-  // 汎用：チェックリスト描画（scroller内に checkbox 群）
-  // =========================================================
+  // ====== 汎用チェックリスト描画 ======
   function mountChecklist(sel, items){
     const host = document.querySelector(sel);
     if (!host || !Array.isArray(items)) return;
     host.innerHTML = '';
     items.forEach(it => {
-      const id = uid(sel);
       const wrap = document.createElement('label');
       wrap.className = 'chip';
       wrap.title = it.ja;
@@ -4290,7 +4294,7 @@ bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 
       cb.type = 'checkbox';
       cb.value = it.en;
       cb.dataset.ja = it.ja;
-      cb.setAttribute('aria-label', it.ja + ' (' + it.en + ')');
+      if (it.level) cb.dataset.level = it.level; // ← レベル上限フィルタ用
 
       const span = document.createElement('span');
       span.textContent = it.ja;
@@ -4305,11 +4309,8 @@ bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 
       host.appendChild(wrap);
     });
   }
-  function uid(seed){ return seed + '_' + Math.random().toString(36).slice(2,8); }
 
-  // =========================================================
-  // 単語モード：カード描画（既存テンプレートを利用）
-  // =========================================================
+  // ====== 単語モード描画 ======
   function mountWordItems(itemsSel, countSel, items){
     const host = document.querySelector(itemsSel);
     const cnt  = document.querySelector(countSel);
@@ -4320,18 +4321,18 @@ bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 
       const node = tpl.content.firstElementChild.cloneNode(true);
       node.dataset.en  = o.en;
       node.dataset.jp  = o.ja;
-      node.dataset.cat = 'accessories';
+      node.dataset.cat = 'nsfw'; // 任意。必要なら具体カテゴリ名でもOK
+      if (o.level) node.dataset.level = o.level;
+
       node.querySelector('.wm-jp').textContent = o.ja;
       node.querySelector('.wm-en').textContent = o.en;
 
-      // クリック＝行追加（既存のテーブルJSが拾う想定）
       node.addEventListener('click', (ev)=>{
         if (ev.target.closest('.wm-actions')) return;
-        // 既存の addRow 相当が無い場合はカスタムイベントで通知
-        host.dispatchEvent(new CustomEvent('wm:addRow', {detail:{jp:o.ja, en:o.en, cat:'accessories'}, bubbles:true}));
+        host.dispatchEvent(new CustomEvent('wm:addRow', {
+          detail:{jp:o.ja, en:o.en, cat:'nsfw'}, bubbles:true
+        }));
       });
-
-      // コピー
       node.querySelector('.wm-copy-en')?.addEventListener('click', e=>{
         e.stopPropagation(); copyToClipboard(o.en);
       });
@@ -4352,6 +4353,7 @@ bindCopyTripletExplicit(document.getElementById('panelProduction') || document, 
     }
   }
 })();
+
 
 
 
