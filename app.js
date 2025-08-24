@@ -1319,8 +1319,9 @@ function filterByScope(items, allow) {
       fillCat('situation', dict.nsfw.situation);
       fillCat('lighting-nsfw', dict.nsfw.lighting);
 
-      // Color（SFW側の color）
-      fillCat('color', dict.sfw.color, true);
+
+      // Color（SFW側の colors が正式。color に書かれていても拾う）
+      fillCat('color', dict.sfw?.colors || dict.sfw?.color || [], true);
 
       // 保存データ復元
       restoreRows();
