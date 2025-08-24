@@ -3708,7 +3708,6 @@ function buildBatchProduction(n){
 
   // 固定タグ（先頭側に混ぜる）
   const fixed = ($("#p_fixed").value||"").split(",").map(s=>s.trim()).filter(Boolean);
-
   const neg = getNegProd();
 
   // 服セット {top, pants, skirt, dress, shoes}
@@ -3716,12 +3715,12 @@ function buildBatchProduction(n){
 
   // 差分（各カテゴリ）
   const bgs    = getMany("p_bg");
-  const poses  = getMany("p_pose");   // ポーズ
-  const comps  = getMany("p_comp");   // 構図
-  const views  = getMany("p_view");   // 視点
-  const exprs  = getMany("p_expr");   // SFW表情
-  const lights = getMany("p_light");  // SFWライティング
-  const acc    = readAccessorySlots();// アクセ
+  const poses  = getMany("p_pose");
+  const comps  = getMany("p_comp");
+  const views  = getMany("p_view");
+  const exprs  = getMany("p_expr");
+  const lights = getMany("p_light");
+  const acc    = readAccessorySlots();
 
   // NSFW（ON のときだけ各カテゴリから最大1つ）
   const nsfwOn   = !!$("#nsfwProd")?.checked;
@@ -3771,22 +3770,24 @@ function buildBatchProduction(n){
     tmp = pmPickOne('hairStyle'); if (tmp) parts.push(tmp);
     tmp = pmPickOne('eyeShape');  if (tmp) parts.push(tmp);
 
-    // --- 服の選定（ワンピ優先 / 上下） ---
+    // --- 服の選定（ワンピ優先 / 上下）--- ※各カテゴリ 1つだけ採用
     let usedDress = false;
     let chosenDress = "";
     if (O.dress.length && Math.random() < 0.35) {
-      chosenDress = pick(O.dress);
+      chosenDress = pick(O.dress);      // ワンピから1つ
       parts.push(chosenDress);
       usedDress = true;
     } else {
-      if (O.top.length) parts.push(pick(O.top));
+      if (O.top.length) {
+        parts.push(pick(O.top));        // トップスから1つ
+      }
       let bottomPool = [];
       if (O.pants.length && O.skirt.length) bottomPool = (Math.random() < 0.5) ? O.pants : O.skirt;
       else if (O.pants.length) bottomPool = O.pants;
       else if (O.skirt.length) bottomPool = O.skirt;
-      if (bottomPool.length) parts.push(pick(bottomPool));
+      if (bottomPool.length) parts.push(pick(bottomPool)); // ボトムから1つ
     }
-    if (O.shoes && O.shoes.length) parts.push(pick(O.shoes));
+    if (O.shoes && O.shoes.length) parts.push(pick(O.shoes)); // 靴も1つ
 
     // --- 服色の付与（この段階ではプレースホルダ） ---
     if (usedDress) {
@@ -3828,17 +3829,16 @@ function buildBatchProduction(n){
     let all = uniq([...fixed, ...parts]).filter(Boolean);
 
     // 露出/ワンピ優先（上下や色プレースホルダの除去はここで）
-    if (typeof applyNudePriority === 'function')        all = applyNudePriority(all);
-    if (typeof enforceOnePieceExclusivity === 'function') all = enforceOnePieceExclusivity(all);
+    if (typeof applyNudePriority === 'function')           all = applyNudePriority(all);
+    if (typeof enforceOnePieceExclusivity === 'function')  all = enforceOnePieceExclusivity(all);
 
-    // ★ 露出検出は pickedExpo ではなく、最終配列 all 全体をスキャンして判定（固定タグ経由も拾う）
+    // 露出の有無は配列全体から検出（固定タグ経由でも拾う）
     const EXPOSURE_EXCLUSIVE_RE =
       /\b(bikini|swimsuit|lingerie|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple_cover_bikini|crotchless_swimsuit|bodypaint_swimsuit|topless|bottomless|nude)\b/i;
-
     const hasExposure = all.some(t => EXPOSURE_EXCLUSIVE_RE.test(String(t)));
 
     if (hasExposure) {
-      // 既存の上下服・ワンピ・靴・色プレースホルダを除去
+      // 既存の上下服・ワンピ・靴・色プレースホルダを除去（色は露出タグ側の色込みに任せる）
       const CLOTH_NOUN_RE =
         /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown|shoes)\b/i;
       const COLOR_WORD_RE =
@@ -3849,12 +3849,11 @@ function buildBatchProduction(n){
       all = all.filter(s =>
         !CLOTH_NOUN_RE.test(s) &&
         !COLOR_PLACE_RE.test(s) &&
-        // 単独色タグも除去（露出は辞書の色込みタグで表現）
-        !(COLOR_WORD_RE.test(s) && !/\s/.test(s))
+        !(COLOR_WORD_RE.test(s) && !/\s/.test(s)) // 単独色タグも除去
       );
-      // 露出の色は辞書（色込みタグ）に任せる
     } else {
-      // 通常服のときだけ、色タグと服名を合体
+      // 通常服：色合体の前に“カテゴリ1個だけ”を最終保証してから合体
+      all = ensureSingleWearPerRow(all);
       if (typeof pairWearColors === 'function') all = pairWearColors(all);
     }
 
@@ -3883,11 +3882,35 @@ function buildBatchProduction(n){
     seen.add(key);
     out.push(r);
   }
-  // フォールバック
-  while (out.length < n) out.push(makeOne(out.length + 1));
+  while (out.length < n) out.push(makeOne(out.length + 1)); // フォールバック
 
   return out;
 }
+
+
+// 服カテゴリは 1 行につき 1 つだけに制限する保険
+function ensureSingleWearPerRow(arr){
+  const kept = new Set();
+  const out = [];
+  // カテゴリ検出用の代表名詞（必要なら語彙を足してください）
+  const MAP = [
+    ["dress",  /\b(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\s+dress)\b/i],
+    ["top",    /\b(t-?shirt|tank\s+top|blouse|shirt|hoodie|sweater|cardigan|jacket|coat|parka|windbreaker|camisole|crop\s+top|turtleneck|uniform|jersey)\b/i],
+    ["bottom", /\b(pants|trousers|shorts|jeans|cargo\s+pants|skirt|hakama)\b/i],
+    ["shoes",  /\b(boots|sneakers|loafers|mary\s+janes|shoes|sandals)\b/i],
+  ];
+  for (const t of arr){
+    const s = String(t);
+    let cat = null;
+    for (const [c, re] of MAP){ if (re.test(s)) { cat = c; break; } }
+    if (!cat) { out.push(t); continue; }
+    if (kept.has(cat)) continue;   // 同カテゴリは2個目以降カット
+    kept.add(cat);
+    out.push(t);
+  }
+  return out;
+}
+
 
 function getNegProd(){
   const custom = ($("#p_neg").value||"").trim();
