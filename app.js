@@ -1427,151 +1427,153 @@ function filterByScope(items, allow) {
       updateSelectedView();
     }
 
-    function fillCat(catKey, items, isColor=false){
-      const host = elItems[catKey];
-      if (!host) return; // 対応ブロックが無いならスキップ
-
-      host.innerHTML = "";
-      const useTpl = isColor ? tplItemColor : tplItem;
-      if (!useTpl || !useTpl.content) {
-        if (elCounts[catKey]) elCounts[catKey].textContent = String(items?.length || 0);
-        return;
-      }
-
-      (items || []).forEach(obj=>{
-        const jp = obj.ja || obj.jp || "";
-        const en = obj.en || "";
-        if (!jp || !en) return;
-
-        const node = useTpl.content.firstElementChild.cloneNode(true);
-        node.dataset.en = en;
-        node.dataset.jp = jp;
-        node.dataset.cat = catKey;
-
-        const jpEl = node.querySelector('.wm-jp');
-        const enEl = node.querySelector('.wm-en');
-        if (jpEl) jpEl.textContent = jp;
-        if (enEl) enEl.textContent = en;
-
-        node.addEventListener('click', (ev)=>{
-          if (ev.target.closest?.('.wm-actions')) return;
-          addRow({jp, en, cat:catKey});
-        });
-
-        const bEn = node.querySelector('.wm-copy-en');
-        if (bEn) bEn.addEventListener('click', (ev)=>{
-          ev.stopPropagation();
-          copyText(en);
-        });
-
-        host.appendChild(node);
-      });
-
-      if (elCounts[catKey]) {
-        const count = Array.isArray(items) ? items.length : 0;
-        elCounts[catKey].textContent = String(count);
-      }
-    }
-
-    // ---- Table ops ----
-    function currentRows(){
-      const rows = [];
-      tblBody?.querySelectorAll?.('tr')?.forEach(tr=>{
-        rows.push({
-          jp: tr.querySelector('.wm-row-jp')?.textContent || "",
-          en: tr.dataset.en || tr.querySelector('.wm-row-en')?.textContent || "",
-          cat: tr.dataset.cat || ""
-        });
-      });
-      return rows;
-    }
-    function hasRow(en){
-      const esc = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(en) : String(en).replace(/"/g, '\\"');
-      return !!tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
-    }
-    function addRow(item){
-      if (!item || !item.en || !tplRow || !tplRow.content || !tblBody) return;
-      if (hasRow(item.en)) return;
-      const rows = currentRows();
-      if (rows.length >= MAX_ROWS) { flashOK(); return; }
-
-      const tr = tplRow.content.firstElementChild.cloneNode(true);
-      tr.dataset.en = item.en;
-      tr.dataset.cat = item.cat || "";
-      tr.querySelector('.wm-row-jp')?.append(document.createTextNode(item.jp || ""));
-      tr.querySelector('.wm-row-en')?.append(document.createTextNode(item.en || ""));
-
-      tr.querySelector('.wm-row-copy-en')?.addEventListener('click', ()=> copyText(item.en));
-      tr.querySelector('.wm-row-remove')?.addEventListener('click', ()=>{
-        tr.remove(); persistRows(); updateSelectedView();
-      });
-
-      tblBody.appendChild(tr);
-      persistRows();
-      updateSelectedView();
-    }
-    function persistRows(){
-      const rows = currentRows();
-      try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch(e){}
-    }
-    function restoreRows(){
-      try {
-        const s = localStorage.getItem(LS_KEY);
-        if (!s) return;
-        const rows = JSON.parse(s);
-        rows.forEach(addRow);
-      } catch(e){}
-    }
-    function clearRows(){
-      if (!tblBody) return;
-      tblBody.innerHTML = "";
-      persistRows();
-      updateSelectedView();
-    }
-    function copyAllEN(){
-      const tags = currentRows().map(r=>r.en).filter(Boolean);
-      if (!tags.length) return;
-      copyText(tags.join(", "));
-    }
-    function copyAllBoth(){
-      const lines = currentRows().map(r=>`${r.jp} (${r.en})`).filter(Boolean);
-      if (!lines.length) return;
-      copyText(lines.join("\n"));
-    }
-
-    function updateSelectedView(){
-      const rows = currentRows();
-      if (chipCount) chipCount.textContent = String(rows.length);
-      if (!chipArea) return;
-      chipArea.innerHTML = "";
-      rows.forEach(r=>{
-        const chip = document.createElement('span');
-        chip.className = "wm-chip";
-        chip.innerHTML = `<span>${escapeHTML(r.jp)}</span> <small>${escapeHTML(r.en)}</small> <span class="x" title="削除">×</span>`;
-        chip.querySelector('.x')?.addEventListener('click', ()=>{
-          const esc = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(r.en) : String(r.en).replace(/"/g, '\\"');
-          const tr = tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
-          if (tr) tr.remove();
-          persistRows(); updateSelectedView();
-        });
-        chipArea.appendChild(chip);
-      });
-    }
-
-    function escapeHTML(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-    // ---- Global buttons ----
-    btnCopyENAll?.addEventListener('click', copyAllEN);
-    btnCopyBothAll?.addEventListener('click', copyAllBoth);
-    btnTableClear?.addEventListener('click', clearRows);
-    btnSelectedClear?.addEventListener('click', clearRows);
-
-    // ---- Render now ----
-    await renderAll();
-  }
-
-})();
-
+    // ▼▼ ここから置き換え ▼▼
+   function fillCat(catKey, items, isColor=false){
+     const host = elItems[catKey];
+     if (!host) return; // 対応ブロックが無いならスキップ
+   
+     host.innerHTML = "";
+     const useTpl = isColor ? tplItemColor : tplItem;
+     if (!useTpl || !useTpl.content) {
+       if (elCounts[catKey]) elCounts[catKey].textContent = String(items?.length || 0);
+       return;
+     }
+   
+     (items || []).forEach(obj=>{
+       const en = obj.en || "";
+       if (!en) return;
+   
+       const node = useTpl.content.firstElementChild.cloneNode(true);
+       node.dataset.en  = en;
+       node.dataset.jp  = "";        // 日本語は使わない
+       node.dataset.cat = catKey;
+   
+       // 表示は英語のみ
+       const jpEl = node.querySelector('.wm-jp');
+       const enEl = node.querySelector('.wm-en');
+       if (jpEl) jpEl.textContent = "";
+       if (enEl) enEl.textContent = en;
+   
+       // 行追加（英語のみ）
+       node.addEventListener('click', (ev)=>{
+         if (ev.target.closest?.('.wm-actions')) return;
+         addRow({ jp:"", en, cat:catKey });
+       });
+   
+       // コピーは EN のみ
+       node.querySelector('.wm-copy-en')?.addEventListener('click', (ev)=>{
+         ev.stopPropagation();
+         copyText(en);
+       });
+       // BOTH ボタンがテンプレにあっても削除
+       node.querySelector('.wm-copy-both')?.remove();
+   
+       host.appendChild(node);
+     });
+   
+     if (elCounts[catKey]) {
+       const count = Array.isArray(items) ? items.length : 0;
+       elCounts[catKey].textContent = String(count);
+     }
+   }
+   
+   // ---- Table ops ----
+   function currentRows(){
+     const rows = [];
+     tblBody?.querySelectorAll?.('tr')?.forEach(tr=>{
+       rows.push({
+         en:  tr.dataset.en || tr.querySelector('.wm-row-en')?.textContent || "",
+         jp:  "", // 日本語は保持しない
+         cat: tr.dataset.cat || ""
+       });
+     });
+     return rows;
+   }
+   function hasRow(en){
+     const esc = (typeof CSS!=='undefined' && CSS.escape) ? CSS.escape(en) : String(en).replace(/"/g,'\\"');
+     return !!tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
+   }
+   function addRow(item){
+     if (!item || !item.en || !tplRow || !tplRow.content || !tblBody) return;
+     if (hasRow(item.en)) return;
+     const rows = currentRows();
+     if (rows.length >= MAX_ROWS) { flashOK(); return; }
+   
+     const tr = tplRow.content.firstElementChild.cloneNode(true);
+     tr.dataset.en  = item.en;
+     tr.dataset.cat = item.cat || "";
+   
+     const jpCell = tr.querySelector('.wm-row-jp');
+     const enCell = tr.querySelector('.wm-row-en');
+     if (jpCell) jpCell.textContent = "";           // ← 追記ではなく毎回上書き
+     if (enCell) enCell.textContent = item.en;      // ← 英語のみ表示
+   
+     tr.querySelector('.wm-row-copy-en')?.addEventListener('click', ()=> copyText(item.en));
+     // BOTH コピー削除
+     tr.querySelector('.wm-row-copy-both')?.remove();
+   
+     tr.querySelector('.wm-row-remove')?.addEventListener('click', ()=>{
+       tr.remove(); persistRows(); updateSelectedView();
+     });
+   
+     tblBody.appendChild(tr);
+     persistRows();
+     updateSelectedView();
+   }
+   function persistRows(){
+     // 英語のみ保存してスリム化
+     const rows = currentRows().map(r => ({ en:r.en, cat:r.cat }));
+     try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch(e){}
+   }
+   function restoreRows(){
+     try {
+       const s = localStorage.getItem(LS_KEY);
+       if (!s) return;
+       const rows = JSON.parse(s);
+       rows.forEach(r => addRow({ jp:"", en:r.en, cat:r.cat }));
+     } catch(e){}
+   }
+   function clearRows(){
+     if (!tblBody) return;
+     tblBody.innerHTML = "";
+     persistRows();
+     updateSelectedView();
+   }
+   
+   // 両方コピーは廃止（使わない）
+   function copyAllBoth(){ /* no-op */ }
+   
+   // 選択中チップも英語のみ表示
+   function updateSelectedView(){
+     const rows = currentRows();
+     if (chipCount) chipCount.textContent = String(rows.length);
+     if (!chipArea) return;
+     chipArea.innerHTML = "";
+     rows.forEach(r=>{
+       const chip = document.createElement('span');
+       chip.className = "wm-chip";
+       chip.innerHTML = `<span>${escapeHTML(r.en)}</span> <span class="x" title="削除">×</span>`;
+       chip.querySelector('.x')?.addEventListener('click', ()=>{
+         const esc = (typeof CSS!=='undefined' && CSS.escape) ? CSS.escape(r.en) : String(r.en).replace(/"/g,'\\"');
+         const tr = tblBody?.querySelector?.(`tr[data-en="${esc}"]`);
+         if (tr) tr.remove();
+         persistRows(); updateSelectedView();
+       });
+       chipArea.appendChild(chip);
+     });
+   }
+   
+   function escapeHTML(s){
+     return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+   }
+   
+   // ---- Global buttons ----
+   btnCopyENAll?.addEventListener('click', copyAllEN);
+   // BOTH(All) ボタンも削除しておく
+   btnCopyBothAll?.remove();
+   btnTableClear?.addEventListener('click', clearRows);
+   btnSelectedClear?.addEventListener('click', clearRows);
+   // ▲▲ ここまで置き換え ▲▲
 
 
 
