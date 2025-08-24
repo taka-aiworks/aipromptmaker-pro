@@ -165,9 +165,24 @@
         { "tag": "massage_oil", "ja": "オイル・マッサージ", "level": "L2" },
         { "tag": "blood_splatter", "ja": "血しぶき", "level": "L3" },
         { "tag": "injury_detail", "ja": "負傷描写", "level": "L3" },
-        { "tag": "gore", "ja": "グロテスク表現", "level": "L3" }
-      ],
-
+        { "tag": "gore", "ja": "グロテスク表現", "level": "L3" },
+        { "tag": "wet_pussy",      "ja": "濡れたアソコ", "level": "L2" },
+        { "tag": "dripping_wet",   "ja": "愛液ぽたぽた", "level": "L2" },
+        { "tag": "stringy_fluids", "ja": "糸引く愛液", "level": "L2" },
+        { "tag": "squirting",      "ja": "潮吹き", "level": "L2" },
+        { "tag": "gushing",        "ja": "愛液どばどば", "level": "L2" },
+        { "tag": "cum_inside",     "ja": "膣内射精", "level": "L3" },
+        { "tag": "creampie",       "ja": "中出し痕", "level": "L3" },
+        { "tag": "cum_dripping",   "ja": "精液だらだら", "level": "L3" },
+        { "tag": "gaping",         "ja": "拡張描写", "level": "L2" },
+        { "tag": "anal_explicit",  "ja": "アナル露出", "level": "L2" },
+        { "tag": "pregnant_belly", "ja": "孕み腹", "level": "L3" },
+        { "tag": "whip_marks",     "ja": "鞭痕", "level": "L3" },
+        { "tag": "bruise_marks",   "ja": "アザ", "level": "L3" },
+        { "tag": "bloodied_skin",  "ja": "血まみれの肌", "level": "L3" },
+        { "tag": "cut_wounds",     "ja": "切り傷描写", "level": "L3" },
+        { "tag": "dismemberment",  "ja": "四肢切断", "level": "L3" }
+       ],
       "background": [
         { "tag": "beach", "ja": "ビーチ", "level": "L1" },
         { "tag": "poolside", "ja": "プールサイド", "level": "L1" },
@@ -200,7 +215,7 @@
         { "tag": "moody", "ja": "ムーディ", "level": "L1" }
       ],
 
-          "pose": [
+      "pose": [
       { "tag": "spread_legs",     "ja": "脚を広げる",       "level": "L2" },
       { "tag": "arched_back",     "ja": "背中を反らす",     "level": "L2" },
       { "tag": "on_all_fours",    "ja": "四つん這い",       "level": "L2" },
@@ -256,29 +271,26 @@
       { "tag": "bondage_straps",  "ja": "拘束ベルト衣装",           "level": "L2" },
       { "tag": "gimp_suit",       "ja": "ギンプスーツ",             "level": "L2" }
     ],
-    
     "body": [
-      { "tag": "large_breasts",     "ja": "巨乳",           "level": "L1" },
-      { "tag": "flat_chest",        "ja": "貧乳",           "level": "L1" },
-      { "tag": "wide_hips",         "ja": "腰幅が広い",     "level": "L1" },
-      { "tag": "plump_ass",         "ja": "豊満なお尻",     "level": "L2" },
-      { "tag": "cameltoe",          "ja": "キャメル",       "level": "L2" },
-      { "tag": "erect_nipples",     "ja": "勃起乳首",       "level": "L2" },
-      { "tag": "nipples_visible",   "ja": "乳首透け",       "level": "L2" },
-      { "tag": "dripping_wet",      "ja": "濡れそぼる",     "level": "L3" },
-      { "tag": "pussy_juice",       "ja": "愛液表現",       "level": "L2" },
-      { "tag": "cum_dripping",      "ja": "精液だらだら",   "level": "L2" },
-      { "tag": "gaping",            "ja": "拡張描写",       "level": "L2" },
-      { "tag": "anal_explicit",     "ja": "アナル露出",     "level": "L2" },
-      { "tag": "pregnant_belly",    "ja": "孕み腹",         "level": "L3" },
-      { "tag": "whip_marks",      "ja": "鞭痕",          "level": "L3" },
-      { "tag": "bruise_marks",    "ja": "アザ",          "level": "L3" },
-      { "tag": "bloodied_skin",   "ja": "血まみれの肌",  "level": "L3" },
-      { "tag": "cut_wounds",      "ja": "切り傷描写",    "level": "L3" },
-      { "tag": "pierced_body",    "ja": "刺突/ピアス拡張","level": "L3" },
-      { "tag": "dismemberment",   "ja": "四肢切断",      "level": "L3" }
+      { "tag": "big_breasts",       "ja": "爆乳", "level": "L2" },
+      { "tag": "huge_breasts",      "ja": "超乳", "level": "L2" },
+      { "tag": "milky_breasts",     "ja": "母乳体型", "level": "L2" },
+      { "tag": "pregnant_body",     "ja": "妊娠体型（お腹ふくらみ）", "level": "L2" },
+      { "tag": "lactating",         "ja": "母乳分泌", "level": "L2" },
+      { "tag": "thicc",             "ja": "極太もも・豊満", "level": "L2" },
+      { "tag": "bubble_butt",       "ja": "まんまる尻", "level": "L2" },
+      { "tag": "wide_hips",         "ja": "極端に広い腰回り", "level": "L2" },
+      { "tag": "slim_thick",        "ja": "上半身スリム＋下半身豊満", "level": "L2" },
+      { "tag": "hourglass_exaggerated", "ja": "極端な砂時計体型", "level": "L2" }
+    ],
+  
+    "nipple": [
+      { "tag": "puffy_nipples",     "ja": "ぷっくり乳首", "level": "L1" },
+      { "tag": "inverted_nipples",  "ja": "陥没乳首", "level": "L1" },
+      { "tag": "large_areolae",     "ja": "大きな乳輪", "level": "L1" },
+      { "tag": "dark_areolae",      "ja": "濃い乳輪", "level": "L1" },
+      { "tag": "pierced_nipples",   "ja": "乳首ピアス", "level": "L2" }
     ]
-      ]
     }
   }
 }
