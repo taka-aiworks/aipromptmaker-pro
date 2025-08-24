@@ -1096,8 +1096,9 @@ function filterByScope(items, allow) {
 
 /* ===========================================================
  * 単語モード JS（辞書→UI描画、テーブル追加、コピー、保存）
- * 依存：対応するHTML & CSS。辞書は window.WORD_MODE_DICT に注入可。
+ * 依存：対応するHTML & CSS。辞書は「既存の SFW/NSFW 辞書」をそのまま参照（変換しない）
  * 保存：localStorage "wm_rows_v1" に {jp,en,cat} の配列で保存。
+ * 公開：window.WordMode.renderAll() で外部から再描画可能
  * =========================================================== */
 (function(){
   const onReady = (fn)=> {
@@ -1112,7 +1113,7 @@ function filterByScope(items, allow) {
 
     // ---- DOM refs ----
     const panel = document.getElementById('panelWordMode');
-    if (!panel) return; // パネルがないページは何もしない
+    if (!panel) return;
 
     const elItems = {
       background:        document.getElementById('wm-items-background'),
@@ -1171,7 +1172,6 @@ function filterByScope(items, allow) {
         await navigator.clipboard.writeText(text);
         flashOK();
       } catch(e){
-        // fallback
         const ta = document.createElement('textarea');
         ta.value = text;
         document.body.appendChild(ta);
@@ -1181,65 +1181,56 @@ function filterByScope(items, allow) {
       }
     }
     function flashOK(){
-      // ささっと視覚フィードバック（任意）
       panel.style.boxShadow = "0 0 0 2px rgba(120,200,255,.35) inset";
       setTimeout(()=> panel.style.boxShadow = "", 180);
     }
 
-    // ---- Data ----
-    function getDict(){
-      // 外部から注入された辞書を優先
-      if (window.WORD_MODE_DICT && typeof window.WORD_MODE_DICT === 'object') {
-        return window.WORD_MODE_DICT;
-      }
-      // 最小ダミー（動作確認用）
-      return {
-        sfw: {
-          background: [{ja:"無地背景", en:"plain background"}],
-          pose: [{ja:"立ち", en:"standing"}],
-          composition: [{ja:"上半身", en:"upper body"}],
-          view: [{ja:"正面", en:"front view"}],
-          expression: [{ja:"笑顔", en:"smiling"}],
-          lighting: [{ja:"自然光", en:"normal lighting"}],
-          world: [{ja:"現代", en:"modern"}],
-          personality: [{ja:"明るい", en:"cheerful"}],
-          relationship: [{ja:"友人", en:"friend"}],
-          color: [{ja:"白", en:"white"}, {ja:"黒", en:"black"}],
-        },
-        nsfw: {
-          expression: [{ja:"誘惑の微笑み", en:"seductive_smile"}],
-          exposure: [{ja:"ビキニ（白）", en:"white bikini"}],
-          situation: [{ja:"プールサイド", en:"poolside"}],
-          lighting: [{ja:"リムライト", en:"rim_light"}],
-        }
-      };
+    // ---- 既存辞書の参照（変換しない）----
+    // よくあるグローバル名を多段参照。あなたの実体名に合わせて最初の候補が拾われます。
+    function getSfwDictRaw(){
+      return (
+        window.SFW_DICT ||
+        window.DICT_SFW ||
+        window.sfwDict ||
+        window.SFW || 
+        {} // 無ければ空
+      );
+    }
+    function getNsfwDictRaw(){
+      return (
+        window.NSFW_DICT ||
+        window.DICT_NSFW ||
+        window.nsfwDict ||
+        window.NSFW || 
+        {}
+      );
     }
 
     // ---- Build UI ----
     function renderAll(){
-      const dict = getDict();
+      const sfw = getSfwDictRaw() || {};
+      const nsfw = getNsfwDictRaw() || {};
 
-      // SFW
-      fillCat('background', dict.sfw?.background || []);
-      fillCat('pose', dict.sfw?.pose || []);
-      fillCat('composition', dict.sfw?.composition || []);
-      fillCat('view', dict.sfw?.view || []);
-      fillCat('expression-sfw', dict.sfw?.expression || []);
-      fillCat('lighting-sfw', dict.sfw?.lighting || []);
-      fillCat('world', dict.sfw?.world || []);
-      fillCat('personality', dict.sfw?.personality || []);
-      fillCat('relationship', dict.sfw?.relationship || []);
+      // SFW（辞書のキー名はそのまま。各要素は {ja,en} or {ja,tag} など想定）
+      fillCat('background',       sfw.background || []);
+      fillCat('pose',             sfw.pose || []);
+      fillCat('composition',      sfw.composition || []);
+      fillCat('view',             sfw.view || []);
+      fillCat('expression-sfw',   sfw.expression || []);
+      fillCat('lighting-sfw',     sfw.lighting || []);
+      fillCat('world',            sfw.world || []);
+      fillCat('personality',      sfw.personality || []);
+      fillCat('relationship',     sfw.relationship || []);
 
       // NSFW
-      fillCat('expression-nsfw', dict.nsfw?.expression || []);
-      fillCat('exposure', dict.nsfw?.exposure || []);
-      fillCat('situation', dict.nsfw?.situation || []);
-      fillCat('lighting-nsfw', dict.nsfw?.lighting || []);
+      fillCat('expression-nsfw',  nsfw.expression || []);
+      fillCat('exposure',         nsfw.exposure || []);
+      fillCat('situation',        nsfw.situation || []);
+      fillCat('lighting-nsfw',    nsfw.lighting || []);
 
-      // Color（SFW側の color）
-      fillCat('color', dict.sfw?.color || [], true);
+      // Color（SFW側 color）
+      fillCat('color',            sfw.color || [], true);
 
-      // 保存データ復元
       restoreRows();
       updateSelectedView();
     }
@@ -1250,8 +1241,9 @@ function filterByScope(items, allow) {
       host.innerHTML = "";
       const useTpl = isColor ? tplItemColor : tplItem;
       (items || []).forEach(obj=>{
-        const jp = obj.ja || obj.jp || obj.name || "";
-        const en = obj.en || obj.tag || "";
+        // ★ 変換はせず、表示時のみ柔軟に読み取る
+        const jp = obj.ja || obj.jp || obj.name || obj.label || "";
+        const en = obj.en || obj.tag || obj.key || obj.value || "";
         if (!jp || !en) return;
 
         const node = useTpl.content.firstElementChild.cloneNode(true);
@@ -1262,30 +1254,26 @@ function filterByScope(items, allow) {
         node.querySelector('.wm-jp').textContent = jp;
         node.querySelector('.wm-en').textContent = en;
 
-        // クリックでテーブルに追加
+        // クリックでテーブルに追加（ボタン群は stopPropagation 済み）
         node.addEventListener('click', (ev)=>{
-          // 子ボタン（EN/BOTH）クリック時は親の追加を抑止
           if (ev.target.closest('.wm-actions')) return;
           addRow({jp, en, cat:catKey});
         });
 
-        // ENコピー / BOTHコピー
         const bEn = node.querySelector('.wm-copy-en');
         if (bEn) bEn.addEventListener('click', (ev)=>{
-          ev.stopPropagation();
-          copyText(en);
+          ev.stopPropagation(); copyText(en);
         });
 
         const bBoth = node.querySelector('.wm-copy-both');
         if (bBoth) bBoth.addEventListener('click', (ev)=>{
-          ev.stopPropagation();
-          copyText(`${jp} (${en})`);
+          ev.stopPropagation(); copyText(`${jp} (${en})`);
         });
 
         host.appendChild(node);
       });
 
-      if (elCounts[catKey]) elCounts[catKey].textContent = String(items.length);
+      if (elCounts[catKey]) elCounts[catKey].textContent = String(items.length || 0);
     }
 
     // ---- Table ops ----
@@ -1307,7 +1295,7 @@ function filterByScope(items, allow) {
 
     function addRow(item){
       if (!item || !item.en) return;
-      if (hasRow(item.en)) return; // 重複防止
+      if (hasRow(item.en)) return;
       const rows = currentRows();
       if (rows.length >= MAX_ROWS) { flashOK(); return; }
 
@@ -1317,7 +1305,6 @@ function filterByScope(items, allow) {
       tr.querySelector('.wm-row-jp').textContent = item.jp || "";
       tr.querySelector('.wm-row-en').textContent = item.en || "";
 
-      // 行ボタン
       tr.querySelector('.wm-row-copy-en').addEventListener('click', ()=> copyText(item.en));
       tr.querySelector('.wm-row-copy-both').addEventListener('click', ()=> copyText(`${item.jp} (${item.en})`));
       tr.querySelector('.wm-row-remove').addEventListener('click', ()=>{
@@ -1360,7 +1347,7 @@ function filterByScope(items, allow) {
       copyText(lines.join("\n"));
     }
 
-    // ---- Selected chips (上部の視覚要約) ----
+    // ---- Selected chips ----
     function updateSelectedView(){
       const rows = currentRows();
       chipCount.textContent = String(rows.length);
@@ -1383,7 +1370,6 @@ function filterByScope(items, allow) {
       return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
     function cssEscape(s){
-      // 簡易エスケープ（属性セレクタ向け）
       return String(s).replace(/"/g, '\\"');
     }
 
@@ -1393,8 +1379,15 @@ function filterByScope(items, allow) {
     btnTableClear?.addEventListener('click', clearRows);
     btnSelectedClear?.addEventListener('click', clearRows);
 
-    // ---- Init ----
+    // ---- 初期化（他タブからも呼べるよう公開） ----
     renderAll();
+    window.WordMode = Object.assign(window.WordMode || {}, {
+      renderAll,    // 再描画
+      addRow,       // 任意：外部から行追加したい時に
+      clearRows,    // 任意：外部からクリア
+      copyAllEN,    // 任意
+      copyAllBoth   // 任意
+    });
   });
 })();
 
