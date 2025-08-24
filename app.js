@@ -4189,34 +4189,39 @@ function initAll(){
   bindNSFWToggles();
   bindLearnTest();
   bindLearnBatch();
-  bindProduction();
   bindGASTools();
 
-  bindBottomCategoryRadios();
+  // ← ここでは “服系のバインド” は呼ばない（UIがまだ無い）
 
-   
   loadDefaultDicts().then(()=>{
-    renderSFW();
-    bindBottomCategoryGuess();
+    // 1) 辞書ロード後にUIを描画
+    renderSFW();                    // 量産タブの p_outfit_* / p_bg などもここで生成
+    window.__SFW_RENDERED = true;
+
+    // 2) 服まわりの補助バインドは描画後に
+    bindBottomCategoryGuess();      // （クリックで __bottomCat 推定）
+    bindBottomCategoryRadios();     // ← 移動：radio 生成後にバインド
     fillAccessorySlots();
+
+    // 3) NSFWリストや各種ピッカー
     renderNSFWLearning();
-    renderNSFWProduction();initHairEyeAndAccWheels(); // ← 髪/瞳/アクセのピッカーとトグル連動をまとめて初期化
+    renderNSFWProduction();
+    initHairEyeAndAccWheels();
 
-    // 色系
-    // 基本情報タブの「服カラー（固定）」3つを初期化
-     initColorWheel("top",    35, 80, 55);
-     initColorWheel("bottom",210, 70, 50); 
-     initColorWheel("shoes",   0,  0, 30);
-
-     // 生産タブ（量産の基本色）
-    initColorWheel("p_top",    35, 80, 55); // ← 追加
-    initColorWheel("p_bottom",210, 70, 50); // ← 追加
-    initColorWheel("p_shoes",   0,  0, 30); // ← 追加
+    // 4) カラーホイール（基本／量産）
+    initColorWheel("top",     35, 80, 55);
+    initColorWheel("bottom", 210, 70, 50);
+    initColorWheel("shoes",    0,  0, 30);
+    initColorWheel("p_top",    35, 80, 55);
+    initColorWheel("p_bottom",210, 70, 50);
+    initColorWheel("p_shoes",   0,  0, 30);
 
     initSkinTone();
     initNSFWStatusBadge();
-    // initAll() の末尾あたり
     initCopyTripletAllModes();
+
+    // 5) 量産タブのイベント等はUIが揃ってから
+    bindProduction();               // ← 移動：renderSFW 後に実行
   });
 }
 
