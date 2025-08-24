@@ -1323,12 +1323,17 @@ function filterByScope(items, allow) {
       return null;
     }
     function normalizeEntries(arr){
-      return (Array.isArray(arr)?arr:[]).map(x=>({
-        ja: firstNonNull(x.ja, x.jp, x.label, x.name, ""),
-        en: firstNonNull(x.en, x.tag, x.value, ""),
-        level: x.level || ""
-      })).filter(o=>o.ja && o.en);
-    }
+     return (Array.isArray(arr) ? arr : []).map(x => {
+       // ja/en を素直に取る。prefix は削除
+       const ja = (x.ja || x.jp || x.label || x.name || "").replace(/^日本語[-:]/i, "");
+       const en = (x.en || x.tag || x.value || "").replace(/^english[-:]/i, "");
+       return {
+         ja: ja.trim(),
+         en: en.trim(),
+         level: x.level || ""
+       };
+     }).filter(o => o.ja && o.en);
+   }
     function pickCat(dict, ...names){
       for (const n of names){
         if (dict && Array.isArray(dict[n])) return dict[n];
