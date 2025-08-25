@@ -112,6 +112,28 @@ function buildNegative(baseText="") {
   return Array.from(new Set([...NEG_TIGHT, ...custom])).join(", ");
 }
 
+// 文字列→タグ配列
+function splitTagsSafe(v){
+  return String(v||"")
+    .split(",")
+    .map(s=>s.trim())
+    .filter(Boolean);
+}
+
+// デフォルトネガ（既存のものを使っている前提。なければここに配列を定義）
+function getDefaultNegList(){
+  return Array.isArray(DEFAULT_NEG) ? DEFAULT_NEG : [];
+}
+
+// チェックボックス＋テキストエリアからネガを集約
+function collectNeg(chkEl, textEl){
+  const out = [];
+  if (chkEl && chkEl.checked) out.push(...getDefaultNegList());
+  if (textEl && textEl.value) out.push(...splitTagsSafe(textEl.value));
+  return uniq(out);
+}
+
+
 
 // 背景が人混みに寄りやすいタグ → “無人化”の弱い補正を足す
 const MULTI_RISK_BG = new Set([
