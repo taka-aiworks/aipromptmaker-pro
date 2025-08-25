@@ -3721,17 +3721,6 @@ function ensureNSFWHead(arr){
   return out;
 }
 
-// 学習モード：固定タグ（#fixedManual）を配列で取得
-function getFixedLearn(){
-  return (document.getElementById("fixedManual")?.value || "")
-    .split(",").map(s=>s.trim()).filter(Boolean);
-}
-
-// 学習モード：ネガ（#negGlobal）＋「デフォルトを使う(#useDefaultNeg)」を文字列で取得
-function getNegLearn(){
-  const extraNeg = (document.getElementById("negLearn")?.value || "").trim();
-  return [ ...NEG_TIGHT, extraNeg ].filter(Boolean).join(", ");
-}
 
 
 
@@ -3849,6 +3838,38 @@ function buildOneLearning(extraSeed = 0){
 }
 
 
+/* =========================
+ * 学習モード：固定タグ / ネガ取得
+ * ========================= */
+
+// 学習モード 固定タグ
+// 優先順: #fixedLearn → #l_fixed → 共通 #fixedManual → 空
+function getFixedLearn(){
+  const v = (document.getElementById("fixedLearn")?.value ??
+             document.getElementById("l_fixed")?.value ??
+             document.getElementById("fixedManual")?.value ??
+             "");
+  return String(v).split(",").map(s=>s.trim()).filter(Boolean);
+}
+
+// 学習モード ネガ（デフォは NEG_TIGHT を使用）
+function getNegLearn(){
+  const useDefault = !!document.getElementById("useDefaultNegLearn")?.checked
+                  || !!document.getElementById("useDefaultNeg")?.checked; // 共通チェックも許容
+  const extraNeg   = (document.getElementById("negLearn")?.value || "").trim();
+
+  // NEG_TIGHT は配列/文字列どちらでもOKにする
+  const base = (typeof NEG_TIGHT !== "undefined")
+    ? (Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : (NEG_TIGHT || ""))
+    : "";
+
+  return [useDefault ? base : "", extraNeg].filter(Boolean).join(", ");
+}
+
+// （保険）旧コードが DEFAULT_NEG を見る場合の互換
+if (typeof DEFAULT_NEG === "undefined" && typeof NEG_TIGHT !== "undefined") {
+  window.DEFAULT_NEG = Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : (NEG_TIGHT || "");
+}
 
 /* ============================================================================
  * 学習モード一括生成（修正版・置き換え用 / 追加NSFW6カテゴリ対応 + 先頭NSFW）
