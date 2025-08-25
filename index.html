@@ -346,85 +346,62 @@
 
   </section>
 
-  <!-- ========== アコーディオン（NSFW） ========== -->
   <section class="wm-accordion" id="wm-accordion-nsfw">
-    <h3 class="wm-acc-title">NSFW</h3>
+  <h3 class="wm-acc-title">NSFW</h3>
 
-    <details class="wm-acc" data-cat="expression-nsfw">
-      <summary>
-        表情（NSFW） <span class="wm-count" id="wm-count-expression-nsfw">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-expression-nsfw"><!-- 動的挿入 --></div>
-    </details>
+  <!-- 先頭に：露出／下着／衣装 -->
+  <details class="wm-acc" data-cat="exposure">
+    <summary>露出 <span class="wm-count" id="wm-count-exposure">0</span></summary>
+    <div class="wm-items" id="wm-items-exposure"></div>
+    <p class="wm-tip">※ 露出系（bikini/lingerie/nude）は色込みタグの登録・コピーを推奨</p>
+  </details>
 
-    <details class="wm-acc" data-cat="exposure">
-      <summary>
-        露出 <span class="wm-count" id="wm-count-exposure">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-exposure"><!-- 動的挿入 --></div>
-      <p class="wm-tip">※ 露出系（bikini/lingerie/nude）は色込みタグの登録・コピーを推奨</p>
-    </details>
+  <details class="wm-acc" data-cat="underwear-nsfw">
+    <summary>下着（NSFW） <span class="wm-count" id="wm-count-underwear-nsfw">0</span></summary>
+    <div class="wm-items" id="wm-items-underwear-nsfw"></div>
+  </details>
 
-    <details class="wm-acc" data-cat="situation">
-      <summary>
-        シチュエーション <span class="wm-count" id="wm-count-situation">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-situation"><!-- 動的挿入 --></div>
-    </details>
+  <details class="wm-acc" data-cat="outfit-nsfw">
+    <summary>衣装（NSFW） <span class="wm-count" id="wm-count-outfit-nsfw">0</span></summary>
+    <div class="wm-items" id="wm-items-outfit-nsfw"></div>
+  </details>
 
-    <details class="wm-acc" data-cat="lighting-nsfw">
-      <summary>
-        ライティング（NSFW） <span class="wm-count" id="wm-count-lighting-nsfw">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-lighting-nsfw"><!-- 動的挿入 --></div>
-    </details>
-    <!-- 追加：ポーズ（NSFW） -->
-<details class="wm-acc" data-cat="pose-nsfw">
-  <summary>
-    ポーズ（NSFW） <span class="wm-count" id="wm-count-pose-nsfw">0</span>
-  </summary>
-  <div class="wm-items" id="wm-items-pose-nsfw"><!-- 動的挿入 --></div>
-</details>
+  <!-- 以降そのまま -->
+  <details class="wm-acc" data-cat="expression-nsfw">
+    <summary>表情（NSFW） <span class="wm-count" id="wm-count-expression-nsfw">0</span></summary>
+    <div class="wm-items" id="wm-items-expression-nsfw"></div>
+  </details>
 
-<!-- 追加：アクセサリー（NSFW） -->
-<details class="wm-acc" data-cat="accessory-nsfw">
-  <summary>
-    アクセサリー（NSFW） <span class="wm-count" id="wm-count-accessory-nsfw">0</span>
-  </summary>
-  <div class="wm-items" id="wm-items-accessory-nsfw"><!-- 動的挿入 --></div>
-</details>
+  <details class="wm-acc" data-cat="situation">
+    <summary>シチュエーション <span class="wm-count" id="wm-count-situation">0</span></summary>
+    <div class="wm-items" id="wm-items-situation"></div>
+  </details>
 
-<!-- 追加：衣装（NSFW） -->
-<details class="wm-acc" data-cat="outfit-nsfw">
-  <summary>
-    衣装（NSFW） <span class="wm-count" id="wm-count-outfit-nsfw">0</span>
-  </summary>
-  <div class="wm-items" id="wm-items-outfit-nsfw"><!-- 動的挿入 --></div>
-</details>
-    <!-- 追加：下着（NSFW／単語モード） -->
-<details class="wm-acc" data-cat="underwear-nsfw">
-  <summary>
-    下着（NSFW） <span class="wm-count" id="wm-count-underwear-nsfw">0</span>
-  </summary>
-  <div class="wm-items" id="wm-items-underwear-nsfw"><!-- 動的挿入 --></div>
-</details>
+  <details class="wm-acc" data-cat="lighting-nsfw">
+    <summary>ライティング（NSFW） <span class="wm-count" id="wm-count-lighting-nsfw">0</span></summary>
+    <div class="wm-items" id="wm-items-lighting-nsfw"></div>
+  </details>
 
-<!-- 追加：身体特徴（NSFW） -->
-<details class="wm-acc" data-cat="body-nsfw">
-  <summary>
-    身体特徴（NSFW） <span class="wm-count" id="wm-count-body-nsfw">0</span>
-  </summary>
-  <div class="wm-items" id="wm-items-body-nsfw"><!-- 動的挿入 --></div>
-</details>
-    <!-- 追加：乳首（NSFW） -->
-<details class="wm-acc" data-cat="nipple-nsfw">
-  <summary>
-    乳首（NSFW） <span class="wm-count" id="wm-count-nipple-nsfw">0</span>
-  </summary>
-  <div class="wm-items" id="wm-items-nipple-nsfw"><!-- 動的挿入 --></div>
-</details>
-    
-  </section>
+  <details class="wm-acc" data-cat="pose-nsfw">
+    <summary>ポーズ（NSFW） <span class="wm-count" id="wm-count-pose-nsfw">0</span></summary>
+    <div class="wm-items" id="wm-items-pose-nsfw"></div>
+  </details>
+
+  <details class="wm-acc" data-cat="accessory-nsfw">
+    <summary>アクセサリー（NSFW） <span class="wm-count" id="wm-count-accessory-nsfw">0</span></summary>
+    <div class="wm-items" id="wm-items-accessory-nsfw"></div>
+  </details>
+
+  <details class="wm-acc" data-cat="body-nsfw">
+    <summary>身体特徴（NSFW） <span class="wm-count" id="wm-count-body-nsfw">0</span></summary>
+    <div class="wm-items" id="wm-items-body-nsfw"></div>
+  </details>
+
+  <details class="wm-acc" data-cat="nipple-nsfw">
+    <summary>乳首（NSFW） <span class="wm-count" id="wm-count-nipple-nsfw">0</span></summary>
+    <div class="wm-items" id="wm-items-nipple-nsfw"></div>
+  </details>
+</section>
 
   <!-- ========== アコーディオン（Color） ========== -->
   <section class="wm-accordion" id="wm-accordion-color">
@@ -540,21 +517,18 @@
         <label class="inline"><input type="radio" name="pl_nsfwLevel" value="L3">R-18G</label>
       </div>
       <div class="grid g3" style="margin-top:6px">
-        <div><b class="mini">表情</b><div id="pl_nsfw_expr" class="scroller"></div></div>
+        <!-- 先頭に：露出／下着／衣装 -->
         <div><b class="mini">露出</b><div id="pl_nsfw_expo" class="scroller"></div></div>
+        <div><b class="mini">下着</b><div id="pl_nsfw_underwear" class="scroller"></div></div>
+        <div><b class="mini">衣装</b><div id="pl_nsfw_outfit" class="scroller"></div></div>
+      
+        <!-- 以降そのまま -->
+        <div><b class="mini">表情</b><div id="pl_nsfw_expr" class="scroller"></div></div>
         <div><b class="mini">シチュ</b><div id="pl_nsfw_situ" class="scroller"></div></div>
         <div><b class="mini">ライティング</b><div id="pl_nsfw_light" class="scroller"></div></div>
-        <!-- 追加：ポーズ（NSFW/撮影） -->
         <div><b class="mini">ポーズ</b><div id="pl_nsfw_pose" class="scroller"></div></div>
-        <!-- 追加：アクセサリー（NSFW/撮影） -->
         <div><b class="mini">アクセ</b><div id="pl_nsfw_acc" class="scroller"></div></div>
-        <!-- 追加：衣装（NSFW/撮影） -->
-        <div><b class="mini">衣装</b><div id="pl_nsfw_outfit" class="scroller"></div></div>
-        <!-- 追加：下着（NSFW/撮影） -->
-        <div><b class="mini">下着</b><div id="pl_nsfw_underwear" class="scroller"></div></div>
-        <!-- 追加：身体特徴（NSFW/撮影） -->
         <div><b class="mini">身体</b><div id="pl_nsfw_body" class="scroller"></div></div>
-        <!-- 追加：乳首（NSFW/撮影） -->
         <div><b class="mini">乳首</b><div id="pl_nsfw_nipple" class="scroller"></div></div>
       </div>
       <div class="mini" style="margin-top:6px">※ リストはレベル上限の範囲で表示されます</div>
@@ -693,21 +667,18 @@
             <label class="inline"><input type="radio" name="nsfwLevelLearn" value="L3">R-18G</label>
           </div>
           <div class="grid g3" id="nsfwLearnLists" style="margin-top:6px">
-            <div><b class="mini">表情</b><div id="nsfwL_expr" class="scroller"></div></div>
+            <!-- 先頭に：露出／下着／衣装 -->
             <div><b class="mini">露出</b><div id="nsfwL_expo" class="scroller"></div></div>
+            <div><b class="mini">下着</b><div id="nsfwL_underwear" class="scroller"></div></div>
+            <div><b class="mini">衣装</b><div id="nsfwL_outfit" class="scroller"></div></div>
+          
+            <!-- 以降そのまま -->
+            <div><b class="mini">表情</b><div id="nsfwL_expr" class="scroller"></div></div>
             <div><b class="mini">シチュ</b><div id="nsfwL_situ" class="scroller"></div></div>
             <div><b class="mini">ライティング</b><div id="nsfwL_light" class="scroller"></div></div>
-            <!-- 追加：ポーズ（NSFW/学習） -->
             <div><b class="mini">ポーズ</b><div id="nsfwL_pose" class="scroller"></div></div>
-            <!-- 追加：アクセ（NSFW/学習） -->
             <div><b class="mini">アクセ</b><div id="nsfwL_acc" class="scroller"></div></div>
-            <!-- 追加：衣装（NSFW/学習） -->
-            <div><b class="mini">衣装</b><div id="nsfwL_outfit" class="scroller"></div></div>
-            <!-- 追加：下着（NSFW/学習） -->
-            <div><b class="mini">下着</b><div id="nsfwL_underwear" class="scroller"></div></div>
-            <!-- 追加：身体（NSFW/学習） -->
             <div><b class="mini">身体</b><div id="nsfwL_body" class="scroller"></div></div>
-            <!-- 追加：乳首（NSFW/学習） -->
             <div><b class="mini">乳首</b><div id="nsfwL_nipple" class="scroller"></div></div>
           </div>
           <div class="mini" style="margin-top:6px">※ リストはレベル上限の範囲で表示されます</div>
@@ -948,21 +919,18 @@
             <label class="inline"><input type="radio" name="nsfwLevelProd" value="L3">R-18G</label>
           </div>
           <div class="grid g3" style="margin-top:6px">
-            <div><b class="mini">表情</b><div id="nsfwP_expr" class="scroller"></div></div>
+            <!-- 先頭に：露出／下着／衣装 -->
             <div><b class="mini">露出</b><div id="nsfwP_expo" class="scroller"></div></div>
+            <div><b class="mini">下着</b><div id="nsfwP_underwear" class="scroller"></div></div>
+            <div><b class="mini">衣装</b><div id="nsfwP_outfit" class="scroller"></div></div>
+          
+            <!-- 以降そのまま -->
+            <div><b class="mini">表情</b><div id="nsfwP_expr" class="scroller"></div></div>
             <div><b class="mini">シチュ</b><div id="nsfwP_situ" class="scroller"></div></div>
             <div><b class="mini">ライティング</b><div id="nsfwP_light" class="scroller"></div></div>
-            <!-- 追加：ポーズ（NSFW/量産） -->
             <div><b class="mini">ポーズ</b><div id="nsfwP_pose" class="scroller"></div></div>
-            <!-- 追加：アクセ（NSFW/量産） -->
             <div><b class="mini">アクセ</b><div id="nsfwP_acc" class="scroller"></div></div>
-            <!-- 追加：衣装（NSFW/量産） -->
-            <div><b class="mini">衣装</b><div id="nsfwP_outfit" class="scroller"></div></div>
-            <!-- 追加：下着（NSFW/量産） -->
-            <div><b class="mini">下着</b><div id="nsfwP_underwear" class="scroller"></div></div>
-            <!-- 追加：身体（NSFW/量産） -->
             <div><b class="mini">身体</b><div id="nsfwP_body" class="scroller"></div></div>
-            <!-- 追加：乳首（NSFW/量産） -->
             <div><b class="mini">乳首</b><div id="nsfwP_nipple" class="scroller"></div></div>
           </div>
         </div>
