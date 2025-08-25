@@ -199,6 +199,9 @@ select {
   border-radius: 10px;
   padding: 12px;
   min-height: 140px;
+  max-height: 140px;   /* 好きな高さに調整可 */
+  overflow-y: auto;
+  white-space: pre-wrap;   /* 折り返し維持 */
 }
 
 /* テーブル */
