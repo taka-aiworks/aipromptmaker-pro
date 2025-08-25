@@ -149,12 +149,14 @@ function stripMultiHints(parts){
 }
 
 
-// ===== SFW通常服セットの構築 + NSFW時に通常服/色/靴を落とすヘルパ =====
+/* ===== 辞書ベース判定 & 正規化ユーティリティ（置き換え） ===== */
 (function(){
-  // 既存の NSFW_SETS 再構築と衝突しないように別名で用意
+  // --- 汎用: ネスト取得
   function getByPath(root, path){
     return path.split('.').reduce((a,k)=> (a?a[k]:null), root);
   }
+
+  // --- SFW/NSFW の辞書を探す
   function sniffSFWRoot(){
     const cands = ['SFW','sfw','DICT_SFW','dictSfw','app.dict.sfw','APP_DICT.SFW'];
     for (const k of cands){
@@ -163,65 +165,135 @@ function stripMultiHints(parts){
     }
     return null;
   }
-  function norm(s){ return String(s || '').trim().toLowerCase(); }
-  function toSet(arr){
-    const s = new Set();
-    (Array.isArray(arr)?arr:[]).forEach(o=>{
-      const t = norm(o && (o.en || o.tag || o.value || o.name || o.label));
-      if (t) s.add(t);
-    });
-    return s;
+  function sniffNSFWRoot(){
+    const cands = ['NSFW','nsfw','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW'];
+    for (const k of cands){
+      const v = getByPath(window, k);
+      if (v && typeof v === 'object') return v;
+    }
+    return null;
   }
+
+  // --- 正規化
+  function normTag(x){
+    return String((x && (x.en || x.tag || x.value)) || '').trim().toLowerCase();
+  }
+
+  // --- 再構築（SFW 通常服 / NSFW 露出カテゴリ）
   function rebuildWearSets(){
-    const root = sniffSFWRoot() || {};
-    const top  = root.sfw || root.SFW || root;
+    // SFW 側（通常服カテゴリ）
+    const sfw = sniffSFWRoot() || {};
+    const top = sfw.SFW || sfw.sfw || sfw;
+    const cat = top.categories || top;
+    const wearArr = []
+      .concat(cat?.top      || [])
+      .concat(cat?.bottom   || [])
+      .concat(cat?.dress    || [])
+      .concat(cat?.outer    || [])
+      .concat(cat?.footwear || []);
+    const setWear = new Set();
+    (Array.isArray(wearArr)?wearArr:[]).forEach(o=>{
+      const t = normTag(o); if (t) setWear.add(t);
+    });
 
-    // ← “通常服”の候補キーを広めに吸収（あなたのSFW辞書に合わせてOK）
-    const wearTop    = toSet( top.top || top.tops || top.upper || top.upper_wear || top.clothes_top );
-    const wearBottom = toSet( top.bottom || top.bottoms || top.lower || top.lower_wear || top.pants || top.skirt || top.clothes_bottom );
-    const wearDress  = toSet( top.dress || top.dresses || top.onepiece || top.one_piece || top.one_piece_wear );
-    const wearShoes  = toSet( top.shoes || top.footwear );
+    // NSFW 側（露出/下着/NSFW衣装）
+    const nsfw = sniffNSFWRoot() || {};
+    const ntop = nsfw.NSFW || nsfw.nsfw || nsfw;
+    const ncat = ntop.categories || ntop;
+    const toSet = (arr)=> {
+      const s = new Set();
+      (Array.isArray(arr)?arr:[]).forEach(o=>{ const t = normTag(o); if (t) s.add(t); });
+      return s;
+    };
 
-    window.WEAR_SETS = { TOP: wearTop, BOTTOM: wearBottom, DRESS: wearDress, SHOES: wearShoes };
+    window.WEAR_SFW = setWear; // 通常服のベース語セット
+    window.NSFW_SETS = {
+      EXPOSURE : toSet(ncat?.exposure),
+      UNDERWEAR: toSet(ncat?.underwear),
+      OUTFIT   : toSet(ncat?.outfit)
+    };
   }
 
-  // 色語 / “色 + 服名詞” のプレースホルダを消すための簡易RE
-  const COLOR_WORD_RE  = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
+  // --- 露出系の検出（辞書ベース。末尾語フォールバック有）
+  window.hasExposureLike = window.hasExposureLike || function(parts){
+    const sets = window.NSFW_SETS;
+    if (!sets) return false;
+    const BASES = new Set([...sets.EXPOSURE, ...sets.UNDERWEAR, ...sets.OUTFIT]);
+    for (const t of (Array.isArray(parts)?parts:[])){
+      const s = String(t).toLowerCase().trim();
+      const last = s.split(/\s+/).pop();
+      if (BASES.has(s) || BASES.has(last)) return true;
+    }
+    return false;
+  };
 
-  // 公開：NSFWがONのとき、通常服（上下・ワンピ・靴）と色を落とす
-  window.stripNormalWearWhenNSFW = function(parts){
-    const sets = window.WEAR_SETS || {};
-    const nouns = new Set([
-      ...(sets.TOP    || new Set()),
-      ...(sets.BOTTOM || new Set()),
-      ...(sets.DRESS  || new Set()),
-      ...(sets.SHOES  || new Set()),
-      // プレースホルダ落とし保険：英名詞も見る
-      'top','bottom','skirt','pants','trousers','shorts','jeans','dress','one-piece','one piece','gown',
-      'shoes','boots','sneakers','loafers','heels','sandals','mary janes'
-    ]);
+  // --- 通常服トークン判定（辞書ベース + 靴語の末尾判定）
+  window.isNormalWearToken = function(t){
+    const s = String(t).toLowerCase().trim();
+    if (!s) return false;
+    if (window.WEAR_SFW && window.WEAR_SFW.has(s)) return true;
+    // 末尾語が footwear の代表なら true（例: "white shoes"）
+    const last = s.split(/\s+/).pop();
+    return /\b(shoes|boots|sneakers|loafers|sandals|heels|mary_janes|mary\s+janes|geta|zori)\b/i.test(last);
+  };
 
-    return (parts||[]).filter(token=>{
-      const x = norm(token);
-      if (!x) return false;
+  // --- 色の一次掃除（単独色 / 色+通常服プレース）
+  const COLOR_WORD = '(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)';
+  const COLOR_WORD_RE  = new RegExp('\\b' + COLOR_WORD + '\\b','i');
+  const COLOR_PLACE_RE = new RegExp('\\b' + COLOR_WORD + '\\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\\s+janes|heels|sandals)\\b','i');
 
-      // 1) 通常服そのもの
-      if (nouns.has(x)) return false;
-
-      // 2) “色 + 服” の合体（pairWearColors の出力などを丸ごと落とす）
-      //    → 末尾語（最後の単語）が服名詞セットなら落とす
-      const words = x.split(/\s+/);
-      const last  = words[words.length-1] || '';
-      if (nouns.has(last) && COLOR_WORD_RE.test(x)) return false;
-
-      // 3) 単独色だけのトークンも落とす
-      if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false;
-
+  window.stripWearColorsOnce = function(parts){
+    return (parts||[]).filter(s=>{
+      const x = String(s);
+      if (COLOR_PLACE_RE.test(x)) return false;                  // "white dress" など
+      if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false;  // 単独色 "white"
       return true;
     });
   };
 
-  // 初期化：辞書ロード後にも再構築できるように
+  // --- 露出系の重複を「色付き>無色」の優先で1つに畳む（※一度だけ呼ぶ）
+  window.collapseExposureDuplicates = function(list){
+    const arr = Array.isArray(list) ? list.slice() : [];
+    const sets = window.NSFW_SETS;
+    const BASES = sets
+      ? new Set([...sets.EXPOSURE, ...sets.UNDERWEAR, ...sets.OUTFIT])
+      : new Set(["bikini","swimsuit","lingerie","underwear","bra","panties","panty","thong","g-string","g string"]);
+
+    const baseOf = (t)=>{
+      const s = String(t).toLowerCase().trim();
+      const last = s.split(/\s+/).pop();
+      return BASES.has(last) ? last : (BASES.has(s) ? s : "");
+    };
+    const looksColored = (t)=> /\s/.test(String(t)) || COLOR_WORD_RE.test(String(t));
+
+    const keep = {};   // base -> token to keep
+    const seen = {};   // base -> colored flag
+    for (let i=0;i<arr.length;i++){
+      const tok = arr[i];
+      const b = baseOf(tok);
+      if (!b) continue;
+      const colored = looksColored(tok);
+      if (!(b in seen) || (colored && !seen[b])){
+        seen[b] = colored;
+        keep[b] = tok;
+      }
+    }
+    return arr.filter(t=>{
+      const b = baseOf(t);
+      if (!b) return true;
+      return String(t) === String(keep[b]);
+    });
+  };
+
+  // --- NSFW時：通常服/色/靴をまとめて落とす（最後の安全網）
+  window.stripNormalWearWhenNSFW = function(parts){
+    let out = Array.isArray(parts) ? parts.slice() : [];
+    out = out.filter(t => !window.isNormalWearToken(t));
+    out = window.stripWearColorsOnce(out);
+    return out;
+  };
+
+  // 初期化（辞書読み込み後にも再構築）
   document.addEventListener('DOMContentLoaded', rebuildWearSets);
   document.addEventListener('dict:updated',   rebuildWearSets);
 })();
