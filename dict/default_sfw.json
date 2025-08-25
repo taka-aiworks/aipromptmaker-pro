@@ -294,7 +294,7 @@
       { "tag": "shoulder bag", "label": "ショルダーバッグ" },
       { "tag": "gloves", "label": "手袋" }
     ],
-    "background": [
+   "background": [
       { "tag": "plain_background",    "label": "無地背景" },
       { "tag": "white_background",    "label": "白背景" },
       { "tag": "solid_background",    "label": "単色背景" },
@@ -316,9 +316,14 @@
       { "tag": "cafe",                "label": "カフェ" },
       { "tag": "hospital_room",       "label": "病室" },
       { "tag": "changing_room",       "label": "更衣室" },
+      { "tag": "gymnasium",           "label": "体育館" },
+      { "tag": "science_lab",         "label": "理科室" },
+      { "tag": "nurse_office",        "label": "保健室" },
+      { "tag": "attic_room",          "label": "屋根裏部屋" },
     
       { "tag": "rooftop",             "label": "屋上" },
       { "tag": "train_platform",      "label": "駅ホーム" },
+      { "tag": "subway_platform",     "label": "地下鉄ホーム" },
       { "tag": "train_interior",      "label": "電車内" },
       { "tag": "bus_stop",            "label": "バス停" },
       { "tag": "street_day",          "label": "昼の街" },
