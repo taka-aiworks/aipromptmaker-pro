@@ -228,6 +228,50 @@ function stripMultiHints(parts){
 
 
 
+// 露出/下着/NSFW衣装の重複を“末尾名詞”で束ねて、色付き等の具体的な方を優先して1個だけ残す
+function collapseExposureDuplicates(parts){
+  const sets = (window.NSFW_SETS || {});
+  const EXP = sets.EXPOSURE  || new Set();
+  const UND = sets.UNDERWEAR || new Set();
+  const OUF = sets.OUTFIT    || new Set();
+
+  const isWearish = (s)=>{
+    const x = String(s).toLowerCase().trim();
+    const last = x.split(/\s+/).pop();
+    return EXP.has(x) || UND.has(x) || OUF.has(x) || EXP.has(last) || UND.has(last) || OUF.has(last);
+  };
+
+  const keyOf = (s)=> String(s).toLowerCase().trim().split(/\s+/).pop(); // 末尾名詞（bikini, swimsuit など）
+  const kept = [];
+  const byBase = new Map(); // base名詞 -> index in kept
+
+  for (const t of (parts||[])){
+    if (!isWearish(t)){ kept.push(t); continue; }
+
+    const base = keyOf(t);
+    const idx  = byBase.get(base);
+
+    if (idx == null){
+      byBase.set(base, kept.length);
+      kept.push(t);
+    } else {
+      // 既に同じ末尾名詞を保持している場合：素 vs 複語（色付き等）を比較して“具体的な方”を残す
+      const cur = kept[idx];
+      const curHasSpace = /\s/.test(String(cur));
+      const newHasSpace = /\s/.test(String(t));
+      if (!curHasSpace && newHasSpace){
+        kept[idx] = t; // 素の "bikini" を "white bikini" に置き換え
+      }
+      // 逆（すでに具体的→新規が素）は捨てる
+    }
+  }
+  return kept;
+}
+
+
+
+
+
 /* === 学習ガード：過剰要素の除去＆上限 === */
 
 // === ポーズ/構図のゆる判定（片方のボックスが無いときは無視していい） ===
@@ -3661,6 +3705,11 @@ function buildOneLearning(extraSeed = 0){
     parts = pairWearColors(parts);
   }
 
+  // ★ 露出系（EXPOSURE/UNDERWEAR/OUTFIT）の重複を色付き優先で1つに畳む
+  if (typeof collapseExposureDuplicates === 'function'){
+    parts = collapseExposureDuplicates(parts);
+  }
+
   // ---- learning noise filters ----
   const NSFW_HARD_BLOCK_RE = /\b(blood(_splatter)?|injur(y|ies)|wound(ed)?|gore|gory|violence|torture)\b/i;
   const LEARN_NOISE_RE = /\b(crowd|group|multiple people|two people|three people|duo|trio|background people|lens flare|cinematic lighting|dramatic lighting|stage lighting|studio lighting|hdr|tilt-?shift|fisheye|wide-?angle|dutch angle|extreme close-?up|depth of field|strong bokeh|motion blur|watermark|signature|copyright|smartphone|phone|camera|microphone|mic|weapon|gun|sword|shield|staff|laptop|keyboard|headphones|backpack|bag|umbrella|drink|food|ice cream|skateboard)\b/i;
@@ -3684,9 +3733,14 @@ function buildOneLearning(extraSeed = 0){
   if (typeof ensurePromptOrder === 'function') pos = ensurePromptOrder(pos);
   if (typeof enforceHeadOrder === 'function')  pos = enforceHeadOrder(pos);
 
-  // ★ ここで最終的に“辞書ベース”で通常服/色/靴を一掃（NSFW時）
+  // ★ NSFW時：辞書ベースで通常服/色/靴を一掃（基本情報の服を確実に落とす）
   if (nsfwOn && typeof stripNormalWearWhenNSFW === 'function') {
     pos = stripNormalWearWhenNSFW(pos);
+  }
+
+  // ★ 最終の露出ダブりも念のため畳む（順序調整後の安全網）
+  if (typeof collapseExposureDuplicates === 'function'){
+    pos = collapseExposureDuplicates(pos);
   }
 
   // NSFW トークン（ONなら先頭、OFFなら除去）
