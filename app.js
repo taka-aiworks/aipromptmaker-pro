@@ -4368,14 +4368,27 @@ function getProdWearColorTag(idBase){
   return (txt && txt !== "—") ? txt : "";
 }
 
-// 固定タグ：#p_fixed
+// 固定タグ：#p_fixed 優先。無ければ共通 #fixedManual をフォールバック
 function getFixedProd(){
-  return splitTags(document.getElementById("p_fixed")?.value);
+  const v = (document.getElementById("p_fixed")?.value ??
+             document.getElementById("fixedManual")?.value ??
+             "");
+  return String(v).split(",").map(s=>s.trim()).filter(Boolean);
 }
 
-// 📦 量産モード用ネガ取得：#p_neg をそのまま読む
+// 📦 量産モード用ネガ取得：個別 #p_neg + 既定ネガ(チェックON時)
+// 既定ネガは #useDefaultNegProd（量産） or 共通 #useDefaultNeg を見る
 function getNegProd(){
-  return (document.getElementById("p_neg")?.value || "").trim();
+  const useDefault = !!document.getElementById("useDefaultNegProd")?.checked
+                  || !!document.getElementById("useDefaultNeg")?.checked;
+  const extra = (document.getElementById("p_neg")?.value || "").trim();
+
+  // NEG_TIGHT は配列/文字列どちらでもOK（未定義でも落ちない）
+  const base = (typeof NEG_TIGHT !== "undefined")
+    ? (Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : (NEG_TIGHT || ""))
+    : "";
+
+  return [useDefault ? base : "", extra].filter(Boolean).join(", ");
 }
 
 // ② 完全置き換え版：buildBatchProduction（nullセーフ化 only）
