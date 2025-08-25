@@ -2013,40 +2013,6 @@ function pmGetFixed(){
   return splitTags(document.getElementById("pl_fixed")?.value);
 }
 
-
-  // Basicタブの状態
-  const isOnepiece = document.getElementById('outfitModeDress')?.checked;
-  const topName    = pickChip('outfit_top');      // 例: "t-shirt"
-  const pantsName  = pickChip('outfit_pants');    // 例: "shorts"
-  const skirtName  = pickChip('outfit_skirt');    // 例: "skirt"
-  const dressName  = pickChip('outfit_dress');    // 例: "one-piece dress"
-
-  // 色タグ（スウォッチのテキスト）
-  const readTag = (id) => (document.getElementById(id)?.textContent||'').trim();
-  const topColor    = readTag('tag_top');
-  const bottomColor = readTag('tag_bottom');
-  const shoesColor  = readTag('tag_shoes');
-
-  const out = [...base];
-
-  // 服の「実名」をここで入れる（←これが無いと色と合体できない）
-  if (isOnepiece) {
-    if (dressName) out.push(dressName);
-  } else {
-    if (topName) out.push(topName);
-    // どちらのカテゴリが有効かは UI 側の選択に依存。両方未選択なら何も入らない
-    const bottomName = document.getElementById('bottomCat_skirt')?.checked ? skirtName : pantsName;
-    if (bottomName) out.push(bottomName);
-  }
-
-  // 色タグは generic 名詞付きで入れる（pairWearColors がここを見て結合）
-  if (topColor && topColor !== '—')        out.push(`${topColor} top`);
-  if (!isOnepiece && bottomColor && bottomColor !== '—') out.push(`${bottomColor} bottom`);
-  if (shoesColor && shoesColor !== '—')    out.push(`${shoesColor} shoes`);
-
-  return out.filter(Boolean);
-}
-
 // 単一選択スキャフォルド（scroller内で data-checked のチップのテキストを取る）
 function _selectedChipText(rootSel){
   const root = document.querySelector(rootSel);
