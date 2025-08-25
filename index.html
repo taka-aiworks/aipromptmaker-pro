@@ -781,8 +781,8 @@
         <span class="badge ok">多様性重視</span><span class="badge">アクセ3枠</span><span class="badge">18禁は手動選択のみ</span>
       </h2>
         <div class="note mini" style="margin:6px 0">
-          量産では服の色は<b>基本色1色</b>をベースにし、バリエーションを持たせたい項目だけチェックを増やすのがおすすめです。<br>
-          すべての要素を一度に揺らすと組み合わせがバラけすぎて安定しないため、他の部分は<b>固定</b>にしておくと安定した量産ができます。
+          量産では服の色は基本色1色をベースにし、バリエーションを持たせたい項目だけチェックを増やすのがおすすめです。<br>
+          すべての要素を一度に揺らすと組み合わせがバラけすぎて安定しないため、他の部分は固定にしておくと安定した量産ができます。</br>
         </div>
 
 <!-- 服 / 背景 / 表情：3カラムだけでまず閉じる -->
@@ -821,12 +821,18 @@
   </div>
 </div> <!-- ←ここで .grid g3 を閉じる -->
       
-  <!-- 服カラー（量産の基本色）：グリッドの外に独立させる -->
+<!-- === 服カラー（量産の基本色）: 置き換え開始 === -->
 <div class="card" id="prodColorCard" style="margin-top:10px">
   <h4 style="margin:0 0 6px">服カラー（量産の基本色）</h4>
   <div class="mini">指定した色タグを各行に付与します。ワンピース採用行では下カラーは自動で無効。</div>
+  <!-- 量産の使い方ノート -->
+  <div class="note mini" style="margin-top:6px">
+    量産では服の色は<b>基本色1色</b>をベースにし、バリエーションを持たせたい項目だけチェックを増やすのがおすすめです。
+    すべてを同時に揺らすと組み合わせがバラけて不安定になるため、他の要素は<b>固定</b>にしてください。
+  </div>
 
   <div class="grid g3" style="margin-top:8px">
+    <!-- トップス -->
     <div class="panel" id="panel_p_top">
       <div class="row mini">
         <label class="inline"><input type="checkbox" id="p_use_top"> トップス色を使う</label>
@@ -838,10 +844,14 @@
         S:<input id="sat_p_top" type="range" min="0" max="100" value="80">
         L:<input id="lit_p_top" type="range" min="0" max="100" value="55">
       </div>
-      <div class="row mini"><div id="sw_p_top" class="swatch"></div>
-        <span>色タグ: <code class="tag" id="tag_p_top">—</code></span></div>
+      <!-- 色タグ行（重なり防止のためflex＋wrap） -->
+      <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <div id="sw_p_top" class="swatch"></div>
+        <span>色タグ: <code class="tag" id="tag_p_top">—</code></span>
+      </div>
     </div>
 
+    <!-- ボトムス（順序と重なりを修正：SL → 色タグ → 注意書き） -->
     <div class="panel" id="panel_p_bottom">
       <div class="row mini">
         <label class="inline"><input type="checkbox" id="p_use_bottom"> 下カラーを使う</label>
@@ -853,13 +863,18 @@
         S:<input id="sat_p_bottom" type="range" min="0" max="100" value="70">
         L:<input id="lit_p_bottom" type="range" min="0" max="100" value="50">
       </div>
-      <div class="row mini"><div id="sw_p_bottom" class="swatch"></div>
-        <span>色タグ: <code class="tag" id="tag_p_bottom">—</code></span></div>
-      <div class="mini" style="text-align:right;margin-top:2px">
+      <!-- 色タグ行（flex-wrapで折り返し、被りを防止） -->
+      <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <div id="sw_p_bottom" class="swatch"></div>
+        <span>色タグ: <code class="tag" id="tag_p_bottom">—</code></span>
+      </div>
+      <!-- 注意書きは右寄せ＆独立行に -->
+      <div class="mini" style="text-align:right;margin-top:4px;display:block;clear:both">
         ※ ワンピース選択時は自動で無効化されます
       </div>
     </div>
 
+    <!-- 靴 -->
     <div class="panel" id="panel_p_shoes">
       <div class="row mini">
         <label class="inline"><input type="checkbox" id="p_use_shoes"> 靴色を使う</label>
@@ -871,12 +886,16 @@
         S:<input id="sat_p_shoes" type="range" min="0" max="100" value="0">
         L:<input id="lit_p_shoes" type="range" min="0" max="100" value="30">
       </div>
-      <div class="row mini"><div id="sw_p_shoes" class="swatch"></div>
-        <span>色タグ: <code class="tag" id="tag_p_shoes">—</code></span></div>
+      <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <div id="sw_p_shoes" class="swatch"></div>
+        <span>色タグ: <code class="tag" id="tag_p_shoes">—</code></span>
+      </div>
     </div>
   </div>
 </div>
-  <!-- アクセ：見出しと内容を１ブロックにまとめる（離れない） -->
+<!-- === 服カラー（量産の基本色）: 置き換え終了 === -->
+
+<!-- === アクセ（3スロット・色指定）: 置き換え開始 === -->
 <div class="card" id="accCard" style="margin-top:10px">
   <h3 style="margin:0 0 6px">アクセ（3スロット・色指定）</h3>
   <div class="grid g3">
@@ -888,8 +907,10 @@
       </div>
       <div class="row mini">S:<input id="sat_accA" type="range" min="0" max="100" value="80">
         L:<input id="lit_accA" type="range" min="0" max="100" value="50"></div>
-      <div class="row mini"><div id="sw_accA" class="swatch"></div>
-        <span>色タグ: <code class="tag" id="tag_accA">red</code></span></div>
+      <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div id="sw_accA" class="swatch"></div>
+        <span>色タグ: <code class="tag" id="tag_accA">red</code></span>
+      </div>
     </div>
 
     <details>
@@ -901,8 +922,10 @@
         </div>
         <div class="row mini">S:<input id="sat_accB" type="range" min="0" max="100" value="80">
           L:<input id="lit_accB" type="range" min="0" max="100" value="50"></div>
-        <div class="row mini"><div id="sw_accB" class="swatch"></div>
-          <span>色タグ: <code class="tag" id="tag_accB">blue</code></span></div>
+        <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div id="sw_accB" class="swatch"></div>
+          <span>色タグ: <code class="tag" id="tag_accB">blue</code></span>
+        </div>
       </div>
     </details>
 
@@ -915,11 +938,15 @@
         </div>
         <div class="row mini">S:<input id="sat_accC" type="range" min="0" max="100" value="80">
           L:<input id="lit_accC" type="range" min="0" max="100" value="50"></div>
-        <div class="row mini"><div id="sw_accC" class="swatch"></div>
-          <span>色タグ: <code class="tag" id="tag_accC">green</code></span></div>
+        <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div id="sw_accC" class="swatch"></div>
+          <span>色タグ: <code class="tag" id="tag_accC">green</code></span>
+        </div>
       </div>
     </details>
   </div>
+</div>
+<!-- === アクセ: 置き換え終了 === -->
   <div class="mini" style="margin-top:6px">※ 未選択スロットは無視</div>
 </div>
         <div class="panel">
