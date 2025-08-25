@@ -52,6 +52,7 @@
       { "tag": "topless",       "ja": "上半身裸", "level": "L2" },
       { "tag": "bottomless",    "ja": "下半身裸", "level": "L2" },
       { "tag": "nude",          "ja": "全裸", "level": "L2" },
+      { "tag": "visible_pubic_hair", "ja": "陰毛が見えている", "level": "L2" },
     
       { "tag": "spread_legs",   "ja": "脚開き", "level": "L3" },
       { "tag": "exposed_genitals", "ja": "性器露出", "level": "L3" },
@@ -376,12 +377,16 @@
       { "tag": "petite_body",      "ja": "低身長スレンダー",     "level": "L1" },
       { "tag": "tall_body",        "ja": "高身長モデル体型",     "level": "L1" },
       { "tag": "giantess_body",    "ja": "巨人娘体型",           "level": "L3" },
-      { "tag": "doll_like_body",   "ja": "人形のような体型",     "level": "L1" },
 
       { "tag": "hourglass",        "ja": "砂時計体型",           "level": "L1" },
       { "tag": "hourglass_exaggerated", "ja": "極端な砂時計体型", "level": "L2" },
-      { "tag": "giantess_body",    "ja": "巨人娘体型",           "level": "L3" },
-      { "tag": "doll_like_body",   "ja": "人形のような体型",     "level": "L1" }
+      { "tag": "doll_like_body",   "ja": "人形のような体型",     "level": "L1" },
+      { "tag": "pubic_hair_none",    "ja": "パイパン/剃毛",       "level": "L2" },
+      { "tag": "pubic_hair_light",   "ja": "うっすら陰毛",         "level": "L1" },
+      { "tag": "pubic_hair_trimmed", "ja": "整えられた陰毛",       "level": "L2" },
+      { "tag": "pubic_hair_full",    "ja": "フル陰毛/ナチュラル",  "level": "L2" },
+      { "tag": "pubic_hair_bushy",   "ja": "濃い陰毛/ボーボー",   "level": "L3" },
+      { "tag": "pubic_hair_wild",    "ja": "はみ出す陰毛",         "level": "L3" }
     ],
   
     "nipple": [
