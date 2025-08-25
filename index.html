@@ -570,9 +570,9 @@
   <div class="panel">
     <h3>固定タグ / ネガティブ</h3>
     <label>固定タグ（先頭に付与）</label>
-    <textarea id="pl_fixed" rows="3" placeholder="<lora:YourLoRA:0.8>, 1girl, looking at viewer"></textarea>
-    <label style="margin-top:10px">ネガティブ（行に付与）</label>
-    <textarea id="pl_neg" rows="3" placeholder="lowres, blurry, bad anatomy, watermark"></textarea>
+    <textarea id="fixedManual" rows="3" placeholder="※テスト生成時,学習モードでは自動で solo と性別に応じた 1girl 1boyが付与されます"></textarea>
+    <label style="margin-top:10px">ネガティブ（全行）</label>
+    <textarea id="negGlobal" rows="3" placeholder="※ 指崩れ・画質劣化などを防ぐプロンプトがデフォルトで入っています。追加したい場合は入力"></textarea>
     <div class="row mini">
       <label class="inline"><input type="checkbox" id="pl_useDefaultNeg" checked> デフォルトのネガティブを使う</label>
     </div>
@@ -940,6 +940,10 @@
             <label class="inline"><input type="radio" name="nsfwLevelProd" value="L3">R-18G</label>
           </div>
           <div class="grid g3" style="margin-top:6px">
+            <div class="note mini" style="margin:6px 0">
+              ※表情や衣装が被った場合NSFWで選んだものが優先されます。
+              <b>追加で色を指定したい場合は単語モードを参照して</b>b追加してください。
+            </div>
             <div class="mini" style="margin-top:6px">
               ※ 露出・下着・衣装は競合しやすいため、同時に複数を選ぶと出力が崩れる可能性があります。
               なるべく<b>1カテゴリのみ</b>を使用してください。
@@ -965,19 +969,9 @@
         <div class="panel">
           <h3>固定タグ / ネガティブ</h3>
           <label>固定タグ（先頭に付与）</label>
-          <textarea id="p_fixed" rows="3" placeholder="<lora:YourLoRA:0.8>, 1girl, looking at viewer"></textarea>
+          <textarea id="fixedManual" rows="3" placeholder="※テスト生成時,学習モードでは自動で solo と性別に応じた 1girl 1boyが付与されます"></textarea>
           <label style="margin-top:10px">ネガティブ（全行）</label>
-          <textarea id="p_neg" rows="3" placeholder="lowres, blurry, bad anatomy, watermark"></textarea>
-          <!-- 量産タブの「固定タグ / ネガティブ」ブロック内の重複チェックは削除（この行を消す） -->
-          <!--
-           <div class="row mini">
-           <label>
-           <input type="checkbox" id="useDefaultNeg" checked>
-               デフォルトのネガティブプロンプトを使う
-           </label>
-           </div>
-           -->
-          <!-- ※ 学習側の「デフォルトのネガティブ…」が全体設定として機能します -->
+          <textarea id="negGlobal" rows="3" placeholder="※ 指崩れ・画質劣化などを防ぐプロンプトがデフォルトで入っています。追加したい場合は入力"></textarea>
         </div>
         <div class="panel">
           <h3>出力設定</h3>
