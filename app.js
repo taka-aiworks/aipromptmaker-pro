@@ -3477,42 +3477,54 @@ function ensureNSFWHead(arr){
 }
 
 function buildOneLearning(extraSeed = 0){
+  // ===== 安全ヘルパ =====
+  const getManySafe = (id) => {
+    try {
+      const v = (typeof getMany === 'function') ? getMany(id) : [];
+      return Array.isArray(v) ? v : [];
+    } catch(_) { return []; }
+  };
+  const pickSafe = (arr) => (Array.isArray(arr) && arr.length ? pick(arr) : "");
+
   // ===== 1) ベース構築 =====
-  const fixed = assembleFixedLearning();
+  const fixed = (typeof assembleFixedLearning === 'function') ? assembleFixedLearning() : [];
 
-  // UI 取得
-  const BG = getMany("bg");          // 背景
-  const PO = getMany("pose");        // ポーズ
-  const CO = getMany("comp");        // 構図・距離
-  const VI = getMany("view");        // 視点・アングル
-  const EX = getMany("expr");        // 表情
-  const LI = getMany("lightLearn");  // ライティング(学習)
-  const addon = (typeof getSelectedNSFW_Learn === 'function' ? getSelectedNSFW_Learn() : []) || [];
+  // UI 取得（未定義でも落ちないように）
+  const BG = getManySafe("bg");          // 背景
+  const PO = getManySafe("pose");        // ポーズ
+  const CO = getManySafe("comp");        // 構図・距離
+  const VI = getManySafe("view");        // 視点・アングル
+  const EX = getManySafe("expr");        // 表情
+  const LI = getManySafe("lightLearn");  // ライティング(学習)
+  const addon = (typeof getSelectedNSFW_Learn === 'function' ? (getSelectedNSFW_Learn()||[]) : []);
 
-  // NSFW ON 判定（チェックボックス or 実際に何か選ばれている）
-  const nsfwOn = !!(document.getElementById('nsfwLearn')?.checked || addon.length > 0);
+  // NSFW ON 判定（複数IDに対応 + 実際にNSFW選択がある場合）
+  const nsfwCheckboxIds = ['nsfwLearn','nsfwL','nsfw_learning'];
+  let nsfwOn = addon.length > 0;
+  for (const id of nsfwCheckboxIds){
+    const el = document.getElementById(id);
+    if (el && el.checked) { nsfwOn = true; break; }
+  }
 
   // ランダム選択（空なら ""）
-  const b = pick(BG) || "";
-  const p = pick(PO) || "";
-  const c = pick(CO) || "";
-  const v = pick(VI) || "";
-  const e = pick(EX) || "";
-  const l = LI.length ? pick(LI) : "";
+  const b = pickSafe(BG);
+  const p = pickSafe(PO);
+  const c = pickSafe(CO);
+  const v = pickSafe(VI);
+  const e = pickSafe(EX);
+  const l = pickSafe(LI);
 
   // 学習は常に1人
   const partsSolo = ["solo"];
-  const genderCount = (typeof getGenderCountTag === 'function' ? getGenderCountTag() : "") || "";
+  const genderCount = (typeof getGenderCountTag === 'function' ? (getGenderCountTag()||"") : "");
   if (genderCount) partsSolo.push(genderCount);
 
-  // ここで comp と view も parts に入れる
-  let parts = uniq([
-    // ← まず本体を積む
+  // 本体を積む
+  let parts = Array.from(new Set([
     ...partsSolo, ...fixed,
     b, p, c, v, e, l,
     ...addon
-  ]).filter(Boolean);
-
+  ].filter(Boolean)));
 
   // ===== 2) 服の整合・色置換など既存ルール =====
   if (typeof applyNudePriority === 'function')          parts = applyNudePriority(parts);
@@ -3528,12 +3540,11 @@ function buildOneLearning(extraSeed = 0){
   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
   if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
 
-  // ===== 4) 不足アンカーの補完（view も対象）=====
+  // ===== 4) 不足アンカーの補完 =====
   const asText = parts.join(", ");
 
   // 視点：無ければ正面
-  const hasView = /\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/i
-    .test(asText);
+  const hasView = /\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/i.test(asText);
   if (!hasView) parts.push("front view");
 
   // 背景
@@ -3557,15 +3568,19 @@ function buildOneLearning(extraSeed = 0){
     parts.push("centered composition");
   }
 
-  // ===== ⑤ 排他・整形・シード =====
+  // ===== ⑤ 排他・整形 =====
   if (typeof fixExclusives === 'function') parts = fixExclusives(parts);
 
   // 一意化 → 並び順整形
   let pos = Array.from(new Set(parts.filter(Boolean)));
   if (typeof ensurePromptOrder === 'function') pos = ensurePromptOrder(pos);
 
-  // 先頭固定（solo / 1girl 等）→ NSFW を最前にもってくる
-  pos = ensureNSFWHead(pos); // ← 最後に必ず NSFW を index 0 に
+  // 先頭固定（solo / 1girl 等）
+  if (typeof enforceHeadOrder === 'function') pos = enforceHeadOrder(pos);
+
+  // NSFW トークンを最終決定（ONなら先頭に、OFFなら除去）
+  pos = pos.filter(t => String(t) !== "NSFW");
+  if (nsfwOn) pos.unshift("NSFW");
 
   // Seed
   const seed = (typeof seedFromName === 'function')
