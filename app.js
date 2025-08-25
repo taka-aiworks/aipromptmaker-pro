@@ -3513,8 +3513,6 @@ function buildOneLearning(extraSeed = 0){
     ...addon
   ]).filter(Boolean);
 
-  // ★ NSFW 先頭付与（重複防止）
-  if (nsfwOn && !parts.includes("NSFW")) parts.unshift("NSFW");
 
   // ===== 2) 服の整合・色置換など既存ルール =====
   if (typeof applyNudePriority === 'function')          parts = applyNudePriority(parts);
@@ -3567,7 +3565,6 @@ function buildOneLearning(extraSeed = 0){
   if (typeof ensurePromptOrder === 'function') pos = ensurePromptOrder(pos);
 
   // 先頭固定（solo / 1girl 等）→ NSFW を最前にもってくる
-  if (typeof enforceHeadOrder === 'function') pos = enforceHeadOrder(pos);
   pos = ensureNSFWHead(pos); // ← 最後に必ず NSFW を index 0 に
 
   // Seed
