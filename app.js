@@ -2037,7 +2037,7 @@ function pmRenderPlanner(){
   pmRenderAcc();
 }
 
-/* 1件出力（置き換え版：辞書ベース露出判定 + 靴ガード + NSFW拡張 + 先頭NSFW） */
+/* 1件出力（辞書ベース露出判定 + 通常服/色/靴の除去 + NSFW拡張 + 先頭NSFW） */
 function pmBuildOne(){
   var name = pmValById('charName');
   var seed = (typeof seedFromName === 'function') ? seedFromName(name,1) : 0;
@@ -2115,62 +2115,41 @@ function pmBuildOne(){
     if (nsfwUnder)   parts.push(nsfwUnder);
   }
 
-  // ---- 空除去 ----
   parts = parts.filter(Boolean);
 
   // === 服/露出の優先整理 ===
   if (typeof applyNudePriority === 'function') parts = applyNudePriority(parts);
   if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
-  var isExposure = nsfwOn && (typeof hasExposureLike === 'function') ? hasExposureLike(parts) : false;
 
-  // ==== 露出かどうかを辞書セットで厳密判定（フォールバック付き） ====
-  var REG_FALLBACK_EXPOSURE = /\b(bikini|swimsuit|lingerie|underwear|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude|bra|panties|panty|thong|g[-\s]?string)\b/i;
-  var isExposure = false;
-  if (nsfwOn){
-    if (typeof hasExposureLike === 'function') {
-      isExposure = !!hasExposureLike(parts);
-    } else {
-      isExposure = parts.some(function(t){ return REG_FALLBACK_EXPOSURE.test(String(t)); });
-    }
-  }
+  // ==== 露出かどうか（辞書ベース） ====
+  var isExposure = nsfwOn && (typeof hasExposureLike === 'function') && hasExposureLike(parts);
 
-  // === 露出/下着/衣装のときは通常服・色・靴を除去 ===
+  // === 露出なら：通常服（辞書ベース）と色を除去 ===
   if (isExposure){
-    var CLOTH_NOUN_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
-    var COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
-    var COLOR_PLACE_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
-    var FOOTWEAR_RE    = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
-
-    parts = parts.filter(function(t){
-      var s = String(t);
-      if (CLOTH_NOUN_RE.test(s))  return false;
-      if (COLOR_PLACE_RE.test(s)) return false;
-      if (FOOTWEAR_RE.test(s))    return false;
-      if (COLOR_WORD_RE.test(s) && !/\s/.test(s)) return false; // 単独色
-      return true;
-    });
-
-    // 保険：辞書色や合体色が残っていたら剥がす
-    if (typeof stripWearColorsOnce === 'function') {
-      parts = stripWearColorsOnce(parts);
-    }
-  } else {
-    // === 色ペアリング（露出でない場合のみ） ===
-    if (typeof pairWearColors === 'function') {
-      parts = pairWearColors(parts);
-    }
+    parts = parts.filter(function(tok){ return !isNormalWearToken(tok); });
+    if (typeof stripWearColorsOnce === 'function') parts = stripWearColorsOnce(parts);
   }
 
-  // === 靴ガード（辞書ベース露出も考慮） ===
+  // === 靴ガード（露出時は常に除去） ===
   (function shoeGuard(){
-    var useShoesFlag = document.getElementById('use_shoes') ? !!document.getElementById('use_shoes').checked : true;
-    var HAS_FOOTWEAR_NOUN_RE = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
-    var hasFootwearNoun = parts.some(function(t){ return HAS_FOOTWEAR_NOUN_RE.test(String(t)); });
-    var looksShoeToken = function(s){ return /\b(?:[\w-]+\s+)?(?:shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i.test(String(s)); };
-    if (isExposure || !useShoesFlag || !hasFootwearNoun){
+    var looksShoeToken = function(s){
+      var x = String(s).toLowerCase();
+      // WEAR_SFW があれば「末尾語が靴系」も落ちるが、保険でここも見る
+      return /\b(shoes|boots|sneakers|loafers|sandals|heels|mary\s+janes|mary_janes|geta|zori)\b/i.test(x);
+    };
+    if (isExposure){
       parts = parts.filter(function(t){ return !looksShoeToken(t); });
+    } else {
+      // 露出じゃない時は従来ロジック（use_shoes など）があればそれを適用してOK
+      var useShoesFlag = document.getElementById('use_shoes') ? !!document.getElementById('use_shoes').checked : true;
+      if (!useShoesFlag) parts = parts.filter(function(t){ return !looksShoeToken(t); });
     }
   })();
+
+  // === 色ペアリング（露出でない場合のみ） ===
+  if (!isExposure && typeof pairWearColors === 'function') {
+    parts = pairWearColors(parts);
+  }
 
   // === 整理 ===
   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
@@ -2184,7 +2163,6 @@ function pmBuildOne(){
   if (nsfwOn) {
     parts = parts.filter(function(t){ return String(t) !== "NSFW"; });
     parts.unshift("NSFW");
-    // util があるなら: parts = ensureNSFWHead(parts);
   }
 
   // ---- ネガティブ ----
@@ -3636,17 +3614,11 @@ function ensureNSFWHead(arr){
 }
 
 function buildOneLearning(extraSeed = 0){
-  // ---- safe helpers ----
-  const getManySafe = (id) => {
-    try { const v = (typeof getMany === 'function') ? getMany(id) : []; return Array.isArray(v) ? v : []; }
-    catch(_) { return []; }
-  };
+  const getManySafe = (id) => { try { const v = (typeof getMany === 'function') ? getMany(id) : []; return Array.isArray(v) ? v : []; } catch(_) { return []; } };
   const pickSafe = (arr) => (Array.isArray(arr) && arr.length ? pick(arr) : "");
 
-  // ---- base ----
   const fixed = (typeof assembleFixedLearning === 'function') ? assembleFixedLearning() : [];
 
-  // UI
   const BG = getManySafe("bg");
   const PO = getManySafe("pose");
   const CO = getManySafe("comp");
@@ -3655,70 +3627,39 @@ function buildOneLearning(extraSeed = 0){
   const LI = getManySafe("lightLearn");
   const addon = (typeof getSelectedNSFW_Learn === 'function' ? (getSelectedNSFW_Learn()||[]) : []);
 
-  // NSFW ON
-  const nsfwIds = ['nsfwLearn','nsfwL','nsfw_learning'];
+  // NSFW
+  const ids = ['nsfwLearn','nsfwL','nsfw_learning'];
   let nsfwOn = addon.length > 0;
-  for (const id of nsfwIds){
-    const el = document.getElementById(id);
-    if (el && el.checked) { nsfwOn = true; break; }
-  }
+  for (const id of ids){ const el = document.getElementById(id); if (el && el.checked) { nsfwOn = true; break; } }
 
-  // picks
-  const b = pickSafe(BG);
-  const p = pickSafe(PO);
-  const c = pickSafe(CO);
-  const v = pickSafe(VI);
-  const e = pickSafe(EX);
-  const l = pickSafe(LI);
+  const b = pickSafe(BG), p = pickSafe(PO), c = pickSafe(CO), v = pickSafe(VI), e = pickSafe(EX), l = pickSafe(LI);
 
-  // solo + gender
   const partsSolo = ["solo"];
   const genderCount = (typeof getGenderCountTag === 'function' ? (getGenderCountTag()||"") : "");
   if (genderCount) partsSolo.push(genderCount);
 
-  // assemble
   let parts = Array.from(new Set([
     ...partsSolo, ...fixed, b, p, c, v, e, l, ...addon
   ].filter(Boolean)));
 
-  // 服優先整理
+  // 服/露出の優先
   if (typeof applyNudePriority === 'function')          parts = applyNudePriority(parts);
   if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
 
-  // 露出判定（辞書優先 + RE フォールバック）
-  const RE_FALLBACK_EXPO = /\b(bikini|swimsuit|lingerie|underwear|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude|bra|panties|panty|thong|g[-\s]?string)\b/i;
-  const isExposure = nsfwOn && (
-    (typeof hasExposureLike === 'function' && hasExposureLike(parts)) ||
-    parts.some(t => RE_FALLBACK_EXPO.test(String(t)))
-  );
+  // 露出判定（辞書ベース）
+  const isExposure = nsfwOn && (typeof hasExposureLike === 'function') && hasExposureLike(parts);
 
-  // 露出時：通常服/色/靴を除去（+保険で色剥がし）
+  // 露出なら：通常服（辞書）と色を除去 / 非露出なら色ペアリング
   if (isExposure){
-    const CLOTH_NOUN_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
-    const COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
-    const COLOR_PLACE_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
-    const FOOTWEAR_RE    = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
-
-    parts = parts.filter(s=>{
-      const x = String(s);
-      if (CLOTH_NOUN_RE.test(x))  return false;
-      if (COLOR_PLACE_RE.test(x)) return false;
-      if (FOOTWEAR_RE.test(x))    return false;
-      if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false; // 単独色
-      return true;
-    });
-    if (typeof stripWearColorsOnce === 'function') {
-      parts = stripWearColorsOnce(parts);
-    }
+    parts = parts.filter(tok => !isNormalWearToken(tok));
+    if (typeof stripWearColorsOnce === 'function') parts = stripWearColorsOnce(parts);
   } else {
-    // 非露出時のみ色ペアリング
     if (typeof pairWearColors === 'function') parts = pairWearColors(parts);
   }
 
   // 学習ノイズ除去
   const NSFW_HARD_BLOCK_RE = /\b(blood(_splatter)?|injur(y|ies)|wound(ed)?|gore|gory|violence|torture)\b/i;
   const LEARN_NOISE_RE = /\b(crowd|group|multiple people|two people|three people|duo|trio|background people|lens flare|cinematic lighting|dramatic lighting|stage lighting|studio lighting|hdr|tilt-?shift|fisheye|wide-?angle|dutch angle|extreme close-?up|depth of field|strong bokeh|motion blur|watermark|signature|copyright|smartphone|phone|camera|microphone|mic|weapon|gun|sword|shield|staff|laptop|keyboard|headphones|backpack|bag|umbrella|drink|food|ice cream|skateboard)\b/i;
-
   parts = parts.filter(t => !NSFW_HARD_BLOCK_RE.test(String(t)));
   parts = parts.filter(t => !LEARN_NOISE_RE.test(String(t)));
   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
@@ -3726,18 +3667,12 @@ function buildOneLearning(extraSeed = 0){
 
   // アンカー補完
   const asText = parts.join(", ");
-  if (!/\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/i.test(asText))
-    parts.push("front view");
-  if (!/\b(plain background|studio background|solid background)\b/i.test(asText))
-    parts.push("plain background");
-  if (!/\b(upper body|bust|waist up|portrait|full body)\b/i.test(asText))
-    parts.push("upper body");
-  if (!/\b(neutral expression|smiling|serious|determined|slight blush|surprised \(mild\)|pouting \(slight\))\b/i.test(asText))
-    parts.push("neutral expression");
-  if (!/\b(soft lighting|even lighting|normal lighting)\b/i.test(asText))
-    parts.push("soft lighting");
-  if (!/\b(center(ed)?\s?composition|centered composition)\b/i.test(asText))
-    parts.push("centered composition");
+  if (!/\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/i.test(asText)) parts.push("front view");
+  if (!/\b(plain background|studio background|solid background)\b/i.test(asText)) parts.push("plain background");
+  if (!/\b(upper body|bust|waist up|portrait|full body)\b/i.test(asText)) parts.push("upper body");
+  if (!/\b(neutral expression|smiling|serious|determined|slight blush|surprised \(mild\)|pouting \(slight\))\b/i.test(asText)) parts.push("neutral expression");
+  if (!/\b(soft lighting|even lighting|normal lighting)\b/i.test(asText)) parts.push("soft lighting");
+  if (!/\b(center(ed)?\s?composition|centered composition)\b/i.test(asText)) parts.push("centered composition");
 
   // 排他・整形
   if (typeof fixExclusives === 'function') parts = fixExclusives(parts);
@@ -3745,16 +3680,14 @@ function buildOneLearning(extraSeed = 0){
   if (typeof ensurePromptOrder === 'function') pos = ensurePromptOrder(pos);
   if (typeof enforceHeadOrder === 'function')  pos = enforceHeadOrder(pos);
 
-  // NSFW先頭固定
+  // NSFW先頭
   pos = pos.filter(t => String(t) !== "NSFW");
   if (nsfwOn) pos.unshift("NSFW");
 
-  // seed
   const seed = (typeof seedFromName === 'function')
     ? seedFromName((document.getElementById('charName')?.value || ''), extraSeed)
     : 0;
 
-  // neg
   const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"];
   const baseNeg = [
     (typeof getNeg === 'function' ? getNeg() : ""),
@@ -3764,6 +3697,8 @@ function buildOneLearning(extraSeed = 0){
 
   return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
+
+
 
 /* ============================================================================
  * 学習モード一括生成（修正版・置き換え用 / 追加NSFW6カテゴリ対応 + 先頭NSFW）
