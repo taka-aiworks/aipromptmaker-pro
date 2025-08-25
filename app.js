@@ -3567,7 +3567,15 @@ function buildOneLearning(extraSeed = 0){
   // ===== 2) 服の整合・色置換など既存ルール =====
   if (typeof applyNudePriority === 'function')          parts = applyNudePriority(parts);
   if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
-  if (typeof pairWearColors === 'function')             parts = pairWearColors(parts);
+
+  // ★ 露出/下着タグが入っている時は色ペアリングをスキップ
+  const IS_EXPOSURE_PRESENT = parts.some(t =>
+    /\b(bikini|swimsuit|lingerie|underwear|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude|bra|panties|panty|thong|g[-\s]?string)\b/i
+      .test(String(t))
+  );
+  if (!IS_EXPOSURE_PRESENT && typeof pairWearColors === 'function'){
+    parts = pairWearColors(parts);
+  }
 
   // ===== 3) 学習ノイズ除去 =====
   const NSFW_HARD_BLOCK_RE = /\b(blood(_splatter)?|injur(y|ies)|wound(ed)?|gore|gory|violence|torture)\b/i;
