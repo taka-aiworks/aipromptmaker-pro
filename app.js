@@ -2114,6 +2114,7 @@ function pmBuildOne(){
   // === 服/露出の優先整理 ===
   if (typeof applyNudePriority === 'function') parts = applyNudePriority(parts);
   if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
+  var isExposure = nsfwOn && (typeof hasExposureLike === 'function') ? hasExposureLike(parts) : false;
 
   // ==== 露出かどうかを辞書セットで厳密判定（フォールバック付き） ====
   var REG_FALLBACK_EXPOSURE = /\b(bikini|swimsuit|lingerie|underwear|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude|bra|panties|panty|thong|g[-\s]?string)\b/i;
