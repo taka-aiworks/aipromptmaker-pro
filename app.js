@@ -3445,20 +3445,34 @@ const EXPR_ALL = new Set([
 
 
 
+// 先頭NSFWユーティリティ（学習/撮影/量産どこでも再利用OK）
+function ensureNSFWHead(arr){
+  const a = Array.isArray(arr) ? arr.slice() : [];
+  const i = a.indexOf("NSFW");
+  if (i === -1) return a;
+  if (i === 0)  return a;
+  a.splice(i,1);
+  a.unshift("NSFW");
+  return a;
+}
+
 function buildOneLearning(extraSeed = 0){
   // ===== 1) ベース構築 =====
   const fixed = assembleFixedLearning();
 
-  // UI 取得（分離後のID）
+  // UI 取得
   const BG = getMany("bg");          // 背景
   const PO = getMany("pose");        // ポーズ
   const CO = getMany("comp");        // 構図・距離
   const VI = getMany("view");        // 視点・アングル
   const EX = getMany("expr");        // 表情
   const LI = getMany("lightLearn");  // ライティング(学習)
-  const addon = getSelectedNSFW_Learn?.() || [];
+  const addon = (typeof getSelectedNSFW_Learn === 'function' ? getSelectedNSFW_Learn() : []) || [];
 
-  // 1件ずつランダム選択（空なら ""）
+  // NSFW ON 判定（チェックボックス or 実際に何か選ばれている）
+  const nsfwOn = !!(document.getElementById('nsfwLearn')?.checked || addon.length > 0);
+
+  // ランダム選択（空なら ""）
   const b = pick(BG) || "";
   const p = pick(PO) || "";
   const c = pick(CO) || "";
@@ -3468,20 +3482,24 @@ function buildOneLearning(extraSeed = 0){
 
   // 学習は常に1人
   const partsSolo = ["solo"];
-  const genderCount = getGenderCountTag(); // "1girl" / "1boy" / ""
+  const genderCount = (typeof getGenderCountTag === 'function' ? getGenderCountTag() : "") || "";
   if (genderCount) partsSolo.push(genderCount);
 
   // ここで comp と view も parts に入れる
   let parts = uniq([
+    // ← まず本体を積む
     ...partsSolo, ...fixed,
     b, p, c, v, e, l,
     ...addon
   ]).filter(Boolean);
 
+  // ★ NSFW 先頭付与（重複防止）
+  if (nsfwOn && !parts.includes("NSFW")) parts.unshift("NSFW");
+
   // ===== 2) 服の整合・色置換など既存ルール =====
-  parts = applyNudePriority(parts);
-  parts = enforceOnePieceExclusivity(parts);
-  parts = pairWearColors(parts);
+  if (typeof applyNudePriority === 'function')          parts = applyNudePriority(parts);
+  if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
+  if (typeof pairWearColors === 'function')             parts = pairWearColors(parts);
 
   // ===== 3) 学習ノイズ除去 =====
   const NSFW_HARD_BLOCK_RE = /\b(blood(_splatter)?|injur(y|ies)|wound(ed)?|gore|gory|violence|torture)\b/i;
@@ -3489,22 +3507,22 @@ function buildOneLearning(extraSeed = 0){
 
   parts = parts.filter(t => !NSFW_HARD_BLOCK_RE.test(String(t)));
   parts = parts.filter(t => !LEARN_NOISE_RE.test(String(t)));
-  parts = stripMultiHints(parts);
-  parts = forceSoloPos(parts);
+  if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
+  if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
 
   // ===== 4) 不足アンカーの補完（view も対象）=====
   const asText = parts.join(", ");
 
-  // 視点：無ければ正面（フォールバック）
+  // 視点：無ければ正面
   const hasView = /\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/i
-    .test(parts.join(", "));
+    .test(asText);
   if (!hasView) parts.push("front view");
 
   // 背景
   if (!/\b(plain background|studio background|solid background)\b/i.test(asText)) {
     parts.push("plain background");
   }
-  // 構図・距離（pose/comp どちらもヒットしなければ）
+  // 構図・距離
   if (!/\b(upper body|bust|waist up|portrait|full body)\b/i.test(asText)) {
     parts.push("upper body");
   }
@@ -3516,38 +3534,28 @@ function buildOneLearning(extraSeed = 0){
   if (!/\b(soft lighting|even lighting|normal lighting)\b/i.test(asText)) {
     parts.push("soft lighting");
   }
-  // 構図の安定化（中央寄せ）
+  // 構図の安定化
   if (!/\b(center(ed)?\s?composition|centered composition)\b/i.test(asText)) {
     parts.push("centered composition");
   }
 
-// ⑤ 排他・整形・シード（置き換え）
-  // 1) 排他整理（あれば使う）
-  if (typeof fixExclusives === 'function') {
-    parts = fixExclusives(parts);
-  }
+  // ===== ⑤ 排他・整形・シード =====
+  if (typeof fixExclusives === 'function') parts = fixExclusives(parts);
 
-  // 2) 一意化 → 並び順整形
+  // 一意化 → 並び順整形
   let pos = Array.from(new Set(parts.filter(Boolean)));
-  if (typeof ensurePromptOrder === 'function') {
-    pos = ensurePromptOrder(pos);
-  }
+  if (typeof ensurePromptOrder === 'function') pos = ensurePromptOrder(pos);
 
-  // 3) 先頭固定: solo と 1girl/1boy
-  if (typeof enforceHeadOrder === 'function') {
-    pos = enforceHeadOrder(pos);
-  } else {
-    const g = (typeof getGenderCountTag === 'function' ? (getGenderCountTag() || '') : '');
-    const head = ['solo', g].filter(Boolean);
-    pos = head.concat(pos.filter(t => !head.includes(t)));
-  }
+  // 先頭固定（solo / 1girl 等）→ NSFW を最前にもってくる
+  if (typeof enforceHeadOrder === 'function') pos = enforceHeadOrder(pos);
+  pos = ensureNSFWHead(pos); // ← 最後に必ず NSFW を index 0 に
 
-  // 4) Seed
+  // Seed
   const seed = (typeof seedFromName === 'function')
     ? seedFromName((document.getElementById('charName')?.value || ''), extraSeed)
     : 0;
 
-  // 5) ネガティブ（共通ビルダーへ集約）
+  // ネガティブ
   const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"];
   const baseNeg = [
     (typeof getNeg === 'function' ? getNeg() : ""),
@@ -3555,96 +3563,8 @@ function buildOneLearning(extraSeed = 0){
   ].filter(Boolean).join(", ");
   const neg = (typeof buildNegative === 'function') ? buildNegative(baseNeg) : baseNeg;
 
-  // 6) 戻り値
+  // 出力
   return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
-}
-
-// === 横顔の制御（学習用・割合ベース） =======================
-// 横顔を全体の 15〜20% で混ぜたい場合
-
-function enforceViewVariant(parts, viewTag){
-  const RE_VIEW = /\b(front view|three-quarters view|profile view|side view|back view)\b/i;
-  const out = [];
-  for (const t of (parts||[])) {
-    if (RE_VIEW.test(String(t))) continue; // 既存の視点タグを除去
-    out.push(t);
-  }
-  if (viewTag) out.push(viewTag);
-  return out;
-}
-
-// === 学習用：視点/構図/表情/背景/光の “割合ミキサー” =======================
-
-// ① グループ内の既存タグを落として target を入れる（並び直し＋先頭固定まで面倒を見る）
-function replaceGroupTag(parts, groupTags, targetTag){
-  const RE = new RegExp("\\b(" + groupTags.map(t=>t.replace(/[.*+?^${}()|[\\]\\]/g,"\\$&")).join("|") + ")\\b","i");
-  const out = [];
-  for (const t of (parts||[])) { if (!RE.test(String(t))) out.push(t); }
-  if (targetTag) out.push(targetTag);
-
-  // 並び直し → 先頭固定
-  let arranged = (typeof ensurePromptOrder==='function') ? ensurePromptOrder(out) : out;
-  if (typeof enforceHeadOrder==='function') arranged = enforceHeadOrder(arranged);
-  return arranged;
-}
-
-// ② n枚中、min..max 割合で k 枚をランダムに選んで tag を差し込む
-function applyPercentForTag(rows, groupTags, targetTag, pctMin, pctMax){
-  if (!Array.isArray(rows) || !rows.length) return;
-  const n = rows.length;
-  const ratio = pctMin + Math.random() * (pctMax - pctMin);
-  const k = Math.max(1, Math.min(n, Math.round(n * ratio)));
-  const idxs = [...Array(n)].map((_,i)=>i).sort(()=>Math.random()-0.5).slice(0,k);
-  for (const i of idxs){
-    rows[i].pos  = replaceGroupTag(rows[i].pos, groupTags, targetTag);
-    // 念のためここでも頭固定
-    if (typeof enforceHeadOrder==='function') rows[i].pos = enforceHeadOrder(rows[i].pos);
-    rows[i].text = `${rows[i].pos.join(", ")} --neg ${rows[i].neg} seed:${rows[i].seed}`;
-  }
-}
-
-function fillRemainder(rows, groupTags, fallbackTag){
-  for (const r of rows){
-    const hasAny = r.pos.some(t => groupTags.includes(String(t)));
-    if (!hasAny){
-      r.pos = replaceGroupTag(r.pos, groupTags, fallbackTag);
-      if (typeof enforceHeadOrder==='function') r.pos = enforceHeadOrder(r.pos);
-      r.text = `${r.pos.join(", ")} --neg ${r.neg} seed:${r.seed}`;
-    }
-  }
-}
-
-
-
-// ⑤ まとめ適用（学習バッチだけに適用）
-function applyPercentMixToLearning(rule, selected) {
-  // selected が空なら fallback 固定
-  if (!selected || selected.length === 0) {
-    return [rule.fallback];
-  }
-
-  // selected があるとき → groupから未選択は除外
-  const group = rule.group.filter(g => selected.includes(g));
-
-  // 全部外れてたら fallback
-  if (group.length === 0) {
-    return [rule.fallback];
-  }
-
-  // targets に設定があるものだけ確率で選ぶ
-  const rand = Math.random();
-  let acc = 0;
-  for (const tag of group) {
-    const [min, max] = rule.targets[tag] || [0, 0];
-    const p = (min + max) / 2; // 平均で扱う（お好みで）
-    acc += p;
-    if (rand < acc) {
-      return [tag];
-    }
-  }
-
-  // 余ったら fallback
-  return [rule.fallback];
 }
 
 /* ============================================================================
@@ -4314,6 +4234,10 @@ function buildBatchProduction(n){
     // --- 整合処理（順序が重要） ---
     let all = uniq([...fixed, ...parts]).filter(Boolean);
 
+    // ★ NSFW がONならまずタグを混ぜておく（後段の並び替えでズレても最後に先頭固定する）
+    if (nsfwOn && !all.includes("NSFW")) all.unshift("NSFW");
+
+
     // 露出/ワンピ優先（上下や色プレースホルダの除去はここで）
     if (typeof applyNudePriority === 'function')           all = applyNudePriority(all);
     if (typeof enforceOnePieceExclusivity === 'function')  all = enforceOnePieceExclusivity(all);
@@ -4351,6 +4275,9 @@ function buildBatchProduction(n){
     if (typeof fixExclusives === 'function')     all = fixExclusives(all);
     if (typeof ensurePromptOrder === 'function') all = ensurePromptOrder(all);
     if (typeof enforceHeadOrder === 'function')  all = enforceHeadOrder(all);
+
+    // ★ 並び替えが終わった“最後”に、必ず NSFW を先頭に寄せる
+    if (nsfwOn) all = ensureNSFWHead(all);
 
     const seed = (seedMode === "fixed")
       ? baseSeed
