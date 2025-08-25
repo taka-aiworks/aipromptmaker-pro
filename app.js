@@ -582,11 +582,6 @@ const DEFAULT_TRAINING_NEG = [
   "fisheye", "wide-angle", "tilt-shift", "motion blur"
 ].join(", ");
 
-// ネガ：#negGlobal
-function getNegLearn(){
-  return (document.getElementById("negGlobal")?.value || "").trim();
-}
-
 
 
 /* ========= 設定（LocalStorage） ========= */
@@ -3760,10 +3755,23 @@ function ensureNSFWHead(arr){
   return out;
 }
 
-/* ========== 🧠 学習 ========== */
-// 固定タグ：#fixedManual
+// 学習モード：固定タグ（#fixedManual）を配列で取得
 function getFixedLearn(){
-  return splitTags(document.getElementById("fixedManual")?.value);
+  return (document.getElementById("fixedManual")?.value || "")
+    .split(",").map(s=>s.trim()).filter(Boolean);
+}
+
+// 学習モード：ネガ（#negGlobal）＋「デフォルトを使う(#useDefaultNeg)」を文字列で取得
+function getNegLearn(){
+  const useDefault = !!document.getElementById("useDefaultNeg")?.checked;
+  const extra      = (document.getElementById("negGlobal")?.value || "").trim();
+  // 既存の buildNegative を使う運用のままにする（なければ文字連結）
+  if (typeof buildNegative === "function"){
+    // buildNegativeの実装が「配列」想定なら適宜直してOK
+    const base = useDefault && Array.isArray(DEFAULT_NEG) ? DEFAULT_NEG.join(", ") : (useDefault ? "NEG_TIGHT" : "");
+    return buildNegative([base, extra].filter(Boolean).join(", "));
+  }
+  return [useDefault ? "NEG_TIGHT" : "", extra].filter(Boolean).join(", ");
 }
 
 
@@ -4058,6 +4066,8 @@ function buildBatchLearning(n){
     let p = Array.isArray(r.pos) ? r.pos.slice()
           : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
 
+    const fixed = (typeof getFixedLearn === 'function') ? getFixedLearn() : [];
+    if (fixed.length) p = [...fixed, ...p];
     if (typeof fixExclusives === 'function') p = fixExclusives(p);
     p = Array.from(new Set(p.filter(Boolean)));
     if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
@@ -4072,9 +4082,9 @@ function buildBatchLearning(n){
     r.pos    = p;
     r.prompt = p.join(", ");
 
-    const extraNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
-    const baseNeg  = [ (typeof getNeg === 'function' ? getNeg() : ""), extraNeg ].filter(Boolean).join(", ");
-    r.neg    = (typeof buildNegative === 'function') ? buildNegative(baseNeg) : baseNeg;
+     const addonNeg = ["props","accessories","smartphone","phone","camera"].join(", "); // 既存の追記分
+     const learnNeg = (typeof getNegLearn === 'function') ? getNegLearn() : "";
+     r.neg = [learnNeg, addonNeg].filter(Boolean).join(", ");
 
     r.seed   = r.seed || seedFromName($("#charName")?.value || "", 1);
     r.text   = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
