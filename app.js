@@ -4662,9 +4662,11 @@ function enforceSingleBackground(arr){
 }
 
 function getNegProd(){
-  const custom = ($("#p_neg").value||"").trim();
+  const el = document.getElementById("p_neg");
+  const custom = (el?.value || "").trim(); // ← 無ければ空扱い
   return buildNegative(custom);
 }
+
 
 /* ========= レンダラ（学習テーブル：no/seed/prompt/negative のみ） ========= */
 function renderLearnTableTo(tbodySel, rows){
