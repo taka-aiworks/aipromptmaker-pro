@@ -2053,8 +2053,49 @@ function pmRenderPlanner(){
   pmRenderAcc();
 }
 
-/* 1件出力（辞書ベース露出判定 + 通常服/色/靴の除去 + NSFW拡張 + 先頭NSFW） */
+/* 1件出力（辞書ベース露出判定 + 通常服/色/靴の除去 + 露出重複たたみ + NSFW先頭固定） */
 function pmBuildOne(){
+  // --- 露出系の二重化（例: "white bikini" と "bikini"）を色付き優先で1つに畳む ---
+  function collapseExposureDuplicates(arr){
+    const A = Array.isArray(arr) ? arr.slice() : [];
+    if (!A.length) return A;
+
+    // 辞書セット（EXPOSURE/UNDERWEAR/OUTFIT）があれば使用、無ければ簡易RE
+    const sets = (typeof window !== 'undefined' && window.NSFW_SETS) ? window.NSFW_SETS : null;
+    const BASES = sets
+      ? new Set([...sets.EXPOSURE, ...sets.UNDERWEAR, ...sets.OUTFIT])
+      : new Set(["bikini","swimsuit","lingerie","underwear","bra","panties","panty","thong","g-string","g string"]);
+
+    // base語を取り出す（"white bikini" → "bikini"）
+    const baseOf = (t)=>{
+      const s = String(t).toLowerCase().trim();
+      const last = s.split(/\s+/).pop();
+      return BASES.has(last) ? last : (BASES.has(s) ? s : "");
+    };
+    // 「色っぽいか」= スペースを含む or ハイフン色語等（簡易判定）
+    const isColored = (t)=> /\s/.test(String(t)) || /^(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i.test(String(t));
+
+    const pick = {};   // base -> 保持するトークン
+    const seen = {};   // base -> {colored:boolean, idx:number}
+
+    for (let i=0;i<A.length;i++){
+      const tok = A[i];
+      const base = baseOf(tok);
+      if (!base) continue;
+      const colored = isColored(tok);
+      if (!(base in seen) || (colored && !seen[base].colored)){
+        seen[base] = { colored, idx:i };
+        pick[base] = tok;
+      }
+    }
+    // baseに属する他の露出系は全て落とし、選ばれた1つだけ残す
+    return A.filter(t=>{
+      const b = baseOf(t);
+      if (!b) return true;
+      return String(t) === String(pick[b]);
+    });
+  }
+
   // ---- 基本情報・シード ----
   var name = pmValById('charName');
   var seed = (typeof seedFromName === 'function') ? seedFromName(name,1) : 0;
@@ -2149,6 +2190,9 @@ function pmBuildOne(){
     if (typeof stripWearColorsOnce === 'function') parts = stripWearColorsOnce(parts);
   }
 
+  // ★ ここでまず露出系の重複を畳む（色付き優先）
+  parts = collapseExposureDuplicates(parts);
+
   // === 靴ガード（露出時は常に除去 / 非露出は設定に従う） ===
   (function shoeGuard(){
     var looksShoeToken = function(s){
@@ -2172,28 +2216,13 @@ function pmBuildOne(){
   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
   if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
 
-  // === ここで NSFW ON 時に“辞書ベースで”通常服/色/靴を最終一掃 ===
-  if (nsfwOn){
-    if (typeof stripNormalWearWhenNSFW === 'function'){
-      parts = stripNormalWearWhenNSFW(parts);
-    } else {
-      // フォールバック：最低限の除去（辞書ヘルパ未ロードでも破綻しないように）
-      var looksShoeToken = function(s){
-        var x = String(s).toLowerCase();
-        return /\b(shoes|boots|sneakers|loafers|sandals|heels|mary\s+janes|mary_janes|geta|zori)\b/i.test(x);
-      };
-      var COLOR_WORD_RE  = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
-      var COLOR_PLACE_RE = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\s+janes|heels|sandals)\b/i;
-      parts = parts.filter(function(t){
-        var s = String(t);
-        if (typeof isNormalWearToken === 'function' && isNormalWearToken(s)) return false;
-        if (looksShoeToken(s)) return false;
-        if (COLOR_PLACE_RE.test(s)) return false;
-        if (COLOR_WORD_RE.test(s) && !/\s/.test(s)) return false;
-        return true;
-      });
-    }
+  // === NSFW最終一掃（辞書ヘルパがあれば） ===
+  if (nsfwOn && typeof stripNormalWearWhenNSFW === 'function'){
+    parts = stripNormalWearWhenNSFW(parts);
   }
+
+  // ★ 念のため、並び替え後にも露出重複を再度畳む
+  parts = collapseExposureDuplicates(parts);
 
   // === 排他 → 並び順 → 先頭固定 ===
   if (typeof fixExclusives === 'function')     parts = fixExclusives(parts);
