@@ -149,6 +149,63 @@ function stripMultiHints(parts){
 }
 
 
+/* ===== NSFWカテゴリ由来の厳密判定セット ===== */
+(function(){
+  function getByPath(root, path){
+    return path.split('.').reduce((a,k)=> (a?a[k]:null), root);
+  }
+  function sniffNSFWRoot(){
+    const cands = ['NSFW','nsfw','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW'];
+    for (const k of cands){
+      const v = getByPath(window, k);
+      if (v && typeof v === 'object') return v;
+    }
+    return null;
+  }
+  function normTag(x){
+    return String(
+      (x && (x.en || x.tag || x.value)) || ''
+    ).trim().toLowerCase();
+  }
+
+  function rebuildNSFWSets(){
+    const root = sniffNSFWRoot() || {};
+    const top  = root.NSFW || root.nsfw || root;
+    const cat  = top.categories || top;
+
+    const toSet = (arr)=> {
+      const s = new Set();
+      (Array.isArray(arr)?arr:[]).forEach(o=>{
+        const t = normTag(o);
+        if (t) s.add(t);
+      });
+      return s;
+    };
+
+    window.NSFW_SETS = {
+      EXPOSURE:  toSet(cat.exposure),
+      UNDERWEAR: toSet(cat.underwear),
+      OUTFIT:    toSet(cat.outfit)
+    };
+  }
+
+  // 公開: 配列 parts に「露出相当」が含まれるか？
+  window.hasExposureLike = function(parts){
+    const sets = window.NSFW_SETS;
+    if (!sets) return false;
+    for (const t of (Array.isArray(parts)?parts:[])){
+      const k = String(t).toLowerCase();
+      if (sets.EXPOSURE.has(k) || sets.UNDERWEAR.has(k) || sets.OUTFIT.has(k)) return true;
+    }
+    return false;
+  };
+
+  // 初期化＆辞書更新で再構築
+  document.addEventListener('DOMContentLoaded', rebuildNSFWSets);
+  document.addEventListener('dict:updated', rebuildNSFWSets);
+})();
+
+
 /* === 学習ガード：過剰要素の除去＆上限 === */
 
 // === ポーズ/構図のゆる判定（片方のボックスが無いときは無視していい） ===
@@ -1930,7 +1987,7 @@ function pmRenderPlanner(){
   pmRenderAcc();
 }
 
-/* 1件出力（置き換え版 + 靴ガード + NSFW拡張 + NSFW先頭固定） */
+/* 1件出力（置き換え版：辞書ベース露出判定 + 靴ガード + NSFW拡張 + 先頭NSFW） */
 function pmBuildOne(){
   var name = pmValById('charName');
   var seed = (typeof seedFromName === 'function') ? seedFromName(name,1) : 0;
@@ -1944,8 +2001,8 @@ function pmBuildOne(){
   tmp = pmPickOne('bf_gender'); if (tmp) base.push(tmp);
   tmp = pmPickOne('bf_body');   if (tmp) base.push(tmp);
   tmp = pmPickOne('bf_height'); if (tmp) base.push(tmp);
-  tmp = pmPickOne('hairStyle'); if (tmp) base.push(tmp);   // 髪型
-  tmp = pmPickOne('eyeShape');  if (tmp) base.push(tmp);   // 目の形
+  tmp = pmPickOne('hairStyle'); if (tmp) base.push(tmp);
+  tmp = pmPickOne('eyeShape');  if (tmp) base.push(tmp);
 
   tmp = pmTextById('tagH');     if (tmp) base.push(tmp);
   tmp = pmTextById('tagE');     if (tmp) base.push(tmp);
@@ -1974,11 +2031,11 @@ function pmBuildOne(){
   var nsfwNipple   = nsfwOn ? (pmPickOne('pl_nsfw_nipple')    || '') : '';
   var nsfwUnder    = nsfwOn ? (pmPickOne('pl_nsfw_underwear') || '') : '';
 
-  // 表情/ライティングはNSFWを優先して置換
-  var expr = nsfwOn && nsfwExpr ? nsfwExpr : exprS;
+  // 表情/ライティングはNSFWを優先
+  var expr = nsfwOn && nsfwExpr  ? nsfwExpr  : exprS;
   var lite = nsfwOn && nsfwLight ? nsfwLight : liteS;
 
-  // ---- アクセ（通常の固定アクセ）----
+  // ---- アクセ（固定アクセ） ----
   var accName = pmValById('pl_accSel');
   var acc = '';
   if (accName){
@@ -2015,11 +2072,11 @@ function pmBuildOne(){
   if (typeof applyNudePriority === 'function') parts = applyNudePriority(parts);
   if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
 
-  // === 露出/下着系の時は通常服＆色プレースホルダを除去 ===
-  var EXPOSURE_EXCLUSIVE_RE =
-    /\b(bikini|swimsuit|lingerie|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude|bra|panties|panty|thong|g[-\s]?string|underwear)\b/i;
+  // ==== 露出かどうかを辞書セットで厳密判定 ====
+  var isExposure = nsfwOn && (typeof hasExposureLike === 'function') ? hasExposureLike(parts) : false;
 
-  if (nsfwOn && parts.some(function(t){ return EXPOSURE_EXCLUSIVE_RE.test(String(t)); })){
+  // === 露出/下着/衣装のときは通常服・色・靴を除去 ===
+  if (isExposure){
     var CLOTH_NOUN_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
     var COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
     var COLOR_PLACE_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
@@ -2035,21 +2092,21 @@ function pmBuildOne(){
     });
   }
 
-  // === 靴ガード ===
+  // === 靴ガード（辞書ベース露出も考慮） ===
   (function shoeGuard(){
     var useShoesFlag = document.getElementById('use_shoes') ? !!document.getElementById('use_shoes').checked : true;
-    var isExposure = parts.some(function(t){ return EXPOSURE_EXCLUSIVE_RE.test(String(t)); });
     var HAS_FOOTWEAR_NOUN_RE = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
     var hasFootwearNoun = parts.some(function(t){ return HAS_FOOTWEAR_NOUN_RE.test(String(t)); });
     var looksShoeToken = function(s){ return /\b(?:[\w-]+\s+)?(?:shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i.test(String(s)); };
-
     if (isExposure || !useShoesFlag || !hasFootwearNoun){
       parts = parts.filter(function(t){ return !looksShoeToken(t); });
     }
   })();
 
-  // === 色ペアリング（通常服のみ） ===
-  if (typeof pairWearColors === 'function') parts = pairWearColors(parts);
+  // === 色ペアリング（露出でない場合のみ） ===
+  if (!isExposure && typeof pairWearColors === 'function') {
+    parts = pairWearColors(parts);
+  }
 
   // === 整理 ===
   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
@@ -2061,11 +2118,9 @@ function pmBuildOne(){
 
   // === ★最後に NSFW を先頭へ固定 ===
   if (nsfwOn) {
-    // 重複/位置ズレ対策として一旦除去→先頭へ
     parts = parts.filter(function(t){ return String(t) !== "NSFW"; });
     parts.unshift("NSFW");
-    // もしくはユーティリティで
-    // parts = ensureNSFWHead(parts);
+    // または util があるなら: parts = ensureNSFWHead(parts);
   }
 
   // ---- ネガティブ ----
@@ -3564,17 +3619,36 @@ function buildOneLearning(extraSeed = 0){
     ...addon
   ].filter(Boolean)));
 
-  // ===== 2) 服の整合・色置換など既存ルール =====
+  // ===== 2) 服の整合 =====
   if (typeof applyNudePriority === 'function')          parts = applyNudePriority(parts);
   if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
 
-  // ★ 露出/下着タグが入っている時は色ペアリングをスキップ
-  const IS_EXPOSURE_PRESENT = parts.some(t =>
-    /\b(bikini|swimsuit|lingerie|underwear|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude|bra|panties|panty|thong|g[-\s]?string)\b/i
-      .test(String(t))
-  );
-  if (!IS_EXPOSURE_PRESENT && typeof pairWearColors === 'function'){
-    parts = pairWearColors(parts);
+  // ==== 露出かどうかを辞書セットで厳密判定 ====
+  const fallbackExposureRE = /\b(bikini|swimsuit|lingerie|underwear|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude|bra|panties|panty|thong|g[-\s]?string)\b/i;
+  const isExposure =
+    nsfwOn && (
+      (typeof hasExposureLike === 'function' && hasExposureLike(parts)) ||
+      parts.some(t => fallbackExposureRE.test(String(t)))
+    );
+
+  // === 露出/下着/衣装のときは通常服・色・靴を除去 ===
+  if (isExposure){
+    const CLOTH_NOUN_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
+    const COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
+    const COLOR_PLACE_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
+    const FOOTWEAR_RE    = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
+
+    parts = parts.filter(s=>{
+      const x = String(s);
+      if (CLOTH_NOUN_RE.test(x))  return false;           // 通常服
+      if (COLOR_PLACE_RE.test(x)) return false;           // 色+服プレース
+      if (FOOTWEAR_RE.test(x))    return false;           // 靴
+      if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false; // 単独色
+      return true;
+    });
+  } else {
+    // 露出じゃない時だけ色ペアリング
+    if (typeof pairWearColors === 'function') parts = pairWearColors(parts);
   }
 
   // ===== 3) 学習ノイズ除去 =====
