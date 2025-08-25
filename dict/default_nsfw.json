@@ -205,7 +205,7 @@
       { "tag": "standing_split",    "ja": "片脚上げ立位体位",            "level": "L2" },
       { "tag": "bridge_pose",       "ja": "ブリッジ体位",                "level": "L2" },
       { "tag": "reverse_pile_driver","ja": "逆パイルドライバー",         "level": "L3" }
-  ]
+  ],
     
     "accessories": [
       { "tag": "choker",            "ja": "チョーカー",          "level": "L1" },
