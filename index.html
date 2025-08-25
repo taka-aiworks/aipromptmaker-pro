@@ -348,7 +348,10 @@
 
   <section class="wm-accordion" id="wm-accordion-nsfw">
   <h3 class="wm-acc-title">NSFW</h3>
-
+    <div class="note mini" style="margin:6px 0">
+      ※ 露出・下着・衣装はカテゴリ同士で競合しやすいため、同時に複数を入れると出力が崩れる可能性があります。
+      基本は<b>いずれか1つを選択</b>してください。
+    </div>
   <!-- 先頭に：露出／下着／衣装 -->
   <details class="wm-acc" data-cat="exposure">
     <summary>露出 <span class="wm-count" id="wm-count-exposure">0</span></summary>
@@ -517,6 +520,10 @@
         <label class="inline"><input type="radio" name="pl_nsfwLevel" value="L3">R-18G</label>
       </div>
       <div class="grid g3" style="margin-top:6px">
+        <div class="mini" style="margin-top:6px">
+          ※ 露出・下着・衣装は競合しやすいため、同時に複数を選ぶと出力が崩れる可能性があります。
+          なるべく<b>1カテゴリのみ</b>を使用してください。
+        </div>
         <!-- 先頭に：露出／下着／衣装 -->
         <div><b class="mini">露出</b><div id="pl_nsfw_expo" class="scroller"></div></div>
         <div><b class="mini">下着</b><div id="pl_nsfw_underwear" class="scroller"></div></div>
@@ -667,6 +674,10 @@
             <label class="inline"><input type="radio" name="nsfwLevelLearn" value="L3">R-18G</label>
           </div>
           <div class="grid g3" id="nsfwLearnLists" style="margin-top:6px">
+            <div class="mini" style="margin-top:6px">
+              ※ 露出・下着・衣装は競合しやすいため、同時に複数を選ぶと出力が崩れる可能性があります。
+              なるべく<b>1カテゴリのみ</b>を使用してください。
+            </div>
             <!-- 先頭に：露出／下着／衣装 -->
             <div><b class="mini">露出</b><div id="nsfwL_expo" class="scroller"></div></div>
             <div><b class="mini">下着</b><div id="nsfwL_underwear" class="scroller"></div></div>
