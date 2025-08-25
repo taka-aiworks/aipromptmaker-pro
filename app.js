@@ -150,6 +150,54 @@ function stripMultiHints(parts){
 }
 
 
+// 文字列→配列共通
+function splitTags(v){
+  return String(v||"").split(",").map(s=>s.trim()).filter(Boolean);
+}
+
+/* ===== 撮影モード ===== */
+function pmGetFixed(){
+  const v = document.getElementById("fixedPlanner")?.value
+         ?? document.getElementById("fixedManual")?.value; // 旧ID互換
+  return splitTags(v);
+}
+function pmGetNeg(){
+  const useDef = !!document.getElementById("pl_useDefaultNeg")?.checked;
+  const extra  = (document.getElementById("negPlanner")?.value
+               ?? document.getElementById("negGlobal")?.value  // 旧ID互換
+               ?? "").trim();
+  const base   = Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : String(NEG_TIGHT||"");
+  return [useDef ? base : "", extra].filter(Boolean).join(", ");
+}
+
+/* ===== 学習モード ===== */
+function getFixedLearn(){
+  const v = document.getElementById("fixedLearn")?.value
+         ?? document.getElementById("fixedManual")?.value; // 旧ID互換
+  return splitTags(v);
+}
+function getNegLearn(){
+  const useDef = !!document.getElementById("useDefaultNeg")?.checked;
+  const extra  = (document.getElementById("negLearn")?.value
+               ?? document.getElementById("negGlobal")?.value  // 旧ID互換
+               ?? "").trim();
+  const base   = Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : String(NEG_TIGHT||"");
+  return [useDef ? base : "", extra].filter(Boolean).join(", ");
+}
+
+/* ===== 量産モード ===== */
+function getFixedProd(){
+  const v = document.getElementById("fixedProd")?.value
+         ?? document.getElementById("fixedManual")?.value; // 旧ID互換
+  return splitTags(v);
+}
+// 量産のネガは元からユニーク
+function getNegProd(){
+  return (document.getElementById("p_neg")?.value || "").trim();
+}
+
+
+
 /* ===== 辞書ベース判定 & 正規化ユーティリティ（置き換え） ===== */
 (function(){
   // --- 汎用: ネスト取得
@@ -2001,12 +2049,6 @@ function pmRenderAcc(){
   }
 }
 
-// === 共通：基本情報（固定）を配列で返す ===
-// 共通ヘルパ（すでにあれば不要）
-function splitTags(v){
-  return String(v||"").split(",").map(s=>s.trim()).filter(Boolean);
-}
-
 
 // 単一選択スキャフォルド（scroller内で data-checked のチップのテキストを取る）
 function _selectedChipText(rootSel){
@@ -2102,42 +2144,6 @@ function pmRenderPlanner(){
   pmRenderNSFWPlanner();
   pmRenderAcc();
 }
-
-
-/* =========================
- * 撮影モード：固定タグ / ネガ取得
- * ========================= */
-
-// 固定タグ（撮影タブ専用）
-// 優先順: #pl_fixed → 共通 #fixedManual → 空
-function pmGetFixed(){
-  const v = (document.getElementById("pl_fixed")?.value ??
-             document.getElementById("fixedManual")?.value ??
-             "");
-  return String(v).split(",").map(s=>s.trim()).filter(Boolean);
-}
-
-// ネガ（撮影タブ専用）
-// チェック: #useDefaultNegPhoto（撮影） or 共通 #useDefaultNeg
-// 既定は NEG_TIGHT を使用（配列/文字列どちらでもOK）
-function pmGetNeg(){
-  const useDefault = !!document.getElementById("useDefaultNegPhoto")?.checked
-                  || !!document.getElementById("useDefaultNeg")?.checked;
-  const extra = (document.getElementById("pl_neg")?.value || "").trim();
-
-  const base = (typeof NEG_TIGHT !== "undefined")
-    ? (Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : (NEG_TIGHT || ""))
-    : "";
-
-  return [useDefault ? base : "", extra].filter(Boolean).join(", ");
-}
-
-// （保険）旧コードが DEFAULT_NEG を参照しても落ちないように互換
-if (typeof DEFAULT_NEG === "undefined" && typeof NEG_TIGHT !== "undefined") {
-  window.DEFAULT_NEG = Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : (NEG_TIGHT || "");
-}
-
-
 
 /* ===== 撮影モード：置き換え ===== */
 function pmBuildOne(){
@@ -3863,40 +3869,6 @@ function buildOneLearning(extraSeed = 0){
   return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
 
-
-/* =========================
- * 学習モード：固定タグ / ネガ取得
- * ========================= */
-
-// 学習モード 固定タグ
-// 優先順: #fixedLearn → #l_fixed → 共通 #fixedManual → 空
-function getFixedLearn(){
-  const v = (document.getElementById("fixedLearn")?.value ??
-             document.getElementById("l_fixed")?.value ??
-             document.getElementById("fixedManual")?.value ??
-             "");
-  return String(v).split(",").map(s=>s.trim()).filter(Boolean);
-}
-
-// 学習モード ネガ（デフォは NEG_TIGHT を使用）
-function getNegLearn(){
-  const useDefault = !!document.getElementById("useDefaultNegLearn")?.checked
-                  || !!document.getElementById("useDefaultNeg")?.checked; // 共通チェックも許容
-  const extraNeg   = (document.getElementById("negLearn")?.value || "").trim();
-
-  // NEG_TIGHT は配列/文字列どちらでもOKにする
-  const base = (typeof NEG_TIGHT !== "undefined")
-    ? (Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : (NEG_TIGHT || ""))
-    : "";
-
-  return [useDefault ? base : "", extraNeg].filter(Boolean).join(", ");
-}
-
-// （保険）旧コードが DEFAULT_NEG を見る場合の互換
-if (typeof DEFAULT_NEG === "undefined" && typeof NEG_TIGHT !== "undefined") {
-  window.DEFAULT_NEG = Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : (NEG_TIGHT || "");
-}
-
 /* ============================================================================
  * 学習モード一括生成（修正版・置き換え用 / 追加NSFW6カテゴリ対応 + 先頭NSFW）
  * ========================================================================== */
@@ -4366,29 +4338,6 @@ function getProdWearColorTag(idBase){
   const t = document.getElementById("tag_p_"+idBase);
   const txt = (t?.textContent || "").trim();
   return (txt && txt !== "—") ? txt : "";
-}
-
-// 固定タグ：#p_fixed 優先。無ければ共通 #fixedManual をフォールバック
-function getFixedProd(){
-  const v = (document.getElementById("p_fixed")?.value ??
-             document.getElementById("fixedManual")?.value ??
-             "");
-  return String(v).split(",").map(s=>s.trim()).filter(Boolean);
-}
-
-// 📦 量産モード用ネガ取得：個別 #p_neg + 既定ネガ(チェックON時)
-// 既定ネガは #useDefaultNegProd（量産） or 共通 #useDefaultNeg を見る
-function getNegProd(){
-  const useDefault = !!document.getElementById("useDefaultNegProd")?.checked
-                  || !!document.getElementById("useDefaultNeg")?.checked;
-  const extra = (document.getElementById("p_neg")?.value || "").trim();
-
-  // NEG_TIGHT は配列/文字列どちらでもOK（未定義でも落ちない）
-  const base = (typeof NEG_TIGHT !== "undefined")
-    ? (Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : (NEG_TIGHT || ""))
-    : "";
-
-  return [useDefault ? base : "", extra].filter(Boolean).join(", ");
 }
 
 // ② 完全置き換え版：buildBatchProduction（nullセーフ化 only）
