@@ -242,48 +242,80 @@ function stripMultiHints(parts){
   const COLOR_WORD_RE  = new RegExp('\\b' + COLOR_WORD + '\\b','i');
   const COLOR_PLACE_RE = new RegExp('\\b' + COLOR_WORD + '\\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\\s+janes|heels|sandals)\\b','i');
 
-  window.stripWearColorsOnce = function(parts){
-    return (parts||[]).filter(s=>{
-      const x = String(s);
-      if (COLOR_PLACE_RE.test(x)) return false;                  // "white dress" など
-      if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false;  // 単独色 "white"
-      return true;
-    });
+  // 既存の stripWearColorsOnce をこの内容で上書き
+   window.stripWearColorsOnce = function(parts){
+     const COLOR_WORD_RE =
+       /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
+   
+     // ★ ここに bikini/swimsuit/lingerie/underwear を追加
+     const COLOR_PLACE_RE =
+       /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\s+janes|heels|sandals|bikini|swimsuit|lingerie|underwear)\b/i;
+   
+     return (parts||[]).filter(s=>{
+       const x = String(s);
+       if (COLOR_PLACE_RE.test(x)) return false;            // 例: "white bikini"
+       if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false; // 単独色 "white"
+       return true;
+     });
+   };
+
+  // 既存の collapseExposureDuplicates をこの内容で上書き
+window.collapseExposureDuplicates = function(list){
+  const L = Array.isArray(list) ? list.slice() : [];
+
+  const sets = (window.NSFW_SETS || {});
+  const BASES = new Set([
+    ...(sets.EXPOSURE || []),
+    ...(sets.UNDERWEAR || []),
+    ...(sets.OUTFIT || [])
+  ]); // 例: "bikini","swimsuit","lingerie","underwear" ...
+
+  // ★辞書に“フル形”で存在する露出タグ（色付き含む）
+  const FULL = new Set();
+  for (const s of [ ...(sets.EXPOSURE || []), ...(sets.UNDERWEAR || []), ...(sets.OUTFIT || []) ]) {
+    if (s && typeof s === 'string') FULL.add(String(s).trim().toLowerCase());
+  }
+
+  const baseOf = (t)=>{
+    const s = String(t).toLowerCase().trim();
+    const last = s.split(/\s+/).pop();
+    if (BASES.has(s))   return s;    // そのままが base の場合
+    if (BASES.has(last))return last; // "white bikini" → "bikini"
+    return "";
   };
 
-  // --- 露出系の重複を「色付き>無色」の優先で1つに畳む（※一度だけ呼ぶ）
-  window.collapseExposureDuplicates = function(list){
-    const arr = Array.isArray(list) ? list.slice() : [];
-    const sets = window.NSFW_SETS;
-    const BASES = sets
-      ? new Set([...sets.EXPOSURE, ...sets.UNDERWEAR, ...sets.OUTFIT])
-      : new Set(["bikini","swimsuit","lingerie","underwear","bra","panties","panty","thong","g-string","g string"]);
+  // base -> {keep:string} を決める
+  const chosen = new Map();
+  for (const tok of L){
+    const base = baseOf(tok);
+    if (!base) continue;
 
-    const baseOf = (t)=>{
-      const s = String(t).toLowerCase().trim();
-      const last = s.split(/\s+/).pop();
-      return BASES.has(last) ? last : (BASES.has(s) ? s : "");
-    };
-    const looksColored = (t)=> /\s/.test(String(t)) || COLOR_WORD_RE.test(String(t));
+    const s = String(tok).toLowerCase().trim();
+    const isColoredForm = /\s/.test(s); // スペース含む＝色付き等の複合形
+    const existsAsFullDict = FULL.has(s);
 
-    const keep = {};   // base -> token to keep
-    const seen = {};   // base -> colored flag
-    for (let i=0;i<arr.length;i++){
-      const tok = arr[i];
-      const b = baseOf(tok);
-      if (!b) continue;
-      const colored = looksColored(tok);
-      if (!(b in seen) || (colored && !seen[b])){
-        seen[b] = colored;
-        keep[b] = tok;
-      }
+    // ルール:
+    // 1) 基本は base（色なし）を優先
+    // 2) ただし “色付きそのもの” が辞書に *フル一致* で存在するなら色付き優先
+    const current = chosen.get(base);
+    if (!current) {
+      chosen.set(base, existsAsFullDict ? tok : base);
+    } else {
+      // 既に何か選ばれている場合でも、辞書フル一致の色付きが来たら置き換え
+      if (existsAsFullDict) chosen.set(base, tok);
     }
-    return arr.filter(t=>{
-      const b = baseOf(t);
-      if (!b) return true;
-      return String(t) === String(keep[b]);
-    });
-  };
+  }
+
+  // chosen に該当するもの“だけ”残す
+  return L.filter(tok=>{
+    const base = baseOf(tok);
+    if (!base) return true; // 露出系以外は触らない
+    const keep = chosen.get(base);
+    // keep が base（文字列）なら、"bikini" という“色なし”の完全一致だけを残す
+    // keep が "white bikini" など色付きなら、その完全一致だけを残す
+    return String(tok).toLowerCase().trim() === String(keep).toLowerCase().trim();
+  });
+};
 
   // --- NSFW時：通常服/色/靴をまとめて落とす（最後の安全網）
   window.stripNormalWearWhenNSFW = function(parts){
