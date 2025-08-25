@@ -4290,13 +4290,12 @@ function getProdWearColorTag(idBase){
   return (txt && txt !== "—") ? txt : "";
 }
 
-// ② 完全置き換え版：buildBatchProduction
-// （基本情報 + SFW/NSFW 正規化 + 服色ペアリング(露出が無い時のみ) + 単一ライト/単一背景 + プレースホルダ除去 + NSFW拡張）
+// ② 完全置き換え版：buildBatchProduction（nullセーフ化 only）
 function buildBatchProduction(n){
   const seedMode = document.querySelector('input[name="seedMode"]:checked')?.value || "fixed";
 
   // 固定タグ（先頭側に混ぜる）
-  const fixed = ($("#p_fixed").value||"").split(",").map(s=>s.trim()).filter(Boolean);
+  const fixed = ($("#p_fixed")?.value || "").split(",").map(s=>s.trim()).filter(Boolean);
   const neg = getNegProd();
 
   // 服セット {top, pants, skirt, dress, shoes}
@@ -4333,7 +4332,7 @@ function buildBatchProduction(n){
     shoes:  getProdWearColorTag("shoes"),
   };
 
-  const baseSeed = seedFromName($("#charName").value||"", 0);
+  const baseSeed = seedFromName($("#charName")?.value || "", 0);
   const out  = [];
   const seen = new Set();
   let guard  = 0;
@@ -4423,7 +4422,7 @@ function buildBatchProduction(n){
     const parts = [];
 
     // --- 基本情報 ---
-    const name = ($("#charName")?.value||"").trim();
+    const name = ($("#charName")?.value || "").trim();
     if (name) parts.push(name);
 
     parts.push("solo");
@@ -4468,7 +4467,7 @@ function buildBatchProduction(n){
       const RE_ONE = /\b(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|witch\s+outfit|idol\s+costume|stage\s+costume)\b/i;
       if (PC.top && chosenDress) {
         const noun = (chosenDress.match(RE_ONE)?.[1] || "").toLowerCase();
-        if (noun) parts.push(`${PC.top} ${noun}`); // 例: "white dress"
+        if (noun) parts.push(`${PC.top} ${noun}`);
       }
     } else {
       if (PC.top)    parts.push(`${PC.top} top`);
@@ -4508,56 +4507,44 @@ function buildBatchProduction(n){
     // --- 整合処理（順序が重要） ---
     let all = uniq([...fixed, ...parts]).filter(Boolean);
 
-    // ★ NSFW がONならまずタグを混ぜておく（後段の並び替えでズレても最後に先頭固定する）
     if (nsfwOn && !all.includes("NSFW")) all.unshift("NSFW");
 
-    // 露出/ワンピ優先
     if (typeof applyNudePriority === 'function')           all = applyNudePriority(all);
     if (typeof enforceOnePieceExclusivity === 'function')  all = enforceOnePieceExclusivity(all);
 
-    // ==== 露出かどうかを辞書セットで厳密判定（フォールバック正規表現つき） ====
     const hasExposure = nsfwOn && (
       (typeof hasExposureLike === 'function' && hasExposureLike(all)) ||
       all.some(t => EXPOSURE_EXCLUSIVE_RE.test(String(t)))
     );
 
     if (hasExposure) {
-      // 既存の上下服・ワンピ・靴・色プレースホルダを除去（色は露出タグ側に含める想定）
       all = all.filter(s =>
         !CLOTH_NOUN_RE.test(s) &&
         !SHOES_RE.test(s) &&
         !COLOR_PLACE_RE.test(s) &&
-        !(COLOR_WORD_RE.test(s) && !/\s/.test(s)) // 単独色タグも除去
+        !(COLOR_WORD_RE.test(s) && !/\s/.test(s))
       );
     } else {
-      // 通常服：色合体の前に“カテゴリ1個だけ”を最終保証してから合体
       all = ensureSingleWearPerRow(all);
       if (typeof pairWearColors === 'function') all = pairWearColors(all);
-      // 色プレースホルダ（color + top/bottom/shoes）と生の top/bottom は最終的に落とす
       all = removeWearPlaceholders(all);
     }
 
-    // --- 背景は 1 つだけ（plain background は他があれば落とす）---
     all = enforceSingleBackground(all);
-
-    // --- ライティングは最終的に 1 つだけ ---
     all = unifyLightingOnce(all);
 
-    // SOLOガードやヒント整理
     if (typeof stripMultiHints === 'function') all = stripMultiHints(all);
     if (typeof forceSoloPos === 'function')    all = forceSoloPos(all);
 
-    // 排他カテゴリの整理 → 並び順 → 先頭固定
     if (typeof fixExclusives === 'function')     all = fixExclusives(all);
     if (typeof ensurePromptOrder === 'function') all = ensurePromptOrder(all);
     if (typeof enforceHeadOrder === 'function')  all = enforceHeadOrder(all);
 
-    // ★ 並び替えが終わった“最後”に、必ず NSFW を先頭に寄せる
     if (nsfwOn) all = ensureNSFWHead(all);
 
     const seed = (seedMode === "fixed")
       ? baseSeed
-      : seedFromName($("#charName").value||"", i);
+      : seedFromName($("#charName")?.value || "", i);
 
     return { seed, pos: all, neg: withSoloNeg(neg) };
   };
