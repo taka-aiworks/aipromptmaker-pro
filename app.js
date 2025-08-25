@@ -581,10 +581,16 @@ const DEFAULT_TRAINING_NEG = [
   "fisheye", "wide-angle", "tilt-shift", "motion blur"
 ].join(", ");
 
-// 学習用ネガ統合（ソロ強制の既存処理に追記）
+// 置き換え：学習モードのネガ取得
 function getNegLearn(){
-  const extra = (document.getElementById('learn_neg')?.value||"").trim();
-  return buildNegative(extra);
+  // 既存の「デフォルトネガを使う」チェック
+  const useDefault = !!document.getElementById('useDefaultNeg')?.checked;
+  // 学習タブの手入力追記欄（HTMLは negGlobal ）
+  const extra = (document.getElementById('negGlobal')?.value || '')
+    .split(',').map(s=>s.trim()).filter(Boolean);
+
+  // 既存のビルド関数に渡す（内部でデフォルト＋追記をまとめる想定）
+  return buildNegative(extra, useDefault);
 }
 
 
@@ -3760,12 +3766,25 @@ function ensureNSFWHead(arr){
   return out;
 }
 
+// 例：学習モード用の固定タグ取得ヘルパ
+function getFixedLearn(){
+  return (document.getElementById('fixedManual')?.value || '')
+    .split(',').map(s=>s.trim()).filter(Boolean);
+}
+
+
 /* ===== 学習モード：置き換え ===== */
 function buildOneLearning(extraSeed = 0){
   const getManySafe = (id) => { try { const v = (typeof getMany === 'function') ? getMany(id) : []; return Array.isArray(v) ? v : []; } catch(_) { return []; } };
   const pickSafe    = (arr) => (Array.isArray(arr) && arr.length ? pick(arr) : "");
 
-  const fixed = (typeof assembleFixedLearning === 'function') ? assembleFixedLearning() : [];
+     
+   // 例：学習1行の組み立て内の冒頭あたりで
+   const fixed = getFixedLearn();
+   let parts = [];
+   if (fixed.length) parts.push(...fixed);
+
+// 以降、名前やsoloなど既存処理で追加
 
   const BG = getManySafe("bg");
   const PO = getManySafe("pose");
@@ -4328,7 +4347,10 @@ function buildBatchProduction(n){
   const seedMode = document.querySelector('input[name="seedMode"]:checked')?.value || "fixed";
 
   // 固定タグ（先頭側に混ぜる）
-  const fixed = (typeof $ === 'function' && $("#p_fixed")) ? ($("#p_fixed").value || "") : "";
+  // 新: p_fixed が無ければ fixedManual を使う
+  const fixed = (
+    ($("#p_fixed")?.value ?? $("#fixedManual")?.value ?? "")
+  ).split(",").map(s=>s.trim()).filter(Boolean);
   const fixedArr = fixed.split(",").map(s=>s.trim()).filter(Boolean);
 
   const neg = (typeof getNegProd === 'function') ? getNegProd() : "";
@@ -4694,10 +4716,26 @@ function enforceSingleBackground(arr){
   return cleaned;
 }
 
+// 量産モード用ネガ取得：p_* が無ければ共通欄(#negGlobal/#useDefaultNeg)を使う
 function getNegProd(){
-  const el = document.getElementById("p_neg");
-  const custom = (el?.value || "").trim(); // ← 無ければ空扱い
-  return buildNegative(custom);
+  // デフォルトネガ使用フラグ（量産タブ優先 → 共通 → 既定true）
+  const useDefault =
+    ($("#p_useDefaultNeg")?.checked ??
+     $("#useDefaultNeg")?.checked ?? true);
+
+  // 追加ネガ（量産タブ優先 → 旧negProd → 共通）
+  const extraNeg =
+    ($("#p_neg")?.value ??
+     $("#negProd")?.value ??
+     $("#negGlobal")?.value ?? "").trim();
+
+  // buildNegative は「ベース（デフォルト）」＋「追加」を合成する想定
+  if (typeof buildNegative === "function"){
+    const base = useDefault ? NEG_TIGHT : "";
+    return buildNegative(base, extraNeg);
+  }
+  // フォールバック
+  return [useDefault ? NEG_TIGHT : "", extraNeg].filter(Boolean).join(", ");
 }
 
 
