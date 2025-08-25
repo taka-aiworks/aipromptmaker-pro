@@ -431,15 +431,17 @@
       { "tag": "focus on hands", "label": "手元寄り" },
       { "tag": "dynamic angle", "label": "動きのあるアングル" }
     ],
-    "expressions": [
+     "expressions": [
       { "tag": "neutral expression", "label": "ニュートラル" },
       { "tag": "smiling", "label": "笑顔" },
       { "tag": "soft smile", "label": "微笑み" },
       { "tag": "bright smile", "label": "満面の笑み" },
       { "tag": "smiling open mouth", "label": "笑顔（口開き）" },
       { "tag": "laughing", "label": "爆笑" },
+      { "tag": "sparkling smile", "label": "キラキラ笑顔" },
       { "tag": "smug", "label": "ドヤ顔" },
       { "tag": "maniacal grin", "label": "高笑い" },
+      { "tag": "cartoonish grin", "label": "ギャグ笑い" },
     
       { "tag": "blushing", "label": "照れ" },
       { "tag": "slight blush", "label": "ほんのり照れ" },
@@ -449,11 +451,13 @@
       { "tag": "furious", "label": "激怒" },
       { "tag": "vein popping", "label": "怒りマーク" },
       { "tag": "gritted teeth", "label": "歯を食いしばる" },
+      { "tag": "chibi angry", "label": "デフォルメ怒り顔" },
     
       { "tag": "sad", "label": "悲しみ" },
       { "tag": "crying", "label": "涙目" },
       { "tag": "teary-eyed", "label": "うるうる目" },
       { "tag": "comedic crying", "label": "ギャグ泣き（滝涙）" },
+      { "tag": "crying a river", "label": "洪水の涙" },
       { "tag": "despairing expression", "label": "絶望顔" },
       { "tag": "gloomy", "label": "落ち込み" },
     
@@ -463,11 +467,13 @@
       { "tag": "dismayed expression", "label": "落胆（ガーン）" },
       { "tag": "aghast expression", "label": "呆然（ガーン）" },
       { "tag": "stunned expression", "label": "茫然" },
+      { "tag": "super deformed shocked", "label": "デフォルメ驚き顔" },
     
       { "tag": "sleepy", "label": "眠い" },
       { "tag": "blank stare", "label": "虚ろな目" },
       { "tag": "dizzy eyes", "label": "ぐるぐる目" },
-      { "tag": "sweat drop", "label": "冷や汗マーク" },
+      { "tag": "swirly eyes", "label": "ぐるぐる目（誇張）" },
+      { "tag": "white eyes", "label": "白目" },
       { "tag": "deadpan", "label": "無表情" },
     
       { "tag": "winking", "label": "ウィンク" },
@@ -483,10 +489,23 @@
       { "tag": "sparkling eyes", "label": "キラキラ目" },
       { "tag": "heart eyes", "label": "ハート目" },
       { "tag": "starry eyes", "label": "星目" },
+      { "tag": "popped eyes", "label": "目が飛び出る" },
+      { "tag": "jaw drop exaggerated", "label": "顎外れ（大口あんぐり）" },
+    
       { "tag": "shadowed face", "label": "顔に影" },
       { "tag": "menacing smile", "label": "不敵な笑み" },
-      { "tag": "evil grin", "label": "悪役笑い" }
-    ]
+      { "tag": "evil grin", "label": "悪役笑い" },
+      { "tag": "tongue out", "label": "舌出し変顔" },
+      { "tag": "distorted face", "label": "顔芸（崩し）" },
+    
+      { "tag": "sweat drop", "label": "冷や汗" },
+      { "tag": "sweating profusely", "label": "大量の汗" },
+      { "tag": "teeth chattering", "label": "歯ガタガタ" },
+      { "tag": "nosebleed", "label": "鼻血" },
+      { "tag": "blown away expression", "label": "吹き飛んだ顔" },
+      { "tag": "pale face", "label": "顔真っ青" },
+      { "tag": "shaking head", "label": "ブンブン首振り" }
+    ],
     "colors": [
     { "tag": "white",   "label": "白" },
     { "tag": "black",   "label": "黒" },
