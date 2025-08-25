@@ -346,7 +346,7 @@
   <h3 class="wm-acc-title">NSFW</h3>
     <div class="note mini" style="margin:6px 0">
       ※表情や衣装が被った場合NSFWで選んだものが優先されます。
-      <b>追加で色を指定したい場合は単語モードを参照して</b>b追加してください。
+      <b>追加で色を指定したい場合は単語モードを参照して</b>追加してください。
     </div>
     <div class="note mini" style="margin:6px 0">
       ※ 露出・下着・衣装はカテゴリ同士で競合しやすいため、同時に複数を入れると出力が崩れる可能性があります。
@@ -522,7 +522,7 @@
       <div class="grid g3" style="margin-top:6px">
         <div class="note mini" style="margin:6px 0">
           ※表情や衣装が被った場合NSFWで選んだものが優先されます。
-          <b>追加で色を指定したい場合は単語モードを参照して</b>b追加してください。
+          <b>追加で色を指定したい場合は単語モードを参照して</b>追加してください。
         </div>
         <div class="mini" style="margin-top:6px">
           ※ 露出・下着・衣装は競合しやすいため、同時に複数を選ぶと出力が崩れる可能性があります。
@@ -687,7 +687,7 @@
           <div class="grid g3" id="nsfwLearnLists" style="margin-top:6px">
           <div class="note mini" style="margin:6px 0">
             ※表情や衣装が被った場合NSFWで選んだものが優先されます。
-            <b>追加で色を指定したい場合は単語モードを参照して</b>b追加してください。
+            <b>追加で色を指定したい場合は単語モードを参照して</b>追加してください。
           </div>
             <div class="mini" style="margin-top:6px">
               ※ 露出・下着・衣装は競合しやすいため、同時に複数を選ぶと出力が崩れる可能性があります。
@@ -782,7 +782,7 @@
       </h2>
         <div class="note mini" style="margin:6px 0">
           量産では服の色は基本色1色をベースにし、バリエーションを持たせたい項目だけチェックを増やすのがおすすめです。<br>
-          すべての要素を一度に揺らすと組み合わせがバラけすぎて安定しないため、他の部分は固定にしておくと安定した量産ができます。</br>
+          すべての要素を一度に揺らすと組み合わせがバラけすぎて安定しないため、他の部分は固定にしておくと安定した量産ができます。<br>
         </div>
 
 <!-- 服 / 背景 / 表情：3カラムだけでまず閉じる -->
@@ -948,7 +948,6 @@
 </div>
 <!-- === アクセ: 置き換え終了 === -->
   <div class="mini" style="margin-top:6px">※ 未選択スロットは無視</div>
-</div>
         <div class="panel">
   <h3>背景（複数可）</h3>
   <div id="p_bg" class="scroller"></div>
@@ -977,11 +976,11 @@
     <div class="grid g3" style="margin-top:6px">
       <div class="note mini" style="margin:6px 0">
         ※表情や衣装が被った場合NSFWで選んだものが優先されます。<br>
-        追加で色を指定したい場合は単語モードを参照して追加してください。</br>
+        追加で色を指定したい場合は単語モードを参照して追加してください。<br>
       </div>
       <div class="mini" style="margin-top:6px">
         ※ 露出・下着・衣装は競合しやすいため、同時に複数を選ぶと出力が崩れる可能性があります。<br>
-        なるべく1カテゴリのみを使用してください。</br>
+        なるべく1カテゴリのみを使用してください。<br>
       </div>
       <!-- 先頭に：露出／下着／衣装 -->
       <div><b class="mini">露出</b><div id="nsfwP_expo" class="scroller"></div></div>
@@ -1206,6 +1205,34 @@
   }
   document.addEventListener("DOMContentLoaded", initTabs);
   </script>
-  
+  <script>
+(() => {
+  function getActiveMode(){
+    const t = document.querySelector('.tab.active');
+    return t ? t.dataset.mode : 'basic';
+  }
+  const FIXED_IDS = { planner:'fixedPlanner', learning:'fixedLearn', production:'fixedProd' };
+  const NEG_IDS   = { planner:'negPlanner',   learning:'negLearn',   production:'p_neg' };
+
+  function defineProxyInput(id, getter){
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('textarea');
+      el.id = id; el.style.display = 'none';
+      document.body.appendChild(el);
+    }
+    Object.defineProperty(el, 'value', { get: getter, set: () => {} });
+  }
+
+  defineProxyInput('fixedManual', () => {
+    const id = FIXED_IDS[getActiveMode()];
+    return id ? (document.getElementById(id)?.value || '') : '';
+  });
+  defineProxyInput('negGlobal', () => {
+    const id = NEG_IDS[getActiveMode()];
+    return id ? (document.getElementById(id)?.value || '') : '';
+  });
+})();
+</script>
 </body>
 </html>
