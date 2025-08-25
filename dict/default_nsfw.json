@@ -103,20 +103,6 @@
         { "tag": "dirty_clothes",    "ja": "服が汚れている（糞尿）", "level": "L3" },
         { "tag": "toilet_play",      "ja": "トイレプレイ", "level": "L3" }
        ],
-      "background": [
-        { "tag": "beach", "ja": "ビーチ", "level": "L1" },
-        { "tag": "poolside", "ja": "プールサイド", "level": "L1" },
-        { "tag": "waterpark", "ja": "ウォーターパーク", "level": "L1" },
-        { "tag": "changing_room", "ja": "更衣室", "level": "L2" },
-        { "tag": "outdoor_shower", "ja": "屋外シャワー", "level": "L2" },
-        { "tag": "beach_night", "ja": "夜のビーチ", "level": "L2" },
-        { "tag": "nude_beach", "ja": "ヌーディストビーチ", "level": "L2" },
-        { "tag": "private_pool", "ja": "プライベートプール", "level": "L2" },
-        { "tag": "lovehotel_pool", "ja": "ラブホテルのプール", "level": "L2" },
-        { "tag": "photoshoot_studio", "ja": "撮影スタジオ", "level": "L2" },
-        { "tag": "after_party_suite", "ja": "アフターパーティーのスイートルーム", "level": "L2" },
-        { "tag": "swim_competition", "ja": "水泳大会（会場）", "level": "L1" }
-      ],
 
       "lighting": [
         { "tag": "softbox", "ja": "ソフトライト", "level": "L1" },
