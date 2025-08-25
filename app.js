@@ -2834,50 +2834,83 @@ function bindCharIO(){
 }
 
 
-// === 学習用 NSFW ホワイトリスト（軽度な特徴だけ残す） ===
+// === 学習用 NSFW ホワイトリスト（軽度中心・ブレにくい範囲で拡張） ===
 const NSFW_LEARN_SCOPE = {
   expression: [
+    // L1: ごく軽い表情中心（幅の拡張）
     "aroused","flushed","embarrassed","seductive_smile",
     "half_lidded_eyes","bedroom_eyes","lip_bite",
-    "bashful","moaning_face","pouting"
+    "bashful","pouting",
+    // 追加（L2の中でも弱め・視覚的ノイズ少なめ）
+    "moist_lips","tearful"
+    // ※ ahegao/rolling_eyes 等の強すぎるL2は除外のまま
   ],
+
   exposure: [
+    // L1: 肌見せ系の軽度
     "mild_cleavage","off_shoulder","bare_back","leggy",
-    "garter_belt","thighhighs","lingerie","bikini",
-    "wet_clothes","see_through","sideboob","underboob",
-    "pantyhose","lace_panties","bra_peek","unzipped_skirt"
+    // L2: 透け/濡れ・部分露出（露出そのものだが破綻を起こしにくい範囲）
+    "wet_clothes","see_through","sideboob","underboob"
+    // ※ topless/bottomless/nude は学習ブレが大きいので対象外のまま
   ],
+
   situation: [
+    // L1: 日常的/撮影的な軽度シチュ
     "suggestive_pose","mirror_selfie","after_shower","towel_wrap",
+    "sauna_steam","sunbathing",
+    // L2: “脱ぎかけ/隠し”など控えめ寄り
     "in_bed_sheets","undressing","zipper_down","covered_nudity",
-    "censored_bars","massage_oil","photoshoot_studio",
-    "private_pool","beach","poolside","sunbathing",
-    "changing_room","beach_night","after_party_suite"
+    "photoshoot_studio"
+    // ※ 体液・explicit系は除外（学習の安定性重視）
   ],
+
+  // 追加：背景（学習では安定度が高く、構図に一貫性が出やすい）
+  background: [
+    "beach","poolside","waterpark","beach_night"
+  ],
+
   lighting: [
+    // 既存で安定していた範囲を維持
     "softbox","rim_light","backlit","window_glow","golden_hour",
     "neon","candlelight","low_key","hard_light","colored_gels",
     "film_noir","dappled_light","spotlight","moody"
   ],
-  // 追加カテゴリも軽度な範囲だけ
+
+  // 追加カテゴリも“軽度”に限定
   pose: [
-    "seductive_pose","lying_on_bed","stretching","crossed_legs","arched_back"
+    "seductive_pose","lying_on_bed","stretching","crossed_legs",
+    "arched_back","against_wall" // 増やすが、性行為連想の強い体位は除外
   ],
+
   outfit: [
-    "lace_lingerie","bra_peek","panties_peek","nightgown","babydoll",
-    "bikini","camisole","crop_top","see_through_top"
+    // 露骨なFetish系を避けつつ、見た目の幅だけ拡張
+    "nightgown","babydoll","camisole","crop_top","see_through_top",
+    "bikini","school_swimsuit","wet_swimsuit"
   ],
+
   body: [
-    "big_breasts","thicc","bubble_butt","slim_thick",
-    "hourglass_exaggerated","soft_body","wide_hips"
+    // L1を追加して“体型バリエーション”を増やす（安定しやすい）
+    "flat_chest","small_breasts","petite_bust",
+    // 既存の一部は維持（誇張すぎるものは外してもOK）
+    "big_breasts","soft_body","wide_hips"
+    // ※ thicc/bubble_butt/slim_thick/hourglass_exaggerated は好みで残してOKだが、
+    //   学習のキャラ安定を優先するなら一旦外すのを推奨
   ],
+
   nipples: [
+    // L1のみ（露出度は上がるが、形状要素は比較的安定しやすい）
     "puffy_nipples","inverted_nipples","large_areolae","dark_areolae"
+    // ※ pierced 等の付加要素は外すと安定
   ],
+
   underwear: [
-    "lace_panties","sheer_panties","thong","gstring","lace_bra","sports_bra"
+    // 下着は“透け/レース/スポーツ/ストッキング系”を中心に
+    "lace_panties","sheer_panties","thong","gstring",
+    "lace_bra","sports_bra","stockings","thighhighs"
   ]
 };
+
+
 
 // --- 便利フィルタ（生成/学習前の最終ガード用） ---
 function filterNSFWByWhitelist(category, tags){
