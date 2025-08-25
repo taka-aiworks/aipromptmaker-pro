@@ -2011,6 +2011,7 @@ function pmRenderPlanner(){
 
 /* 1件出力（辞書ベース露出判定 + 通常服/色/靴の除去 + NSFW拡張 + 先頭NSFW） */
 function pmBuildOne(){
+  // ---- 基本情報・シード ----
   var name = pmValById('charName');
   var seed = (typeof seedFromName === 'function') ? seedFromName(name,1) : 0;
 
@@ -2054,8 +2055,8 @@ function pmBuildOne(){
   var nsfwUnder    = nsfwOn ? (pmPickOne('pl_nsfw_underwear') || '') : '';
 
   // 表情/ライティングはNSFWを優先
-  var expr = nsfwOn && nsfwExpr  ? nsfwExpr  : exprS;
-  var lite = nsfwOn && nsfwLight ? nsfwLight : liteS;
+  var expr = (nsfwOn && nsfwExpr)  ? nsfwExpr  : exprS;
+  var lite = (nsfwOn && nsfwLight) ? nsfwLight : liteS;
 
   // ---- アクセ（固定アクセ） ----
   var accName = pmValById('pl_accSel');
@@ -2096,23 +2097,23 @@ function pmBuildOne(){
   // ==== 露出かどうか（辞書ベース） ====
   var isExposure = nsfwOn && (typeof hasExposureLike === 'function') && hasExposureLike(parts);
 
-  // === 露出なら：通常服（辞書ベース）と色を除去 ===
+  // === 露出なら：通常服（辞書ベース）と色を一次除去 ===
   if (isExposure){
-    parts = parts.filter(function(tok){ return !isNormalWearToken(tok); });
+    if (typeof isNormalWearToken === 'function'){
+      parts = parts.filter(function(tok){ return !isNormalWearToken(tok); });
+    }
     if (typeof stripWearColorsOnce === 'function') parts = stripWearColorsOnce(parts);
   }
 
-  // === 靴ガード（露出時は常に除去） ===
+  // === 靴ガード（露出時は常に除去 / 非露出は設定に従う） ===
   (function shoeGuard(){
     var looksShoeToken = function(s){
       var x = String(s).toLowerCase();
-      // WEAR_SFW があれば「末尾語が靴系」も落ちるが、保険でここも見る
       return /\b(shoes|boots|sneakers|loafers|sandals|heels|mary\s+janes|mary_janes|geta|zori)\b/i.test(x);
     };
     if (isExposure){
       parts = parts.filter(function(t){ return !looksShoeToken(t); });
     } else {
-      // 露出じゃない時は従来ロジック（use_shoes など）があればそれを適用してOK
       var useShoesFlag = document.getElementById('use_shoes') ? !!document.getElementById('use_shoes').checked : true;
       if (!useShoesFlag) parts = parts.filter(function(t){ return !looksShoeToken(t); });
     }
@@ -2122,27 +2123,53 @@ function pmBuildOne(){
   if (!isExposure && typeof pairWearColors === 'function') {
     parts = pairWearColors(parts);
   }
-   // === 整理 ===
-   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
-   if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
-   
-   // ←←← ★ ここで NSFW が ON のとき“辞書ベースで”通常服/色/靴をまとめて削除
-   if (nsfwOn && typeof stripNormalWearWhenNSFW === 'function') {
-     parts = stripNormalWearWhenNSFW(parts);
-   }
-   
-   if (typeof fixExclusives === 'function')     parts = fixExclusives(parts);
-   if (typeof ensurePromptOrder === 'function') parts = ensurePromptOrder(parts);
-   if (typeof enforceHeadOrder === 'function')  parts = enforceHeadOrder(parts);
-   
-   // === ★最後に NSFW を先頭へ固定 ===
-   if (nsfwOn) {
-     parts = parts.filter(t => String(t) !== "NSFW");
-     parts.unshift("NSFW");
-   }
-   
-   return [{ seed, pos: parts, neg }];
-   }
+
+  // === 整理（重複ヒント/ソロ位置など） ===
+  if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
+  if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
+
+  // === ここで NSFW ON 時に“辞書ベースで”通常服/色/靴を最終一掃 ===
+  if (nsfwOn){
+    if (typeof stripNormalWearWhenNSFW === 'function'){
+      parts = stripNormalWearWhenNSFW(parts);
+    } else {
+      // フォールバック：最低限の除去（辞書ヘルパ未ロードでも破綻しないように）
+      var looksShoeToken = function(s){
+        var x = String(s).toLowerCase();
+        return /\b(shoes|boots|sneakers|loafers|sandals|heels|mary\s+janes|mary_janes|geta|zori)\b/i.test(x);
+      };
+      var COLOR_WORD_RE  = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
+      var COLOR_PLACE_RE = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\s+janes|heels|sandals)\b/i;
+      parts = parts.filter(function(t){
+        var s = String(t);
+        if (typeof isNormalWearToken === 'function' && isNormalWearToken(s)) return false;
+        if (looksShoeToken(s)) return false;
+        if (COLOR_PLACE_RE.test(s)) return false;
+        if (COLOR_WORD_RE.test(s) && !/\s/.test(s)) return false;
+        return true;
+      });
+    }
+  }
+
+  // === 排他 → 並び順 → 先頭固定 ===
+  if (typeof fixExclusives === 'function')     parts = fixExclusives(parts);
+  if (typeof ensurePromptOrder === 'function') parts = ensurePromptOrder(parts);
+  if (typeof enforceHeadOrder === 'function')  parts = enforceHeadOrder(parts);
+
+  // === ★最後に NSFW を先頭へ固定 ===
+  if (nsfwOn) {
+    parts = parts.filter(function(t){ return String(t) !== "NSFW"; });
+    parts.unshift("NSFW");
+    // util があれば: parts = ensureNSFWHead(parts);
+  }
+
+  // ---- ネガティブ ----
+  var negBase = (typeof pmGetNeg === 'function') ? pmGetNeg() : "";
+  var neg = (typeof withSoloNeg==='function') ? withSoloNeg(negBase) : negBase;
+
+  // ---- 戻り値 ----
+  return [{ seed: seed, pos: parts, neg: neg }];
+}
 
 
 
