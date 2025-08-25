@@ -3359,10 +3359,58 @@ function fixExclusives(parts){
   return p;
 }
 
-// ④ 配分ルール（必要なら数値だけ調整してOK）
+
+
+// === 学習用：割合ベース挿入ユーティリティ =======================
+// rows: buildBatchLearning() の出力配列
+// groupTags: 同カテゴリのタグ一覧
+// targetTag: 混ぜたいタグ
+// pctMin, pctMax: 挿入割合 (0.1=10%)
+function applyPercentForTag(rows, groupTags, targetTag, pctMin, pctMax){
+  if (!Array.isArray(rows) || !rows.length) return;
+
+  const n = rows.length;
+  const ratio = pctMin + Math.random() * (pctMax - pctMin);
+  const k = Math.max(1, Math.min(n, Math.round(n * ratio)));
+
+  const idxs = Array.from({length:n}, (_,i)=>i).sort(()=>Math.random()-0.5).slice(0,k);
+  for (const i of idxs){
+    const row = rows[i];
+    let pos = Array.isArray(row.pos) ? row.pos.slice() : [];
+    // 同カテゴリを一掃して target を入れる
+    pos = pos.filter(t => !groupTags.includes(String(t)));
+    pos.push(targetTag);
+
+    if (typeof ensurePromptOrder === 'function') pos = ensurePromptOrder(pos);
+    if (typeof enforceHeadOrder === 'function')  pos = enforceHeadOrder(pos);
+
+    row.pos  = pos;
+    row.text = `${pos.join(", ")} --neg ${row.neg} seed:${row.seed}`;
+  }
+}
+window.applyPercentForTag = applyPercentForTag; // どこからでも呼べるように
+
+// グループ内に何も入らなかった行へフォールバックを補完
+function fillRemainder(rows, groupTags, fallbackTag){
+  if (!Array.isArray(rows) || !rows.length) return;
+  for (const r of rows){
+    const pos = Array.isArray(r.pos) ? r.pos : [];
+    const hasAny = pos.some(t => groupTags.includes(String(t)));
+    if (!hasAny){
+      const out = pos.filter(t => !groupTags.includes(String(t)));
+      out.push(fallbackTag);
+      let arranged = (typeof ensurePromptOrder==='function') ? ensurePromptOrder(out) : out;
+      if (typeof enforceHeadOrder==='function') arranged = enforceHeadOrder(arranged);
+      r.pos  = arranged;
+      r.text = `${arranged.join(", ")} --neg ${r.neg} seed:${r.seed}`;
+    }
+  }
+}
+window.fillRemainder = fillRemainder;
+
+// === 配分ルール（割合テーブル） =======================
 const MIX_RULES = {
-  // 視点（横顔/背面は割合で、残りは 3/4 or 正面に後で丸める）
-    view: {
+  view: {
     group: ["front view","three-quarters view","profile view","side view","back view"],
     targets: {
       "profile view":[0.15,0.20],
@@ -3370,56 +3418,46 @@ const MIX_RULES = {
     },
     fallback: "three-quarters view"
   },
-
   comp: {
     group: ["full body","waist up","upper body","bust","portrait","close-up","wide shot"],
     targets: {
       "full body":[0.20,0.25],
       "waist up":[0.30,0.35],
-      "upper body":[0.05,0.10],   // 追加
+      "upper body":[0.05,0.10],
       "bust":[0.20,0.25],
-      "close-up":[0.05,0.10],     // 追加
-      "wide shot":[0.05,0.10]     // 追加
+      "close-up":[0.05,0.10],
+      "wide shot":[0.05,0.10]
     },
     fallback: "portrait"
   },
-
-  // 表情（UIで選ばれた中だけから配分。未選択なら fallback=neutral）
-expr: {
-  group: [
-    "neutral expression",
-    "smiling",
-    "smiling open mouth",
-    "serious",
-    "determined",
-    "slight blush",
-    "surprised (mild)",
-    "pouting (slight)"
-  ],
-  // ★デフォルト配分（汎用SFW）
-  targets: {
-    "neutral expression": [0.55, 0.65],
-    "smiling":            [0.18, 0.25],
-    "smiling open mouth": [0.05, 0.10],
-    "serious":            [0.01, 0.02],
-    "determined":         [0.01, 0.02],
-    "slight blush":       [0.03, 0.05]
-    // "surprised (mild)" や "pouting (slight)" を使う時はここに追記してね（各 0.03–0.05 程度）
+  expr: {
+    group: [
+      "neutral expression",
+      "smiling",
+      "smiling open mouth",
+      "serious",
+      "determined",
+      "slight blush",
+      "surprised (mild)",
+      "pouting (slight)"
+    ],
+    targets: {
+      "neutral expression": [0.55, 0.65],
+      "smiling":            [0.18, 0.25],
+      "smiling open mouth": [0.05, 0.10],
+      "serious":            [0.01, 0.02],
+      "determined":         [0.01, 0.02],
+      "slight blush":       [0.03, 0.05]
+    },
+    fallback: "neutral expression"
   },
-  fallback: "neutral expression"
-},
-
-  // 背景（無地/スタジオを多め。bedroom は少し）
   bg: {
     group: ["plain background","studio background","solid background","white background","bedroom"],
     targets: {
       "plain background":[0.35,0.45]
-      
     },
     fallback: "plain background"
   },
-
-  // ライティング（安定寄り）
   light: {
     group: ["soft lighting","even lighting","normal lighting","window light","overcast"],
     targets: {
@@ -3430,13 +3468,13 @@ expr: {
     fallback: "soft lighting"
   }
 };
+window.MIX_RULES = MIX_RULES;
 
-// EXPR_ALL はそのまま使う
+// EXPR_ALL（使ってるならそのまま）
 const EXPR_ALL = new Set([
   ...Object.keys(MIX_RULES.expr.targets),
   MIX_RULES.expr.fallback
 ]);
-
 
 
 
