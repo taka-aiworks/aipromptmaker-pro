@@ -149,8 +149,9 @@ function stripMultiHints(parts){
 }
 
 
-/* ===== NSFWカテゴリ由来の厳密判定セット & ヘルパ ===== */
+/* ===== NSFWカテゴリ由来の厳密判定セット & ヘルパ（強化版） ===== */
 (function(){
+  // --- utils ---
   function getByPath(root, path){
     return path.split('.').reduce((a,k)=> (a?a[k]:null), root);
   }
@@ -162,18 +163,31 @@ function stripMultiHints(parts){
     }
     return null;
   }
-  function normTag(x){
-    return String((x && (x.en || x.tag || x.value)) || '').trim().toLowerCase();
+  function normToken(s){
+    // 小文字化 + アンダースコア/ハイフン→空白 + 連続空白を1つに
+    return String(s||"")
+      .toLowerCase()
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
+  function normTag(x){
+    return normToken((x && (x.en || x.tag || x.value)) || '');
+  }
+
+  function toSet(arr){
+    const s = new Set();
+    (Array.isArray(arr)?arr:[]).forEach(o=>{
+      const t = normTag(o);
+      if (t) s.add(t);
+    });
+    return s;
+  }
+
   function rebuildNSFWSets(){
     const root = sniffNSFWRoot() || {};
     const top  = root.NSFW || root.nsfw || root;
     const cat  = top.categories || top;
-    const toSet = (arr)=>{
-      const s = new Set();
-      (Array.isArray(arr)?arr:[]).forEach(o=>{ const t = normTag(o); if (t) s.add(t); });
-      return s;
-    };
     window.NSFW_SETS = {
       EXPOSURE : toSet(cat.exposure),
       UNDERWEAR: toSet(cat.underwear),
@@ -181,37 +195,57 @@ function stripMultiHints(parts){
     };
   }
 
-  // 項目ベース：配列 parts に「露出/下着/NSFW衣装」由来が含まれるか
+  // 公開: セットが無ければ都度再構築
+  window.ensureNSFWSets = function(){
+    if (!window.NSFW_SETS ||
+        !window.NSFW_SETS.EXPOSURE ||
+        !window.NSFW_SETS.UNDERWEAR ||
+        !window.NSFW_SETS.OUTFIT) {
+      rebuildNSFWSets();
+    }
+  };
+
+  // 公開: 配列 parts に「露出/下着/NSFW衣装」由来が含まれるか
   window.hasExposureLike = function(parts){
+    window.ensureNSFWSets();
     const sets = window.NSFW_SETS;
     if (!sets) return false;
+
     for (const t of (Array.isArray(parts)?parts:[])){
-      const base = String(t).toLowerCase().trim();
+      const base = normToken(t);
+      // 完全一致
       if (sets.EXPOSURE.has(base) || sets.UNDERWEAR.has(base) || sets.OUTFIT.has(base)) return true;
-      // "white bikini" のような合成用フォールバック：末尾語を見る
-      const last = base.split(/\s+/).pop();
+
+      // 末尾語（white bikini / red micro bikini など）
+      const words = base.split(" ");
+      const last  = words[words.length-1] || "";
       if (sets.EXPOSURE.has(last) || sets.UNDERWEAR.has(last) || sets.OUTFIT.has(last)) return true;
+
+      // 2語目以降（micro bikini / string bikini など）
+      if (words.length >= 2){
+        const tail2 = words.slice(-2).join(" "); // "micro bikini"
+        if (sets.EXPOSURE.has(tail2) || sets.UNDERWEAR.has(tail2) || sets.OUTFIT.has(tail2)) return true;
+      }
     }
     return false;
   };
 
-  // 色トークン/プレースの除去（単独色 or "color + wear"）
+  // 公開: 色トークン/プレースの除去（単独色 or "color + wear"）
   const COLOR_WORD_RE  = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
   const COLOR_PLACE_RE = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\s+janes|heels|sandals)\b/i;
-
   window.stripWearColorsOnce = function(parts){
     return (parts||[]).filter(s=>{
       const x = String(s);
-      if (COLOR_PLACE_RE.test(x)) return false;           // "white dress" など
+      if (COLOR_PLACE_RE.test(x)) return false;                // "white dress"
       if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false; // 単独色 "white"
       return true;
     });
   };
 
+  // 初期化＆辞書更新で再構築
   document.addEventListener('DOMContentLoaded', rebuildNSFWSets);
   document.addEventListener('dict:updated',   rebuildNSFWSets);
 })();
-
 
 
 
