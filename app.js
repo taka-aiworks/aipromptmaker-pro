@@ -2007,11 +2007,6 @@ function splitTags(v){
   return String(v||"").split(",").map(s=>s.trim()).filter(Boolean);
 }
 
-/* ========== 📷 撮影（プランナー） ========== */
-// 固定タグ：#pl_fixed
-function pmGetFixed(){
-  return splitTags(document.getElementById("pl_fixed")?.value);
-}
 
 // 単一選択スキャフォルド（scroller内で data-checked のチップのテキストを取る）
 function _selectedChipText(rootSel){
@@ -2020,11 +2015,6 @@ function _selectedChipText(rootSel){
   const chip = root.querySelector('.chip[data-checked="true"], .chip.is-checked');
   // チップの表示テキスト（タグ文字列）を採用
   return (chip?.textContent || '').trim();
-}
-
-// ネガ：#pl_neg（※ここではテキストそのまま返す）
-function pmGetNeg(){
-  return (document.getElementById("pl_neg")?.value || "").trim();
 }
 
 
@@ -2112,6 +2102,42 @@ function pmRenderPlanner(){
   pmRenderNSFWPlanner();
   pmRenderAcc();
 }
+
+
+/* =========================
+ * 撮影モード：固定タグ / ネガ取得
+ * ========================= */
+
+// 固定タグ（撮影タブ専用）
+// 優先順: #pl_fixed → 共通 #fixedManual → 空
+function pmGetFixed(){
+  const v = (document.getElementById("pl_fixed")?.value ??
+             document.getElementById("fixedManual")?.value ??
+             "");
+  return String(v).split(",").map(s=>s.trim()).filter(Boolean);
+}
+
+// ネガ（撮影タブ専用）
+// チェック: #useDefaultNegPhoto（撮影） or 共通 #useDefaultNeg
+// 既定は NEG_TIGHT を使用（配列/文字列どちらでもOK）
+function pmGetNeg(){
+  const useDefault = !!document.getElementById("useDefaultNegPhoto")?.checked
+                  || !!document.getElementById("useDefaultNeg")?.checked;
+  const extra = (document.getElementById("pl_neg")?.value || "").trim();
+
+  const base = (typeof NEG_TIGHT !== "undefined")
+    ? (Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : (NEG_TIGHT || ""))
+    : "";
+
+  return [useDefault ? base : "", extra].filter(Boolean).join(", ");
+}
+
+// （保険）旧コードが DEFAULT_NEG を参照しても落ちないように互換
+if (typeof DEFAULT_NEG === "undefined" && typeof NEG_TIGHT !== "undefined") {
+  window.DEFAULT_NEG = Array.isArray(NEG_TIGHT) ? NEG_TIGHT.join(", ") : (NEG_TIGHT || "");
+}
+
+
 
 /* ===== 撮影モード：置き換え ===== */
 function pmBuildOne(){
