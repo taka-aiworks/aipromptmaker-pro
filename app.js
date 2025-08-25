@@ -149,7 +149,7 @@ function stripMultiHints(parts){
 }
 
 
-/* ===== NSFWカテゴリ由来の厳密判定セット（置き換え版） ===== */
+/* ===== NSFWカテゴリ由来の厳密判定セット & ヘルパ ===== */
 (function(){
   function getByPath(root, path){
     return path.split('.').reduce((a,k)=> (a?a[k]:null), root);
@@ -163,86 +163,56 @@ function stripMultiHints(parts){
     return null;
   }
   function normTag(x){
-    // en / tag / value を拾って、小文字化し、両端トリム
-    const s = String((x && (x.en || x.tag || x.value)) || '').trim().toLowerCase();
-    return s;
+    return String((x && (x.en || x.tag || x.value)) || '').trim().toLowerCase();
   }
-
-  // “tag” を正規表現パターンに：空白/アンダースコア/ハイフンを同義扱い
-  function tagToPattern(tag){
-    const esc = tag
-      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')   // 正規表現エスケープ
-      .replace(/_/g, ' ')                       // いったん空白に
-      .replace(/\s+/g, '[_\\s-]+');             // 空白(連続) → [_\s-]+ に
-    // 単語境界相当（英数字に挟まれない）を緩めに見る
-    return new RegExp(`(^|[^a-z0-9])(?:${esc})(?![a-z0-9])`, 'i');
-  }
-
   function rebuildNSFWSets(){
     const root = sniffNSFWRoot() || {};
     const top  = root.NSFW || root.nsfw || root;
     const cat  = top.categories || top;
-
-    const collect = (arr)=>{
-      const tags = [];
-      (Array.isArray(arr)?arr:[]).forEach(o=>{
-        const t = normTag(o);
-        if (t) tags.push(t);
-      });
-      return tags;
+    const toSet = (arr)=>{
+      const s = new Set();
+      (Array.isArray(arr)?arr:[]).forEach(o=>{ const t = normTag(o); if (t) s.add(t); });
+      return s;
     };
-
-    // 元タグ配列（小文字化済み）
-    const exposure  = collect(cat.exposure);
-    const underwear = collect(cat.underwear);
-    const outfit    = collect(cat.outfit);
-
-    // Set（文字列自体も持っておく）
-    const toSet = (arr)=> new Set(arr);
-
-    // パターン配列（whole-word 近似 + _/空白/- 同一視）
-    const toPatterns = (arr)=> arr.map(tagToPattern);
-
     window.NSFW_SETS = {
-      STR: {
-        EXPOSURE:  toSet(exposure),
-        UNDERWEAR: toSet(underwear),
-        OUTFIT:    toSet(outfit),
-      },
-      RE: {
-        EXPOSURE:  toPatterns(exposure),
-        UNDERWEAR: toPatterns(underwear),
-        OUTFIT:    toPatterns(outfit),
-      }
+      EXPOSURE : toSet(cat.exposure),
+      UNDERWEAR: toSet(cat.underwear),
+      OUTFIT   : toSet(cat.outfit)
     };
   }
 
-  // 公開: 配列 parts に「露出相当」が含まれるか？
-  // - まず完全一致（小文字化）を試す
-  // - ダメなら “含有” を正規表現で判定（色付き "white bikini" 等にもヒット）
+  // 項目ベース：配列 parts に「露出/下着/NSFW衣装」由来が含まれるか
   window.hasExposureLike = function(parts){
     const sets = window.NSFW_SETS;
     if (!sets) return false;
-    const STR = sets.STR, RE = sets.RE;
-
-    for (const raw of (Array.isArray(parts)?parts:[])){
-      const k = String(raw||'').toLowerCase();
-
-      // 1) 文字列一致（辞書タグそのものが入っている）
-      if (STR.EXPOSURE.has(k) || STR.UNDERWEAR.has(k) || STR.OUTFIT.has(k)) return true;
-
-      // 2) パターン一致（色や形容詞が付いてもヒット）
-      if (RE.EXPOSURE.some(r=>r.test(k)))  return true;
-      if (RE.UNDERWEAR.some(r=>r.test(k))) return true;
-      if (RE.OUTFIT.some(r=>r.test(k)))    return true;
+    for (const t of (Array.isArray(parts)?parts:[])){
+      const base = String(t).toLowerCase().trim();
+      if (sets.EXPOSURE.has(base) || sets.UNDERWEAR.has(base) || sets.OUTFIT.has(base)) return true;
+      // "white bikini" のような合成用フォールバック：末尾語を見る
+      const last = base.split(/\s+/).pop();
+      if (sets.EXPOSURE.has(last) || sets.UNDERWEAR.has(last) || sets.OUTFIT.has(last)) return true;
     }
     return false;
   };
 
-  // 初期化＆辞書更新で再構築
+  // 色トークン/プレースの除去（単独色 or "color + wear"）
+  const COLOR_WORD_RE  = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
+  const COLOR_PLACE_RE = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\s+janes|heels|sandals)\b/i;
+
+  window.stripWearColorsOnce = function(parts){
+    return (parts||[]).filter(s=>{
+      const x = String(s);
+      if (COLOR_PLACE_RE.test(x)) return false;           // "white dress" など
+      if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false; // 単独色 "white"
+      return true;
+    });
+  };
+
   document.addEventListener('DOMContentLoaded', rebuildNSFWSets);
-  document.addEventListener('dict:updated', rebuildNSFWSets);
+  document.addEventListener('dict:updated',   rebuildNSFWSets);
 })();
+
+
 
 
 /* === 学習ガード：過剰要素の除去＆上限 === */
