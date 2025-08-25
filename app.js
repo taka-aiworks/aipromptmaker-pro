@@ -3742,38 +3742,53 @@ function getNegLearn(){
 
 
 
-/* ===== 学習モード：置き換え ===== */
+/* ===== 学習モード：置き換え（修正版） ===== */
 function buildOneLearning(extraSeed = 0){
-  const getManySafe = (id) => { try { const v = (typeof getMany === 'function') ? getMany(id) : []; return Array.isArray(v) ? v : []; } catch(_) { return []; } };
-  const pickSafe    = (arr) => (Array.isArray(arr) && arr.length ? pick(arr) : "");
+  const getManySafe = (id) => {
+    try {
+      const v = (typeof getMany === 'function') ? getMany(id) : [];
+      return Array.isArray(v) ? v : [];
+    } catch(_) { return []; }
+  };
+  const pickSafe = (arr) => {
+    if (!Array.isArray(arr) || !arr.length) return "";
+    if (typeof pick === 'function') return pick(arr);
+    // pick が無い場合のフォールバック
+    return arr[Math.floor(Math.random()*arr.length)];
+  };
 
-     
-   // 例：学習1行の組み立て内の冒頭あたりで
-   const fixed = getFixedLearn();
-   let parts = [];
-   if (fixed.length) parts.push(...fixed);
+  // 固定タグ
+  const fixed = (typeof getFixedLearn === 'function') ? (getFixedLearn() || []) : [];
 
-// 以降、名前やsoloなど既存処理で追加
-
+  // 差分プール
   const BG = getManySafe("bg");
   const PO = getManySafe("pose");
   const CO = getManySafe("comp");
   const VI = getManySafe("view");
   const EX = getManySafe("expr");
   const LI = getManySafe("lightLearn");
+
+  // NSFW（学習）選択の追加分
   const addon = (typeof getSelectedNSFW_Learn === 'function' ? (getSelectedNSFW_Learn()||[]) : []);
 
   // NSFW ON?
   const ids = ['nsfwLearn','nsfwL','nsfw_learning'];
   let nsfwOn = addon.length > 0;
-  for (const id of ids){ const el = document.getElementById(id); if (el && el.checked) { nsfwOn = true; break; } }
+  for (const id of ids){
+    const el = document.getElementById(id);
+    if (el && el.checked) { nsfwOn = true; break; }
+  }
 
-  const b = pickSafe(BG), p = pickSafe(PO), c = pickSafe(CO), v = pickSafe(VI), e = pickSafe(EX), l = pickSafe(LI);
+  // 1件ピック
+  const b = pickSafe(BG), p = pickSafe(PO), c = pickSafe(CO),
+        v = pickSafe(VI), e = pickSafe(EX), l = pickSafe(LI);
 
+  // 基本付与
   const partsSolo = ["solo"];
   const genderCount = (typeof getGenderCountTag === 'function' ? (getGenderCountTag()||"") : "");
   if (genderCount) partsSolo.push(genderCount);
 
+  // parts を一度だけ作る（※ 重複宣言しない）
   let parts = Array.from(new Set([
     ...partsSolo, ...fixed, b, p, c, v, e, l, ...addon
   ].filter(Boolean)));
@@ -3785,7 +3800,7 @@ function buildOneLearning(extraSeed = 0){
   // 露出検知
   const isExposure = nsfwOn && (typeof hasExposureLike === 'function') && hasExposureLike(parts);
 
-  // 露出時：色の一次掃除 + 露出ダブり畳み（※ここで一度だけ）
+  // 露出時：色の一次掃除 + 露出ダブり畳み（※一度だけ）/ 非露出：色ペアリング
   if (isExposure){
     if (typeof stripWearColorsOnce === 'function') parts = stripWearColorsOnce(parts);
     if (typeof collapseExposureDuplicates === 'function') parts = collapseExposureDuplicates(parts);
@@ -3816,7 +3831,7 @@ function buildOneLearning(extraSeed = 0){
   if (typeof ensurePromptOrder === 'function') pos = ensurePromptOrder(pos);
   if (typeof enforceHeadOrder === 'function')  pos = enforceHeadOrder(pos);
 
-  // NSFW時：通常服/色/靴の最終一掃（※ここは一回だけ）
+  // NSFW時：通常服/色/靴の最終一掃
   if (nsfwOn && typeof stripNormalWearWhenNSFW === 'function') {
     pos = stripNormalWearWhenNSFW(pos);
   }
