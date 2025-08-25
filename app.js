@@ -2081,8 +2081,16 @@ function pmBuildOne(){
   if (typeof applyNudePriority === 'function') parts = applyNudePriority(parts);
   if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
 
-  // ==== 露出かどうかを辞書セットで厳密判定 ====
-  var isExposure = nsfwOn && (typeof hasExposureLike === 'function') ? hasExposureLike(parts) : false;
+  // ==== 露出かどうかを辞書セットで厳密判定（フォールバック付き） ====
+  var REG_FALLBACK_EXPOSURE = /\b(bikini|swimsuit|lingerie|underwear|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude|bra|panties|panty|thong|g[-\s]?string)\b/i;
+  var isExposure = false;
+  if (nsfwOn){
+    if (typeof hasExposureLike === 'function') {
+      isExposure = !!hasExposureLike(parts);
+    } else {
+      isExposure = parts.some(function(t){ return REG_FALLBACK_EXPOSURE.test(String(t)); });
+    }
+  }
 
   // === 露出/下着/衣装のときは通常服・色・靴を除去 ===
   if (isExposure){
@@ -2099,6 +2107,16 @@ function pmBuildOne(){
       if (COLOR_WORD_RE.test(s) && !/\s/.test(s)) return false; // 単独色
       return true;
     });
+
+    // 保険：辞書色や合体色が残っていたら剥がす
+    if (typeof stripWearColorsOnce === 'function') {
+      parts = stripWearColorsOnce(parts);
+    }
+  } else {
+    // === 色ペアリング（露出でない場合のみ） ===
+    if (typeof pairWearColors === 'function') {
+      parts = pairWearColors(parts);
+    }
   }
 
   // === 靴ガード（辞書ベース露出も考慮） ===
@@ -2112,11 +2130,6 @@ function pmBuildOne(){
     }
   })();
 
-  // === 色ペアリング（露出でない場合のみ） ===
-  if (!isExposure && typeof pairWearColors === 'function') {
-    parts = pairWearColors(parts);
-  }
-
   // === 整理 ===
   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
   if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
@@ -2129,7 +2142,7 @@ function pmBuildOne(){
   if (nsfwOn) {
     parts = parts.filter(function(t){ return String(t) !== "NSFW"; });
     parts.unshift("NSFW");
-    // または util があるなら: parts = ensureNSFWHead(parts);
+    // util があるなら: parts = ensureNSFWHead(parts);
   }
 
   // ---- ネガティブ ----
@@ -2138,6 +2151,8 @@ function pmBuildOne(){
   // ---- 戻り値 ----
   return [{ seed: seed, pos: parts, neg: neg }];
 }
+
+
 
 /* テーブル描画 */
 function pmRenderTable(tbodySel, rows){
