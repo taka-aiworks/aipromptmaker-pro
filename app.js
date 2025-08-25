@@ -2122,27 +2122,27 @@ function pmBuildOne(){
   if (!isExposure && typeof pairWearColors === 'function') {
     parts = pairWearColors(parts);
   }
-
-  // === 整理 ===
-  if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
-  if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
-
-  if (typeof fixExclusives === 'function')     parts = fixExclusives(parts);
-  if (typeof ensurePromptOrder === 'function') parts = ensurePromptOrder(parts);
-  if (typeof enforceHeadOrder === 'function')  parts = enforceHeadOrder(parts);
-
-  // === ★最後に NSFW を先頭へ固定 ===
-  if (nsfwOn) {
-    parts = parts.filter(function(t){ return String(t) !== "NSFW"; });
-    parts.unshift("NSFW");
-  }
-
-  // ---- ネガティブ ----
-  var neg = (typeof withSoloNeg==='function') ? withSoloNeg(pmGetNeg()) : pmGetNeg();
-
-  // ---- 戻り値 ----
-  return [{ seed: seed, pos: parts, neg: neg }];
-}
+   // === 整理 ===
+   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
+   if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
+   
+   // ←←← ★ ここで NSFW が ON のとき“辞書ベースで”通常服/色/靴をまとめて削除
+   if (nsfwOn && typeof stripNormalWearWhenNSFW === 'function') {
+     parts = stripNormalWearWhenNSFW(parts);
+   }
+   
+   if (typeof fixExclusives === 'function')     parts = fixExclusives(parts);
+   if (typeof ensurePromptOrder === 'function') parts = ensurePromptOrder(parts);
+   if (typeof enforceHeadOrder === 'function')  parts = enforceHeadOrder(parts);
+   
+   // === ★最後に NSFW を先頭へ固定 ===
+   if (nsfwOn) {
+     parts = parts.filter(t => String(t) !== "NSFW");
+     parts.unshift("NSFW");
+   }
+   
+   return [{ seed, pos: parts, neg }];
+   }
 
 
 
@@ -3646,28 +3646,26 @@ function buildOneLearning(extraSeed = 0){
   if (!/\b(soft lighting|even lighting|normal lighting)\b/i.test(asText)) parts.push("soft lighting");
   if (!/\b(center(ed)?\s?composition|centered composition)\b/i.test(asText)) parts.push("centered composition");
 
-  // 排他・整形
-  if (typeof fixExclusives === 'function') parts = fixExclusives(parts);
-  let pos = Array.from(new Set(parts.filter(Boolean)));
-  if (typeof ensurePromptOrder === 'function') pos = ensurePromptOrder(pos);
-  if (typeof enforceHeadOrder === 'function')  pos = enforceHeadOrder(pos);
-
-  // NSFW先頭
-  pos = pos.filter(t => String(t) !== "NSFW");
-  if (nsfwOn) pos.unshift("NSFW");
-
-  const seed = (typeof seedFromName === 'function')
-    ? seedFromName((document.getElementById('charName')?.value || ''), extraSeed)
-    : 0;
-
-  const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"];
-  const baseNeg = [
-    (typeof getNeg === 'function' ? getNeg() : ""),
-    ...EXTRA_NEG
-  ].filter(Boolean).join(", ");
-  const neg = (typeof buildNegative === 'function') ? buildNegative(baseNeg) : baseNeg;
-
-  return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
+   // ===== ⑤ 排他・整形 =====
+   if (typeof fixExclusives === 'function') parts = fixExclusives(parts);
+   
+   // 一意化 → 並び順整形
+   let pos = Array.from(new Set(parts.filter(Boolean)));
+   if (typeof ensurePromptOrder === 'function') pos = ensurePromptOrder(pos);
+   
+   // 先頭固定（solo / 1girl 等）
+   if (typeof enforceHeadOrder === 'function') pos = enforceHeadOrder(pos);
+   
+   // ←←← ★ ここで NSFW が ON のとき“辞書ベースで”通常服/色/靴をまとめて削除
+   if (nsfwOn && typeof stripNormalWearWhenNSFW === 'function') {
+     pos = stripNormalWearWhenNSFW(pos);
+   }
+   
+   // NSFW トークンを最終決定（ONなら先頭に、OFFなら除去）
+   pos = pos.filter(t => String(t) !== "NSFW");
+   if (nsfwOn) pos.unshift("NSFW");
+   
+   return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
 
 
