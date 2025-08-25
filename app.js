@@ -3440,15 +3440,40 @@ const EXPR_ALL = new Set([
 
 
 
-// 先頭NSFWユーティリティ（学習/撮影/量産どこでも再利用OK）
+// === NSFWヘッダ統一関数（置き換え版）========================
+// 使い方: 配列を渡すだけ。現在のモードのNSFWチェック状態を見て、
+// - ON なら "NSFW" を先頭に追加（すでにあれば先頭へ並べ替え）
+// - OFFなら "NSFW" を取り除く
+// どのモードかはチェックボックスのIDを総当りで検出します。
 function ensureNSFWHead(arr){
-  const a = Array.isArray(arr) ? arr.slice() : [];
-  const i = a.indexOf("NSFW");
-  if (i === -1) return a;
-  if (i === 0)  return a;
-  a.splice(i,1);
-  a.unshift("NSFW");
-  return a;
+  const out = Array.isArray(arr) ? arr.slice() : [];
+
+  // いろんなIDを許容（存在するものだけ見ます）
+  const ids = [
+    // 撮影モード
+    'pl_nsfw',
+    // 学習モード（プロジェクトに合わせて複数候補）
+    'nsfwLearn','nsfwL','nsfw_learning',
+    // 量産モード
+    'nsfwProd'
+  ];
+
+  // 現在ONのチェックボックスがあるか
+  let nsfwOn = false;
+  for (const id of ids){
+    const el = document.getElementById(id);
+    if (el && el.checked) { nsfwOn = true; break; }
+  }
+
+  // まず既存の "NSFW" を全部除去
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (String(out[i]) === "NSFW") out.splice(i, 1);
+  }
+
+  // ONなら先頭に付与、OFFなら付けない（＝消えたまま）
+  if (nsfwOn) out.unshift("NSFW");
+
+  return out;
 }
 
 function buildOneLearning(extraSeed = 0){
