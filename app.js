@@ -2055,11 +2055,6 @@ function pmRenderPlanner(){
 
 /* 1件出力（辞書ベース露出判定 + 通常服/色/靴の除去 + 露出重複たたみ + NSFW先頭固定） */
 function pmBuildOne(){
-  // --- 露出系の二重化（例: "white bikini" と "bikini"）を色付き優先で1つに畳む ---
-  function collapseExposureDuplicates(arr){
-    const A = Array.isArray(arr) ? arr.slice() : [];
-    if (!A.length) return A;
-
     // 辞書セット（EXPOSURE/UNDERWEAR/OUTFIT）があれば使用、無ければ簡易RE
     const sets = (typeof window !== 'undefined' && window.NSFW_SETS) ? window.NSFW_SETS : null;
     const BASES = sets
@@ -3732,11 +3727,6 @@ function buildOneLearning(extraSeed = 0){
   } else if (!isExposure && typeof pairWearColors === 'function'){
     // 非露出時だけ色ペアリング
     parts = pairWearColors(parts);
-  }
-
-  // ★ 露出系（EXPOSURE/UNDERWEAR/OUTFIT）の重複を色付き優先で1つに畳む
-  if (typeof collapseExposureDuplicates === 'function'){
-    parts = collapseExposureDuplicates(parts);
   }
 
   // ---- learning noise filters ----
