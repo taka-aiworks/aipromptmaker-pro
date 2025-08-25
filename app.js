@@ -582,17 +582,11 @@ const DEFAULT_TRAINING_NEG = [
   "fisheye", "wide-angle", "tilt-shift", "motion blur"
 ].join(", ");
 
-// 置き換え：学習モードのネガ取得
+// ネガ：#negGlobal
 function getNegLearn(){
-  // 既存の「デフォルトネガを使う」チェック
-  const useDefault = !!document.getElementById('useDefaultNeg')?.checked;
-  // 学習タブの手入力追記欄（HTMLは negGlobal ）
-  const extra = (document.getElementById('negGlobal')?.value || '')
-    .split(',').map(s=>s.trim()).filter(Boolean);
-
-  // 既存のビルド関数に渡す（内部でデフォルト＋追記をまとめる想定）
-  return buildNegative(extra, useDefault);
+  return (document.getElementById("negGlobal")?.value || "").trim();
 }
+
 
 
 /* ========= 設定（LocalStorage） ========= */
@@ -2013,17 +2007,17 @@ function pmRenderAcc(){
 }
 
 // === 共通：基本情報（固定）を配列で返す ===
-// 固定/ネガ（撮影モード用）
-function pmGetFixed(){
-  // 既存の固定タグ入力欄
-  const base = (document.getElementById('pl_fixed')?.value||'')
-    .split(',').map(s=>s.trim()).filter(Boolean);
+// 共通ヘルパ（すでにあれば不要）
+function splitTags(v){
+  return String(v||"").split(",").map(s=>s.trim()).filter(Boolean);
+}
 
-  // Basicタブの服選択（チップ）を読むユーティリティ（ローカル）
-  const pickChip = (id) => {
-    const el = document.querySelector(`#${id} input[type="radio"]:checked`);
-    return el ? String(el.value||'').trim() : '';
-  };
+/* ========== 📷 撮影（プランナー） ========== */
+// 固定タグ：#pl_fixed
+function pmGetFixed(){
+  return splitTags(document.getElementById("pl_fixed")?.value);
+}
+
 
   // Basicタブの状態
   const isOnepiece = document.getElementById('outfitModeDress')?.checked;
@@ -2067,12 +2061,11 @@ function _selectedChipText(rootSel){
   return (chip?.textContent || '').trim();
 }
 
+// ネガ：#pl_neg（※ここではテキストそのまま返す）
 function pmGetNeg(){
-  const useDef = document.getElementById('pl_useDefaultNeg')?.checked;
-  const base   = useDef ? NEG_TIGHT.join(", ") : "";
-  const extra  = (document.getElementById('pl_neg')?.value||"").trim();
-  return buildNegative([base, extra].filter(Boolean).join(","));
+  return (document.getElementById("pl_neg")?.value || "").trim();
 }
+
 
 /* 撮影モード NSFW（制限なし、レベル上限のみ） */
 function pmRenderNSFWPlanner(){
@@ -3767,11 +3760,12 @@ function ensureNSFWHead(arr){
   return out;
 }
 
-// 例：学習モード用の固定タグ取得ヘルパ
+/* ========== 🧠 学習 ========== */
+// 固定タグ：#fixedManual
 function getFixedLearn(){
-  return (document.getElementById('fixedManual')?.value || '')
-    .split(',').map(s=>s.trim()).filter(Boolean);
+  return splitTags(document.getElementById("fixedManual")?.value);
 }
+
 
 
 /* ===== 学習モード：置き換え ===== */
@@ -4343,17 +4337,24 @@ function getProdWearColorTag(idBase){
   return (txt && txt !== "—") ? txt : "";
 }
 
+// 固定タグ：#p_fixed
+function getFixedProd(){
+  return splitTags(document.getElementById("p_fixed")?.value);
+}
+
+// 📦 量産モード用ネガ取得：#p_neg をそのまま読む
+function getNegProd(){
+  return (document.getElementById("p_neg")?.value || "").trim();
+}
+
 // ② 完全置き換え版：buildBatchProduction（nullセーフ化 only）
 function buildBatchProduction(n){
   const seedMode = document.querySelector('input[name="seedMode"]:checked')?.value || "fixed";
 
   // 固定タグ（先頭側に混ぜる）
-  // 新: p_fixed が無ければ fixedManual を使う
-  const fixed = (
-    ($("#p_fixed")?.value ?? $("#fixedManual")?.value ?? "")
-  ).split(",").map(s=>s.trim()).filter(Boolean);
-  const fixedArr = fixed.split(",").map(s=>s.trim()).filter(Boolean);
+  const fixedArr = (typeof getFixedProd === 'function') ? getFixedProd() : [];
 
+  // ネガ（量産タブの個別欄をそのまま取得）
   const neg = (typeof getNegProd === 'function') ? getNegProd() : "";
 
   // 服セット {top, pants, skirt, dress, shoes}
@@ -4366,7 +4367,7 @@ function buildBatchProduction(n){
     shoes: Array.isArray(Oraw.shoes) ? Oraw.shoes : [],
   };
 
-  // 差分（各カテゴリ）: getMany が未定義/undefinedでも配列に
+  // 差分（各カテゴリ）
   const bgs    = (typeof getMany === 'function' ? (getMany("p_bg")   || []) : []);
   const poses  = (typeof getMany === 'function' ? (getMany("p_pose") || []) : []);
   const comps  = (typeof getMany === 'function' ? (getMany("p_comp") || []) : []);
@@ -4390,7 +4391,7 @@ function buildBatchProduction(n){
   const nsfwNip    = nsfwOn ? ((typeof getMany === 'function' ? (getMany("nsfwP_nipple")    || []) : [])) : [];
   const nsfwUnder  = nsfwOn ? ((typeof getMany === 'function' ? (getMany("nsfwP_underwear") || []) : [])) : [];
 
-  // 服色（top/bottom/shoes のプレースホルダ → 通常服のみ pairWearColors で合体）
+  // 服色プレースホルダ
   const getColorTagSafe = (typeof getProdWearColorTag === 'function')
     ? (slot)=> (getProdWearColorTag(slot) || "")
     : (_)=>"";
@@ -4616,7 +4617,6 @@ function buildBatchProduction(n){
     if (nsfwOn && typeof ensureNSFWHead === 'function') {
       all = ensureNSFWHead(all);
     } else if (nsfwOn) {
-      // ユーティリティが無い場合のフォールバック
       const idx = all.indexOf("NSFW");
       if (idx > 0){ all.splice(idx,1); all.unshift("NSFW"); }
     }
@@ -4642,101 +4642,6 @@ function buildBatchProduction(n){
   while (out.length < n) out.push(makeOne(out.length + 1)); // フォールバック
 
   return out;
-}
-
-
-// 服カテゴリは 1 行につき 1 つだけに制限する保険（既存をそのまま使う）
-function ensureSingleWearPerRow(arr){
-  const kept = new Set();
-  const out = [];
-  const MAP = [
-    ["dress",  /\b(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\s+dress)\b/i],
-    ["top",    /\b(t-?shirt|tank\s+top|blouse|shirt|hoodie|sweater|cardigan|jacket|coat|parka|windbreaker|camisole|crop\s+top|turtleneck|uniform|jersey)\b/i],
-    ["bottom", /\b(pants|trousers|shorts|jeans|cargo\s+pants|skirt|hakama)\b/i],
-    ["shoes",  /\b(boots|sneakers|loafers|mary\s+janes|heels|sandals|shoes)\b/i],
-  ];
-  for (const t of arr){
-    const s = String(t);
-    let cat = null;
-    for (const [c, re] of MAP){ if (re.test(s)) { cat = c; break; } }
-    if (!cat) { out.push(t); continue; }
-    if (kept.has(cat)) continue;
-    kept.add(cat);
-    out.push(t);
-  }
-  return out;
-}
-
-// 色プレースホルダ（color + top/bottom/shoes）と生の top/bottom/shoes を削除
-// ※ white shirt / blue skirt / black sneakers 等の“具体服”は削らない
-function removeWearPlaceholders(arr){
-  const COLOR = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
-  const PLACE = /\b(top|bottom|shoes)\b/i; // ← プレースホルダ名詞のみ
-  return arr.filter(t=>{
-    const s = String(t);
-    // color + placeholder（例: orange top / blue bottom / black shoes）
-    if (COLOR.test(s) && PLACE.test(s)) return false;
-    // 単独 placeholder（rare だが一応）
-    if (/^(top|bottom|shoes)$/i.test(s.trim())) return false;
-    return true;
-  });
-}
-
-// ライティング（SFW/NSFW 含む）を“最終的に 1 つだけ”残す
-function unifyLightingOnce(arr){
-  const LIGHT_RE = /\b(normal lighting|even lighting|flat studio lighting|soft lighting|softbox lighting|clamshell lighting|backlighting|backlit|rim light|dramatic lighting|golden hour|neon lighting|window light|moonlight|candlelight|spotlight|overcast|volumetric light|moody|hard_light|soft_light)\b/i;
-  let keep = "";
-  for (let i = arr.length - 1; i >= 0; i--){
-    const s = String(arr[i]);
-    if (LIGHT_RE.test(s)){ keep = s; break; }
-  }
-  if (!keep) return arr;
-  const cleaned = arr.filter(s => !LIGHT_RE.test(String(s)));
-  cleaned.push(keep);
-  return cleaned;
-}
-
-// 背景は 1 つだけ。empty background は他があれば落とす
-function enforceSingleBackground(arr){
-  const BG_RE = /\b(plain background|white background|solid background|studio background|white seamless|gray seamless|gradient background|bedroom|classroom|street at night|beach|forest|shrine|sci-fi lab|cafe|library|rooftop|train platform|festival stalls|shrine festival|classroom after school|snowy town|autumn park|spring cherry blossoms|space interior|poolside|swimming pool|water park|beach daytime|beach sunset|empty background|autumn park|forest|swimming pool)\b/i;
-  const bg = arr.filter(s => BG_RE.test(String(s)));
-  if (bg.length <= 1) return arr;
-
-  const hasNonEmpty = bg.some(s => !/empty background/i.test(String(s)));
-  let keep = "";
-  if (hasNonEmpty){
-    for (let i = arr.length - 1; i >= 0; i--){
-      const s = String(arr[i]);
-      if (BG_RE.test(s) && !/empty background/i.test(s)) { keep = s; break; }
-    }
-  } else {
-    keep = "empty background";
-  }
-  const cleaned = arr.filter(s => !BG_RE.test(String(s)));
-  if (keep) cleaned.push(keep);
-  return cleaned;
-}
-
-// 量産モード用ネガ取得：p_* が無ければ共通欄(#negGlobal/#useDefaultNeg)を使う
-function getNegProd(){
-  // デフォルトネガ使用フラグ（量産タブ優先 → 共通 → 既定true）
-  const useDefault =
-    ($("#p_useDefaultNeg")?.checked ??
-     $("#useDefaultNeg")?.checked ?? true);
-
-  // 追加ネガ（量産タブ優先 → 旧negProd → 共通）
-  const extraNeg =
-    ($("#p_neg")?.value ??
-     $("#negProd")?.value ??
-     $("#negGlobal")?.value ?? "").trim();
-
-  // buildNegative は「ベース（デフォルト）」＋「追加」を合成する想定
-  if (typeof buildNegative === "function"){
-    const base = useDefault ? NEG_TIGHT : "";
-    return buildNegative(base, extraNeg);
-  }
-  // フォールバック
-  return [useDefault ? NEG_TIGHT : "", extraNeg].filter(Boolean).join(", ");
 }
 
 
