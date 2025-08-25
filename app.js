@@ -1427,11 +1427,6 @@ function filterByScope(items, allow) {
         initWordMode();
       }
     });
-
-    if (tab.classList.contains('active')) {
-      initialized = true;
-      initWordMode();
-    }
   });
 
   // ====== refresh (辞書更新で呼ぶ) ======
