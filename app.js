@@ -149,32 +149,30 @@ function stripMultiHints(parts){
 }
 
 
-/* ===== NSFWカテゴリ由来の厳密判定セット & ヘルパ（強化版） ===== */
+/* ===== SFW通常服カテゴリ由来の厳密判定セット & ヘルパ ===== */
 (function(){
-  // --- utils ---
+  // 安全アクセス
   function getByPath(root, path){
     return path.split('.').reduce((a,k)=> (a?a[k]:null), root);
   }
-  function sniffNSFWRoot(){
-    const cands = ['NSFW','nsfw','DICT_NSFW','dictNsfw','app.dict.nsfw','APP_DICT.NSFW'];
+  function normTag(x){
+    return String((x && (x.en || x.tag || x.value)) || '').trim().toLowerCase();
+  }
+
+  // SFWルート推定（あなたの辞書に合わせて候補を広めに）
+  function sniffSFWRoot(){
+    const cands = [
+      'WEAR','wear','DICT_WEAR','dictWear','app.dict.wear','APP_DICT.WEAR',      // 専用wear辞書
+      'SFW','sfw','DICT_SFW','dictSfw','app.dict.sfw','APP_DICT.SFW'             // SFWに服カテゴリが含まれる場合
+    ];
     for (const k of cands){
       const v = getByPath(window, k);
       if (v && typeof v === 'object') return v;
     }
     return null;
   }
-  function normToken(s){
-    // 小文字化 + アンダースコア/ハイフン→空白 + 連続空白を1つに
-    return String(s||"")
-      .toLowerCase()
-      .replace(/[_-]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-  function normTag(x){
-    return normToken((x && (x.en || x.tag || x.value)) || '');
-  }
 
+  // Set化
   function toSet(arr){
     const s = new Set();
     (Array.isArray(arr)?arr:[]).forEach(o=>{
@@ -184,67 +182,76 @@ function stripMultiHints(parts){
     return s;
   }
 
-  function rebuildNSFWSets(){
-    const root = sniffNSFWRoot() || {};
-    const top  = root.NSFW || root.nsfw || root;
+  // 再構築
+  function rebuildSFWWearSets(){
+    const root = sniffSFWRoot() || {};
+    const top  = root.WEAR || root.wear || root.SFW || root.sfw || root;
     const cat  = top.categories || top;
-    window.NSFW_SETS = {
-      EXPOSURE : toSet(cat.exposure),
-      UNDERWEAR: toSet(cat.underwear),
-      OUTFIT   : toSet(cat.outfit)
+
+    // 取り得るキー（あなたの辞書で使ってるキー名をここに足してOK）
+    const KEYS_TOPS    = ['top','tops'];
+    const KEYS_BOTTOMS = ['bottom','bottoms','pants','trousers','skirt','skirts','shorts','jeans','cargo_pants'];
+    const KEYS_DRESS   = ['dress','one_piece','one-piece','gown'];
+    const KEYS_SHOES   = ['shoes','boots','sneakers','loafers','sandals','heels','mary_janes','footwear'];
+
+    // 集約
+    const pick = (keys)=> {
+      for (const k of keys){
+        const v = cat[k];
+        if (Array.isArray(v) && v.length) return v;
+      }
+      return [];
+    };
+
+    const WEAR_TOPS    = toSet(pick(KEYS_TOPS));
+    const WEAR_BOTTOMS = toSet(pick(KEYS_BOTTOMS));
+    const WEAR_DRESS   = toSet(pick(KEYS_DRESS));
+    const WEAR_SHOES   = toSet(pick(KEYS_SHOES));
+
+    // 何も取れない場合のフォールバック最低限（最後の語で突合）
+    if (!WEAR_TOPS.size && !WEAR_BOTTOMS.size && !WEAR_DRESS.size && !WEAR_SHOES.size){
+      ['top','bottom','skirt','pants','trousers','shorts','jeans','dress','one piece','one-piece','gown','shoes','boots','sneakers','loafers','sandals','heels','mary janes','mary_janes']
+        .forEach(w=> (window.WEAR_SFW || (window.WEAR_SFW = new Set())).add(w));
+      return;
+    }
+
+    // まとめセット
+    const ALL = new Set([
+      ...WEAR_TOPS, ...WEAR_BOTTOMS, ...WEAR_DRESS, ...WEAR_SHOES
+    ]);
+    window.WEAR_SFW = ALL;
+  }
+
+  // 項目ベース：配列 parts のトークンが「通常服（SFW側）」か？
+  window.isNormalWearToken = function(token){
+    const sets = window.WEAR_SFW;
+    if (!sets || !sets.size) return false;
+    const base = String(token||'').toLowerCase().trim();
+    if (!base) return false;
+    if (sets.has(base)) return true; // 完全一致
+
+    // "white dress" など → 末尾語で判定
+    const last = base.split(/\s+/).pop();
+    return sets.has(last);
+  };
+
+  // 色トークン/プレースの除去（単独色 or "色 + 服"）※既に同名があればそちらを使用
+  if (typeof window.stripWearColorsOnce !== 'function'){
+    const COLOR_WORD_RE  = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
+    const COLOR_PLACE_RE = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\s+janes|heels|sandals)\b/i;
+    window.stripWearColorsOnce = function(parts){
+      return (parts||[]).filter(s=>{
+        const x = String(s);
+        if (COLOR_PLACE_RE.test(x)) return false;           // "white dress" など
+        if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false; // 単独色 "white"
+        return true;
+      });
     };
   }
 
-  // 公開: セットが無ければ都度再構築
-  window.ensureNSFWSets = function(){
-    if (!window.NSFW_SETS ||
-        !window.NSFW_SETS.EXPOSURE ||
-        !window.NSFW_SETS.UNDERWEAR ||
-        !window.NSFW_SETS.OUTFIT) {
-      rebuildNSFWSets();
-    }
-  };
-
-  // 公開: 配列 parts に「露出/下着/NSFW衣装」由来が含まれるか
-  window.hasExposureLike = function(parts){
-    window.ensureNSFWSets();
-    const sets = window.NSFW_SETS;
-    if (!sets) return false;
-
-    for (const t of (Array.isArray(parts)?parts:[])){
-      const base = normToken(t);
-      // 完全一致
-      if (sets.EXPOSURE.has(base) || sets.UNDERWEAR.has(base) || sets.OUTFIT.has(base)) return true;
-
-      // 末尾語（white bikini / red micro bikini など）
-      const words = base.split(" ");
-      const last  = words[words.length-1] || "";
-      if (sets.EXPOSURE.has(last) || sets.UNDERWEAR.has(last) || sets.OUTFIT.has(last)) return true;
-
-      // 2語目以降（micro bikini / string bikini など）
-      if (words.length >= 2){
-        const tail2 = words.slice(-2).join(" "); // "micro bikini"
-        if (sets.EXPOSURE.has(tail2) || sets.UNDERWEAR.has(tail2) || sets.OUTFIT.has(tail2)) return true;
-      }
-    }
-    return false;
-  };
-
-  // 公開: 色トークン/プレースの除去（単独色 or "color + wear"）
-  const COLOR_WORD_RE  = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
-  const COLOR_PLACE_RE = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\s+janes|heels|sandals)\b/i;
-  window.stripWearColorsOnce = function(parts){
-    return (parts||[]).filter(s=>{
-      const x = String(s);
-      if (COLOR_PLACE_RE.test(x)) return false;                // "white dress"
-      if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false; // 単独色 "white"
-      return true;
-    });
-  };
-
-  // 初期化＆辞書更新で再構築
-  document.addEventListener('DOMContentLoaded', rebuildNSFWSets);
-  document.addEventListener('dict:updated',   rebuildNSFWSets);
+  // 起動・辞書更新で再構築
+  document.addEventListener('DOMContentLoaded', rebuildSFWWearSets);
+  document.addEventListener('dict:updated',   rebuildSFWWearSets);
 })();
 
 
