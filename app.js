@@ -4189,7 +4189,7 @@ function getProdWearColorTag(idBase){
 }
 
 // ② 完全置き換え版：buildBatchProduction
-// （基本情報 + SFW/NSFW 正規化 + 服色ペアリング + 単一ライト/単一背景 + プレースホルダ除去 + NSFW拡張）
+// （基本情報 + SFW/NSFW 正規化 + 服色ペアリング(露出が無い時のみ) + 単一ライト/単一背景 + プレースホルダ除去 + NSFW拡張）
 function buildBatchProduction(n){
   const seedMode = document.querySelector('input[name="seedMode"]:checked')?.value || "fixed";
 
@@ -4251,7 +4251,6 @@ function buildBatchProduction(n){
     /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\s+(top|bottom|skirt|pants|trousers|shorts|jeans|cargo\s+pants|t-?shirt|shirt|blouse|sweater|hoodie|cardigan|jacket|coat|parka|dress|one[-\s]?piece|gown|uniform|shoes|boots|sneakers|loafers|mary\s+janes|heels|sandals)\b/i;
 
   function ensureSingleWearPerRow(arr){
-    // 服カテゴリ（トップ/ボトム/ワンピ/靴）をそれぞれ1個に抑える緩めの整理
     const seen = { top:false, bottom:false, dress:false, shoes:false };
     return arr.filter(t=>{
       const s = String(t);
@@ -4281,12 +4280,10 @@ function buildBatchProduction(n){
       if (BG.includes(t) || /background$/i.test(t)){
         if (!set.size) { set.add("bg"); kept.push(t); }
         else {
-          // 既に背景があるなら “plain background” を優先的に落とす
           if (/^plain background$/i.test(t)) continue;
         }
       } else kept.push(t);
     }
-    // もし複数入ってたら最初の非-plainを残して他を落とす
     const firstNonPlain = kept.find(x=>(BG.includes(x)||/background$/i.test(x)) && !/^plain background$/i.test(x));
     if (firstNonPlain) {
       return kept.filter(x=>{
@@ -4330,7 +4327,7 @@ function buildBatchProduction(n){
     parts.push("solo");
     if (typeof getGenderCountTag === 'function'){
       const gct = (getGenderCountTag()||"").trim();
-      if (gct) parts.push(gct); // 1girl / 1boy 等
+      if (gct) parts.push(gct);
     }
 
     // テキスト基礎（年齢/性別/体型/身長）
@@ -4351,18 +4348,18 @@ function buildBatchProduction(n){
     let usedDress = false;
     let chosenDress = "";
     if (O.dress.length && Math.random() < 0.35) {
-      chosenDress = pick(O.dress);      // ワンピから1つ
+      chosenDress = pick(O.dress);
       parts.push(chosenDress);
       usedDress = true;
     } else {
-      if (O.top.length) parts.push(pick(O.top));            // トップス 1
+      if (O.top.length) parts.push(pick(O.top));
       let bottomPool = [];
       if (O.pants.length && O.skirt.length) bottomPool = (Math.random() < 0.5) ? O.pants : O.skirt;
       else if (O.pants.length) bottomPool = O.pants;
       else if (O.skirt.length) bottomPool = O.skirt;
-      if (bottomPool.length) parts.push(pick(bottomPool));   // ボトム 1
+      if (bottomPool.length) parts.push(pick(bottomPool));
     }
-    if (O.shoes && O.shoes.length) parts.push(pick(O.shoes)); // 靴 1
+    if (O.shoes && O.shoes.length) parts.push(pick(O.shoes));
 
     // --- 服色の付与（この段階ではプレースホルダ） ---
     if (usedDress) {
@@ -4372,8 +4369,8 @@ function buildBatchProduction(n){
         if (noun) parts.push(`${PC.top} ${noun}`); // 例: "white dress"
       }
     } else {
-      if (PC.top)    parts.push(`${PC.top} top`);       // 例: "white top"
-      if (PC.bottom) parts.push(`${PC.bottom} bottom`); // 例: "azure bottom"
+      if (PC.top)    parts.push(`${PC.top} top`);
+      if (PC.bottom) parts.push(`${PC.bottom} bottom`);
     }
     if (PC.shoes) parts.push(`${PC.shoes} shoes`);
 
@@ -4387,7 +4384,6 @@ function buildBatchProduction(n){
 
     // --- 表情（SFW/NSFW 切替）---
     if (nsfwOn && nsfwExpr.length){
-      // SFW表情の置換（後段の正規化でも一応整理するが、ここで優先）
       parts.push(pickOne(nsfwExpr));
     } else {
       parts.push(exprs.length ? pick(exprs) : "neutral expression");
@@ -4413,16 +4409,18 @@ function buildBatchProduction(n){
     // ★ NSFW がONならまずタグを混ぜておく（後段の並び替えでズレても最後に先頭固定する）
     if (nsfwOn && !all.includes("NSFW")) all.unshift("NSFW");
 
-
-    // 露出/ワンピ優先（上下や色プレースホルダの除去はここで）
+    // 露出/ワンピ優先
     if (typeof applyNudePriority === 'function')           all = applyNudePriority(all);
     if (typeof enforceOnePieceExclusivity === 'function')  all = enforceOnePieceExclusivity(all);
 
-    // 露出の有無は配列全体から検出（固定タグ経由でも拾う）
-    const hasExposure = all.some(t => EXPOSURE_EXCLUSIVE_RE.test(String(t)));
+    // ==== 露出かどうかを辞書セットで厳密判定（フォールバック正規表現つき） ====
+    const hasExposure = nsfwOn && (
+      (typeof hasExposureLike === 'function' && hasExposureLike(all)) ||
+      all.some(t => EXPOSURE_EXCLUSIVE_RE.test(String(t)))
+    );
 
     if (hasExposure) {
-      // 既存の上下服・ワンピ・靴・色プレースホルダを除去（色は露出タグ側の色込みに任せる）
+      // 既存の上下服・ワンピ・靴・色プレースホルダを除去（色は露出タグ側に含める想定）
       all = all.filter(s =>
         !CLOTH_NOUN_RE.test(s) &&
         !SHOES_RE.test(s) &&
