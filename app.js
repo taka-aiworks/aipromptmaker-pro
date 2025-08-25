@@ -3729,15 +3729,8 @@ function getFixedLearn(){
 
 // 学習モード：ネガ（#negGlobal）＋「デフォルトを使う(#useDefaultNeg)」を文字列で取得
 function getNegLearn(){
-  const useDefault = !!document.getElementById("useDefaultNeg")?.checked;
-  const extra      = (document.getElementById("negGlobal")?.value || "").trim();
-  // 既存の buildNegative を使う運用のままにする（なければ文字連結）
-  if (typeof buildNegative === "function"){
-    // buildNegativeの実装が「配列」想定なら適宜直してOK
-    const base = useDefault && Array.isArray(DEFAULT_NEG) ? DEFAULT_NEG.join(", ") : (useDefault ? "NEG_TIGHT" : "");
-    return buildNegative([base, extra].filter(Boolean).join(", "));
-  }
-  return [useDefault ? "NEG_TIGHT" : "", extra].filter(Boolean).join(", ");
+  const extraNeg = (document.getElementById("negLearn")?.value || "").trim();
+  return [ ...NEG_TIGHT, extraNeg ].filter(Boolean).join(", ");
 }
 
 
