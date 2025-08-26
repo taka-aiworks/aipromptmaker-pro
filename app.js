@@ -2156,7 +2156,7 @@ function pmRenderPlanner(){
   pmRenderAcc();
 }
 
-/* ===== 撮影モード：置き換え ===== */
+/* ===== 撮影モード：置き換え（色タグを注入 → 結合）===== */
 function pmBuildOne(){
   // 基本情報・シード
   var name = pmValById('charName');
@@ -2172,9 +2172,9 @@ function pmBuildOne(){
   tmp = pmPickOne('bf_height'); if (tmp) base.push(tmp);
   tmp = pmPickOne('hairStyle'); if (tmp) base.push(tmp);
   tmp = pmPickOne('eyeShape');  if (tmp) base.push(tmp);
-  tmp = pmTextById('tagH');     if (tmp) base.push(tmp);
-  tmp = pmTextById('tagE');     if (tmp) base.push(tmp);
-  tmp = pmTextById('tagSkin');  if (tmp) base.push(tmp);
+  tmp = (document.getElementById('tagH')?.textContent || '').trim();     if (tmp && tmp !== '—') base.push(tmp);
+  tmp = (document.getElementById('tagE')?.textContent || '').trim();     if (tmp && tmp !== '—') base.push(tmp);
+  tmp = (document.getElementById('tagSkin')?.textContent || '').trim();  if (tmp && tmp !== '—') base.push(tmp);
 
   // 差分（SFW）
   var bg    = pmPickOne('pl_bg')   || 'plain background';
@@ -2183,15 +2183,6 @@ function pmBuildOne(){
   var view  = pmPickOne('pl_view') || 'three-quarters view';
   var exprS = pmPickOne('pl_expr') || 'neutral expression';
   var liteS = pmPickOne('pl_light')|| 'soft lighting';
-
-  // ▼ 服の選択（上下/ワンピース/靴）— HTMLのIDに合わせて取得
-  var isDressMode = !!document.getElementById('outfitModeDress')?.checked;
-  var topWear     = pmPickOne('outfit_top')   || '';
-  var dressWear   = pmPickOne('outfit_dress') || '';
-  // 下はパンツ/スカートの選択に追従
-  var useSkirt    = !!document.getElementById('bottomCat_skirt')?.checked;
-  var bottomWear  = pmPickOne(useSkirt ? 'outfit_skirt' : 'outfit_pants') || '';
-  var shoeWear    = pmPickOne('outfit_shoes') || '';
 
   // NSFW
   var nsfwOn    = pmChecked('pl_nsfw');
@@ -2214,93 +2205,59 @@ function pmBuildOne(){
   var accName = pmValById('pl_accSel');
   var acc = '';
   if (accName){
-    var color = pmGetAccColor ? pmGetAccColor() : '';
-    acc = color ? (accName + ', ' + color) : accName;
+    var colorAcc = pmGetAccColor ? pmGetAccColor() : '';
+    acc = colorAcc ? (accName + ', ' + colorAcc) : accName;
   }
 
   var fixed = pmGetFixed();
 
-  // 一旦全部積む（服はここで parts に入れる）
+  // 一旦全部積む
   var parts = []
     .concat(['solo'])
     .concat((typeof getGenderCountTag==='function') ? [(getGenderCountTag()||'')] : [])
     .concat(fixed)
     .concat(base)
-    .concat([
-      bg, pose, comp, view, expr, lite, acc,
-      // 服：ワンピースモードなら dress、そうでなければ top/bottom
-      isDressMode ? dressWear : topWear,
-      isDressMode ? ''        : bottomWear,
-      // 靴はユーザの「靴色を使う」チェックと NSFW で後段ガード
-      shoeWear
-    ]);
+    .concat([bg, pose, comp, view, expr, lite, acc])
+    .filter(Boolean);
 
-  // NSFW 付加カテゴリ
-  if (nsfwOn){
-    if (nsfwExpo)  parts.push(nsfwExpo);
-    if (nsfwSitu)  parts.push(nsfwSitu);
-    if (nsfwPose)  parts.push(nsfwPose);
-    if (nsfwAcc)   parts.push(nsfwAcc);
-    if (nsfwOut)   parts.push(nsfwOut);
-    if (nsfwBody)  parts.push(nsfwBody);
-    if (nsfwNip)   parts.push(nsfwNip);
-    if (nsfwUnder) parts.push(nsfwUnder);
-  }
+  // ★★★ ここで「服の色タグ」を DOM から注入（チェックONのみ） ★★★
+  (function injectWearColors(){
+    var pushIf = function(ok, id){
+      if (!ok) return;
+      var t = (document.getElementById(id)?.textContent || '').trim();
+      if (t && t !== '—') parts.push(t);
+    };
+    var useTop    = !!document.getElementById('use_top')?.checked;
+    var useBottom = !!document.getElementById('useBottomColor')?.checked;
+    var useShoes  = !!document.getElementById('use_shoes')?.checked;
+    var isDress   = !!document.getElementById('outfitModeDress')?.checked; // ワンピ時は下色を無視
 
-  parts = parts.filter(Boolean);
+    pushIf(useTop, 'tag_top');
+    pushIf(useShoes, 'tag_shoes');
+    if (!isDress) pushIf(useBottom, 'tag_bottom');
+  })();
 
   // 服/露出の優先
-  if (typeof applyNudePriority === 'function')          parts = applyNudePriority(parts);
+  if (typeof applyNudePriority === 'function') parts = applyNudePriority(parts);
   if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
 
   // 露出検知
   var isExposure = nsfwOn && (typeof hasExposureLike === 'function') && hasExposureLike(parts);
 
-  // 露出：色掃除/畳み
+  // 露出なら：色の一次掃除 + 露出ダブり畳み（※一度だけ）
   if (isExposure){
-    if (typeof stripWearColorsOnce === 'function')        parts = stripWearColorsOnce(parts);
+    if (typeof stripWearColorsOnce === 'function') parts = stripWearColorsOnce(parts);
     if (typeof collapseExposureDuplicates === 'function') parts = collapseExposureDuplicates(parts);
   } else {
-    // ★ 非露出：色×服の合成（pairWearColors は DOM の #tag_top/#tag_bottom/#tag_shoes を内部で読む）
+    // 非露出のみ色ペアリング（white t-shirt, azure shorts などへ結合）
     if (typeof pairWearColors === 'function') parts = pairWearColors(parts);
-
-    // ★ 合成後、余った素の色タグだけを最終掃除（white/azure など）
-    (function cleanupLooseWearColors(){
-      var COLOR_WORD_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
-      // 服と色が結合されたトークンがあるか
-      var hasPaired = parts.some(function(t){
-        return /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\s+(t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown|skirt|pants|shorts|jeans)\b/i.test(String(t));
-      });
-      if (hasPaired){
-        parts = parts.filter(function(t){
-          var s = String(t);
-          // 「色だけ」（空白を含まない単語）を除去
-          if (COLOR_WORD_RE.test(s) && !/\s/.test(s)) return false;
-          return true;
-        });
-      }
-    })();
   }
-
-  // 靴ガード
-  (function shoeGuard(){
-    var looksShoe = function(s){
-      var x = String(s).toLowerCase();
-      return /\b(shoes|boots|sneakers|loafers|sandals|heels|mary\s+janes|mary_janes|geta|zori)\b/i.test(x);
-    };
-    if (isExposure){
-      parts = parts.filter(function(t){ return !looksShoe(t); });
-    } else {
-      var useShoesFlag = document.getElementById('use_shoes') ? !!document.getElementById('use_shoes').checked : true;
-      if (!useShoesFlag) parts = parts.filter(function(t){ return !looksShoe(t); });
-    }
-  })();
 
   // 整理
   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
   if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
 
-  // NSFW時：通常服/色/靴の最終一掃
+  // NSFW時：通常服/色/靴の最終一掃（※ここは一回だけ）
   if (nsfwOn && typeof stripNormalWearWhenNSFW === 'function'){
     parts = stripNormalWearWhenNSFW(parts);
   }
