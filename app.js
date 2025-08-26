@@ -174,41 +174,51 @@ function pmGetNeg(){
 // 固定ワードを配列で返す（#fixedLearn 優先、無ければ #fixedManual）
 // ・カンマ / 改行 / 全角読点「、」で分割
 // ・normalizeTag を適用（背景などの表記統一）
-//   ※新しい関数は増やさず、この関数だけ置き換え
+// ・normalizeTag を適用（背景などの表記統一）/ pm*は使わない
 function getFixedLearn(){
-  // --- テキスト入力（CSV可）
-  const hairTxt  = (typeof pmTextById==='function' ? pmTextById('tagH')      : '') || '';
-  const eyeTxt   = (typeof pmTextById==='function' ? pmTextById('tagE')      : '') || '';
-  const skinTxt  = (typeof pmTextById==='function' ? pmTextById('tagSkin')   : '') || '';
-  const clothTxt = (typeof pmTextById==='function' ? pmTextById('tagCloth')  : '') || '';
+  // ここに「UIの実在ID」を列挙（セレクト/タグ化された表示含む）
+  const IDS = [
+    // 見た目カラー
+    'tagH', 'tagE', 'tagSkin',
+    // 形状
+    'hairStyle', 'eyeShape',
+    // 基本情報
+    'bf_age', 'bf_gender', 'bf_body', 'bf_height',
+    // 服（色と結合済みの最終タグが入る要素）
+    'tagCloth'
+  ];
 
-  // --- select系は value だけ取る（multiple対応）
-  const elAGE    = document.getElementById('ID_AGE');
-  const elGENDER = document.getElementById('ID_GENDER');
-  const elBODY   = document.getElementById('ID_BODY');
-  const elHEIGHT = document.getElementById('ID_HEIGHT');
-  const elHairSt = document.getElementById('hairStyle');
-  const elEyeSh  = document.getElementById('eyeShape');
+  const tokens = [];
 
-  const ageVal    = elAGE    ? (elAGE.multiple    ? Array.from(elAGE.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ')    : String(elAGE.value||'').trim())    : '';
-  const genderVal = elGENDER ? (elGENDER.multiple ? Array.from(elGENDER.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ') : String(elGENDER.value||'').trim()) : '';
-  const bodyVal   = elBODY   ? (elBODY.multiple   ? Array.from(elBODY.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ')   : String(elBODY.value||'').trim())   : '';
-  const heightVal = elHEIGHT ? (elHEIGHT.multiple ? Array.from(elHEIGHT.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ') : String(elHEIGHT.value||'').trim()) : '';
-  const hairStyle = elHairSt ? (elHairSt.multiple ? Array.from(elHairSt.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ') : String(elHairSt.value||'').trim()) : '';
-  const eyeShape  = elEyeSh  ? (elEyeSh.multiple  ? Array.from(elEyeSh.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ')  : String(elEyeSh.value||'').trim())  : '';
+  for (const id of IDS){
+    const el = document.getElementById(id);
+    if (!el) continue;
 
-  // まとめ → CSV分割 → 正規化 → ユニーク
-  const raw = [
-    hairTxt, eyeTxt, skinTxt, clothTxt,   // テキスト入力（髪/瞳/肌/服=色結合済み）
-    ageVal, genderVal, bodyVal, heightVal, // 基本属性（select）
-    hairStyle, eyeShape                    // 形状（select）
-  ].filter(Boolean);
+    // select(multiple) → 選択値全取り
+    if (el.tagName === 'SELECT'){
+      const vals = el.multiple
+        ? Array.from(el.selectedOptions).map(o => o.value || o.textContent || '')
+        : [el.value || el.textContent || ''];
+      tokens.push(...vals);
+      continue;
+    }
 
-  const fixed = Array.from(new Set(
-    raw.flatMap(s => String(s).split(/\s*,\s*/))
-       .map(t => normalizeTag(String(t).trim()))
-       .filter(Boolean)
-  ));
+    // data-* で保持している場合の想定（例: data-tags="a, b, c"）
+    const dataTags = el.getAttribute('data-tags');
+    if (dataTags) {
+      tokens.push(...String(dataTags).split(/\s*,\s*/));
+      continue;
+    }
+
+    // テキストノード/hiddenなどの .value/.textContent
+    const raw = el.value ?? el.textContent ?? '';
+    if (raw) tokens.push(...String(raw).split(/\s*,\s*/));
+  }
+
+  // 正規化 + 重複除去
+  const fixed = Array.from(
+    new Set(tokens.map(t => normalizeTag(String(t).trim())).filter(Boolean))
+  );
 
   return fixed;
 }
