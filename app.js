@@ -234,12 +234,14 @@ function getNegProd(){
     const sfw = sniffSFWRoot() || {};
     const top = sfw.SFW || sfw.sfw || sfw;
     const cat = top.categories || top;
+    // 追加・修正：SFW 通常服を再構築
     const wearArr = []
-      .concat(cat?.top      || [])
-      .concat(cat?.bottom   || [])
-      .concat(cat?.dress    || [])
-      .concat(cat?.outer    || [])
-      .concat(cat?.footwear || []);
+     .concat(cat?.top      || [])
+     .concat(cat?.bottom   || [])
+     .concat(cat?.dress    || [])
+     .concat(cat?.outer    || [])
+     .concat(cat?.footwear || [])
+     .concat(cat?.outfit   || []);  // ★ これを追加（outfit一括対応）
     const setWear = new Set();
     (Array.isArray(wearArr)?wearArr:[]).forEach(o=>{
       const t = normTag(o); if (t) setWear.add(t);
@@ -514,10 +516,12 @@ function trimByBucketForLearning(parts){
 
     // NSFW 追加
     nsfw_pose:     new Set((NSFW.pose||[]).map(x=>x.tag||x)),
-    nsfw_acc:      new Set((NSFW.accessory||[]).map(x=>x.tag||x)),
+    // ★ アクセサリ：plural/singular 両対応
+    nsfw_acc:     new Set((NSFW.accessories || NSFW.accessory || []).map(x=>x.tag||x)),
+    // ★ 乳首：plural/singular 両対応
+    nsfw_nipples: new Set((NSFW.nipple || NSFW.nipples || []).map(x=>x.tag||x)),
     nsfw_outfit:   new Set((NSFW.outfit||[]).map(x=>x.tag||x)),
     nsfw_body:     new Set((NSFW.body||[]).map(x=>x.tag||x)),
-    nsfw_nipples:  new Set((NSFW.nipples||[]).map(x=>x.tag||x)),
     // ★ 追加：下着
     nsfw_underwear:new Set((NSFW.underwear||[]).map(x=>x.tag||x)),
   };
