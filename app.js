@@ -171,50 +171,32 @@ function pmGetNeg(){
 }
 
 /* ===== 学習モード ===== */
-// 置き換え推奨：固定タグを多源（fixedLearn/fixedManual/ベースUI）から吸い上げ
+// 固定ワードを配列で返す（#fixedLearn 優先、無ければ #fixedManual）
+// ・カンマ / 改行 / 全角読点「、」で分割
+// ・normalizeTag を適用（背景などの表記統一）
+// ・順序を保ったまま重複除去
 function getFixedLearn(){
-  const pullText = sel => {
-    const el = document.querySelector(sel);
-    const v  = (el && typeof el.value === "string") ? el.value : "";
-    return v.split(/[,\n]/).map(s=>normalizeTag(s)).map(s=>s.trim()).filter(Boolean);
-  };
+  const el = document.querySelector('#fixedLearn, #fixedManual');
+  if (!el) return [];
 
-  // 既存：テキストエリア
-  const fromFixed   = pullText("#fixedLearn");
-  const fromManual  = pullText("#fixedManual");
+  const raw = (el.value ?? el.textContent ?? '').trim();
+  if (!raw) return [];
 
-  // 追加：UI側に“ベース情報”があるなら拾う（どれか1つでも存在すればOK）
-  // 例）タグチップ、セレクト、隠しinput などから data-tag / value / text を吸う
-  const fromBaseUI = (()=> {
-    const out = [];
+  const tokens = raw
+    .split(/[,\n、]+/)
+    .map(s => normalizeTag(s))
+    .map(s => String(s).trim())
+    .filter(Boolean);
 
-    // チップ型（例：#baseChar .tag[data-tag]）
-    document.querySelectorAll('#baseChar .tag,[data-taggroup="base"] .tag').forEach(el=>{
-      const t = normalizeTag(el.getAttribute('data-tag') || el.textContent || "");
-      if (t) out.push(t);
-    });
-
-    // セレクト/インプット慣用ID（あれば）
-    ['#hairColor','#eyeColor','#irisColor','#hair','#eyes'].forEach(sel=>{
-      const el = document.querySelector(sel);
-      const v  = (el && (el.value || el.getAttribute('data-tag') || el.textContent)) || "";
-      if (v) out.push(normalizeTag(v));
-    });
-
-    // データ属性（例：<div id="charBase" data-tags="blonde hair, blue eyes">）
-    const base = document.querySelector('#charBase');
-    if (base && base.dataset && base.dataset.tags){
-      base.dataset.tags.split(/[,\n]/).forEach(s=>{
-        const t = normalizeTag(s);
-        if (t) out.push(t.trim());
-      });
+  const seen = new Set();
+  const out = [];
+  for (const t of tokens){
+    if (!seen.has(t)){
+      seen.add(t);
+      out.push(t);
     }
-
-    return out.filter(Boolean);
-  })();
-
-  // まとめて重複排除
-  return Array.from(new Set([...fromFixed, ...fromManual, ...fromBaseUI]));
+  }
+  return out;
 }
 
 function getNegLearn(){
@@ -4470,48 +4452,64 @@ function buildBatchLearning(n){
   }
 
   // ④ 最終整形
-  for (const r of out){
+   for (const r of out){
      let p = Array.isArray(r.pos) ? r.pos.slice()
            : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
      // 正規化を先に
      p = (p || []).map(normalizeTag);
-
-    const fixed = (typeof getFixedLearn === 'function') ? getFixedLearn() : [];
-    if (fixed.length) p = [...fixed, ...p];
-    if (typeof fixExclusives === 'function') p = fixExclusives(p);
-    p = Array.from(new Set(p.filter(Boolean)));
-
-     // 背景は最終段でも1つだけに強制
-     if (MIX_RULES?.bg?.group) {
-       p = enforceSingleFromGroup(p, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
+   
+     // ▼▼ ここから追加：UIの基本情報と固定ワードを先頭注入（重複は後で除去）
+     const fixed = (typeof getFixedLearn === 'function') ? getFixedLearn() : [];
+   
+     const identFromUI = [
+       (typeof pmPickOne==='function' ? pmPickOne('bf_age')    : ''),
+       (typeof pmPickOne==='function' ? pmPickOne('bf_gender') : ''),
+       (typeof pmPickOne==='function' ? pmPickOne('bf_body')   : ''),
+       (typeof pmPickOne==='function' ? pmPickOne('bf_height') : '')
+     ].filter(Boolean);
+   
+     const lookFromUI = [
+       (typeof pmPickOne==='function' ? pmPickOne('hairStyle') : ''),
+       (typeof pmPickOne==='function' ? pmPickOne('eyeShape')  : ''),
+       (typeof pmTextById==='function' ? pmTextById('tagH')    : ''),
+       (typeof pmTextById==='function' ? pmTextById('tagE')    : ''),
+       (typeof pmTextById==='function' ? pmTextById('tagSkin') : '')
+     ].filter(Boolean);
+   
+     // 固定 > 基本情報 > 見た目 > 既存p の順で前詰め
+     p = [...fixed, ...identFromUI, ...lookFromUI, ...p];
+     // ▲▲ 追加ここまで
+   
+     const fixed2 = (typeof getFixedLearn === 'function') ? getFixedLearn() : []; // 既存行があるならそのまま
+     if (fixed2.length) p = [...fixed2, ...p]; // ←既存を残すならこの行は削ってもOK（上でfixedを入れているため）
+   
+     if (typeof fixExclusives === 'function') p = fixExclusives(p);
+     p = Array.from(new Set(p.filter(Boolean)));
+   
+     // 背景・光・ビューは1つだけ（既存ヘルパに合わせる）
+     if (typeof enforceSingleBackground === 'function') p = enforceSingleBackground(p);       // 背景1件に圧縮
+     if (typeof unifyLightingOnce       === 'function') p = unifyLightingOnce(p);             // ライティング整理
+     if (typeof ensureViewExclusive     === 'function') p = ensureViewExclusive(p);           // view排他
+     // （enforceSingleFromGroup を使っている場合はそちらを残してOK）
+   
+     if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
+     if (typeof enforceHeadOrder  === 'function') p = enforceHeadOrder(p);
+   
+     if (p.includes("NSFW") && p[0] !== "NSFW"){
+       p = p.filter(t => t !== "NSFW");
+       p.unshift("NSFW");
      }
-     if (MIX_RULES?.light?.group) {
-       p = enforceSingleFromGroup(p, MIX_RULES.light.group, MIX_RULES.light.fallback);
-     }
-     if (MIX_RULES?.view?.group) {
-       p = enforceSingleFromGroup(p, MIX_RULES.view.group, MIX_RULES.view.fallback);
-     }
-
-    if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
-    if (typeof enforceHeadOrder === 'function')  p = enforceHeadOrder(p);
-
-    // 最終ガード：NSFW があれば先頭に固定
-    if (p.includes("NSFW") && p[0] !== "NSFW"){
-      p = p.filter(t => t !== "NSFW");
-      p.unshift("NSFW");
-    }
-
-    r.pos    = p;
-    r.prompt = p.join(", ");
-
-     const addonNeg = ["props","accessories","smartphone","phone","camera"].join(", "); // 既存の追記分
+   
+     r.pos    = p;
+     r.prompt = p.join(", ");
+   
+     const addonNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
      const learnNeg = (typeof getNegLearn === 'function') ? getNegLearn() : "";
-     r.neg = [learnNeg, addonNeg].filter(Boolean).join(", ");
-
-    r.seed   = r.seed || seedFromName($("#charName")?.value || "", 1);
-    r.text   = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
-  }
-
+     r.neg  = [learnNeg, addonNeg].filter(Boolean).join(", ");
+   
+     r.seed = r.seed || seedFromName($("#charName")?.value || "", 1);
+     r.text = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
+   }
   return out;
 }
 
