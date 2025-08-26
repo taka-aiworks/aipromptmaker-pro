@@ -99,53 +99,47 @@
         </div>
       </div>
 
-      <!-- 服（固定 / 上下 or ワンピース） -->
-      <div class="grid g1" style="margin-top:10px">
-        <div class="panel" id="panel_outfitFixed">
-          <h3>服（固定 / 上下 or ワンピース）</h3>
-
-          <div class="row mini" style="gap:10px;margin:6px 0 8px">
-            <label class="inline"><input type="radio" name="outfitMode" value="separate" id="outfitModeSeparate" checked> 上下コーデ</label>
-            <label class="inline"><input type="radio" name="outfitMode" value="onepiece" id="outfitModeDress"> ワンピース</label>
-            <span class="mini">※ ワンピース選択時は下カラー無効</span>
+      <fieldset id="fsSeparates">
+        <!-- g3 → g4 に修正して4列対応 -->
+        <div class="grid g4">
+          <div class="panel">
+            <h4 style="margin:0 0 6px">トップス（1つ）</h4>
+            <div id="outfit_top" class="scroller"></div>
           </div>
-
-          <fieldset id="fsSeparates">
-            <div class="grid g3">
-              <div class="panel">
-                <h4 style="margin:0 0 6px">トップス（1つ）</h4>
-                <div id="outfit_top" class="scroller"></div>
-              </div>
-
-              <div class="panel">
-                <h4 style="margin:0 0 6px">ワンピース（1つ）</h4>
-                <fieldset id="fsDress" disabled>
-                  <div id="outfit_dress" class="scroller"></div>
-                  <div class="mini">選択時は「下カラー」は自動で無効</div>
-                </fieldset>
-              </div>
-
-              <div class="panel">
-                <h4 style="margin:0 0 6px">下カテゴリ</h4>
-                <div class="row mini" id="bottomCategoryRadios" style="gap:10px">
-                  <label class="inline"><input type="radio" name="bottomCat" id="bottomCat_pants" value="pants" checked> ボトムス（ズボン）</label>
-                  <label class="inline"><input type="radio" name="bottomCat" id="bottomCat_skirt" value="skirt"> スカート</label>
-                </div>
-
-                <fieldset id="fsBottom_pants" class="swap-target" style="margin-top:8px">
-                  <h4 class="mini" style="margin:0 0 6px">ボトムス（ズボン・1つ）</h4>
-                  <div id="outfit_pants" class="scroller"></div>
-                </fieldset>
-
-                <fieldset id="fsBottom_skirt" class="swap-target" style="margin-top:8px">
-                  <h4 class="mini" style="margin:0 0 6px">スカート（1つ）</h4>
-                  <div id="outfit_skirt" class="scroller"></div>
-                </fieldset>
-              </div>
+      
+          <div class="panel">
+            <h4 style="margin:0 0 6px">ワンピース（1つ）</h4>
+            <fieldset id="fsDress" disabled>
+              <div id="outfit_dress" class="scroller"></div>
+              <div class="mini">選択時は「下カラー」は自動で無効</div>
+            </fieldset>
+          </div>
+      
+          <div class="panel">
+            <h4 style="margin:0 0 6px">下カテゴリ</h4>
+            <div class="row mini" id="bottomCategoryRadios" style="gap:10px">
+              <label class="inline"><input type="radio" name="bottomCat" id="bottomCat_pants" value="pants" checked> ボトムス（ズボン）</label>
+              <label class="inline"><input type="radio" name="bottomCat" id="bottomCat_skirt" value="skirt"> スカート</label>
             </div>
-          </fieldset>
+      
+            <fieldset id="fsBottom_pants" class="swap-target" style="margin-top:8px">
+              <h4 class="mini" style="margin:0 0 6px">ボトムス（ズボン・1つ）</h4>
+              <div id="outfit_pants" class="scroller"></div>
+            </fieldset>
+      
+            <fieldset id="fsBottom_skirt" class="swap-target" style="margin-top:8px">
+              <h4 class="mini" style="margin:0 0 6px">スカート（1つ）</h4>
+              <div id="outfit_skirt" class="scroller"></div>
+            </fieldset>
+          </div>
+      
+          <!-- 👇 ここに追加 -->
+          <div class="panel">
+            <h4 style="margin:0 0 6px">靴（1つ）</h4>
+            <div id="outfit_shoes" class="scroller"></div>
+          </div>
         </div>
-      </div>
+      </fieldset>
 
       <!-- カラー指定（固定） -->
       <div class="card" style="margin-top:10px">
