@@ -179,7 +179,7 @@ function getFixedLearn(){
 
   const tokens = [];
 
-  // ▼ 基本情報（テキスト属性：SFW基礎）… scroller は getMany で取る
+  // 基本情報（scroller は getMany で）
   const addMany = (id)=>{
     try {
       if (typeof getMany === 'function') {
@@ -190,15 +190,14 @@ function getFixedLearn(){
   };
   ["bf_age","bf_gender","bf_body","bf_height","hairStyle","eyeShape"].forEach(addMany);
 
-  // ▼ 色：髪/瞳/肌（UI は <code id="tagH|tagE|tagSkin"> に確定テキスト表示）
+  // 色：髪/瞳/肌（←ここは OK。確定タグを使う）
   const txt = id => (document.getElementById(id)?.textContent || "").trim();
   tokens.push(txt("tagH"), txt("tagE"), txt("tagSkin"));
 
-  // ▼ 服：選択パーツ（scroller）＋ 色タグ（code）
-  ["outfit_top","outfit_dress","outfit_pants","outfit_skirt","outfit_shoes"].forEach(addMany);
-  tokens.push(txt("tag_top"), txt("tag_bottom"), txt("tag_shoes"));
+  // ❌ 服パーツと服カラー（tag_top / tag_bottom / tag_shoes）は fixed に入れない
+  // ["outfit_top","outfit_dress","outfit_pants","outfit_skirt","outfit_shoes"].forEach(addMany);
+  // tokens.push(txt("tag_top"), txt("tag_bottom"), txt("tag_shoes"));
 
-  // ▼ まとめ → カンマ分割 → 正規化 → ユニーク
   const merged = [fromFixed, ...tokens.filter(Boolean)].join(", ");
   const split = (typeof splitTags === 'function')
     ? splitTags(merged)
