@@ -4507,13 +4507,13 @@ function buildBatchLearning(n){
 
     // 基本情報（DOM直）
     const basicsRaw = [
-      document.getElementById('ID_AGE')?.value,
-      document.getElementById('ID_GENDER')?.value,
-      document.getElementById('ID_BODY')?.value,
-      document.getElementById('ID_HEIGHT')?.value,
-      document.getElementById('ID_HAIR')?.value,
-      document.getElementById('ID_EYE')?.value,
-      document.getElementById('ID_SKIN')?.value,
+      document.getElementById('bf_age')?.value,
+      document.getElementById('bf_gender')?.value,
+      document.getElementById('bf_body')?.value,
+      document.getElementById('bf_height')?.value,
+      document.getElementById('bf_hair')?.value,
+      document.getElementById('bf_eye')?.value,
+      document.getElementById('bf_skin')?.value,
       (document.getElementById('tagH')?.textContent || document.getElementById('tagH')?.value),
       (document.getElementById('tagE')?.textContent || document.getElementById('tagE')?.value),
       (document.getElementById('tagSkin')?.textContent || document.getElementById('tagSkin')?.value)
