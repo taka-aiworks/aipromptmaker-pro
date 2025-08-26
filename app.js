@@ -176,27 +176,26 @@ function pmGetNeg(){
 // ・normalizeTag を適用（背景などの表記統一）
 // ・順序を保ったまま重複除去
 function getFixedLearn(){
-  const el = document.querySelector('#fixedLearn, #fixedManual');
-  if (!el) return [];
+  // どっちのUIでも拾えるように両方見る
+  const raw = [
+    pmTextById('tagH'),         // ラベル系（例: "brown hair"）
+    pmTextById('tagE'),         // ラベル系（例: "blue eyes"）
+    pmTextById('tagSkin'),      // ラベル系（例: "fair skin"）
+    pmPickOne('ID_HAIR'),       // ピッカー系
+    pmPickOne('ID_EYE'),
+    pmPickOne('ID_SKIN')
+  ].filter(Boolean);
 
-  const raw = (el.value ?? el.textContent ?? '').trim();
-  if (!raw) return [];
+  // カンマ区切り・空白を正規化してユニーク化
+  const fixed = Array.from(
+    new Set(
+      raw.flatMap(s => String(s).split(/\s*,\s*/))
+         .map(t => t.trim())
+         .filter(Boolean)
+    )
+  );
 
-  const tokens = raw
-    .split(/[,\n、]+/)
-    .map(s => normalizeTag(s))
-    .map(s => String(s).trim())
-    .filter(Boolean);
-
-  const seen = new Set();
-  const out = [];
-  for (const t of tokens){
-    if (!seen.has(t)){
-      seen.add(t);
-      out.push(t);
-    }
-  }
-  return out;
+  return fixed;
 }
 
 function getNegLearn(){
