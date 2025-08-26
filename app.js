@@ -5028,28 +5028,63 @@ function buildBatchProduction(n){
       return true;
     });
   }
-  function enforceSingleBackground(arr){
-    const BGdict = (((typeof window!=='undefined' && window.SFW && Array.isArray(window.SFW.background)) ? window.SFW.background : []) || []).map(x=>x?.tag || x);
-    const set = new Set();
-    const kept = [];
-    for (const t of (arr||[])){
-      if (BGdict.includes(t) || /background$/i.test(String(t))){
-        if (!set.size) { set.add("bg"); kept.push(t); }
-        else {
-          if (/^plain background$/i.test(String(t))) continue;
-        }
-      } else kept.push(t);
-    }
-    const firstNonPlain = kept.find(x=> (BGdict.includes(x)||/background$/i.test(String(x))) && !/^plain background$/i.test(String(x)));
-    if (firstNonPlain) {
-      return kept.filter(x=>{
-        const isBg = BGdict.includes(x)||/background$/i.test(String(x));
-        return !isBg || x===firstNonPlain;
-      });
-    }
-    return kept;
+  // 背景を必ず1つに統一（snake_case / space 両対応、normalize 準拠、plain は代替が無い時のみ）
+function enforceSingleBackground(arr){
+  const list = Array.isArray(arr) ? arr.slice() : [];
+  const norm = (t)=> (typeof normalizeTag==='function'
+    ? normalizeTag(String(t||""))
+    : String(t||"").trim().toLowerCase());
+
+  // 背景辞書を収集（MIX_RULES と SFW 両方）→ 正規化セット化
+  let dict = [];
+  if (typeof MIX_RULES==='object' && MIX_RULES?.bg?.group) {
+    dict = dict.concat(MIX_RULES.bg.group);
   }
-  function unifyLightingOnce(arr){
+  if (typeof window!=="undefined" && window.SFW && Array.isArray(window.SFW.background)) {
+    dict = dict.concat(window.SFW.background.map(x=>x?.tag || x));
+  }
+  const bgSet = new Set(dict.map(norm));
+
+  // 背景判定（辞書 or *_background / " background" で終わる）
+  const isBg = (t)=>{
+    const s = norm(t);
+    return bgSet.has(s) || /(?:^|[_\s])background$/.test(s);
+  };
+
+  const isPlain = (t)=>{
+    const s = norm(t);
+    return s==="plain_background" || s==="plain background";
+  };
+
+  // 背景候補を抽出（順序保持）・その他を分離
+  const bgCandidates = [];
+  const others = [];
+  for (const t of list){
+    if (isBg(t)) bgCandidates.push(t);
+    else others.push(t);
+  }
+
+  // 背景が無いならそのまま返す
+  if (bgCandidates.length===0) return list;
+
+  // plain 以外があればそれを優先、無ければ先頭（＝plainでも可）
+  let chosen = bgCandidates.find(t => !isPlain(t)) || bgCandidates[0];
+
+  // 元の位置関係をできるだけ保つ：最初の背景位置に chosen を1回だけ挿入、他は捨てる
+  const out = [];
+  let inserted = false;
+  for (const t of list){
+    if (isBg(t)){
+      if (!inserted){ out.push(chosen); inserted = true; }
+      // 2個目以降は落とす
+    } else {
+      out.push(t);
+    }
+  }
+  return out;
+}
+   
+   function unifyLightingOnce(arr){
     const Ls = []
       .concat( (((typeof window!=='undefined' && window.SFW && Array.isArray(window.SFW.lighting)) ? window.SFW.lighting : []) || []).map(x=>x?.tag||x) )
       .concat( (((typeof window!=='undefined' && window.NSFW && Array.isArray(window.NSFW.lighting)) ? window.NSFW.lighting : []) || []).map(x=>x?.tag||x) );
