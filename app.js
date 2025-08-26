@@ -4217,22 +4217,20 @@ function buildOneLearning(extraSeed = 0){
 
 // 背景など“グループ内は1つだけ”にする共通ユーティリティ
 function enforceSingleFromGroup(p, group, fallback){
-  if (!Array.isArray(p) || !Array.isArray(group) || group.length===0) return p || [];
-  const set = new Set(group);
-  const normed = (p || []).map(normalizeTag);
+  if (!Array.isArray(p)) return [];
+  const items = p.filter(x => group.includes(x));
+  if (items.length <= 1) return p;
 
-  const hit = normed.filter(t => set.has(t));
-  if (hit.length === 0) {
-    // 何も無ければ fallback を追加
-    if (fallback) return [...normed, fallback];
-    return normed;
-  }
-  if (hit.length === 1) return normed;
+  // 複数ある → targetsの確率で1つ選ぶ
+  const targets = MIX_RULES.bg?.targets || {};
+  const weighted = Object.entries(targets).flatMap(([tag, [min, max]])=>{
+    const w = Math.floor(((min+max)/2) * 100); // 平均で重み
+    return Array(w).fill(tag);
+  });
+  const choice = weighted.length ? weighted[Math.floor(Math.random()*weighted.length)] : fallback;
 
-  const winner = group.find(g => hit.includes(g)) || hit[0];
-  const filtered = normed.filter(t => !set.has(t));
-  filtered.push(winner);
-  return filtered;
+  // 既存タグを削除して1つだけ残す
+  return [...p.filter(x => !group.includes(x)), choice];
 }
 
 /* ============================================================================
