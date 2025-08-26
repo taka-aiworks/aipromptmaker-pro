@@ -4572,9 +4572,9 @@ function buildBatchLearning(n){
       document.getElementById('bf_gender')?.value,
       document.getElementById('bf_body')?.value,
       document.getElementById('bf_height')?.value,
-      document.getElementById('bf_hair')?.value,
-      document.getElementById('bf_eye')?.value,
-      document.getElementById('bf_skin')?.value,
+      document.getElementById('hairStyle')?.value,
+      document.getElementById('eyeShape')?.value,
+      document.getElementById('skinTone')?.value,
       (document.getElementById('tagH')?.textContent || document.getElementById('tagH')?.value),
       (document.getElementById('tagE')?.textContent || document.getElementById('tagE')?.value),
       (document.getElementById('tagSkin')?.textContent || document.getElementById('tagSkin')?.value)
