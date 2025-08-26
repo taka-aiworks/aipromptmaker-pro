@@ -4467,60 +4467,72 @@ function buildBatchLearning(n){
   }
 
   // ④ 最終整形
-  for (const r of out){
-    let p = Array.isArray(r.pos) ? r.pos.slice()
-          : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
-    p = (p || []).map(normalizeTag);
+for (const r of out){
+  let p = Array.isArray(r.pos) ? r.pos.slice()
+        : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+  // 正規化
+  p = (p || []).map(normalizeTag);
 
-    // ▼ 基本情報/見た目をUIから注入（pmPickOneは使わない）
-    const fixed = (typeof getFixedLearn === 'function') ? getFixedLearn() : [];
+  // ▼ 基本情報・見た目
+  const fixed = (typeof getFixedLearn === 'function') ? getFixedLearn() : [];
 
-    const identFromUI = [
-        document.getElementById('bf_age')?.value || "",
-        document.getElementById('bf_gender')?.value || "",
-        document.getElementById('bf_body')?.value || "",
-        document.getElementById('bf_height')?.value || ""
-      ].filter(Boolean);
-      
-      const lookFromUI = [
-        document.getElementById('hairStyle')?.value || "",
-        document.getElementById('eyeShape')?.value || "",
-        document.getElementById('tagH')?.value || "",   // 髪色テキスト
-        document.getElementById('tagE')?.value || "",   // 瞳色テキスト
-        document.getElementById('tagSkin')?.value || "" // 肌色テキスト
-      ].filter(Boolean);
+  const identFromUI = [
+    (typeof pmTextById==='function' ? pmTextById('bf_age')    : ''),
+    (typeof pmTextById==='function' ? pmTextById('bf_gender') : ''),
+    (typeof pmTextById==='function' ? pmTextById('bf_body')   : ''),
+    (typeof pmTextById==='function' ? pmTextById('bf_height') : '')
+  ].filter(Boolean).flatMap(s => String(s).split(/\s*,\s*/));
 
-    // 固定 > 基本情報 > 見た目 > 既存p
-    p = [...fixed, ...identFromUI, ...lookFromUI, ...p];
+  const lookFromUI = [
+    (typeof pmTextById==='function' ? pmTextById('hairStyle') : ''),
+    (typeof pmTextById==='function' ? pmTextById('eyeShape')  : ''),
+    (typeof pmTextById==='function' ? pmTextById('tagH')      : ''),
+    (typeof pmTextById==='function' ? pmTextById('tagE')      : ''),
+    (typeof pmTextById==='function' ? pmTextById('tagSkin')   : '')
+  ].filter(Boolean).flatMap(s => String(s).split(/\s*,\s*/));
 
-    if (typeof fixExclusives === 'function') p = fixExclusives(p);
-    p = Array.from(new Set(p.filter(Boolean)));
+  // ★ 服（色と結合済み）を“早めに”注入
+  const outfitTokens = (typeof pmTextById==='function' ? pmTextById('tagCloth') : '');
+  const outfitFromUI = (outfitTokens ? outfitTokens.split(/\s*,\s*/) : []);
+  
+  // 固定 > 基本情報 > 見た目 > 服 > 既存p
+  p = [
+    ...fixed,
+    ...identFromUI,
+    ...lookFromUI,
+    ...outfitFromUI,
+    ...p
+  ].map(normalizeTag).filter(Boolean);
 
-    // 背景/光/ビューを単一化（既存ヘルパ）
-    if (typeof enforceSingleBackground === 'function') p = enforceSingleBackground(p);
-    if (typeof unifyLightingOnce       === 'function') p = unifyLightingOnce(p);
-    if (typeof ensureViewExclusive     === 'function') p = ensureViewExclusive(p);
+  if (typeof fixExclusives === 'function') p = fixExclusives(p);
+  p = Array.from(new Set(p)); // 重複除去
 
-    if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
-    if (typeof enforceHeadOrder  === 'function') p = enforceHeadOrder(p);
+  // 服色ペアリング（すでに結合済みでも冪等）
+  if (typeof pairWearColors === 'function') p = pairWearColors(p);
 
-    // NSFW先頭固定
-    if (p.includes("NSFW") && p[0] !== "NSFW"){
-      p = p.filter(t => t !== "NSFW");
-      p.unshift("NSFW");
-    }
+  // 背景・光・ビューを各1に
+  if (typeof enforceSingleBackground === 'function') p = enforceSingleBackground(p);
+  if (typeof unifyLightingOnce       === 'function') p = unifyLightingOnce(p);
+  if (typeof ensureViewExclusive     === 'function') p = ensureViewExclusive(p);
 
-    r.pos    = p;
-    r.prompt = p.join(", ");
+  if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
+  if (typeof enforceHeadOrder  === 'function') p = enforceHeadOrder(p);
 
-    const addonNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
-    const learnNeg = (typeof getNegLearn === 'function') ? getNegLearn() : "";
-    r.neg  = [learnNeg, addonNeg].filter(Boolean).join(", ");
-
-    r.seed = r.seed || seedFromName($("#charName")?.value || "", 1);
-    r.text = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
+  // NSFW 先頭固定
+  if (p.includes("NSFW") && p[0] !== "NSFW"){
+    p = p.filter(t => t !== "NSFW");
+    p.unshift("NSFW");
   }
-  return out;
+
+  r.pos    = p;
+  r.prompt = p.join(", ");
+
+  const addonNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
+  const learnNeg = (typeof getNegLearn === 'function') ? getNegLearn() : "";
+  r.neg  = [learnNeg, addonNeg].filter(Boolean).join(", ");
+
+  r.seed = r.seed || seedFromName($("#charName")?.value || "", 1);
+  r.text = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
 }
 
 
