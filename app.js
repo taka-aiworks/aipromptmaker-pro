@@ -4587,14 +4587,14 @@ function _norm(t){
 /* ====================== 撮影モード：置き換え（修正版） ====================== */
 function pmBuildOne(){
   // 小ヘルパ：scrollerの混在表記「日本語 + 英語」を“英語タグ”へ寄せる
-  const toTag = (s)=>{
-    const x = String(s||"").trim();
-    if (!x) return "";
-    // 末尾の英語タグ（snake_caseやハイフン含む）を優先抽出
-    const m = x.match(/([a-z][a-z0-9_-]+)$/i);
-    const tag = m ? m[1] : x;
-    return (typeof normalizeTag==='function') ? normalizeTag(tag) : tag.toLowerCase();
-  };
+     const toTag = (s)=>{
+     const x = String(s||"").trim();
+     if (!x) return "";
+     if (/^(指定なし|none)$/i.test(x)) return "";        // ★ ここを追加
+     const m = x.match(/([a-z][a-z0-9_-]+)$/i);
+     const tag = m ? m[1] : x;
+     return (typeof normalizeTag==='function') ? normalizeTag(tag) : tag.toLowerCase();
+   };
   const norm   = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
   const textOf = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
   const pick   = id => toTag(pickOneFromScroller(id));
