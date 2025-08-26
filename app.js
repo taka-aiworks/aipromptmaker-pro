@@ -1409,82 +1409,7 @@ function radioList(el, list, name, {checkFirst = true} = {}) {
 const getOne  = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
 const getMany = (name) => $$(`input[name="${name}"]:checked`).map(x=>x.value);
 
-// 追加：学習用ホワイトリスト（必要ならここを編集）
-// 学習モードで使う最小・安定セット
-const SCOPE = {
-  learning: {
-    // 背景：シンプルな単色・スタジオ系のみ
-    background: [
-      "plain_background",
-      "white_background",
-      "solid_background",
-      "studio_background",
-      "light gray background",
-      "white_seamless",
-      "gray_seamless"
-    ],
 
-    // ポーズ：骨格崩れが出にくい静的中心
-    pose: [
-      "standing",
-      "sitting",
-      "hands on hips",
-      "crossed arms",
-      "hand on chest",
-      "hands behind back",
-      "head tilt"
-    ],
-
-    // 構図：距離3種＋ポートレート＋中央構図
-    composition: [
-      "full body",
-      "waist up",
-      "bust",
-      "portrait",
-      "centered composition"
-    ],
-
-    // 視点：正面・3/4を基軸、横/後ろも少しだけ
-    view: [
-      "front view",
-      "three-quarters view",
-      "side view",
-      "back view"
-    ],
-
-    // 表情：極端を外し、基本＋少し個性
-    expressions: [
-      "neutral expression",
-      "smiling",
-      "smiling open mouth",
-      "serious",
-      "determined",
-      "slight blush",
-      "surprised (mild)",
-      "pouting (slight)",
-      "teary eyes"
-    ],
-
-    // ライティング：安定光を基本に少し演出
-    lighting: [
-      "normal lighting",
-      "even lighting",
-      "soft lighting",
-      "window light",
-      "overcast",
-      "studio lighting",
-      "backlighting"
-    ]
-  }
-};
-
-// 追加：タグ配列をホワイトリストで絞る共通関数
-function filterByScope(items, allow) {
-  if (!Array.isArray(items)) return [];
-  if (!Array.isArray(allow) || allow.length === 0) return items;
-  const s = new Set(allow);
-  return items.filter(x => s.has(x.tag));
-}
 
 
 
@@ -3957,30 +3882,82 @@ function fillRemainder(rows, groupTags, fallbackTag){
 }
 window.fillRemainder = fillRemainder;
 
-// === 配分ルール（割合テーブル） =======================
-const MIX_RULES = {
-  view: {
-    group: ["front view","three-quarters view","profile view","side view","back view"],
-    targets: {
-      "profile view":[0.15,0.20],
-      "back view":[0.08,0.12]
-    },
-    fallback: "three-quarters view"
-  },
-  comp: {
-    group: ["full body","waist up","upper body","bust","portrait","close-up","wide shot"],
-    targets: {
-      "full body":[0.20,0.25],
-      "waist up":[0.30,0.35],
-      "upper body":[0.05,0.10],
-      "bust":[0.20,0.25],
-      "close-up":[0.05,0.10],
-      "wide shot":[0.05,0.10]
-    },
-    fallback: "portrait"
-  },
-  expr: {
-    group: [
+// ▼ 正規化：辞書準拠（profileは“side”に吸収しない／light gray → gray_seamless）
+function normalizeTag(t){
+  if(!t) return "";
+  const s = String(t).trim().toLowerCase();
+
+  // ---- view ----
+  if (s==="3/4 view" || s==="three quarters view") return "three-quarters view";
+  if (s==="profile") return "profile view"; // 吸収せず表記だけ統一
+
+  // ---- composition ----
+  if (s==="close up" || s==="closeup") return "close-up";
+  if (s==="bust shot" || s==="bust-up" || s==="bust up") return "bust";
+  if (s==="upper-body" || s==="upperbody") return "upper body";
+
+  // ---- background（snake_caseへ統一）----
+  if (s==="plain background")  return "plain_background";
+  if (s==="solid background")  return "solid_background";
+  if (s==="studio background") return "studio_background";
+  if (s==="white background")  return "white_background";
+  if (s==="white seamless")    return "white_seamless";
+  if (s==="light gray background" || s==="light grey background") return "gray_seamless";
+
+  // ---- lighting ----
+  if (s==="rim lighting") return "rim light";        // 辞書：rim light
+  if (s==="back light" || s==="back-lighting") return "backlighting";
+  if (s==="studio lighting") return "flat studio lighting"; // 辞書：flat studio lighting
+
+  return s;
+}
+
+// 追加：タグ配列をホワイトリストで絞る共通関数
+function filterByScope(items, allow) {
+  if (!Array.isArray(items)) return [];
+  if (!Array.isArray(allow) || allow.length === 0) return items;
+  const s = new Set(allow);
+  return items.filter(x => s.has(x.tag));
+}
+
+// === 学習用ホワイトリスト（辞書準拠） ==================
+const SCOPE = {
+  learning: {
+    background: [
+      "plain_background",
+      "white_background",
+      "solid_background",
+      "studio_background",
+      "white_seamless",
+      "gray_seamless"
+    ],
+    pose: [
+      "standing",
+      "sitting",
+      "hands on hips",
+      "crossed arms",
+      "hand on chest",
+      "hands behind back",
+      "head tilt",
+      "waving"
+      // ※ "arms crossed behind head" は辞書外なので除外
+    ],
+    composition: [
+      "full body",
+      "waist up",
+      "bust",
+      "close-up",
+      "portrait",
+      "centered composition"
+    ],
+    view: [
+      "front view",
+      "three-quarters view",
+      "side view",
+      "profile view", // 追加：配分ルールに合わせる
+      "back view"
+    ],
+    expressions: [
       "neutral expression",
       "smiling",
       "smiling open mouth",
@@ -3988,43 +3965,101 @@ const MIX_RULES = {
       "determined",
       "slight blush",
       "surprised (mild)",
-      "pouting (slight)"
+      "pouting (slight)",
+      "teary eyes",
+      "laughing",
+      "embarrassed"
+    ],
+    lighting: [
+      "normal lighting",
+      "even lighting",
+      "soft lighting",
+      "window light",
+      "overcast",
+      "flat studio lighting", // 辞書準拠
+      "backlighting",
+      "rim light"             // 辞書準拠
+    ]
+  }
+};
+
+// === 顔安定版・配分ルール =======================
+const MIX_RULES = {
+  view: {
+    group: ["front view","three-quarters view","side view","profile view","back view"],
+    targets: {
+      "three-quarters view":[0.55,0.65],
+      "front view":[0.30,0.35],
+      "side view":[0.02,0.04],
+      "profile view":[0.01,0.03],
+      "back view":[0.00,0.01]
+    },
+    fallback: "three-quarters view"
+  },
+
+  comp: {
+    group: ["bust","waist up","portrait","upper body","close-up","full body","wide shot"],
+    targets: {
+      "bust":[0.35,0.45],
+      "waist up":[0.30,0.35],
+      "portrait":[0.10,0.15],
+      "upper body":[0.05,0.08],
+      "close-up":[0.03,0.05],
+      "full body":[0.00,0.02],
+      "wide shot":[0.00,0.01]
+    },
+    fallback: "bust"
+  },
+
+  expr: {
+    group: [
+      "neutral expression","smiling","smiling open mouth",
+      "slight blush","serious","determined","pouting (slight)"
     ],
     targets: {
-      "neutral expression": [0.55, 0.65],
-      "smiling":            [0.18, 0.25],
-      "smiling open mouth": [0.05, 0.10],
-      "serious":            [0.01, 0.02],
-      "determined":         [0.01, 0.02],
-      "slight blush":       [0.03, 0.05]
+      "neutral expression":[0.55,0.65],
+      "smiling":[0.20,0.25],
+      "smiling open mouth":[0.03,0.05],
+      "slight blush":[0.03,0.05],
+      "serious":[0.01,0.02],
+      "determined":[0.01,0.02],
+      "pouting (slight)":[0.01,0.02]
     },
     fallback: "neutral expression"
   },
+
   bg: {
-    group: ["plain background","studio background","solid background","white background","bedroom"],
+    group: ["plain_background","white_background","studio_background","solid_background","white_seamless","gray_seamless"],
     targets: {
-      "plain background":[0.35,0.45]
+      "plain_background":[0.55,0.62],   // 主軸（下げすぎない）
+      "white_background":[0.15,0.22],
+      "studio_background":[0.08,0.12],
+      "solid_background":[0.04,0.07],
+      "white_seamless":[0.01,0.02],
+      "gray_seamless":[0.01,0.02]
     },
-    fallback: "plain background"
+    fallback: "plain_background"
   },
+
   light: {
-    group: ["soft lighting","even lighting","normal lighting","window light","overcast"],
+    group: ["even lighting","soft lighting","normal lighting","window light","overcast"],
     targets: {
-      "soft lighting":[0.35,0.45],
-      "even lighting":[0.25,0.35],
-      "normal lighting":[0.10,0.20]
+      "even lighting":[0.35,0.45],
+      "soft lighting":[0.30,0.35],
+      "normal lighting":[0.15,0.20],
+      "window light":[0.05,0.08],
+      "overcast":[0.00,0.02]
     },
-    fallback: "soft lighting"
+    fallback: "even lighting"
   }
 };
 window.MIX_RULES = MIX_RULES;
 
-// EXPR_ALL（使ってるならそのまま）
+// 使っているならそのまま
 const EXPR_ALL = new Set([
   ...Object.keys(MIX_RULES.expr.targets),
   MIX_RULES.expr.fallback
 ]);
-
 
 
 // === NSFWヘッダ統一関数（置き換え版）========================
@@ -4179,6 +4214,29 @@ function buildOneLearning(extraSeed = 0){
   return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
 
+
+// 背景など“グループ内は1つだけ”にする共通ユーティリティ
+function enforceSingleFromGroup(p, group, fallback){
+  if (!Array.isArray(p) || !Array.isArray(group) || group.length===0) return p || [];
+  const set = new Set(group);
+  const normed = (p || []).map(normalizeTag); // ここで正規化も通す
+
+  // 今入っているグループ該当タグを抽出
+  const hit = [];
+  for (const t of normed){
+    if (set.has(t)) hit.push(t);
+  }
+  if (hit.length <= 1) return normed;
+
+  // 優先順位＝groupの並び。最初に見つかったものを残す
+  const winner = group.find(g => hit.includes(g)) || hit[0];
+
+  // いったんグループ全削除 → 勝者だけ戻す
+  const filtered = normed.filter(t => !set.has(t));
+  filtered.push(winner);
+  return filtered;
+}
+
 /* ============================================================================
  * 学習モード一括生成（修正版・置き換え用 / 追加NSFW6カテゴリ対応 + 先頭NSFW）
  * ========================================================================== */
@@ -4286,8 +4344,12 @@ function buildBatchLearning(n){
     };
 
     for (const r of out){
-      let p = Array.isArray(r.pos) ? r.pos.slice()
-            : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+       let p = Array.isArray(r.pos) ? r.pos.slice()
+             : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+       // まず全タグを正規化
+       p = (p || []).map(normalizeTag);
+
+      // ---- ここで NSFW を“先頭へ”付与（チェックON or 何か1つでもNSFW選択あり）
 
       // --- 選択済みの「先頭1件」
       const chosenExpr   = gExpr[0]   || "";
@@ -4351,6 +4413,11 @@ function buildBatchLearning(n){
       // 服色ペアリング（露出注入後）
       if (typeof pairWearColors === 'function') p = pairWearColors(p);
 
+     // 背景は常に“1つだけ”に圧縮（MIX_RULESのpriority順）
+     if (MIX_RULES?.bg?.group) {
+       p = enforceSingleFromGroup(p, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
+      }
+
       // ---- ここで NSFW を“先頭へ”付与（チェックON or 何か1つでもNSFW選択あり）
       if ((nsfwOn || isAnyNSFWSelected) && !p.includes("NSFW")) {
         p.unshift("NSFW");
@@ -4366,13 +4433,21 @@ function buildBatchLearning(n){
 
   // ④ 最終整形
   for (const r of out){
-    let p = Array.isArray(r.pos) ? r.pos.slice()
-          : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+     let p = Array.isArray(r.pos) ? r.pos.slice()
+           : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+     // 正規化を先に
+     p = (p || []).map(normalizeTag);
 
     const fixed = (typeof getFixedLearn === 'function') ? getFixedLearn() : [];
     if (fixed.length) p = [...fixed, ...p];
     if (typeof fixExclusives === 'function') p = fixExclusives(p);
     p = Array.from(new Set(p.filter(Boolean)));
+
+     // 背景は最終段でも1つだけに強制
+     if (MIX_RULES?.bg?.group) {
+       p = enforceSingleFromGroup(p, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
+     }
+
     if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
     if (typeof enforceHeadOrder === 'function')  p = enforceHeadOrder(p);
 
