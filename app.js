@@ -4616,26 +4616,45 @@ function buildBatchLearning(n){
   };
 
   // 服“色”プレースを配列へ注入（チェックONのみ / ワンピ時は下色無効、上色は dress に紐づけ）
-  const injectWearColorPlaceholders = (arr)=>{
-    const isDress   = !!document.getElementById("outfitModeDress")?.checked;
-    const useTop    = !!document.getElementById("use_top")?.checked;
-    const useBottom = !!document.getElementById("useBottomColor")?.checked;
-    const useShoes  = !!document.getElementById("use_shoes")?.checked;
+function injectWearColorPlaceholders(p){
+  if (!Array.isArray(p)) return;
 
-    const pushColor = (ok, tagId, noun)=>{
-      if (!ok) return;
-      const t = textOf(tagId);
-      if (t && t !== "—") arr.push(norm(`${t} ${noun}`)); // 例: "white top"
-    };
-
-    if (isDress){
-      pushColor(useTop, 'tag_top', 'dress');
-    } else {
-      pushColor(useTop,    'tag_top',    'top');
-      pushColor(useBottom, 'tag_bottom', 'bottom');
-    }
-    pushColor(useShoes, 'tag_shoes', 'shoes');
+  // ローカルヘルパ（他に norm / textOf が無い環境でも単体で動くように）
+  const _norm = (t)=> (typeof normalizeTag==='function')
+    ? normalizeTag(String(t||""))
+    : String(t||"").trim();
+  const _textOf = (id)=>{
+    const el = document.getElementById(id);
+    if (!el) return "";
+    // code.tag（色タグUI）は textContent、input系は value
+    return (('textContent' in el && el.tagName && el.tagName.toLowerCase()==='code') || el.classList?.contains('tag'))
+      ? (el.textContent||"").trim()
+      : (('value' in el) ? String(el.value||"").trim() : (el.textContent||"").trim());
   };
+
+  const isDress   = !!document.getElementById("outfitModeDress")?.checked;
+  const useTop    = !!document.getElementById("use_top")?.checked;
+  const useBottom = !!document.getElementById("useBottomColor")?.checked;
+  const useShoes  = !!document.getElementById("use_shoes")?.checked;
+
+  // 既に同一プレースが入っていれば重複注入しない
+  const _push = (ok, tagId, noun)=>{
+    if (!ok) return;
+    const color = _textOf(tagId);
+    if (!color || color === "—") return;
+    const token = _norm(`${color} ${noun}`);  // 例: "white top"
+    if (!p.some(x => _norm(x) === token)) p.push(token);
+  };
+
+  if (isDress){
+    // ワンピースモード：上色は dress に紐づけ、下色は無効
+    _push(useTop, 'tag_top', 'dress');
+  } else {
+    _push(useTop,    'tag_top',    'top');
+    _push(useBottom, 'tag_bottom', 'bottom');
+  }
+  _push(useShoes, 'tag_shoes', 'shoes');
+}
 
   // NSFW ON 判定（学習モードのチェック）
   const nsfwOn = !!document.getElementById("nsfwLearn")?.checked;
