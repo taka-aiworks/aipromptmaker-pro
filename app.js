@@ -677,13 +677,17 @@ let NSFW = normNSFW(EMBED_NSFW);
 function normItem(x) {
   if (typeof x === "string") return { tag: x, label: x, level: "L1" };
   if (!x || typeof x !== "object") return null;
-  // 空文字("")は有効。undefined/nullだけ除外したいので ?? を使う
+
   const tag   = x.tag ?? x.en ?? x.keyword ?? x.value ?? x.name;
   const ja    = x.ja || x.jp || x["name_ja"] || x["label_ja"] || x.desc || x.label;
   const label = (ja && String(ja).trim()) ? String(ja).trim() : (tag || "");
   const level = (x.level || "L1").toUpperCase();
-  return (tag === undefined || tag === null) ? null : { tag: String(tag), label, level };
+
+  if (tag === undefined || tag === null) return null;
+  // ← ここがポイント：未知フィールド（cat 含む）を温存
+  return { ...x, tag: String(tag), label, level };
 }
+
 function normList(arr){ return (arr || []).map(normItem).filter(Boolean); }
 
 // ==== KEYMAP（UI見出し → SFWキー）====
@@ -723,14 +727,30 @@ function normalizeSFWKeys(){
 
 // === outfit をカテゴリ分配 ===
 function categorizeOutfit(list){
-  const L = normList(list||[]);
-  const has = (t, re) => re.test(t.tag);
-  const top = L.filter(t => /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer|puffer\ jacket|parka|windbreaker|raincoat)\b/i.test(t.tag));
-  const pants = L.filter(t=> has(t, /\b(jeans|pants|trousers|shorts|cargo pants|leggings|overalls|bermuda shorts)\b/i));
-  const skirt = L.filter(t=> has(t, /\b(skirt|pleated skirt|long skirt|hakama)\b/i));
-  const dress = L.filter(t => /\b(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita dress|kimono dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|nurse\s+uniform|tracksuit|sportswear|jersey|robe|poncho|cape|witch\s+outfit|idol\s+costume|stage\s+costume)\b/i.test(t.tag));
-  const shoes = L.filter(t => /\b(shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori|thigh-high\ socks|knee-high\ socks)\b/i.test(t.tag));
-   return { top, pants, skirt, dress, shoes }; // ← 追加
+  const L = normList(list || []);
+  const C = { top:[], pants:[], skirt:[], dress:[], shoes:[] };
+
+  for (const t of L) {
+    const cat = (t.cat || "").toLowerCase();
+
+    if (cat === "top")      { C.top.push(t);   continue; }
+    if (cat === "pants")    { C.pants.push(t); continue; }
+    if (cat === "skirt")    { C.skirt.push(t); continue; }
+    if (cat === "dress")    { C.dress.push(t); continue; }
+    if (cat === "shoes")    { C.shoes.push(t); continue; }
+
+    // cat が無い/不明なときは従来のタグ名ヒューリスティック
+    const tag = (t.tag || "").toLowerCase();
+    if (/(t-shirt|tank|blouse|shirt|hoodie|sweater|cardigan|jacket|coat|trench|blazer|turtleneck|camisole|off-shoulder|crop|sweatshirt|puffer|parka|windbreaker|raincoat)/.test(tag)) { C.top.push(t);   continue; }
+    if (/(jeans|pants|trousers|shorts|cargo|bermuda|leggings|overalls|hakama)/.test(tag))                                         { C.pants.push(t); continue; }
+    if (/(skirt)/.test(tag))                                                                                                       { C.skirt.push(t); continue; }
+    if (/(dress|gown|yukata|kimono|cheongsam|hanbok|sari|uniform|maid|waitress|suit|tracksuit|sportswear|jersey|armor|witch|idol|stage|casual|loungewear|pajamas|lolita|apron|robe|poncho|cape|swimsuit|speedo|trunks|tankini|rash_guard|kneesuit|jammer|briefs|racerback|high_cut|spats|open_back|skirted|striped|polka|floral|retro|school_swimsuit|kids_swimsuit|float_ring|swim_cap)/.test(tag)) { C.dress.push(t); continue; }
+    if (/(boots|sneakers|loafers|mary janes)/.test(tag))                                                                           { C.shoes.push(t); continue; }
+
+    // ← ここがデフォルト先：分類できなければ dress
+    C.dress.push(t);
+  }
+  return C;
 }
 
 // ========== 置き換え: NSFW 正規化（拡張カテゴリ対応） ==========
