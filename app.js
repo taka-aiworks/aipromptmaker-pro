@@ -4451,68 +4451,62 @@ function buildBatchLearning(n){
   }
 
   // ④ 最終整形（ここで基本情報を必ず前段に注入）
-  for (const r of out){
-    let p = Array.isArray(r.pos) ? r.pos.slice()
-          : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
-    p = (p || []).map(normalizeTag);
+for (const r of out){
+  let p = Array.isArray(r.pos) ? r.pos.slice()
+        : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+  p = (p || []).map(normalizeTag);
 
-    // 固定（元のgetFixedLearnそのまま）
-    const fixed = (typeof getFixedLearn === 'function') ? getFixedLearn() : [];
+  // 固定（従来どおり）
+  const fixed = (typeof getFixedLearn === 'function') ? getFixedLearn() : [];
 
-    // 基本情報・見た目（学習モードのDOMから直接取得）※pm系は使わない
-    const basicsRaw = [
-      // 年齢・性別・体型・身長
-      document.getElementById('ID_AGE')?.value,
-      document.getElementById('ID_GENDER')?.value,
-      document.getElementById('ID_BODY')?.value,
-      document.getElementById('ID_HEIGHT')?.value,
+  // ★ 基本情報をDOMから直接取得（pm系は一切使わない）
+  const basicsRaw = [
+    document.getElementById('ID_AGE')?.value,
+    document.getElementById('ID_GENDER')?.value,
+    document.getElementById('ID_BODY')?.value,
+    document.getElementById('ID_HEIGHT')?.value,
+    document.getElementById('ID_HAIR')?.value,
+    document.getElementById('ID_EYE')?.value,
+    document.getElementById('ID_SKIN')?.value,
+    document.getElementById('tagH')?.value,
+    document.getElementById('tagE')?.value,
+    document.getElementById('tagSkin')?.value
+  ].filter(Boolean);
 
-      // 髪/瞳/肌の確定欄（あれば）
-      document.getElementById('ID_HAIR')?.value,
-      document.getElementById('ID_EYE')?.value,
-      document.getElementById('ID_SKIN')?.value,
+  const basics = basicsRaw
+    .flatMap(s => String(s).split(/\s*,\s*/))
+    .map(normalizeTag)
+    .filter(Boolean);
 
-      // ラベル欄（あれば）
-      document.getElementById('tagH')?.value,
-      document.getElementById('tagE')?.value,
-      document.getElementById('tagSkin')?.value
-    ].filter(Boolean);
+  // 固定 → 基本情報 → 既存p
+  p = [...fixed, ...basics, ...p].filter(Boolean);
 
-    const basics = basicsRaw
-      .flatMap(s => String(s).split(/\s*,\s*/))
-      .map(normalizeTag)
-      .filter(Boolean);
+  if (typeof fixExclusives === 'function') p = fixExclusives(p);
+  p = Array.from(new Set(p)); // 重複除去
 
-    // 固定 → 基本情報 → 既存p
-    p = [...fixed, ...basics, ...p];
+  // （任意）ビュー/光/背景の1本化や順序調整
+  if (typeof enforceSingleBackground === 'function') p = enforceSingleBackground(p);
+  if (typeof unifyLightingOnce       === 'function') p = unifyLightingOnce(p);
+  if (typeof ensureViewExclusive     === 'function') p = ensureViewExclusive(p);
+  if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
+  if (typeof enforceHeadOrder  === 'function') p = enforceHeadOrder(p);
 
-    if (typeof fixExclusives === 'function') p = fixExclusives(p);
-    p = Array.from(new Set(p)); // 重複除去
-
-    // 背景・光・ビューの正規化
-    if (typeof enforceSingleBackground === 'function') p = enforceSingleBackground(p);
-    if (typeof unifyLightingOnce       === 'function') p = unifyLightingOnce(p);
-    if (typeof ensureViewExclusive     === 'function') p = ensureViewExclusive(p);
-
-    if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
-    if (typeof enforceHeadOrder  === 'function') p = enforceHeadOrder(p);
-
-    // NSFW 最終ガード
-    if (p.includes("NSFW") && p[0] !== "NSFW"){
-      p = p.filter(t => t !== "NSFW");
-      p.unshift("NSFW");
-    }
-
-    r.pos    = p;
-    r.prompt = p.join(", ");
-
-    const addonNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
-    const learnNeg = (typeof getNegLearn === 'function') ? getNegLearn() : "";
-    r.neg  = [learnNeg, addonNeg].filter(Boolean).join(", ");
-
-    r.seed = r.seed || seedFromName($("#charName")?.value || "", 1);
-    r.text = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
+  // NSFW を先頭に固定
+  if (p.includes("NSFW") && p[0] !== "NSFW"){
+    p = p.filter(t => t !== "NSFW");
+    p.unshift("NSFW");
   }
+
+  r.pos    = p;
+  r.prompt = p.join(", ");
+
+  const addonNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
+  const learnNeg = (typeof getNegLearn === 'function') ? getNegLearn() : "";
+  r.neg  = [learnNeg, addonNeg].filter(Boolean).join(", ");
+
+  r.seed = r.seed || seedFromName($("#charName")?.value || "", 1);
+  r.text = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
+}
 
   return out;
 }
