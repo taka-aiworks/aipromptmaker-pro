@@ -4678,54 +4678,61 @@ function buildBatchLearning(n){
 
 
 /* ============================================================================
- * 置き換え: ensurePromptOrder（構図/view + NSFW追加6カテゴリに対応）
+ * 置き換え: ensurePromptOrder（構図/view を独立で1つずつ保持 + 正規化 + 安全化）
  * ========================================================================== */
 function ensurePromptOrder(parts) {
-  const set = new Set(parts.filter(Boolean));
-  const asSet = (arr) => new Set((arr||[]).map(x => (typeof x==='string'? x : x.tag)));
+  const norm = (t)=> (typeof normalizeTag==='function' ? normalizeTag(String(t||"")) : String(t||"").trim().toLowerCase());
+  const P = (Array.isArray(parts) ? parts : []).filter(Boolean).map(norm);
+
+  const asSet = (arr) => new Set(
+    (Array.isArray(arr) ? arr : [])
+      .map(x => (typeof x==='string' ? x : (x && x.tag ? String(x.tag) : "")))
+      .filter(Boolean)
+      .map(norm)
+  );
 
   const S = {
     // 基本属性
-    age:        asSet(SFW.age),
-    gender:     asSet(SFW.gender),
-    body_basic: asSet(SFW.body_type),
-    height:     asSet(SFW.height),
-    person:     asSet(SFW.personality),
-    world:      asSet(SFW.worldview),
-    tone:       asSet(SFW.speech_tone),
+    age:        asSet(window.SFW?.age),
+    gender:     asSet(window.SFW?.gender),
+    body_basic: asSet(window.SFW?.body_type),
+    height:     asSet(window.SFW?.height),
+    person:     asSet(window.SFW?.personality),
+    world:      asSet(window.SFW?.worldview),
+    tone:       asSet(window.SFW?.speech_tone),
 
     // 形
-    hair_style: asSet(SFW.hair_style),
-    eyes_shape: asSet(SFW.eyes),
-    face:       asSet(SFW.face),
-    skin_body:  asSet(SFW.skin_body),
-    art_style:  asSet(SFW.art_style),
+    hair_style: asSet(window.SFW?.hair_style),
+    eyes_shape: asSet(window.SFW?.eyes),
+    face:       asSet(window.SFW?.face),
+    skin_body:  asSet(window.SFW?.skin_body),
+    art_style:  asSet(window.SFW?.art_style),
 
     // 服・アクセ
-    outfit:     asSet(SFW.outfit),
-    acc:        asSet(SFW.accessories),
+    outfit:     asSet(window.SFW?.outfit),
+    acc:        asSet(window.SFW?.accessories),
 
     // シーン（SFW）
-    background:  asSet(SFW.background),
-    pose:        asSet(SFW.pose),
-    composition: asSet(SFW.composition), // ★
-    view:        asSet(SFW.view),        // ★
-    expr:        asSet(SFW.expressions),
-    light:       asSet(SFW.lighting),
+    background:  asSet(window.SFW?.background),
+    pose:        asSet(window.SFW?.pose),
+    composition: asSet(window.SFW?.composition),
+    view:        asSet(window.SFW?.view),
+    expr:        asSet(window.SFW?.expressions),
+    light:       asSet(window.SFW?.lighting),
 
     // NSFW（従来）
-    nsfw_expr:  asSet(NSFW.expression),
-    nsfw_expo:  asSet(NSFW.exposure),
-    nsfw_situ:  asSet(NSFW.situation),
-    nsfw_light: asSet(NSFW.lighting),
+    nsfw_expr:  asSet(window.NSFW?.expression),
+    nsfw_expo:  asSet(window.NSFW?.exposure),
+    nsfw_situ:  asSet(window.NSFW?.situation),
+    nsfw_light: asSet(window.NSFW?.lighting),
 
     // NSFW（追加）
-    nsfw_pose:     asSet(NSFW.pose),
-    nsfw_acc:      asSet(NSFW.accessory),
-    nsfw_outfit:   asSet(NSFW.outfit),
-    nsfw_body:     asSet(NSFW.body),
-    nsfw_nipples:  asSet(NSFW.nipples),
-    nsfw_under:    asSet(NSFW.underwear),
+    nsfw_pose:     asSet(window.NSFW?.pose),
+    nsfw_acc:      asSet(window.NSFW?.accessory),
+    nsfw_outfit:   asSet(window.NSFW?.outfit),
+    nsfw_body:     asSet(window.NSFW?.body),
+    nsfw_nipples:  asSet(window.NSFW?.nipples),
+    nsfw_under:    asSet(window.NSFW?.underwear),
   };
 
   const isHairColor = (t)=> /\bhair$/.test(t) && !S.hair_style.has(t);
@@ -4759,14 +4766,17 @@ function ensurePromptOrder(parts) {
     other:[]
   };
 
-  const charName = ($("#charName")?.value || "").trim();
+  const charName = (document.getElementById('charName')?.value || "").trim();
   const WEAR_NAME_RE = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\ coat|tank\ top|camisole|turtleneck|off-shoulder\ top|crop\ top|sweatshirt|blazer|skirt|pleated\ skirt|long\ skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\ shorts|dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|hanbok|sari|lolita\ dress|kimono\ dress|swimsuit|bikini|leotard|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape|shoes|boots|heels|sandals|sneakers|loafers|mary\ janes|geta|zori)\b/i;
+
+  // 一意化（元順序はこの関数で付け直すのでOK）
+  const set = new Set(P);
 
   for (const t of set) {
     if (!t) continue;
 
-    if (t.startsWith("<lora:") || /\b(?:LoRA|<lyco:)/i.test(t)) { buckets.lora.push(t); continue; }
-    if (charName && t === charName) { buckets.name.push(t); continue; }
+    if (t.startsWith("<lora:") || /\b(?:lora|<lyco:)/i.test(t)) { buckets.lora.push(t); continue; }
+    if (charName && t === norm(charName)) { buckets.name.push(t); continue; }
 
     // 人となり
     if (S.age.has(t))        { buckets.b_age.push(t); continue; }
@@ -4793,7 +4803,7 @@ function ensurePromptOrder(parts) {
     if (S.outfit.has(t) || WEAR_NAME_RE.test(t)) { buckets.wear.push(t); continue; }
     if (S.acc.has(t)) { buckets.acc.push(t); continue; }
 
-    // シーン
+    // シーン（SFW）
     if (S.background.has(t))  { buckets.bg.push(t);   continue; }
     if (S.composition.has(t)) { buckets.comp.push(t); continue; }
     if (S.pose.has(t))        { buckets.pose.push(t); continue; }
@@ -4818,34 +4828,29 @@ function ensurePromptOrder(parts) {
     buckets.other.push(t);
   }
 
-  // --- グローバル正規化（表情/構図/視点） ---
+  // --- グローバル正規化 ---
   // 1) 表情：SFW/NSFW 横断で 1つだけ
   {
-    const ALL_EXPR = [...buckets.expr, ...buckets.n_expr];
-    if (ALL_EXPR.length > 0) {
-      const PREFER_EXPR = ["smiling","neutral expression","slight blush","surprised (mild)","pouting (slight)"];
-      const keepExpr = PREFER_EXPR.find(t => ALL_EXPR.includes(t)) || ALL_EXPR[0];
-      buckets.expr = [keepExpr];
+    const all = [...buckets.expr, ...buckets.n_expr];
+    if (all.length > 0) {
+      const prefer = ["smiling","neutral expression","slight blush","surprised (mild)","pouting (slight)"];
+      const keep = prefer.find(x => all.includes(x)) || all[0];
+      buckets.expr = [keep];
       buckets.n_expr = [];
     }
   }
-  // 2) 構図/視点：横断収集 → 1つだけ
-  {
-    const COMP_VIEW_ORDER = [
-      "full body","wide shot","waist up","upper body","bust","portrait","close-up",
-      "three-quarters view","front view","profile view","back view","side view"
-    ];
-    const keys = Object.keys(buckets);
-    const hits = [];
-    for (const k of keys) {
-      for (const t of buckets[k]) if (COMP_VIEW_ORDER.includes(t)) hits.push(t);
-    }
-    if (hits.length > 1) {
-      const keep = COMP_VIEW_ORDER.find(t => hits.includes(t)) || hits[0];
-      for (const k of keys) {
-        buckets[k] = buckets[k].filter(t => !(COMP_VIEW_ORDER.includes(t) && t !== keep));
-      }
-    }
+
+  // 2) 構図：1つだけ（view とは独立）
+  if (buckets.comp.length > 1) {
+    const ORDER = ["full body","wide shot","waist up","upper body","bust","portrait","close-up"];
+    const keep = ORDER.find(x => buckets.comp.includes(x)) || buckets.comp[0];
+    buckets.comp = [keep];
+  }
+  // 3) 視点：1つだけ（composition とは独立）
+  if (buckets.view.length > 1) {
+    const ORDER = ["three-quarters view","front view","profile view","side view","back view"];
+    const keep = ORDER.find(x => buckets.view.includes(x)) || buckets.view[0];
+    buckets.view = [keep];
   }
 
   // 最終並び（学習向けの順）
@@ -4870,6 +4875,7 @@ function ensurePromptOrder(parts) {
     ...buckets.other
   ].filter(Boolean);
 
+  // 一意化して返す（順序はこの配列の並びを維持）
   return Array.from(new Set(orderedOut));
 }
 
