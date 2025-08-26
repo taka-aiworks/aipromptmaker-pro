@@ -4484,6 +4484,58 @@ function pmBuildOne(){
 }
 
 
+/* ============================================================
+ * 服の名詞をDOMから抽出（outfit_*）
+ * - ワンピースモードONなら dress のみ
+ * - ワンピースOFFなら top + (pants/skirt のどちらか)
+ * - 靴は任意
+ * - normalizeTag で正規化
+ * ============================================================ */
+function getOutfitNouns(){
+  const nouns = [];
+  const isDressMode = !!document.getElementById('outfitModeDress')?.checked;
+  const useSkirt    = !!document.getElementById('bottomCat_skirt')?.checked;
+
+  // scrollerの選択中テキストを取る小ヘルパ
+  const pick = (id)=>{
+    const root = document.getElementById(id);
+    if (!root) return "";
+    const q = root.querySelector(
+      '.selected, .active, .sel, [aria-selected="true"], [data-selected="true"], '+
+      'input[type=radio]:checked + label, .option.selected, .item.selected'
+    );
+    return q?.textContent?.trim() || "";
+  };
+
+  if (isDressMode){
+    const dress = pick('outfit_dress');
+    if (dress) nouns.push(dress);
+  } else {
+    const top = pick('outfit_top');
+    if (top) nouns.push(top);
+
+    if (useSkirt){
+      const skirt = pick('outfit_skirt');
+      if (skirt) nouns.push(skirt);
+    } else {
+      const pants = pick('outfit_pants');
+      if (pants) nouns.push(pants);
+    }
+  }
+
+  const shoes = pick('outfit_shoes');
+  if (shoes) nouns.push(shoes);
+
+  // 正規化 & 重複除去
+  const out = nouns.map(s=> (typeof normalizeTag==='function') ? normalizeTag(s) : s)
+                   .filter(Boolean);
+  return Array.from(new Set(out));
+}
+
+// 互換用（過去に _getOutfitNouns を呼んでいる箇所も拾えるように）
+window._getOutfitNouns = getOutfitNouns;
+
+
 
 /* ===== 学習モード：全面置き換え ===== */
 function buildBatchLearning(n){
