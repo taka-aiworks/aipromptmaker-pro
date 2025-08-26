@@ -4397,7 +4397,77 @@ function _injectWearColorPlaceholders(intoArray){
   pushColor(useShoes, 'tag_shoes', 'shoes');
 }
 
-/* ====== 本体 ====== */
+
+/* ===== 学習モード：内部ヘルパ ===== */
+function _norm(t){
+  const s = String(t ?? "").trim();
+  return (typeof normalizeTag === 'function') ? normalizeTag(s) : s;
+}
+
+// scroller系の「選択中テキスト」を拾う
+function _selectedText(id){
+  const root = document.getElementById(id);
+  if (!root) return "";
+  const q = root.querySelector(
+    '.selected, .active, .sel, [aria-selected="true"], [data-selected="true"], ' +
+    'input[type=radio]:checked + label, .option.selected, .item.selected'
+  );
+  return q && q.textContent ? q.textContent.trim() : "";
+}
+
+// 値を拾う（input/textarea → value、code.tag → textContent、scroller → 選択テキスト）
+function _textOf(id){
+  const el = document.getElementById(id);
+  if (!el) return "";
+  // code.tag（髪/瞳/肌のタグ表示）は textContent
+  if (el.matches && (el.matches('code.tag') || el.classList?.contains('tag'))) {
+    return (el.textContent || "").trim();
+  }
+  // 通常のフォーム要素
+  if ('value' in el) {
+    return String(el.value || "").trim();
+  }
+  // scrollerパネル（bf_* / hairStyle / eyeShape / outfit_* など）
+  return _selectedText(id);
+}
+
+// 服の名詞（未選択は入れない）
+// ※ ワンピが選ばれているかどうかは color注入側で見ます。ここは素直に拾うだけ。
+function _getOutfitNouns(){
+  const nouns = [];
+  const pushIf = (id)=>{ const t=_selectedText(id); if (t) nouns.push(_norm(t)); };
+  pushIf('outfit_top');
+  pushIf('outfit_dress');
+  pushIf('outfit_pants');
+  pushIf('outfit_skirt');
+  pushIf('outfit_shoes');
+  return nouns.filter(Boolean);
+}
+
+// 服の色プレースを p に注入（チェックONのみ / ワンピ時は bottom無効）
+function _injectWearColorPlaceholders(p){
+  const pushColor = (ok, id, noun)=>{
+    if (!ok) return;
+    const t = (_textOf(id) || "").trim();
+    if (t && t !== "—") p.push(_norm(`${t} ${noun}`)); // 例: "white top"
+  };
+  const useTop    = !!document.getElementById('use_top')?.checked;
+  const useBottom = !!document.getElementById('useBottomColor')?.checked;
+  const useShoes  = !!document.getElementById('use_shoes')?.checked;
+  const isDress   = !!document.getElementById('outfitModeDress')?.checked;
+
+  if (isDress){
+    // ワンピ時は top色→dress に紐づけ、bottomは無視
+    pushColor(useTop, 'tag_top', 'dress');
+  } else {
+    pushColor(useTop, 'tag_top', 'top');
+    pushColor(useBottom, 'tag_bottom', 'bottom');
+  }
+  pushColor(useShoes, 'tag_shoes', 'shoes');
+}
+
+
+/* ====== 本体（置き換え）====== */
 function buildBatchLearning(n){
   const out  = [];
   const used = new Set();
@@ -4503,18 +4573,17 @@ function buildBatchLearning(n){
             : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
       p = (p || []).map(_norm);
 
-      // ★ 服名詞（DOM選択）を注入（未選択は入れない）
+      // 服名詞を注入
       p.push(..._getOutfitNouns());
 
-      // ★ 色プレースを注入（チェックONのみ）
+      // 色プレース注入
       _injectWearColorPlaceholders(p);
 
-      // ★ 中間ペアリング（white t-shirt などへ）
+      // 中間ペアリング
       if (typeof pairWearColors === 'function') p = pairWearColors(p);
 
-      // ここで生まれた合成服を OUTFIT_FIXED として保護
+      // 合成済み服を保護集合に
       const OUTFIT_FIXED = new Set(p.map(_norm).filter(s=>{
-        // 合成の判定：色+スペース+名詞 っぽいものを保護（大雑把でOK）
         return /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+\S/.test(s);
       }));
 
@@ -4548,11 +4617,11 @@ function buildBatchLearning(n){
           p = p.filter(s=>{
             const x  = String(s);
             const nx = _norm(x);
-            if (OUTFIT_FIXED.has(nx)) return true; // 合成済み服は保護
+            if (OUTFIT_FIXED.has(nx)) return true;
             if (CLOTH_NOUN_RE.test(x))  return false;
             if (COLOR_PLACE_RE.test(x)) return false;
             if (FOOTWEAR_RE.test(x))    return false;
-            if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false; // 単独色の掃除
+            if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false;
             return true;
           });
         }
@@ -4598,10 +4667,10 @@ function buildBatchLearning(n){
           : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
     p = (p || []).map(_norm);
 
-    // 固定（あなたの getFixedLearn をそのまま）
+    // 固定
     const fixed = (typeof getFixedLearn === 'function') ? (getFixedLearn() || []) : [];
 
-    // 基本情報（DOM直）
+    // 基本情報（scrollerの選択テキスト＆タグ表示を拾う）
     const basicsRaw = [
       _textOf('bf_age'),
       _textOf('bf_gender'),
@@ -4609,7 +4678,6 @@ function buildBatchLearning(n){
       _textOf('bf_height'),
       _textOf('hairStyle'),
       _textOf('eyeShape'),
-      // 色ホイールのテキストタグ（右側の code.tag の中身）
       _textOf('tagH'), _textOf('tagE'), _textOf('tagSkin')
     ].filter(Boolean);
 
@@ -4618,19 +4686,19 @@ function buildBatchLearning(n){
       .map(_norm)
       .filter(Boolean);
 
-    // 服の名詞をもう一度前段で確実に注入（未選択は入れない）
+    // 服名詞を再注入
     const outfitNouns = _getOutfitNouns();
 
     // 固定 → 基本情報 → 既存p → 服名詞
     p = [...fixed, ...basics, ...outfitNouns, ...p].filter(Boolean);
 
-    // 色プレース（チェックONのみ）を注入
+    // 色プレース注入
     _injectWearColorPlaceholders(p);
 
     // 最終ペアリング
     if (typeof pairWearColors === 'function') p = pairWearColors(p);
 
-    // ペアリング済みなら裸の色単語は掃除
+    // 裸の色単語を掃除
     const COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
     p = p.filter(t => !(COLOR_WORD_RE.test(t) && !/\s/.test(t)));
 
