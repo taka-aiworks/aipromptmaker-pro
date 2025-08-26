@@ -1410,10 +1410,8 @@ const getOne  = (name) => document.querySelector(`input[name="${name}"]:checked`
 const getMany = (name) => $$(`input[name="${name}"]:checked`).map(x=>x.value);
 
 // 追加：学習用ホワイトリスト（必要ならここを編集）
-// 学習モードで使う最小・安定セット
 const SCOPE = {
   learning: {
-    // 背景：シンプルな単色・スタジオ系のみ
     background: [
       "plain_background",
       "white_background",
@@ -1423,8 +1421,6 @@ const SCOPE = {
       "white_seamless",
       "gray_seamless"
     ],
-
-    // ポーズ：骨格崩れが出にくい静的中心
     pose: [
       "standing",
       "sitting",
@@ -1432,27 +1428,24 @@ const SCOPE = {
       "crossed arms",
       "hand on chest",
       "hands behind back",
-      "head tilt"
+      "head tilt",
+      "waving",
+      "arms crossed behind head"
     ],
-
-    // 構図：距離3種＋ポートレート＋中央構図
     composition: [
       "full body",
       "waist up",
       "bust",
+      "close-up",
       "portrait",
       "centered composition"
     ],
-
-    // 視点：正面・3/4を基軸、横/後ろも少しだけ
     view: [
       "front view",
       "three-quarters view",
       "side view",
       "back view"
     ],
-
-    // 表情：極端を外し、基本＋少し個性
     expressions: [
       "neutral expression",
       "smiling",
@@ -1462,10 +1455,10 @@ const SCOPE = {
       "slight blush",
       "surprised (mild)",
       "pouting (slight)",
-      "teary eyes"
+      "teary eyes",
+      "laughing",
+      "embarrassed"
     ],
-
-    // ライティング：安定光を基本に少し演出
     lighting: [
       "normal lighting",
       "even lighting",
@@ -1473,11 +1466,11 @@ const SCOPE = {
       "window light",
       "overcast",
       "studio lighting",
-      "backlighting"
+      "backlighting",
+      "rim lighting"
     ]
   }
 };
-
 // 追加：タグ配列をホワイトリストで絞る共通関数
 function filterByScope(items, allow) {
   if (!Array.isArray(items)) return [];
@@ -3957,28 +3950,71 @@ function fillRemainder(rows, groupTags, fallbackTag){
 }
 window.fillRemainder = fillRemainder;
 
-// === 配分ルール（割合テーブル） =======================
+// === 正規化（表記ゆれ吸収） ====================================
+function normalizeTag(t){
+  if(!t) return "";
+  const s = String(t).trim().toLowerCase();
+
+  // view
+  if (s==="profile view") return "side view";
+  if (s==="3/4 view" || s==="three quarters view") return "three-quarters view";
+
+  // composition
+  if (s==="close up") return "close-up";
+  if (s==="bust shot") return "bust";
+  if (s==="upper-body" || s==="upperbody") return "upper body";
+
+  // background（snake_caseへ統一）
+  if (s==="plain background")  return "plain_background";
+  if (s==="solid background")  return "solid_background";
+  if (s==="studio background") return "studio_background";
+  if (s==="white background")  return "white_background";
+
+  return t; // 既に正規
+}
+
+// === 配分ルール（学習向け・表記統一済み） ======================
 const MIX_RULES = {
   view: {
-    group: ["front view","three-quarters view","profile view","side view","back view"],
+    group: [
+      "front view",
+      "three-quarters view",
+      "side view",
+      "back view"
+    ],
     targets: {
-      "profile view":[0.15,0.20],
-      "back view":[0.08,0.12]
+      // front / 3Q を主軸、side/back を控えめ
+      "front view":          [0.35, 0.45],
+      "three-quarters view": [0.35, 0.45],
+      "side view":           [0.10, 0.15],
+      "back view":           [0.08, 0.12]
     },
     fallback: "three-quarters view"
   },
+
   comp: {
-    group: ["full body","waist up","upper body","bust","portrait","close-up","wide shot"],
+    group: [
+      "full body",
+      "waist up",
+      "upper body",
+      "bust",
+      "portrait",
+      "close-up",
+      "wide shot"
+    ],
     targets: {
-      "full body":[0.20,0.25],
-      "waist up":[0.30,0.35],
-      "upper body":[0.05,0.10],
-      "bust":[0.20,0.25],
-      "close-up":[0.05,0.10],
-      "wide shot":[0.05,0.10]
+      // 距離の偏りを抑えて安定＋顔寄りも少し
+      "full body":  [0.18, 0.22],
+      "waist up":   [0.28, 0.34],
+      "upper body": [0.05, 0.08],
+      "bust":       [0.18, 0.22],
+      "portrait":   [0.10, 0.14],
+      "close-up":   [0.05, 0.08],
+      "wide shot":  [0.03, 0.06]
     },
     fallback: "portrait"
   },
+
   expr: {
     group: [
       "neutral expression",
@@ -3991,40 +4027,63 @@ const MIX_RULES = {
       "pouting (slight)"
     ],
     targets: {
-      "neutral expression": [0.55, 0.65],
-      "smiling":            [0.18, 0.25],
-      "smiling open mouth": [0.05, 0.10],
+      // neutral をやや減らして smiling に少し配分
+      "neutral expression": [0.48, 0.58],
+      "smiling":            [0.22, 0.28],
+      "smiling open mouth": [0.06, 0.10],
+      "slight blush":       [0.03, 0.06],
+      "surprised (mild)":   [0.01, 0.03],
+      "pouting (slight)":   [0.01, 0.03],
       "serious":            [0.01, 0.02],
-      "determined":         [0.01, 0.02],
-      "slight blush":       [0.03, 0.05]
+      "determined":         [0.01, 0.02]
     },
     fallback: "neutral expression"
   },
+
   bg: {
-    group: ["plain background","studio background","solid background","white background","bedroom"],
+    // SCOPE.learning に合わせて snake_case に統一
+    group: [
+      "plain_background",
+      "studio_background",
+      "solid_background",
+      "white_background",
+      "light gray background" // これだけ辞書由来のスペース表記
+    ],
     targets: {
-      "plain background":[0.35,0.45]
+      "plain_background":     [0.38, 0.46],
+      "studio_background":    [0.18, 0.25],
+      "solid_background":     [0.12, 0.18],
+      "white_background":     [0.12, 0.18],
+      "light gray background":[0.05, 0.10]
     },
-    fallback: "plain background"
+    fallback: "plain_background"
   },
+
   light: {
-    group: ["soft lighting","even lighting","normal lighting","window light","overcast"],
+    group: [
+      "soft lighting",
+      "even lighting",
+      "normal lighting",
+      "window light",
+      "overcast"
+    ],
     targets: {
-      "soft lighting":[0.35,0.45],
-      "even lighting":[0.25,0.35],
-      "normal lighting":[0.10,0.20]
+      "soft lighting":   [0.32, 0.42],
+      "even lighting":   [0.25, 0.35],
+      "normal lighting": [0.12, 0.20],
+      "window light":    [0.06, 0.12],
+      "overcast":        [0.05, 0.10]
     },
     fallback: "soft lighting"
   }
 };
 window.MIX_RULES = MIX_RULES;
 
-// EXPR_ALL（使ってるならそのまま）
+// 使っているならそのまま
 const EXPR_ALL = new Set([
   ...Object.keys(MIX_RULES.expr.targets),
   MIX_RULES.expr.fallback
 ]);
-
 
 
 // === NSFWヘッダ統一関数（置き換え版）========================
