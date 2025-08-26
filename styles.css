@@ -810,3 +810,29 @@ legend { display: none; }
   .wm-table th:nth-child(1), .wm-table td:nth-child(1) { width:45%; }
   .wm-table th:nth-child(2), .wm-table td:nth-child(2) { width:35%; }
 }
+
+
+/* === 服（固定）リストを少し低く固定 === */
+:root{
+  /* 好みでここだけ変えれば全体が連動 */
+  --outfit-scroll-h: 200px; /* 例: 180～220pxあたりが見やすい */
+}
+
+/* 基本情報タブの服エリアだけを対象に（他モードは触らない） */
+#panelBasic #panel_outfitFixed .scroller{
+  max-height: var(--outfit-scroll-h);
+  overflow: auto;
+}
+
+/* 余白を少しだけ締める（任意） */
+#panelBasic #panel_outfitFixed .panel h4{
+  margin-bottom: 4px;
+}
+#panelBasic #panel_outfitFixed .scroller{
+  padding-right: 4px; /* スクロールバー分の見切れ軽減 */
+}
+
+/* iPad/横幅狭い時はさらに低め（任意） */
+@media (max-width: 1024px){
+  :root{ --outfit-scroll-h: 180px; }
+}
