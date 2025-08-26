@@ -1,7 +1,7 @@
 
 {
   "NSFW": {
-    "categories": [
+    "expression": [
       { "tag": "aroused",          "ja": "上気した表情", "level": "L1" },
       { "tag": "flushed",          "ja": "頬を赤らめる", "level": "L1" },
       { "tag": "embarrassed",      "ja": "照れ", "level": "L1" },
