@@ -1409,75 +1409,7 @@ function radioList(el, list, name, {checkFirst = true} = {}) {
 const getOne  = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
 const getMany = (name) => $$(`input[name="${name}"]:checked`).map(x=>x.value);
 
-// 追加：学習用ホワイトリスト（必要ならここを編集）
-const SCOPE = {
-  learning: {
-    background: [
-      "plain_background",
-      "white_background",
-      "solid_background",
-      "studio_background",
-      "light gray background",
-      "white_seamless",
-      "gray_seamless"
-    ],
-    pose: [
-      "standing",
-      "sitting",
-      "hands on hips",
-      "crossed arms",
-      "hand on chest",
-      "hands behind back",
-      "head tilt",
-      "waving",
-      "arms crossed behind head"
-    ],
-    composition: [
-      "full body",
-      "waist up",
-      "bust",
-      "close-up",
-      "portrait",
-      "centered composition"
-    ],
-    view: [
-      "front view",
-      "three-quarters view",
-      "side view",
-      "back view"
-    ],
-    expressions: [
-      "neutral expression",
-      "smiling",
-      "smiling open mouth",
-      "serious",
-      "determined",
-      "slight blush",
-      "surprised (mild)",
-      "pouting (slight)",
-      "teary eyes",
-      "laughing",
-      "embarrassed"
-    ],
-    lighting: [
-      "normal lighting",
-      "even lighting",
-      "soft lighting",
-      "window light",
-      "overcast",
-      "studio lighting",
-      "backlighting",
-      "rim lighting"
-    ]
-  }
-};
-// 追加：タグ配列をホワイトリストで絞る共通関数
-function filterByScope(items, allow) {
-  if (!Array.isArray(items)) return [];
-  if (!Array.isArray(allow) || allow.length === 0) return items;
-  const s = new Set(allow);
-  return items.filter(x => s.has(x.tag));
-}
+
 
 
 
@@ -3950,62 +3882,136 @@ function fillRemainder(rows, groupTags, fallbackTag){
 }
 window.fillRemainder = fillRemainder;
 
-// ▼ 正規化：辞書準拠（profileは吸収しない／light gray → gray_seamless）
+// ▼ 正規化：辞書準拠（profileは“side”に吸収しない／light gray → gray_seamless）
 function normalizeTag(t){
   if(!t) return "";
   const s = String(t).trim().toLowerCase();
 
-  // view
+  // ---- view ----
   if (s==="3/4 view" || s==="three quarters view") return "three-quarters view";
-  // ← profile view はそのまま残す
+  if (s==="profile") return "profile view"; // 吸収せず表記だけ統一
 
-  // composition
-  if (s==="close up") return "close-up";
-  if (s==="bust shot") return "bust";
+  // ---- composition ----
+  if (s==="close up" || s==="closeup") return "close-up";
+  if (s==="bust shot" || s==="bust-up" || s==="bust up") return "bust";
   if (s==="upper-body" || s==="upperbody") return "upper body";
 
-  // background（snake_caseへ統一）
+  // ---- background（snake_caseへ統一）----
   if (s==="plain background")  return "plain_background";
   if (s==="solid background")  return "solid_background";
   if (s==="studio background") return "studio_background";
   if (s==="white background")  return "white_background";
-  if (s==="light gray background") return "gray_seamless"; // 辞書置換
+  if (s==="white seamless")    return "white_seamless";
+  if (s==="light gray background" || s==="light grey background") return "gray_seamless";
+
+  // ---- lighting ----
+  if (s==="rim lighting") return "rim light";        // 辞書：rim light
+  if (s==="back light" || s==="back-lighting") return "backlighting";
+  if (s==="studio lighting") return "flat studio lighting"; // 辞書：flat studio lighting
 
   return t;
 }
 
+// 追加：タグ配列をホワイトリストで絞る共通関数
+function filterByScope(items, allow) {
+  if (!Array.isArray(items)) return [];
+  if (!Array.isArray(allow) || allow.length === 0) return items;
+  const s = new Set(allow);
+  return items.filter(x => s.has(x.tag));
+}
+
+// === 学習用ホワイトリスト（辞書準拠） ==================
+const SCOPE = {
+  learning: {
+    background: [
+      "plain_background",
+      "white_background",
+      "solid_background",
+      "studio_background",
+      "white_seamless",
+      "gray_seamless"
+    ],
+    pose: [
+      "standing",
+      "sitting",
+      "hands on hips",
+      "crossed arms",
+      "hand on chest",
+      "hands behind back",
+      "head tilt",
+      "waving"
+      // ※ "arms crossed behind head" は辞書外なので除外
+    ],
+    composition: [
+      "full body",
+      "waist up",
+      "bust",
+      "close-up",
+      "portrait",
+      "centered composition"
+    ],
+    view: [
+      "front view",
+      "three-quarters view",
+      "side view",
+      "profile view", // 追加：配分ルールに合わせる
+      "back view"
+    ],
+    expressions: [
+      "neutral expression",
+      "smiling",
+      "smiling open mouth",
+      "serious",
+      "determined",
+      "slight blush",
+      "surprised (mild)",
+      "pouting (slight)",
+      "teary eyes",
+      "laughing",
+      "embarrassed"
+    ],
+    lighting: [
+      "normal lighting",
+      "even lighting",
+      "soft lighting",
+      "window light",
+      "overcast",
+      "flat studio lighting", // 辞書準拠
+      "backlighting",
+      "rim light"             // 辞書準拠
+    ]
+  }
+};
+
 // === 顔安定版・配分ルール =======================
 const MIX_RULES = {
   view: {
-    // ※ “front/three-quarters/side/back/profile” は辞書のタグに合わせて表記統一
     group: ["front view","three-quarters view","side view","profile view","back view"],
     targets: {
-      "three-quarters view":[0.55,0.65], // 最安定・主軸
-      "front view":[0.30,0.35],          // 顔正対も十分確保
-      "side view":[0.02,0.04],           // 少量のバリエ
-      "profile view":[0.01,0.03],        // 横顔はごく少量
-      "back view":[0.00,0.01]            // ほぼ出さない（顔見えない）
+      "three-quarters view":[0.55,0.65],
+      "front view":[0.30,0.35],
+      "side view":[0.02,0.04],
+      "profile view":[0.01,0.03],
+      "back view":[0.00,0.01]
     },
     fallback: "three-quarters view"
   },
 
   comp: {
-    // 距離は “bust / waist up / portrait / upper body” を厚め、引きは極小
     group: ["bust","waist up","portrait","upper body","close-up","full body","wide shot"],
     targets: {
-      "bust":[0.35,0.45],        // 顔・肩周りが大きく入る
-      "waist up":[0.30,0.35],    // 肩～胸上の比率を高める
-      "portrait":[0.10,0.15],    // 縦構図の顔強調を少し
-      "upper body":[0.05,0.08],  // 予備の上半身フレーム
-      "close-up":[0.03,0.05],    // 近すぎは少量（崩れケア）
-      "full body":[0.00,0.02],   // ほぼ使わない
-      "wide shot":[0.00,0.01]    // ほぼ使わない
+      "bust":[0.35,0.45],
+      "waist up":[0.30,0.35],
+      "portrait":[0.10,0.15],
+      "upper body":[0.05,0.08],
+      "close-up":[0.03,0.05],
+      "full body":[0.00,0.02],
+      "wide shot":[0.00,0.01]
     },
     fallback: "bust"
   },
 
   expr: {
-    // 表情はニュートラル主体＋穏やかな笑顔を添える
     group: [
       "neutral expression","smiling","smiling open mouth",
       "slight blush","serious","determined","pouting (slight)"
@@ -4023,22 +4029,19 @@ const MIX_RULES = {
   },
 
   bg: {
-    // 背景は完全にプレーン寄せ（辞書のアンダースコア表記に統一）
     group: ["plain_background","white_background","studio_background","solid_background","white_seamless","gray_seamless"],
     targets: {
-      "plain_background":[0.55,0.65],
-      "white_background":[0.15,0.25],
-      "studio_background":[0.10,0.15],
-      "solid_background":[0.05,0.10],
-      // シームレスはオマケ的にごく少量
-      "white_seamless":[0.02,0.04],
-      "gray_seamless":[0.02,0.04]
+      "plain_background":[0.55,0.62],   // 主軸（下げすぎない）
+      "white_background":[0.15,0.22],
+      "studio_background":[0.08,0.12],
+      "solid_background":[0.04,0.07],
+      "white_seamless":[0.01,0.02],
+      "gray_seamless":[0.01,0.02]
     },
     fallback: "plain_background"
   },
 
   light: {
-    // 均一光＞柔らかい光＞通常光。演出系は控えめ
     group: ["even lighting","soft lighting","normal lighting","window light","overcast"],
     targets: {
       "even lighting":[0.35,0.45],
@@ -4057,7 +4060,6 @@ const EXPR_ALL = new Set([
   ...Object.keys(MIX_RULES.expr.targets),
   MIX_RULES.expr.fallback
 ]);
-
 
 
 // === NSFWヘッダ統一関数（置き換え版）========================
