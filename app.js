@@ -65,28 +65,39 @@ function getGenderCountTag() {
   return ""; // 中立系（androgynous 等）は solo のみで制御
 }
 
-// 先頭を solo と 1girl/1boy に固定しつつ、他の人数/群衆系トークンを全除去
+/* ============================================================================
+ * enforceHeadOrder（人数/群衆トークンを整理）
+ * - 先頭に必ず solo, その後に 1girl/1boy（getGenderCountTag）
+ * - その他の人数/群衆系は全削除
+ * - normalizeTag で比較
+ * ========================================================================== */
 function enforceHeadOrder(parts){
-  const solo = 'solo';
-  const want = (typeof getGenderCountTag === 'function' ? (getGenderCountTag() || '') : '');
+  const norm = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim().toLowerCase();
+  const solo = "solo";
+  const want = (typeof getGenderCountTag === "function" ? norm(getGenderCountTag() || "") : "");
 
-  // 「人数・群衆」系はここで全部落とす（後から混入した 1boy も消える）
-  const COUNT_RE = /\b(?:1girl|1boy|[23]\s*girls?|[23]\s*boys?|two people|three people|duo|trio|multiple people|group|crowd|background people|bystanders|another person)\b/i;
+  // JSON定義から人数系を集める（なければ固定正規表現）
+  const dictCounts = (window.SFW?.person_count || []).map(x => norm(x.tag || x));
+  const COUNT_RE = /\b(?:\d+\s*(girls?|boys?)|[23]\s*girls?|[23]\s*boys?|two people|three people|duo|trio|multiple people|group|crowd|background people|bystanders|another person)\b/i;
 
-  // いったん solo と want を除外し、人数系は全部弾く
-  let rest = (parts || []).filter(t =>
-    t &&
-    t.toLowerCase() !== solo &&
-    t.toLowerCase() !== want.toLowerCase() &&
-    !COUNT_RE.test(String(t))
-  );
+  const seen = new Set();
+  const rest = [];
 
-  // 先頭に solo と want（空なら入れない）を置く
+  for (const raw of (parts||[])){
+    const t = norm(raw);
+    if (!t) continue;
+    if (t === solo || t === want) continue;     // 先頭に回すのでスキップ
+    if (dictCounts.includes(t) || COUNT_RE.test(t)) continue; // 人数系は弾く
+    if (!seen.has(t)) {
+      seen.add(t);
+      rest.push(raw); // rawを残してオリジナルの大文字小文字も維持
+    }
+  }
+
   const head = [solo];
   if (want) head.push(want);
 
-  // 重複防止
-  return [...new Set([...head, ...rest])].filter(Boolean);
+  return [...head, ...rest];
 }
 
 // どのモードでも共通で使う最小強力セット（≈28語）
@@ -3826,12 +3837,34 @@ function ensureViewExclusive(parts){
   return pickOneFromGroup(parts, GROUP, PREFER);
 }
 
-// まとめ（呼び出し側はこれだけ使う）
+// まとめ（排他系はここで一括適用）
 function fixExclusives(parts){
-  let p = parts.slice();
-  p = ensureExprExclusive(p);  // 表情：1つ
-  p = ensureCompExclusive(p);  // 構図/距離：1つ
-  p = ensureViewExclusive(p);  // 視点：1つ ←★これが抜けてた
+  let p = (Array.isArray(parts) ? parts : []).filter(Boolean);
+
+  // 表情：1つ
+  if (typeof ensureExprExclusive === 'function') {
+    p = ensureExprExclusive(p);
+  }
+  // 構図：1つ
+  if (typeof ensureCompExclusive === 'function') {
+    p = ensureCompExclusive(p);
+  }
+  // 視点：1つ（← これが抜けてた）
+  if (typeof ensureViewExclusive === 'function') {
+    p = ensureViewExclusive(p);
+  }
+  // 背景：1つ（辞書準拠／plain優先ルールは関数側で）
+  if (typeof enforceSingleBackground === 'function') {
+    p = enforceSingleBackground(p);
+  }
+  // ライティング：1つ（SFW/NSFW混在を1回で統合）
+  if (typeof unifyLightingOnce === 'function') {
+    p = unifyLightingOnce(p);
+  }
+
+  // 仕上げの重複除去（順序維持）
+  p = Array.from(new Set(p));
+
   return p;
 }
 
