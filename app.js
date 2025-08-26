@@ -224,38 +224,6 @@ function getFixedLearn(){
   return fixed;
 }
 
-  // 入力ソース（撮影モード用ヘルパは禁止）
-  const raw = [
-    // 髪・瞳・肌（テキスト欄）
-    takeText('tagH'),
-    takeText('tagE'),
-    takeText('tagSkin'),
-
-    // 髪型・目型（<select>）
-    takeSelectVal('hairStyle'),
-    takeSelectVal('eyeShape'),
-
-    // 年齢・性別・体型・身長（ラジオ：bf_*）
-    takeRadioVal('bf_age'),
-    takeRadioVal('bf_gender'),
-    takeRadioVal('bf_body'),
-    takeRadioVal('bf_height'),
-  ].filter(Boolean);
-
-  // カンマ区切りを展開 → 正規化 → 順序保持ユニーク
-  const fixed = [];
-  const seen = new Set();
-  for (const s of raw){
-    for (const t of String(s).split(/\s*,\s*/)){
-      const tag = normalizeTag(t.trim());
-      if (!tag || seen.has(tag)) continue;
-      seen.add(tag);
-      fixed.push(tag);
-    }
-  }
-  return fixed;
-}
-
 function getNegLearn(){
   const useDef = !!document.getElementById("useDefaultNeg")?.checked;
   const extra  = (document.getElementById("negLearn")?.value
