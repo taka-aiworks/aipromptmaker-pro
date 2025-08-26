@@ -3909,7 +3909,7 @@ function normalizeTag(t){
   if (s==="back light" || s==="back-lighting") return "backlighting";
   if (s==="studio lighting") return "flat studio lighting"; // 辞書：flat studio lighting
 
-  return t;
+  return s;
 }
 
 // 追加：タグ配列をホワイトリストで絞る共通関数
@@ -4214,6 +4214,29 @@ function buildOneLearning(extraSeed = 0){
   return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
 
+
+// 背景など“グループ内は1つだけ”にする共通ユーティリティ
+function enforceSingleFromGroup(p, group, fallback){
+  if (!Array.isArray(p) || !Array.isArray(group) || group.length===0) return p || [];
+  const set = new Set(group);
+  const normed = (p || []).map(normalizeTag); // ここで正規化も通す
+
+  // 今入っているグループ該当タグを抽出
+  const hit = [];
+  for (const t of normed){
+    if (set.has(t)) hit.push(t);
+  }
+  if (hit.length <= 1) return normed;
+
+  // 優先順位＝groupの並び。最初に見つかったものを残す
+  const winner = group.find(g => hit.includes(g)) || hit[0];
+
+  // いったんグループ全削除 → 勝者だけ戻す
+  const filtered = normed.filter(t => !set.has(t));
+  filtered.push(winner);
+  return filtered;
+}
+
 /* ============================================================================
  * 学習モード一括生成（修正版・置き換え用 / 追加NSFW6カテゴリ対応 + 先頭NSFW）
  * ========================================================================== */
@@ -4321,8 +4344,12 @@ function buildBatchLearning(n){
     };
 
     for (const r of out){
-      let p = Array.isArray(r.pos) ? r.pos.slice()
-            : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+       let p = Array.isArray(r.pos) ? r.pos.slice()
+             : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+       // まず全タグを正規化
+       p = (p || []).map(normalizeTag);
+
+      // ---- ここで NSFW を“先頭へ”付与（チェックON or 何か1つでもNSFW選択あり）
 
       // --- 選択済みの「先頭1件」
       const chosenExpr   = gExpr[0]   || "";
@@ -4386,6 +4413,11 @@ function buildBatchLearning(n){
       // 服色ペアリング（露出注入後）
       if (typeof pairWearColors === 'function') p = pairWearColors(p);
 
+     // 背景は常に“1つだけ”に圧縮（MIX_RULESのpriority順）
+     if (MIX_RULES?.bg?.group) {
+       p = enforceSingleFromGroup(p, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
+      }
+
       // ---- ここで NSFW を“先頭へ”付与（チェックON or 何か1つでもNSFW選択あり）
       if ((nsfwOn || isAnyNSFWSelected) && !p.includes("NSFW")) {
         p.unshift("NSFW");
@@ -4401,13 +4433,21 @@ function buildBatchLearning(n){
 
   // ④ 最終整形
   for (const r of out){
-    let p = Array.isArray(r.pos) ? r.pos.slice()
-          : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+     let p = Array.isArray(r.pos) ? r.pos.slice()
+           : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+     // 正規化を先に
+     p = (p || []).map(normalizeTag);
 
     const fixed = (typeof getFixedLearn === 'function') ? getFixedLearn() : [];
     if (fixed.length) p = [...fixed, ...p];
     if (typeof fixExclusives === 'function') p = fixExclusives(p);
     p = Array.from(new Set(p.filter(Boolean)));
+
+     // 背景は最終段でも1つだけに強制
+     if (MIX_RULES?.bg?.group) {
+       p = enforceSingleFromGroup(p, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
+     }
+
     if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
     if (typeof enforceHeadOrder === 'function')  p = enforceHeadOrder(p);
 
