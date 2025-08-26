@@ -1409,7 +1409,75 @@ function radioList(el, list, name, {checkFirst = true} = {}) {
 const getOne  = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
 const getMany = (name) => $$(`input[name="${name}"]:checked`).map(x=>x.value);
 
-
+// 追加：学習用ホワイトリスト（必要ならここを編集）
+const SCOPE = {
+  learning: {
+    background: [
+      "plain_background",
+      "white_background",
+      "solid_background",
+      "studio_background",
+      "light gray background",
+      "white_seamless",
+      "gray_seamless"
+    ],
+    pose: [
+      "standing",
+      "sitting",
+      "hands on hips",
+      "crossed arms",
+      "hand on chest",
+      "hands behind back",
+      "head tilt",
+      "waving",
+      "arms crossed behind head"
+    ],
+    composition: [
+      "full body",
+      "waist up",
+      "bust",
+      "close-up",
+      "portrait",
+      "centered composition"
+    ],
+    view: [
+      "front view",
+      "three-quarters view",
+      "side view",
+      "back view"
+    ],
+    expressions: [
+      "neutral expression",
+      "smiling",
+      "smiling open mouth",
+      "serious",
+      "determined",
+      "slight blush",
+      "surprised (mild)",
+      "pouting (slight)",
+      "teary eyes",
+      "laughing",
+      "embarrassed"
+    ],
+    lighting: [
+      "normal lighting",
+      "even lighting",
+      "soft lighting",
+      "window light",
+      "overcast",
+      "studio lighting",
+      "backlighting",
+      "rim lighting"
+    ]
+  }
+};
+// 追加：タグ配列をホワイトリストで絞る共通関数
+function filterByScope(items, allow) {
+  if (!Array.isArray(items)) return [];
+  if (!Array.isArray(allow) || allow.length === 0) return items;
+  const s = new Set(allow);
+  return items.filter(x => s.has(x.tag));
+}
 
 
 
@@ -3882,82 +3950,73 @@ function fillRemainder(rows, groupTags, fallbackTag){
 }
 window.fillRemainder = fillRemainder;
 
-// ▼ 正規化：辞書準拠（profileは“side”に吸収しない／light gray → gray_seamless）
+// === 正規化（表記ゆれ吸収） ====================================
 function normalizeTag(t){
   if(!t) return "";
   const s = String(t).trim().toLowerCase();
 
-  // ---- view ----
+  // view
+  if (s==="profile view") return "side view";
   if (s==="3/4 view" || s==="three quarters view") return "three-quarters view";
-  if (s==="profile") return "profile view"; // 吸収せず表記だけ統一
 
-  // ---- composition ----
-  if (s==="close up" || s==="closeup") return "close-up";
-  if (s==="bust shot" || s==="bust-up" || s==="bust up") return "bust";
+  // composition
+  if (s==="close up") return "close-up";
+  if (s==="bust shot") return "bust";
   if (s==="upper-body" || s==="upperbody") return "upper body";
 
-  // ---- background（snake_caseへ統一）----
+  // background（snake_caseへ統一）
   if (s==="plain background")  return "plain_background";
   if (s==="solid background")  return "solid_background";
   if (s==="studio background") return "studio_background";
   if (s==="white background")  return "white_background";
-  if (s==="white seamless")    return "white_seamless";
-  if (s==="light gray background" || s==="light grey background") return "gray_seamless";
 
-  // ---- lighting ----
-  if (s==="rim lighting") return "rim light";        // 辞書：rim light
-  if (s==="back light" || s==="back-lighting") return "backlighting";
-  if (s==="studio lighting") return "flat studio lighting"; // 辞書：flat studio lighting
-
-  return t;
+  return t; // 既に正規
 }
 
-// 追加：タグ配列をホワイトリストで絞る共通関数
-function filterByScope(items, allow) {
-  if (!Array.isArray(items)) return [];
-  if (!Array.isArray(allow) || allow.length === 0) return items;
-  const s = new Set(allow);
-  return items.filter(x => s.has(x.tag));
-}
-
-// === 学習用ホワイトリスト（辞書準拠） ==================
-const SCOPE = {
-  learning: {
-    background: [
-      "plain_background",
-      "white_background",
-      "solid_background",
-      "studio_background",
-      "white_seamless",
-      "gray_seamless"
-    ],
-    pose: [
-      "standing",
-      "sitting",
-      "hands on hips",
-      "crossed arms",
-      "hand on chest",
-      "hands behind back",
-      "head tilt",
-      "waving"
-      // ※ "arms crossed behind head" は辞書外なので除外
-    ],
-    composition: [
-      "full body",
-      "waist up",
-      "bust",
-      "close-up",
-      "portrait",
-      "centered composition"
-    ],
-    view: [
+// === 配分ルール（学習向け・表記統一済み） ======================
+const MIX_RULES = {
+  view: {
+    group: [
       "front view",
       "three-quarters view",
       "side view",
-      "profile view", // 追加：配分ルールに合わせる
       "back view"
     ],
-    expressions: [
+    targets: {
+      // front / 3Q を主軸、side/back を控えめ
+      "front view":          [0.35, 0.45],
+      "three-quarters view": [0.35, 0.45],
+      "side view":           [0.10, 0.15],
+      "back view":           [0.08, 0.12]
+    },
+    fallback: "three-quarters view"
+  },
+
+  comp: {
+    group: [
+      "full body",
+      "waist up",
+      "upper body",
+      "bust",
+      "portrait",
+      "close-up",
+      "wide shot"
+    ],
+    targets: {
+      // 距離の偏りを抑えて安定＋顔寄りも少し
+      "full body":  [0.18, 0.22],
+      "waist up":   [0.28, 0.34],
+      "upper body": [0.05, 0.08],
+      "bust":       [0.18, 0.22],
+      "portrait":   [0.10, 0.14],
+      "close-up":   [0.05, 0.08],
+      "wide shot":  [0.03, 0.06]
+    },
+    fallback: "portrait"
+  },
+
+  expr: {
+    group: [
       "neutral expression",
       "smiling",
       "smiling open mouth",
@@ -3965,92 +4024,57 @@ const SCOPE = {
       "determined",
       "slight blush",
       "surprised (mild)",
-      "pouting (slight)",
-      "teary eyes",
-      "laughing",
-      "embarrassed"
-    ],
-    lighting: [
-      "normal lighting",
-      "even lighting",
-      "soft lighting",
-      "window light",
-      "overcast",
-      "flat studio lighting", // 辞書準拠
-      "backlighting",
-      "rim light"             // 辞書準拠
-    ]
-  }
-};
-
-// === 顔安定版・配分ルール =======================
-const MIX_RULES = {
-  view: {
-    group: ["front view","three-quarters view","side view","profile view","back view"],
-    targets: {
-      "three-quarters view":[0.55,0.65],
-      "front view":[0.30,0.35],
-      "side view":[0.02,0.04],
-      "profile view":[0.01,0.03],
-      "back view":[0.00,0.01]
-    },
-    fallback: "three-quarters view"
-  },
-
-  comp: {
-    group: ["bust","waist up","portrait","upper body","close-up","full body","wide shot"],
-    targets: {
-      "bust":[0.35,0.45],
-      "waist up":[0.30,0.35],
-      "portrait":[0.10,0.15],
-      "upper body":[0.05,0.08],
-      "close-up":[0.03,0.05],
-      "full body":[0.00,0.02],
-      "wide shot":[0.00,0.01]
-    },
-    fallback: "bust"
-  },
-
-  expr: {
-    group: [
-      "neutral expression","smiling","smiling open mouth",
-      "slight blush","serious","determined","pouting (slight)"
+      "pouting (slight)"
     ],
     targets: {
-      "neutral expression":[0.55,0.65],
-      "smiling":[0.20,0.25],
-      "smiling open mouth":[0.03,0.05],
-      "slight blush":[0.03,0.05],
-      "serious":[0.01,0.02],
-      "determined":[0.01,0.02],
-      "pouting (slight)":[0.01,0.02]
+      // neutral をやや減らして smiling に少し配分
+      "neutral expression": [0.48, 0.58],
+      "smiling":            [0.22, 0.28],
+      "smiling open mouth": [0.06, 0.10],
+      "slight blush":       [0.03, 0.06],
+      "surprised (mild)":   [0.01, 0.03],
+      "pouting (slight)":   [0.01, 0.03],
+      "serious":            [0.01, 0.02],
+      "determined":         [0.01, 0.02]
     },
     fallback: "neutral expression"
   },
 
   bg: {
-    group: ["plain_background","white_background","studio_background","solid_background","white_seamless","gray_seamless"],
+    // SCOPE.learning に合わせて snake_case に統一
+    group: [
+      "plain_background",
+      "studio_background",
+      "solid_background",
+      "white_background",
+      "light gray background" // これだけ辞書由来のスペース表記
+    ],
     targets: {
-      "plain_background":[0.55,0.62],   // 主軸（下げすぎない）
-      "white_background":[0.15,0.22],
-      "studio_background":[0.08,0.12],
-      "solid_background":[0.04,0.07],
-      "white_seamless":[0.01,0.02],
-      "gray_seamless":[0.01,0.02]
+      "plain_background":     [0.38, 0.46],
+      "studio_background":    [0.18, 0.25],
+      "solid_background":     [0.12, 0.18],
+      "white_background":     [0.12, 0.18],
+      "light gray background":[0.05, 0.10]
     },
     fallback: "plain_background"
   },
 
   light: {
-    group: ["even lighting","soft lighting","normal lighting","window light","overcast"],
+    group: [
+      "soft lighting",
+      "even lighting",
+      "normal lighting",
+      "window light",
+      "overcast"
+    ],
     targets: {
-      "even lighting":[0.35,0.45],
-      "soft lighting":[0.30,0.35],
-      "normal lighting":[0.15,0.20],
-      "window light":[0.05,0.08],
-      "overcast":[0.00,0.02]
+      "soft lighting":   [0.32, 0.42],
+      "even lighting":   [0.25, 0.35],
+      "normal lighting": [0.12, 0.20],
+      "window light":    [0.06, 0.12],
+      "overcast":        [0.05, 0.10]
     },
-    fallback: "even lighting"
+    fallback: "soft lighting"
   }
 };
 window.MIX_RULES = MIX_RULES;
