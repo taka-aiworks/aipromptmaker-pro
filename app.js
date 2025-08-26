@@ -4305,11 +4305,11 @@ function enforceSingleFromGroup(p, group, fallback){
 /* ============================================================================
  * 学習モード一括生成（修正版・置き換え用 / 追加NSFW6カテゴリ対応 + 先頭NSFW）
  * 仕様:
- * - pmValById / pmTextById など pm系は一切使わない
- * - 基本情報は DOM(ID_AGE/ID_GENDER/ID_BODY/ID_HEIGHT/ID_HAIR/ID_EYE/ID_SKIN, tagH/tagE/tagSkin)から直取り
- * - 服×色は pairWearColors() を中間段と最終段で必ず実行
- * - 露出フィルタ時も、pairWearColors で合成された服トークンは OUTFIT_FIXED として保護
- * - getFixedLearn() はあなたの現行実装（fixedLearn / fixedManual 経由）をそのまま利用
+ * - pm系は一切使わない
+ * - 基本情報は DOM (ID_AGE/ID_GENDER/ID_BODY/ID_HEIGHT/ID_HAIR/ID_EYE/ID_SKIN, tagH/tagE/tagSkin) から直取り
+ * - 服×色は pairWearColors() を ③.5 開始直後と ④ 最終整形で必ず実行
+ * - 露出フィルタ時も pairWearColors で合成された服トークンは OUTFIT_FIXED として保護
+ * - getFixedLearn() は現行実装（fixedLearn / fixedManual 経由）をそのまま利用
  * ========================================================================== */
 function buildBatchLearning(n){
   const out  = [];
@@ -4384,7 +4384,7 @@ function buildBatchLearning(n){
     }
   }
 
-  // ③.5 NSFW整理（UI 選択分を各カテゴリ1つだけ反映 + 先頭NSFW付与条件の判定材料）
+  // ③.5 NSFW整理（UI 選択分を各カテゴリ1つだけ反映 + 先頭NSFW付与）
   {
     const nsfwOn = !!document.getElementById("nsfwLearn")?.checked;
 
@@ -4420,7 +4420,7 @@ function buildBatchLearning(n){
             : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
       p = (p || []).map(normalizeTag);
 
-      // 先に「色×服」を合成 → 新規生まれトークンを保護対象にする
+      // 先に「色×服」を一度合成 → 新規生成トークンを保護対象に
       const beforePair = new Set(p);
       if (typeof pairWearColors === 'function') p = pairWearColors(p);
       const OUTFIT_FIXED = new Set(
@@ -4462,11 +4462,11 @@ function buildBatchLearning(n){
           p = p.filter(s=>{
             const x  = String(s);
             const nx = normalizeTag(x);
-            if (OUTFIT_FIXED.has(nx)) return true; // ← 合成済み服は保護
+            if (OUTFIT_FIXED.has(nx)) return true; // 合成済み服は保護
             if (CLOTH_NOUN_RE.test(x))  return false;
             if (COLOR_PLACE_RE.test(x)) return false;
             if (FOOTWEAR_RE.test(x))    return false;
-            if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false;
+            if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false; // 単独色の掃除
             return true;
           });
         }
@@ -4487,7 +4487,7 @@ function buildBatchLearning(n){
       if (gNip.length)    { p = keepOneFrom(p, gNip);    if (chosenNip    && !p.includes(chosenNip))    p.push(chosenNip); }
       if (gUnder.length)  { p = keepOneFrom(p, gUnder);  if (chosenUnder  && !p.includes(chosenUnder))  p.push(chosenUnder); }
 
-      // NSFW を先頭へ
+      // NSFW 先頭
       if ((nsfwOn || isAnyNSFWSelected) && !p.includes("NSFW")) {
         p.unshift("NSFW");
       } else if (p.includes("NSFW") && p[0] !== "NSFW") {
@@ -4500,16 +4500,16 @@ function buildBatchLearning(n){
     }
   }
 
-  // ④ 最終整形（ここで基本情報を必ず前段に注入 + 服×色を最終ペアリング）
+  // ④ 最終整形（基本情報の注入 + 服×色の最終ペアリング）
   for (const r of out){
     let p = Array.isArray(r.pos) ? r.pos.slice()
           : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
     p = (p || []).map(normalizeTag);
 
-    // 固定（あなたの getFixedLearn 実装をそのまま利用）
+    // 固定（現行 getFixedLearn をそのまま利用）
     const fixed = (typeof getFixedLearn === 'function') ? (getFixedLearn() || []) : [];
 
-    // 基本情報（DOMから直取り）
+    // 基本情報（DOM直取り）
     const basicsRaw = [
       document.getElementById('ID_AGE')?.value,
       document.getElementById('ID_GENDER')?.value,
@@ -4531,7 +4531,7 @@ function buildBatchLearning(n){
     // 固定 → 基本情報 → 既存p
     p = [...fixed, ...basics, ...p].filter(Boolean);
 
-    // 服×色を最終ペアリング（ここで確実に white t-shirt などへ結合）
+    // 服×色を最終ペアリング（white t-shirt / azure skirt などへ結合）
     if (typeof pairWearColors === 'function') p = pairWearColors(p);
 
     // 排他/整理
