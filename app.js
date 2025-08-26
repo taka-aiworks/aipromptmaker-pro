@@ -174,19 +174,23 @@ function pmGetNeg(){
 // 固定ワードを配列で返す（#fixedLearn 優先、無ければ #fixedManual）
 // ・カンマ / 改行 / 全角読点「、」で分割
 // ・normalizeTag を適用（背景などの表記統一）
-// ・順序を保ったまま重複除去
 function getFixedLearn(){
-  // どっちのUIでも拾えるように両方見る
   const raw = [
-    pmTextById('tagH'),         // ラベル系（例: "brown hair"）
-    pmTextById('tagE'),         // ラベル系（例: "blue eyes"）
-    pmTextById('tagSkin'),      // ラベル系（例: "fair skin"）
-    pmPickOne('ID_HAIR'),       // ピッカー系
+    // 髪色・瞳色・肌色
+    pmTextById('tagH'),
+    pmTextById('tagE'),
+    pmTextById('tagSkin'),
+    pmPickOne('ID_HAIR'),
     pmPickOne('ID_EYE'),
-    pmPickOne('ID_SKIN')
+    pmPickOne('ID_SKIN'),
+
+    // 年齢・性別・体型・身長
+    pmPickOne('ID_AGE'),
+    pmPickOne('ID_GENDER'),
+    pmPickOne('ID_BODY'),
+    pmPickOne('ID_HEIGHT')
   ].filter(Boolean);
 
-  // カンマ区切り・空白を正規化してユニーク化
   const fixed = Array.from(
     new Set(
       raw.flatMap(s => String(s).split(/\s*,\s*/))
@@ -4432,11 +4436,6 @@ function buildBatchLearning(n){
       // 服色ペアリング（露出注入後）
       if (typeof pairWearColors === 'function') p = pairWearColors(p);
 
-     // 背景は常に“1つだけ”に圧縮（MIX_RULESのpriority順）
-     if (MIX_RULES?.bg?.group) {
-       p = enforceSingleFromGroup(p, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
-      }
-
       // ---- ここで NSFW を“先頭へ”付与（チェックON or 何か1つでもNSFW選択あり）
       if ((nsfwOn || isAnyNSFWSelected) && !p.includes("NSFW")) {
         p.unshift("NSFW");
@@ -4469,18 +4468,12 @@ function buildBatchLearning(n){
    
      const lookFromUI = [
        (typeof pmPickOne==='function' ? pmPickOne('hairStyle') : ''),
-       (typeof pmPickOne==='function' ? pmPickOne('eyeShape')  : ''),
-       (typeof pmTextById==='function' ? pmTextById('tagH')    : ''),
-       (typeof pmTextById==='function' ? pmTextById('tagE')    : ''),
-       (typeof pmTextById==='function' ? pmTextById('tagSkin') : '')
+       (typeof pmPickOne==='function' ? pmPickOne('eyeShape')  : '')
      ].filter(Boolean);
    
      // 固定 > 基本情報 > 見た目 > 既存p の順で前詰め
      p = [...fixed, ...identFromUI, ...lookFromUI, ...p];
      // ▲▲ 追加ここまで
-   
-     const fixed2 = (typeof getFixedLearn === 'function') ? getFixedLearn() : []; // 既存行があるならそのまま
-     if (fixed2.length) p = [...fixed2, ...p]; // ←既存を残すならこの行は削ってもOK（上でfixedを入れているため）
    
      if (typeof fixExclusives === 'function') p = fixExclusives(p);
      p = Array.from(new Set(p.filter(Boolean)));
