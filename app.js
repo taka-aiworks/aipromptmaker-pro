@@ -4219,19 +4219,17 @@ function buildOneLearning(extraSeed = 0){
 function enforceSingleFromGroup(p, group, fallback){
   if (!Array.isArray(p) || !Array.isArray(group) || group.length===0) return p || [];
   const set = new Set(group);
-  const normed = (p || []).map(normalizeTag); // ここで正規化も通す
+  const normed = (p || []).map(normalizeTag);
 
-  // 今入っているグループ該当タグを抽出
-  const hit = [];
-  for (const t of normed){
-    if (set.has(t)) hit.push(t);
+  const hit = normed.filter(t => set.has(t));
+  if (hit.length === 0) {
+    // 何も無ければ fallback を追加
+    if (fallback) return [...normed, fallback];
+    return normed;
   }
-  if (hit.length <= 1) return normed;
+  if (hit.length === 1) return normed;
 
-  // 優先順位＝groupの並び。最初に見つかったものを残す
   const winner = group.find(g => hit.includes(g)) || hit[0];
-
-  // いったんグループ全削除 → 勝者だけ戻す
   const filtered = normed.filter(t => !set.has(t));
   filtered.push(winner);
   return filtered;
@@ -4269,8 +4267,9 @@ function buildBatchLearning(n){
 
     // view
     if (MIX_RULES.view) {
-      applyPercentForTag(rows, MIX_RULES.view.group, "profile view", ...MIX_RULES.view.targets["profile view"]);
-      applyPercentForTag(rows, MIX_RULES.view.group, "back view",    ...MIX_RULES.view.targets["back view"]);
+      for (const [tag, rng] of Object.entries(MIX_RULES.view.targets || {})) {
+        applyPercentForTag(rows, MIX_RULES.view.group, tag, rng[0], rng[1]);
+      }
       fillRemainder(rows, MIX_RULES.view.group, MIX_RULES.view.fallback);
     }
 
@@ -4446,6 +4445,9 @@ function buildBatchLearning(n){
      // 背景は最終段でも1つだけに強制
      if (MIX_RULES?.bg?.group) {
        p = enforceSingleFromGroup(p, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
+     }
+     if (MIX_RULES?.light?.group) {
+       p = enforceSingleFromGroup(p, MIX_RULES.light.group, MIX_RULES.light.fallback);
      }
 
     if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
