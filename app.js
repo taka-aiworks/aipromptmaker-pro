@@ -1391,8 +1391,8 @@ const SCOPE = {
   learning: {
     // 背景：単色/スタジオ系のみに絞る（屋外や雑多小物を排除）
     background: [
-      "plain background", "white background", "solid background",
-      "studio background", "light gray background"
+      "plain_background", "white_background", "solid_background",
+      "studio_background", "light gray background"
     ],
     // ポーズ：骨格崩れが出にくい静的中心（手は少しだけ見せる）
     pose: [
