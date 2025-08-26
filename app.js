@@ -2184,6 +2184,45 @@ function pmBuildOne(){
   var exprS = pmPickOne('pl_expr') || 'neutral expression';
   var liteS = pmPickOne('pl_light')|| 'soft lighting';
 
+  // ===== 服（SFW）＋色タグを注入 =====
+  var partsWear = [];
+  var partsWearColors = [];
+
+  // outfit mode: 上下 or ワンピ
+  var isDress = !!document.getElementById('outfitModeDress')?.checked;
+
+  if (isDress){
+    // ワンピース
+    var dress = pmPickOne('outfit_dress');
+    if (dress) partsWear.push(dress);
+  } else {
+    // トップス
+    var top = pmPickOne('outfit_top');
+    if (top) partsWear.push(top);
+    // ボトム（カテゴリラジオ）
+    var useSkirt = !!document.getElementById('bottomCat_skirt')?.checked;
+    var bottom = pmPickOne(useSkirt ? 'outfit_skirt' : 'outfit_pants');
+    if (bottom) partsWear.push(bottom);
+  }
+  // 靴（任意）
+  var shoesSel = pmPickOne('outfit_shoes');
+  if (shoesSel) partsWear.push(shoesSel);
+
+  // 色タグ（チェックで有効時のみ）
+  var useTopColor    = document.getElementById('use_top')?.checked !== false; // デフォルトtrue
+  var useBottomColor = document.getElementById('useBottomColor')?.checked !== false && !isDress; // ワンピ時は無効
+  var useShoesColor  = !!document.getElementById('use_shoes')?.checked;
+
+  if (useTopColor){
+    var cTop = pmTextById('tag_top');      if (cTop) partsWearColors.push(cTop);
+  }
+  if (useBottomColor){
+    var cBottom = pmTextById('tag_bottom'); if (cBottom) partsWearColors.push(cBottom);
+  }
+  if (useShoesColor){
+    var cShoes = pmTextById('tag_shoes');  if (cShoes) partsWearColors.push(cShoes);
+  }
+
   // NSFW
   var nsfwOn    = pmChecked('pl_nsfw');
   var nsfwExpr  = nsfwOn ? pmPickOne('pl_nsfw_expr')  : '';
@@ -2211,12 +2250,14 @@ function pmBuildOne(){
 
   var fixed = pmGetFixed();
 
-  // 一旦全部積む
+  // 一旦全部積む（服＋色をここで混ぜる）
   var parts = []
     .concat(['solo'])
     .concat((typeof getGenderCountTag==='function') ? [(getGenderCountTag()||'')] : [])
     .concat(fixed)
     .concat(base)
+    .concat(partsWear)
+    .concat(partsWearColors)
     .concat([bg, pose, comp, view, expr, lite, acc]);
 
   if (nsfwOn){
@@ -2231,6 +2272,11 @@ function pmBuildOne(){
   }
 
   parts = parts.filter(Boolean);
+
+  // ★ 先に「服×色」結合を実行（露出検知より前）
+  if (typeof pairWearColors === 'function') {
+    parts = pairWearColors(parts);
+  }
 
   // 服/露出の優先
   if (typeof applyNudePriority === 'function') parts = applyNudePriority(parts);
@@ -2259,10 +2305,7 @@ function pmBuildOne(){
     }
   })();
 
-  // 非露出のみ色ペアリング
-  if (!isExposure && typeof pairWearColors === 'function') {
-    parts = pairWearColors(parts);
-  }
+  // （非露出のみ再ペアリングは不要：先に実行済み）
 
   // 整理
   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
