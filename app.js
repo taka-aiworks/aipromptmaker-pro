@@ -171,29 +171,38 @@ function pmGetNeg(){
 }
 
 /* ===== 学習モード ===== */
-/* ===== 学習モード：固定タグ + 基本情報を統合 ===== */
+/* ===== 学習モード：固定タグ + 基本情報を統合（pm系不使用） ===== */
 function getFixedLearn(){
   // 既存の固定入力（固定欄 / 旧ID互換）
-  const fromFixed = document.getElementById("fixedLearn")?.value
-                 ?? document.getElementById("fixedManual")?.value
-                 ?? "";
+  const fromFixed =
+    (document.getElementById("fixedLearn")?.value ??
+     document.getElementById("fixedManual")?.value ??
+     "");
 
-  // 基本情報（撮影用ではなく、学習UIにある bf_* の value）
+  // 汎用: value があれば value、無ければ textContent を拾う
+  const readVal = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return "";
+    const v = (el.value !== undefined) ? el.value : el.textContent;
+    return (typeof v === "string") ? v.trim() : "";
+  };
+
+  // 基本情報（学習UIの bf_*）
   const basics = [
-    pmValById('bf_age'),
-    pmValById('bf_gender'),
-    pmValById('bf_body'),
-    pmValById('bf_height')
+    readVal('bf_age'),
+    readVal('bf_gender'),
+    readVal('bf_body'),
+    readVal('bf_height')
   ].filter(Boolean).join(", ");
 
-  // 髪/瞳/肌の確定ラベル（<code id="tagH|tagE|tagSkin"> のテキスト）
+  // 髪/瞳/肌（ID_* があればそっち、無ければ tagH/tagE/tagSkin）
   const colors = [
-    pmTextById('tagH'),
-    pmTextById('tagE'),
-    pmTextById('tagSkin')
+    readVal('ID_HAIR')  || readVal('tagH'),
+    readVal('ID_EYE')   || readVal('tagE'),
+    readVal('ID_SKIN')  || readVal('tagSkin')
   ].filter(Boolean).join(", ");
 
-  // まとめて分割→重複除去（splitTags は既存ユーティリティ）
+  // 分割→重複除去（splitTags は既存ユーティリティ）
   const merged = [fromFixed, basics, colors].filter(Boolean).join(", ");
   return Array.from(new Set(splitTags(merged)));
 }
