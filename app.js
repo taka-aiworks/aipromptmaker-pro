@@ -4343,82 +4343,88 @@ function buildBatchLearning(n){
     };
 
     for (const r of out){
-      let p = Array.isArray(r.pos) ? r.pos.slice()
-            : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
-      p = (p || []).map(normalizeTag);
+  let p = Array.isArray(r.pos) ? r.pos.slice()
+        : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+  p = (p || []).map(normalizeTag);
 
-      const chosenExpr   = gExpr[0]   || "";
-      const chosenExpo   = gExpo[0]   || "";
-      const chosenSitu   = gSitu[0]   || "";
-      const chosenLight  = gLight[0]  || "";
-      const chosenPose   = gPose[0]   || "";
-      const chosenAcc    = gAcc[0]    || "";
-      const chosenOutfit = gOutfit[0] || "";
-      const chosenBody   = gBody[0]   || "";
-      const chosenNip    = gNip[0]    || "";
-      const chosenUnder  = gUnder[0]  || "";
+  // ★ 先に「色×服」を合成 → ここで新規に生まれたトークンを保護対象にする
+  const beforePair = new Set(p);
+  if (typeof pairWearColors === 'function') p = pairWearColors(p);
+  const OUTFIT_FIXED = new Set(
+    p.filter(t => !beforePair.has(t)).map(normalizeTag)
+  );
 
-      // 表情
-      if (chosenExpr){
-        const sfwExprGroup = Array.from(new Set([...(getMany("expr")||[]), ...(MIX_RULES?.expr?.group||[]), "neutral expression"]));
-        p = p.filter(t => !sfwExprGroup.includes(t));
-        if (!p.includes(chosenExpr)) p.push(chosenExpr);
-      } else {
-        p = keepOneFrom(p, gExpr);
-      }
+  const chosenExpr   = gExpr[0]   || "";
+  const chosenExpo   = gExpo[0]   || "";
+  const chosenSitu   = gSitu[0]   || "";
+  const chosenLight  = gLight[0]  || "";
+  const chosenPose   = gPose[0]   || "";
+  const chosenAcc    = gAcc[0]    || "";
+  const chosenOutfit = gOutfit[0] || "";
+  const chosenBody   = gBody[0]   || "";
+  const chosenNip    = gNip[0]    || "";
+  const chosenUnder  = gUnder[0]  || "";
 
-      // 露出
-      if (chosenExpo){
-        if (typeof applyNudePriority === 'function') p = applyNudePriority(p);
-        if (typeof enforceOnePieceExclusivity === 'function') p = enforceOnePieceExclusivity(p);
+  // 表情：SFW表情を除去 → NSFW表情1つ注入 or 既存から1つだけ残す
+  if (chosenExpr){
+    const sfwExprGroup = Array.from(new Set([...(getMany("expr")||[]), ...(MIX_RULES?.expr?.group||[]), "neutral expression"]));
+    p = p.filter(t => !sfwExprGroup.includes(t));
+    if (!p.includes(chosenExpr)) p.push(chosenExpr);
+  } else {
+    p = keepOneFrom(p, gExpr);
+  }
 
-        const IS_EXPOSURE_WEAR = /\b(bikini|swimsuit|lingerie|underwear|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude)\b/i;
-        if (IS_EXPOSURE_WEAR.test(chosenExpo)){
-          const CLOTH_NOUN_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
-          const COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
-          const COLOR_PLACE_RE = new RegExp(`${COLOR_WORD_RE.source}\\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\\s]?piece|gown)`,`i`);
-          const FOOTWEAR_RE    = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
+  // 露出：服色プレース排他。ただし ★OUTFIT_FIXED は絶対に残す
+  if (chosenExpo){
+    if (typeof applyNudePriority === 'function') p = applyNudePriority(p);
+    if (typeof enforceOnePieceExclusivity === 'function') p = enforceOnePieceExclusivity(p);
 
-          p = p.filter(s=>{
-            const x = String(s);
-            if (CLOTH_NOUN_RE.test(x))  return false;
-            if (COLOR_PLACE_RE.test(x)) return false;
-            if (FOOTWEAR_RE.test(x))    return false;
-            if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false;
-            return true;
-          });
-        }
-        if (!p.includes(chosenExpo)) p.push(chosenExpo);
-      } else {
-        p = keepOneFrom(p, gExpo);
-      }
+    const IS_EXPOSURE_WEAR = /\b(bikini|swimsuit|lingerie|underwear|micro_bikini|string_bikini|sling_bikini|wet_swimsuit|nipple[_\s]?cover[_\s]?bikini|crotchless[_\s]?swimsuit|bodypaint[_\s]?swimsuit|topless|bottomless|nude)\b/i;
+    if (IS_EXPOSURE_WEAR.test(chosenExpo)){
+      const CLOTH_NOUN_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
+      const COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
+      const COLOR_PLACE_RE = new RegExp(`${COLOR_WORD_RE.source}\\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\\s]?piece|gown)`,`i`);
+      const FOOTWEAR_RE    = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
 
-      // シチュ/光
-      if (gSitu.length){ p = keepOneFrom(p, gSitu);  if (chosenSitu  && !p.includes(chosenSitu))  p.push(chosenSitu); }
-      if (gLight.length){ p = keepOneFrom(p, gLight); if (chosenLight && !p.includes(chosenLight)) p.push(chosenLight); }
-
-      // ポーズ/アクセ/衣装/身体/乳首/下着
-      if (gPose.length)   { p = keepOneFrom(p, gPose);   if (chosenPose   && !p.includes(chosenPose))   p.push(chosenPose); }
-      if (gAcc.length)    { p = keepOneFrom(p, gAcc);    if (chosenAcc    && !p.includes(chosenAcc))    p.push(chosenAcc); }
-      if (gOutfit.length) { p = keepOneFrom(p, gOutfit); if (chosenOutfit && !p.includes(chosenOutfit)) p.push(chosenOutfit); }
-      if (gBody.length)   { p = keepOneFrom(p, gBody);   if (chosenBody   && !p.includes(chosenBody))   p.push(chosenBody); }
-      if (gNip.length)    { p = keepOneFrom(p, gNip);    if (chosenNip    && !p.includes(chosenNip))    p.push(chosenNip); }
-      if (gUnder.length)  { p = keepOneFrom(p, gUnder);  if (chosenUnder  && !p.includes(chosenUnder))  p.push(chosenUnder); }
-
-      // 服×色ペアリング
-      if (typeof pairWearColors === 'function') p = pairWearColors(p);
-
-      // NSFW 先頭
-      if ((nsfwOn || isAnyNSFWSelected) && !p.includes("NSFW")) {
-        p.unshift("NSFW");
-      } else if (p.includes("NSFW") && p[0] !== "NSFW") {
-        p = p.filter(t => t !== "NSFW");
-        p.unshift("NSFW");
-      }
-
-      r.pos    = p;
-      r.prompt = p.join(", ");
+      p = p.filter(s=>{
+        const x  = String(s);
+        const nx = normalizeTag(x);
+        if (OUTFIT_FIXED.has(nx)) return true;   // ★ 保護
+        if (CLOTH_NOUN_RE.test(x))  return false;
+        if (COLOR_PLACE_RE.test(x)) return false;
+        if (FOOTWEAR_RE.test(x))    return false;
+        if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false;
+        return true;
+      });
     }
+    if (!p.includes(chosenExpo)) p.push(chosenExpo);
+  } else {
+    p = keepOneFrom(p, gExpo);
+  }
+
+  // シチュ/光：各1
+  if (gSitu.length){ p = keepOneFrom(p, gSitu);  if (chosenSitu  && !p.includes(chosenSitu))  p.push(chosenSitu); }
+  if (gLight.length){ p = keepOneFrom(p, gLight); if (chosenLight && !p.includes(chosenLight)) p.push(chosenLight); }
+
+  // 追加：ポーズ/アクセ/衣装/身体/乳首/下着：各1
+  if (gPose.length)   { p = keepOneFrom(p, gPose);   if (chosenPose   && !p.includes(chosenPose))   p.push(chosenPose); }
+  if (gAcc.length)    { p = keepOneFrom(p, gAcc);    if (chosenAcc    && !p.includes(chosenAcc))    p.push(chosenAcc); }
+  if (gOutfit.length) { p = keepOneFrom(p, gOutfit); if (chosenOutfit && !p.includes(chosenOutfit)) p.push(chosenOutfit); }
+  if (gBody.length)   { p = keepOneFrom(p, gBody);   if (chosenBody   && !p.includes(chosenBody))   p.push(chosenBody); }
+  if (gNip.length)    { p = keepOneFrom(p, gNip);    if (chosenNip    && !p.includes(chosenNip))    p.push(chosenNip); }
+  if (gUnder.length)  { p = keepOneFrom(p, gUnder);  if (chosenUnder  && !p.includes(chosenUnder))  p.push(chosenUnder); }
+
+  // NSFW を先頭へ
+  if ((nsfwOn || isAnyNSFWSelected) && !p.includes("NSFW")) {
+    p.unshift("NSFW");
+  } else if (p.includes("NSFW") && p[0] !== "NSFW") {
+    p = p.filter(t => t !== "NSFW");
+    p.unshift("NSFW");
+  }
+
+  r.pos    = p;
+  r.prompt = p.join(", ");
+}
   }
 
   // ④ 最終整形（ここで基本情報を必ず前段に注入）
