@@ -150,7 +150,12 @@
       { "tag": "two block",       "label": "ツーブロック" },
       { "tag": "fade cut",        "label": "フェードカット" },
       { "tag": "mullet",          "label": "マレットヘア" },
-      { "tag": "long straight male", "label": "長髪ストレート（男性）" }
+      { "tag": "long straight male", "label": "長髪ストレート（男性）" },
+      { "tag": "mohawk", "label": "モヒカン" },
+      { "tag": "dreadlocks", "label": "ドレッドヘア" },
+      { "tag": "cornrows", "label": "コーンロウ" },
+      { "tag": "afro", "label": "アフロ" },
+      { "tag": "man bun", "label": "マンバン（お団子男髪）" }
     ],
     "eyes": [
       { "tag": "almond eyes", "label": "アーモンド形" },
@@ -168,7 +173,10 @@
       { "tag": "gentle gaze",     "label": "優しい目つき" },
       { "tag": "partially hidden by bangs", "label": "前髪で隠れた目" },
       { "tag": "covered eye",               "label": "片目隠れ" },
-      { "tag": "both eyes hidden",          "label": "両目隠れ" }
+      { "tag": "both eyes hidden",          "label": "両目隠れ" },
+      { "tag": "sanpaku eyes", "label": "三白眼" },
+      { "tag": "sleepy eyes", "label": "眠たげな目" },
+      { "tag": "narrow eyes", "label": "細目（鋭い）" }
     ],
     "face": [
       { "tag": "youthful face", "label": "幼い顔立ち" },
@@ -322,7 +330,13 @@
       { "tag": "slim-fit suit",         "label": "スリムフィットスーツ" },
       { "tag": "loose-fit suit",        "label": "ルーズフィットスーツ" },
       { "tag": "school_gakuran",        "label": "学ラン（男子学生服）" },
-      { "tag": "blazer_male",           "label": "男子ブレザー制服" }
+      { "tag": "blazer_male",           "label": "男子ブレザー制服" },
+      { "tag": "military uniform", "label": "軍服（一般）" },
+      { "tag": "officer uniform", "label": "将校服" },
+      { "tag": "mechanic overalls", "label": "作業着（メカニック）" },
+      { "tag": "construction outfit", "label": "作業着（工事現場）" },
+      { "tag": "street fashion", "label": "ストリート系カジュアル" },
+      { "tag": "skater fashion", "label": "スケーターファッション" }
   ],
   "accessories": [
       { "tag": "glasses", "label": "眼鏡" },
@@ -603,7 +617,9 @@
       { "tag": "shaking head", "label": "ブンブン首振り" },
       { "tag": "shy hidden eyes", "label": "恥ずかしげに隠れた目" },
       { "tag": "mysterious hidden eyes", "label": "ミステリアスに隠れた目" },
-      { "tag": "gloomy hidden eyes", "label": "陰鬱に隠れた目" }
+      { "tag": "gloomy hidden eyes", "label": "陰鬱に隠れた目" },
+      { "tag": "beastly eyes", "label": "獣のような目" },
+      { "tag": "glowing eyes", "label": "光る目" }
     ],
     "colors": [
     { "tag": "white",   "label": "白" },
