@@ -170,41 +170,48 @@ function pmGetNeg(){
   return [useDef ? base : "", extra].filter(Boolean).join(", ");
 }
 
-/* ===== 学習モード ===== */
-/* ===== 学習モード：固定タグ + 基本情報を統合（pm系不使用） ===== */
+/* ===== 学習モード：固定+基本情報（bf_系ID対応版） ===== */
 function getFixedLearn(){
-  // 既存の固定入力（固定欄 / 旧ID互換）
   const fromFixed =
-    (document.getElementById("fixedLearn")?.value ??
-     document.getElementById("fixedManual")?.value ??
-     "");
+    document.getElementById("fixedLearn")?.value ??
+    document.getElementById("fixedManual")?.value ??
+    "";
 
-  // 汎用: value があれば value、無ければ textContent を拾う
-  const readVal = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return "";
-    const v = (el.value !== undefined) ? el.value : el.textContent;
-    return (typeof v === "string") ? v.trim() : "";
-  };
-
-  // 基本情報（学習UIの bf_*）
+  // 基本情報（bf_ 系）
   const basics = [
-    readVal('bf_age'),
-    readVal('bf_gender'),
-    readVal('bf_body'),
-    readVal('bf_height')
+    document.getElementById("bf_age")?.value,
+    document.getElementById("bf_gender")?.value,
+    document.getElementById("bf_body")?.value,
+    document.getElementById("bf_height")?.value
   ].filter(Boolean).join(", ");
 
-  // 髪/瞳/肌（ID_* があればそっち、無ければ tagH/tagE/tagSkin）
+  // 髪/瞳/肌（タグ表示）
   const colors = [
-    readVal('ID_HAIR')  || readVal('tagH'),
-    readVal('ID_EYE')   || readVal('tagE'),
-    readVal('ID_SKIN')  || readVal('tagSkin')
+    document.getElementById("tagH")?.textContent,
+    document.getElementById("tagE")?.textContent,
+    document.getElementById("tagSkin")?.textContent
   ].filter(Boolean).join(", ");
 
-  // 分割→重複除去（splitTags は既存ユーティリティ）
-  const merged = [fromFixed, basics, colors].filter(Boolean).join(", ");
-  return Array.from(new Set(splitTags(merged)));
+  // 服（服パーツ + 色タグ）
+  const outfit = [
+    document.getElementById("outfit_top")?.value,
+    document.getElementById("outfit_dress")?.value,
+    document.getElementById("outfit_pants")?.value,
+    document.getElementById("outfit_skirt")?.value,
+    document.getElementById("outfit_shoes")?.value,
+    document.getElementById("tag_top")?.textContent,
+    document.getElementById("tag_bottom")?.textContent,
+    document.getElementById("tag_shoes")?.textContent
+  ].filter(Boolean).join(", ");
+
+  const merged = [fromFixed, basics, colors, outfit].filter(Boolean).join(", ");
+
+  const tokens = (typeof splitTags === 'function')
+    ? splitTags(merged)
+    : merged.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
+
+  const normed = (typeof normalizeTag === 'function') ? tokens.map(normalizeTag) : tokens;
+  return Array.from(new Set(normed));
 }
 
 function getNegLearn(){
