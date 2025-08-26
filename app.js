@@ -173,35 +173,57 @@ function pmGetNeg(){
 /* ===== 学習モード ===== */
 // 固定ワードを配列で返す（#fixedLearn 優先、無ければ #fixedManual）
 // ・カンマ / 改行 / 全角読点「、」で分割
-// ・normalizeTag を適用（背景などの表記統一）
+// ・normalizeTag を適用（背景などの表記統一）＋ UIの実ID直読み版
 function getFixedLearn(){
+  const takeText = id => {
+    const el = document.getElementById(id);
+    if (!el) return "";
+    const v = (el.value ?? el.textContent ?? "").trim();
+    return v;
+  };
+  const takeSelectVal = id => {
+    const el = document.getElementById(id);
+    if (!el) return "";
+    const v = (el.value || "").trim();
+    return v;
+  };
+  const takeRadioVal = name => {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? String(el.value || "").trim() : "";
+  };
+
+  // 入力ソース（撮影モード用ヘルパは禁止）
   const raw = [
-    // 髪色・瞳色・肌色（ラベル）
-    document.getElementById('tagH')?.textContent?.trim(),
-    document.getElementById('tagE')?.textContent?.trim(),
-    document.getElementById('tagSkin')?.textContent?.trim(),
+    // 髪・瞳・肌（テキスト欄）
+    takeText('tagH'),
+    takeText('tagE'),
+    takeText('tagSkin'),
 
-    // 髪型・目の形（scroller 選択）
-    (typeof _selectedChipText==='function' ? _selectedChipText('#hairStyle') : ''),
-    (typeof _selectedChipText==='function' ? _selectedChipText('#eyeShape')  : ''),
+    // 髪型・目型（<select>）
+    takeSelectVal('hairStyle'),
+    takeSelectVal('eyeShape'),
 
-    // 年齢・性別・体型・身長（scroller 選択）
-    (typeof _selectedChipText==='function' ? _selectedChipText('#bf_age')    : ''),
-    (typeof _selectedChipText==='function' ? _selectedChipText('#bf_gender') : ''),
-    (typeof _selectedChipText==='function' ? _selectedChipText('#bf_body')   : ''),
-    (typeof _selectedChipText==='function' ? _selectedChipText('#bf_height') : '')
+    // 年齢・性別・体型・身長（ラジオ：bf_*）
+    takeRadioVal('bf_age'),
+    takeRadioVal('bf_gender'),
+    takeRadioVal('bf_body'),
+    takeRadioVal('bf_height'),
   ].filter(Boolean);
 
-  const fixed = Array.from(
-    new Set(
-      raw.flatMap(s => String(s).split(/\s*,\s*/))
-         .map(t => (typeof normalizeTag==='function' ? normalizeTag(t.trim()) : t.trim()))
-         .filter(Boolean)
-    )
-  );
-
+  // カンマ区切りを展開 → 正規化 → 順序保持ユニーク
+  const fixed = [];
+  const seen = new Set();
+  for (const s of raw){
+    for (const t of String(s).split(/\s*,\s*/)){
+      const tag = normalizeTag(t.trim());
+      if (!tag || seen.has(tag)) continue;
+      seen.add(tag);
+      fixed.push(tag);
+    }
+  }
   return fixed;
 }
+
 function getNegLearn(){
   const useDef = !!document.getElementById("useDefaultNeg")?.checked;
   const extra  = (document.getElementById("negLearn")?.value
