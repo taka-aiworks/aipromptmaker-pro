@@ -171,32 +171,31 @@ function pmGetNeg(){
 }
 
 /* ===== 学習モード ===== */
+/* ===== 学習モード：固定タグ + 基本情報を統合 ===== */
 function getFixedLearn(){
+  // 既存の固定入力（固定欄 / 旧ID互換）
   const fromFixed = document.getElementById("fixedLearn")?.value
                  ?? document.getElementById("fixedManual")?.value
                  ?? "";
 
+  // 基本情報（撮影用ではなく、学習UIにある bf_* の value）
   const basics = [
-    // 基本情報
-    document.getElementById("ID_AGE")?.value,
-    document.getElementById("ID_GENDER")?.value,
-    document.getElementById("ID_BODY")?.value,
-    document.getElementById("ID_HEIGHT")?.value,
-    // 髪/瞳/肌（確定 or ラベル）
-    document.getElementById("ID_HAIR")?.value,
-    document.getElementById("ID_EYE")?.value,
-    document.getElementById("ID_SKIN")?.value,
-    document.getElementById("tagH")?.value,
-    document.getElementById("tagE")?.value,
-    document.getElementById("tagSkin")?.value
+    pmValById('bf_age'),
+    pmValById('bf_gender'),
+    pmValById('bf_body'),
+    pmValById('bf_height')
   ].filter(Boolean).join(", ");
 
-  // カンマ分割 → 正規化 → 重複除去
-  const fixed = Array.from(new Set(
-    (fromFixed + (fromFixed && basics ? ", " : "") + basics)
-      .split(/\s*,\s*/).map(normalizeTag).filter(Boolean)
-  ));
-  return fixed;
+  // 髪/瞳/肌の確定ラベル（<code id="tagH|tagE|tagSkin"> のテキスト）
+  const colors = [
+    pmTextById('tagH'),
+    pmTextById('tagE'),
+    pmTextById('tagSkin')
+  ].filter(Boolean).join(", ");
+
+  // まとめて分割→重複除去（splitTags は既存ユーティリティ）
+  const merged = [fromFixed, basics, colors].filter(Boolean).join(", ");
+  return Array.from(new Set(splitTags(merged)));
 }
 
 function getNegLearn(){
