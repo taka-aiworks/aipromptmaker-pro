@@ -3950,14 +3950,14 @@ function fillRemainder(rows, groupTags, fallbackTag){
 }
 window.fillRemainder = fillRemainder;
 
-// === 正規化（表記ゆれ吸収） ====================================
+// ▼ 正規化：辞書準拠（profileは吸収しない／light gray → gray_seamless）
 function normalizeTag(t){
   if(!t) return "";
   const s = String(t).trim().toLowerCase();
 
   // view
-  if (s==="profile view") return "side view";
   if (s==="3/4 view" || s==="three quarters view") return "three-quarters view";
+  // ← profile view はそのまま残す
 
   // composition
   if (s==="close up") return "close-up";
@@ -3969,112 +3969,85 @@ function normalizeTag(t){
   if (s==="solid background")  return "solid_background";
   if (s==="studio background") return "studio_background";
   if (s==="white background")  return "white_background";
+  if (s==="light gray background") return "gray_seamless"; // 辞書置換
 
-  return t; // 既に正規
+  return t;
 }
 
-// === 配分ルール（学習向け・表記統一済み） ======================
+// === 顔安定版・配分ルール =======================
 const MIX_RULES = {
   view: {
-    group: [
-      "front view",
-      "three-quarters view",
-      "side view",
-      "back view"
-    ],
+    // ※ “front/three-quarters/side/back/profile” は辞書のタグに合わせて表記統一
+    group: ["front view","three-quarters view","side view","profile view","back view"],
     targets: {
-      // front / 3Q を主軸、side/back を控えめ
-      "front view":          [0.35, 0.45],
-      "three-quarters view": [0.35, 0.45],
-      "side view":           [0.10, 0.15],
-      "back view":           [0.08, 0.12]
+      "three-quarters view":[0.55,0.65], // 最安定・主軸
+      "front view":[0.30,0.35],          // 顔正対も十分確保
+      "side view":[0.02,0.04],           // 少量のバリエ
+      "profile view":[0.01,0.03],        // 横顔はごく少量
+      "back view":[0.00,0.01]            // ほぼ出さない（顔見えない）
     },
     fallback: "three-quarters view"
   },
 
   comp: {
-    group: [
-      "full body",
-      "waist up",
-      "upper body",
-      "bust",
-      "portrait",
-      "close-up",
-      "wide shot"
-    ],
+    // 距離は “bust / waist up / portrait / upper body” を厚め、引きは極小
+    group: ["bust","waist up","portrait","upper body","close-up","full body","wide shot"],
     targets: {
-      // 距離の偏りを抑えて安定＋顔寄りも少し
-      "full body":  [0.18, 0.22],
-      "waist up":   [0.28, 0.34],
-      "upper body": [0.05, 0.08],
-      "bust":       [0.18, 0.22],
-      "portrait":   [0.10, 0.14],
-      "close-up":   [0.05, 0.08],
-      "wide shot":  [0.03, 0.06]
+      "bust":[0.35,0.45],        // 顔・肩周りが大きく入る
+      "waist up":[0.30,0.35],    // 肩～胸上の比率を高める
+      "portrait":[0.10,0.15],    // 縦構図の顔強調を少し
+      "upper body":[0.05,0.08],  // 予備の上半身フレーム
+      "close-up":[0.03,0.05],    // 近すぎは少量（崩れケア）
+      "full body":[0.00,0.02],   // ほぼ使わない
+      "wide shot":[0.00,0.01]    // ほぼ使わない
     },
-    fallback: "portrait"
+    fallback: "bust"
   },
 
   expr: {
+    // 表情はニュートラル主体＋穏やかな笑顔を添える
     group: [
-      "neutral expression",
-      "smiling",
-      "smiling open mouth",
-      "serious",
-      "determined",
-      "slight blush",
-      "surprised (mild)",
-      "pouting (slight)"
+      "neutral expression","smiling","smiling open mouth",
+      "slight blush","serious","determined","pouting (slight)"
     ],
     targets: {
-      // neutral をやや減らして smiling に少し配分
-      "neutral expression": [0.48, 0.58],
-      "smiling":            [0.22, 0.28],
-      "smiling open mouth": [0.06, 0.10],
-      "slight blush":       [0.03, 0.06],
-      "surprised (mild)":   [0.01, 0.03],
-      "pouting (slight)":   [0.01, 0.03],
-      "serious":            [0.01, 0.02],
-      "determined":         [0.01, 0.02]
+      "neutral expression":[0.55,0.65],
+      "smiling":[0.20,0.25],
+      "smiling open mouth":[0.03,0.05],
+      "slight blush":[0.03,0.05],
+      "serious":[0.01,0.02],
+      "determined":[0.01,0.02],
+      "pouting (slight)":[0.01,0.02]
     },
     fallback: "neutral expression"
   },
 
   bg: {
-    // SCOPE.learning に合わせて snake_case に統一
-    group: [
-      "plain_background",
-      "studio_background",
-      "solid_background",
-      "white_background",
-      "light gray background" // これだけ辞書由来のスペース表記
-    ],
+    // 背景は完全にプレーン寄せ（辞書のアンダースコア表記に統一）
+    group: ["plain_background","white_background","studio_background","solid_background","white_seamless","gray_seamless"],
     targets: {
-      "plain_background":     [0.38, 0.46],
-      "studio_background":    [0.18, 0.25],
-      "solid_background":     [0.12, 0.18],
-      "white_background":     [0.12, 0.18],
-      "light gray background":[0.05, 0.10]
+      "plain_background":[0.55,0.65],
+      "white_background":[0.15,0.25],
+      "studio_background":[0.10,0.15],
+      "solid_background":[0.05,0.10],
+      // シームレスはオマケ的にごく少量
+      "white_seamless":[0.02,0.04],
+      "gray_seamless":[0.02,0.04]
     },
     fallback: "plain_background"
   },
 
   light: {
-    group: [
-      "soft lighting",
-      "even lighting",
-      "normal lighting",
-      "window light",
-      "overcast"
-    ],
+    // 均一光＞柔らかい光＞通常光。演出系は控えめ
+    group: ["even lighting","soft lighting","normal lighting","window light","overcast"],
     targets: {
-      "soft lighting":   [0.32, 0.42],
-      "even lighting":   [0.25, 0.35],
-      "normal lighting": [0.12, 0.20],
-      "window light":    [0.06, 0.12],
-      "overcast":        [0.05, 0.10]
+      "even lighting":[0.35,0.45],
+      "soft lighting":[0.30,0.35],
+      "normal lighting":[0.15,0.20],
+      "window light":[0.05,0.08],
+      "overcast":[0.00,0.02]
     },
-    fallback: "soft lighting"
+    fallback: "even lighting"
   }
 };
 window.MIX_RULES = MIX_RULES;
@@ -4084,6 +4057,7 @@ const EXPR_ALL = new Set([
   ...Object.keys(MIX_RULES.expr.targets),
   MIX_RULES.expr.fallback
 ]);
+
 
 
 // === NSFWヘッダ統一関数（置き換え版）========================
