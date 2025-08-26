@@ -5084,21 +5084,47 @@ function enforceSingleBackground(arr){
   return out;
 }
    
-   function unifyLightingOnce(arr){
-    const Ls = []
-      .concat( (((typeof window!=='undefined' && window.SFW && Array.isArray(window.SFW.lighting)) ? window.SFW.lighting : []) || []).map(x=>x?.tag||x) )
-      .concat( (((typeof window!=='undefined' && window.NSFW && Array.isArray(window.NSFW.lighting)) ? window.NSFW.lighting : []) || []).map(x=>x?.tag||x) );
-    const kept = [];
-    let used = false;
-    for (const t of (arr||[])){
-      if (Ls.includes(t)){
-        if (used) continue;
-        used = true;
+   // 照明タグを1つに統一（normalize前提 / 辞書+表記揺れ対応）
+function unifyLightingOnce(arr){
+  if (!Array.isArray(arr)) return arr || [];
+
+  const norm = t => (typeof normalizeTag==='function')
+    ? normalizeTag(String(t||""))
+    : String(t||"").trim().toLowerCase();
+
+  // 辞書を収集して正規化セット化
+  const dictSet = new Set(
+    []
+      .concat(((window && window.SFW && Array.isArray(window.SFW.lighting)) ? window.SFW.lighting : []).map(x => norm(x?.tag ?? x)))
+      .concat(((window && window.NSFW && Array.isArray(window.NSFW.lighting)) ? window.NSFW.lighting : []).map(x => norm(x?.tag ?? x)))
+      .concat(((window && window.MIX_RULES && window.MIX_RULES.light && Array.isArray(window.MIX_RULES.light.group)) ? window.MIX_RULES.light.group : []).map(norm))
+  );
+
+  const kept = [];
+  let chosen = null;
+
+  for (const raw of arr){
+    if (!raw) continue;
+    const t = norm(raw);
+    const looksLight = dictSet.has(t) || /\blight(ing)?\b/i.test(t);
+
+    if (looksLight){
+      if (chosen === null){
+        chosen = t;            // 最初のライトだけ採用
+        kept.push(t);
+      } else {
+        // 2個目以降は捨てる
       }
+    } else {
       kept.push(t);
     }
-    return kept;
   }
+  return kept;
+}
+   
+
+
+   
   function keepOneFrom(arr, pool){
     if (!Array.isArray(arr) || !Array.isArray(pool) || !pool.length) return arr||[];
     let kept = false, ret = [];
