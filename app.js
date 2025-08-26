@@ -4331,7 +4331,6 @@ function buildBatchLearning(n){
   if (typeof applyPercentForTag === 'function' && typeof fillRemainder === 'function' && typeof MIX_RULES === 'object'){
     const rows = out;
 
-    // view
     if (MIX_RULES.view) {
       if (MIX_RULES.view.targets?.["profile view"])
         applyPercentForTag(rows, MIX_RULES.view.group, "profile view", ...MIX_RULES.view.targets["profile view"]);
@@ -4340,7 +4339,6 @@ function buildBatchLearning(n){
       fillRemainder(rows, MIX_RULES.view.group, MIX_RULES.view.fallback);
     }
 
-    // comp
     if (MIX_RULES.comp) {
       for (const [tag, rng] of Object.entries(MIX_RULES.comp.targets || {})) {
         applyPercentForTag(rows, MIX_RULES.comp.group, tag, rng[0], rng[1]);
@@ -4348,10 +4346,9 @@ function buildBatchLearning(n){
       fillRemainder(rows, MIX_RULES.comp.group, MIX_RULES.comp.fallback);
     }
 
-    // expr（SFW基準）
     if (MIX_RULES.expr) {
-      const selExpr = getMany("expr") || [];
-      const exprGroupBase = selExpr.length ? selExpr : MIX_RULES.expr.group;
+      const selExpr = (typeof getMany==='function' ? (getMany("expr")||[]) : []);
+      const exprGroupBase = selExpr.length ? selExpr : (MIX_RULES.expr.group || []);
       const exprGroup = Array.from(new Set([...exprGroupBase, "neutral expression"]));
       for (const [tag, rng] of Object.entries(MIX_RULES.expr.targets || {})) {
         if (!exprGroup.includes(tag)) continue;
@@ -4360,7 +4357,6 @@ function buildBatchLearning(n){
       fillRemainder(rows, exprGroup, MIX_RULES.expr.fallback);
     }
 
-    // bg
     if (MIX_RULES.bg) {
       for (const [tag, rng] of Object.entries(MIX_RULES.bg.targets || {})) {
         applyPercentForTag(rows, MIX_RULES.bg.group, tag, rng[0], rng[1]);
@@ -4368,7 +4364,6 @@ function buildBatchLearning(n){
       fillRemainder(rows, MIX_RULES.bg.group, MIX_RULES.bg.fallback);
     }
 
-    // light
     if (MIX_RULES.light) {
       for (const [tag, rng] of Object.entries(MIX_RULES.light.targets || {})) {
         applyPercentForTag(rows, MIX_RULES.light.group, tag, rng[0], rng[1]);
@@ -4397,11 +4392,15 @@ function buildBatchLearning(n){
       gPose.length || gAcc.length || gOutfit.length || gBody.length ||
       gNip.length  || gUnder.length;
 
-    const keepOneFrom = (arr, pool)=>{
-      if (!Array.isArray(arr) || !pool || !pool.length) return arr;
-      let kept = false, ret = [];
+    // 両側正規化で 1件だけ残す
+    const keepOneFrom = (arr, poolRaw)=>{
+      if (!Array.isArray(arr) || !poolRaw || !poolRaw.length) return arr;
+      const pool = new Set(poolRaw.map(normalizeTag));
+      let kept = false;
+      const ret = [];
       for (const t of arr){
-        if (pool.includes(t)) {
+        const nt = normalizeTag(t);
+        if (pool.has(nt)) {
           if (!kept){ ret.push(t); kept = true; }
         } else ret.push(t);
       }
@@ -4431,10 +4430,14 @@ function buildBatchLearning(n){
       const chosenNip    = gNip[0]    || "";
       const chosenUnder  = gUnder[0]  || "";
 
-      // 表情
+      // 表情（SFW表情を除去→1つ注入 or 既存から1つ）
       if (chosenExpr){
-        const sfwExprGroup = Array.from(new Set([...(getMany?.("expr")||[]), ...(MIX_RULES?.expr?.group||[]), "neutral expression"]));
-        p = p.filter(t => !sfwExprGroup.includes(t));
+        const sfwExprGroup = Array.from(new Set([
+          ...((typeof getMany==='function' ? (getMany("expr")||[]) : [])),
+          ...(MIX_RULES?.expr?.group || []),
+          "neutral expression"
+        ])).map(normalizeTag);
+        p = p.filter(t => !sfwExprGroup.includes(normalizeTag(t)));
         if (!p.includes(chosenExpr)) p.push(chosenExpr);
       } else {
         p = keepOneFrom(p, gExpr);
@@ -4494,86 +4497,85 @@ function buildBatchLearning(n){
   }
 
   // ④ 最終整形（基本情報の注入 + 服×色の最終ペアリング）
-  // ④ 最終整形（ここで基本情報を前段に注入 + 服色タグを注入してから最終ペアリング）
-for (const r of out){
-  let p = Array.isArray(r.pos) ? r.pos.slice()
-        : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
-  p = (p || []).map(normalizeTag);
+  for (const r of out){
+    let p = Array.isArray(r.pos) ? r.pos.slice()
+          : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
+    p = (p || []).map(normalizeTag);
 
-  // 固定（あなたの getFixedLearn 実装をそのまま利用）
-  const fixed = (typeof getFixedLearn === 'function') ? (getFixedLearn() || []) : [];
+    // 固定
+    const fixed = (typeof getFixedLearn === 'function') ? (getFixedLearn() || []) : [];
 
-  // 基本情報（DOMから直取り）
-  const basicsRaw = [
-    document.getElementById('ID_AGE')?.value,
-    document.getElementById('ID_GENDER')?.value,
-    document.getElementById('ID_BODY')?.value,
-    document.getElementById('ID_HEIGHT')?.value,
-    document.getElementById('ID_HAIR')?.value,
-    document.getElementById('ID_EYE')?.value,
-    document.getElementById('ID_SKIN')?.value,
-    document.getElementById('tagH')?.textContent || document.getElementById('tagH')?.value,
-    document.getElementById('tagE')?.textContent || document.getElementById('tagE')?.value,
-    document.getElementById('tagSkin')?.textContent || document.getElementById('tagSkin')?.value
-  ].filter(Boolean);
+    // 基本情報（DOM直）
+    const basicsRaw = [
+      document.getElementById('ID_AGE')?.value,
+      document.getElementById('ID_GENDER')?.value,
+      document.getElementById('ID_BODY')?.value,
+      document.getElementById('ID_HEIGHT')?.value,
+      document.getElementById('ID_HAIR')?.value,
+      document.getElementById('ID_EYE')?.value,
+      document.getElementById('ID_SKIN')?.value,
+      (document.getElementById('tagH')?.textContent || document.getElementById('tagH')?.value),
+      (document.getElementById('tagE')?.textContent || document.getElementById('tagE')?.value),
+      (document.getElementById('tagSkin')?.textContent || document.getElementById('tagSkin')?.value)
+    ].filter(Boolean);
 
-  const basics = basicsRaw
-    .flatMap(s => String(s).split(/\s*,\s*/))
-    .map(normalizeTag)
-    .filter(Boolean);
+    const basics = basicsRaw
+      .flatMap(s => String(s).split(/\s*,\s*/))
+      .map(normalizeTag)
+      .filter(Boolean);
 
-  // 固定 → 基本情報 → 既存p
-  p = [...fixed, ...basics, ...p].filter(Boolean);
+    // 固定 → 基本情報 → 既存p
+    p = [...fixed, ...basics, ...p].filter(Boolean);
 
-  // ★ 服カラーのタグをDOMから注入（チェックONのみ、ワンピ時は下色無視）
-  (function injectWearColors(){
-    const pushIf = (ok, id)=>{
-      if (!ok) return;
-      const t = (document.getElementById(id)?.textContent || '').trim();
-      if (t && t !== '—') p.push(normalizeTag(t));
-    };
-    const useTop    = !!document.getElementById('use_top')?.checked;
-    const useBottom = !!document.getElementById('useBottomColor')?.checked;
-    const useShoes  = !!document.getElementById('use_shoes')?.checked;
-    const isDress   = !!document.getElementById('outfitModeDress')?.checked; // ワンピは下色スキップ
-    pushIf(useTop, 'tag_top');
-    if (!isDress) pushIf(useBottom, 'tag_bottom');
-    pushIf(useShoes, 'tag_shoes');
-  })();
+    // DOMの色タグを注入（チェックONのみ、ワンピ時は下色無視）
+    (function injectWearColors(){
+      const textOf = id => (document.getElementById(id)?.textContent || '').trim();
+      const pushIf = (ok, id)=>{
+        if (!ok) return;
+        const t = textOf(id);
+        if (t && t !== '—') p.push(normalizeTag(t));
+      };
+      const useTop    = !!document.getElementById('use_top')?.checked;
+      const useBottom = !!document.getElementById('useBottomColor')?.checked;
+      const useShoes  = !!document.getElementById('use_shoes')?.checked;
+      const isDress   = !!document.getElementById('outfitModeDress')?.checked;
+      pushIf(useTop, 'tag_top');
+      if (!isDress) pushIf(useBottom, 'tag_bottom');
+      pushIf(useShoes, 'tag_shoes');
+    })();
 
-  // ★ 服×色を“必ず”最終ペアリング（white t-shirt / azure shorts などへ結合）
-  if (typeof pairWearColors === 'function') p = pairWearColors(p);
+    // 最終ペアリング（ここで white t-shirt / azure shorts へ結合 & 使われた色は除去）
+    if (typeof pairWearColors === 'function') p = pairWearColors(p);
 
-  // 排他/整理
-  if (typeof fixExclusives === 'function') p = fixExclusives(p);
-  p = Array.from(new Set(p)); // 重複除去
+    // 排他/整理
+    if (typeof fixExclusives === 'function') p = fixExclusives(p);
+    p = Array.from(new Set(p));
 
-  // 背景/光/View の一本化
-  if (typeof enforceSingleBackground === 'function') p = enforceSingleBackground(p);
-  if (typeof unifyLightingOnce       === 'function') p = unifyLightingOnce(p);
-  if (typeof ensureViewExclusive     === 'function') p = ensureViewExclusive(p);
+    // 背景/光/View の一本化 & 並び順
+    if (typeof enforceSingleBackground === 'function') p = enforceSingleBackground(p);
+    if (typeof unifyLightingOnce       === 'function') p = unifyLightingOnce(p);
+    if (typeof ensureViewExclusive     === 'function') p = ensureViewExclusive(p);
+    if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
+    if (typeof enforceHeadOrder  === 'function') p = enforceHeadOrder(p);
 
-  if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
-  if (typeof enforceHeadOrder  === 'function') p = enforceHeadOrder(p);
+    // NSFW 先頭固定
+    if (p.includes("NSFW") && p[0] !== "NSFW"){
+      p = p.filter(t => t !== "NSFW");
+      p.unshift("NSFW");
+    }
 
-  // NSFW 先頭固定
-  if (p.includes("NSFW") && p[0] !== "NSFW"){
-    p = p.filter(t => t !== "NSFW");
-    p.unshift("NSFW");
+    r.pos    = p;
+    r.prompt = p.join(", ");
+
+    const addonNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
+    const learnNeg = (typeof getNegLearn === 'function') ? getNegLearn() : "";
+    r.neg  = [learnNeg, addonNeg].filter(Boolean).join(", ");
+
+    r.seed = r.seed || (typeof seedFromName === 'function'
+              ? seedFromName(document.getElementById("charName")?.value || "", 1)
+              : 0);
+    r.text = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
   }
-
-  r.pos    = p;
-  r.prompt = p.join(", ");
-
-  const addonNeg = ["props","accessories","smartphone","phone","camera"].join(", ");
-  const learnNeg = (typeof getNegLearn === 'function') ? getNegLearn() : "";
-  r.neg  = [learnNeg, addonNeg].filter(Boolean).join(", ");
-
-  r.seed = r.seed || (typeof seedFromName === 'function'
-            ? seedFromName(document.getElementById("charName")?.value || "", 1)
-            : 0);
-  r.text = `${r.prompt} --neg ${r.neg} seed:${r.seed}`;
-}
 
   return out;
 }
