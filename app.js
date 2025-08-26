@@ -4449,6 +4449,9 @@ function buildBatchLearning(n){
      if (MIX_RULES?.light?.group) {
        p = enforceSingleFromGroup(p, MIX_RULES.light.group, MIX_RULES.light.fallback);
      }
+     if (MIX_RULES?.view?.group) {
+       p = enforceSingleFromGroup(p, MIX_RULES.view.group, MIX_RULES.view.fallback);
+     }
 
     if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
     if (typeof enforceHeadOrder === 'function')  p = enforceHeadOrder(p);
