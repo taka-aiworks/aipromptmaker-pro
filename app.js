@@ -3919,8 +3919,13 @@ window.fillRemainder = fillRemainder;
 
 // ▼ 正規化：辞書準拠（profileは“side”に吸収しない／light gray → gray_seamless）
 function normalizeTag(t){
-  if(!t) return "";
-  const s = String(t).trim().toLowerCase();
+  if (!t) return "";
+  const raw = String(t).trim();
+
+  // --- NSFW は例外で大文字維持 ---
+  if (/^nsfw$/i.test(raw)) return "NSFW";
+
+  const s = raw.toLowerCase();
 
   // ---- view ----
   if (s==="3/4 view" || s==="three quarters view") return "three-quarters view";
@@ -3946,6 +3951,7 @@ function normalizeTag(t){
 
   return s;
 }
+
 
 // 追加：タグ配列をホワイトリストで絞る共通関数
 function filterByScope(items, allow) {
