@@ -170,49 +170,44 @@ function pmGetNeg(){
   return [useDef ? base : "", extra].filter(Boolean).join(", ");
 }
 
-/* ===== 学習モード：固定+基本情報（bf_系ID対応版） ===== */
+/* ===== 学習モード：固定+基本情報を集約（pm系ナシ / bf_* 対応） ===== */
 function getFixedLearn(){
   const fromFixed =
     document.getElementById("fixedLearn")?.value ??
     document.getElementById("fixedManual")?.value ??
     "";
 
-  // 基本情報（bf_ 系）
-  const basics = [
-    document.getElementById("bf_age")?.value,
-    document.getElementById("bf_gender")?.value,
-    document.getElementById("bf_body")?.value,
-    document.getElementById("bf_height")?.value
-  ].filter(Boolean).join(", ");
+  const tokens = [];
 
-  // 髪/瞳/肌（タグ表示）
-  const colors = [
-    document.getElementById("tagH")?.textContent,
-    document.getElementById("tagE")?.textContent,
-    document.getElementById("tagSkin")?.textContent
-  ].filter(Boolean).join(", ");
+  // ▼ 基本情報（テキスト属性：SFW基礎）… scroller は getMany で取る
+  const addMany = (id)=>{
+    try {
+      if (typeof getMany === 'function') {
+        const v = getMany(id) || [];
+        if (Array.isArray(v) && v.length) tokens.push(...v);
+      }
+    } catch(_) {}
+  };
+  ["bf_age","bf_gender","bf_body","bf_height","hairStyle","eyeShape"].forEach(addMany);
 
-  // 服（服パーツ + 色タグ）
-  const outfit = [
-    document.getElementById("outfit_top")?.value,
-    document.getElementById("outfit_dress")?.value,
-    document.getElementById("outfit_pants")?.value,
-    document.getElementById("outfit_skirt")?.value,
-    document.getElementById("outfit_shoes")?.value,
-    document.getElementById("tag_top")?.textContent,
-    document.getElementById("tag_bottom")?.textContent,
-    document.getElementById("tag_shoes")?.textContent
-  ].filter(Boolean).join(", ");
+  // ▼ 色：髪/瞳/肌（UI は <code id="tagH|tagE|tagSkin"> に確定テキスト表示）
+  const txt = id => (document.getElementById(id)?.textContent || "").trim();
+  tokens.push(txt("tagH"), txt("tagE"), txt("tagSkin"));
 
-  const merged = [fromFixed, basics, colors, outfit].filter(Boolean).join(", ");
+  // ▼ 服：選択パーツ（scroller）＋ 色タグ（code）
+  ["outfit_top","outfit_dress","outfit_pants","outfit_skirt","outfit_shoes"].forEach(addMany);
+  tokens.push(txt("tag_top"), txt("tag_bottom"), txt("tag_shoes"));
 
-  const tokens = (typeof splitTags === 'function')
+  // ▼ まとめ → カンマ分割 → 正規化 → ユニーク
+  const merged = [fromFixed, ...tokens.filter(Boolean)].join(", ");
+  const split = (typeof splitTags === 'function')
     ? splitTags(merged)
     : merged.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
 
-  const normed = (typeof normalizeTag === 'function') ? tokens.map(normalizeTag) : tokens;
+  const normed = (typeof normalizeTag === 'function') ? split.map(normalizeTag) : split;
   return Array.from(new Set(normed));
 }
+
 
 function getNegLearn(){
   const useDef = !!document.getElementById("useDefaultNeg")?.checked;
