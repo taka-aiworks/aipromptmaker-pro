@@ -3577,34 +3577,26 @@ if (sel.mode === "onepiece") {
   return uniq(out).filter(Boolean);
 }
 
-// 共有: 服色と服名をペア化（順序保持・単独色掃除・DOM色優先・ワンピ最優先）
+// 共有: 服色と服名をペア化（順序保持・単独色対応・DOM色優先・DOM色時もプレース除去）
 function pairWearColors(parts){
   if (!Array.isArray(parts)) return parts || [];
+  const list = parts.filter(Boolean).map(s => String(s));
 
-  // 元配列の順序を尊重して加工（文字列化＆空除去）
-  let list = parts.filter(Boolean).map(s => String(s));
+  const COLORS_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
 
-  // ---- 正規表現（色・名詞）
-  const COLOR_WORD = '(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)';
-  const COLORS_RE  = new RegExp(`\\b${COLOR_WORD}\\b`, 'i');
-
-  // NOTE: 先頭の (plain\\s+)? は検出用で、実際の出力では plain は剥がす
   const TOP_RE    = /\b(plain\s+)?(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\s+coat|tank\s+top|camisole|turtleneck|off-shoulder\s+top|crop\s+top|sweatshirt|blazer)\b/i;
   const BOTTOM_RE = /\b(plain\s+)?(skirt|pleated\s+skirt|long\s+skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\s+shorts)\b/i;
   const DRESS_RE  = /\b(plain\s+)?(dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|lolita\s+dress|(?:school|sailor|blazer|nurse|maid|waitress)\s+uniform|maid\s+outfit|tracksuit|sportswear|jersey|robe|poncho|cape)\b/i;
   const SHOES_RE  = /\b(plain\s+)?(shoes|boots|heels|sandals|sneakers|loafers|mary\s+janes|mary_janes|geta|zori)\b/i;
 
-  // DOM 側の色（あれば最優先）
   const domText = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
-  const domTop    = domText('tag_top');
-  const domBottom = domText('tag_bottom');
-  const domShoes  = domText('tag_shoes');
+  const domColorTop    = domText("tag_top");
+  const domColorBottom = domText("tag_bottom");
+  const domColorShoes  = domText("tag_shoes");
 
-  // list 内の「色トークン」のインデックス列挙（裸の色語／色+generic どちらも含む）
   const colorIdxs = [];
   list.forEach((t,i)=>{ if (COLORS_RE.test(t)) colorIdxs.push(i); });
 
-  // 名詞ヒット位置（先勝ち）
   const idx = {
     top:    list.findIndex(t => TOP_RE.test(t)),
     bottom: list.findIndex(t => BOTTOM_RE.test(t)),
@@ -3612,114 +3604,50 @@ function pairWearColors(parts){
     shoes:  list.findIndex(t => SHOES_RE.test(t)),
   };
 
-  // ユーティリティ
-  const usedColor = new Set();          // 使い切った色トークンの index
-  const usedToken = new Set();          // 後で削除したいトークン index（generic等）
+  const usedColor = new Set();
 
-  const nounOnly = (s, re) => {         // "plain " を剥いで名詞だけ返す
-    const m = String(s).match(re);
-    return m ? m[2].toLowerCase() : "";
+  // プレース "white top/bottom/dress/shoes" を色・名詞で探して usedColor に入れる
+  const markPlaceholderUsed = (color, nounKind /*top|bottom|dress|shoes*/) => {
+    if (!color) return;
+    const re = new RegExp(`\\b${color}\\b\\s+${nounKind}\\b`, 'i');
+    const k = list.findIndex((t, i) => !usedColor.has(i) && re.test(String(t)));
+    if (k >= 0) usedColor.add(k);
   };
 
-  // "white top" のような色＋generic を優先消費（見つかったら index を返す）
-  const findPlaceholder = (generic) => {
-    const re = new RegExp(`\\b${COLOR_WORD}\\s+${generic}\\b`, 'i');
-    const i = list.findIndex(t => re.test(String(t)));
-    if (i >= 0) return { idx: i, color: String(list[i]).match(re)[1].toLowerCase() };
-    return null;
-  };
-
-  // 指定 generic の色を決める：DOM ＞ プレースホルダ ＞ 未使用の裸色
-  const takeColorFor = (generic, domColor) => {
-    if (domColor && COLORS_RE.test(domColor)) return domColor.match(COLORS_RE)[1].toLowerCase();
-
-    const ph = findPlaceholder(generic);
-    if (ph) { usedColor.add(ph.idx); return ph.color; }
-
+  const takeColor = (preferred /*string|""*/, nounKind /*top|bottom|dress|shoes*/) => {
+    if (preferred && COLORS_RE.test(preferred)) {
+      const c = preferred.match(COLORS_RE)[1].toLowerCase();
+      // DOM色を使った場合でも、対応するプレースがあれば消費扱いにする
+      markPlaceholderUsed(c, nounKind);
+      return c;
+    }
     const k = colorIdxs.find(j => !usedColor.has(j));
     if (k == null) return "";
     usedColor.add(k);
     return (list[k].match(COLORS_RE)[1] || "").toLowerCase();
   };
 
-  // list[nounIndex] を "color noun" or "noun" に置換（plain は常に剥ぐ）
-  const combineAt = (nounIndex, re, colorWord) => {
-    if (nounIndex < 0) return;
-    const noun = nounOnly(list[nounIndex], re);
-    list[nounIndex] = colorWord ? `${colorWord} ${noun}` : noun;
+  const cleanNoun = (s, re) => {
+    const m = String(s).match(re);
+    return m ? m[2].toLowerCase() : "";
   };
 
-  // ---------- ワンピ最優先 ----------
-  if (idx.dress >= 0) {
-    // ワンピの色は「トップ色（DOM）＞ 'color dress' プレース＞裸色」の順
-    const colorDress = takeColorFor('dress', domTop || "");
-    combineAt(idx.dress, DRESS_RE, colorDress);
+  const combineAt = (nounIndex, re, preferredColor, kind) => {
+    if (nounIndex < 0) return;
+    const noun = cleanNoun(list[nounIndex], re);
+    const color = takeColor(preferredColor, kind);
+    list[nounIndex] = color ? `${color} ${noun}` : noun;
+  };
 
-    // ワンピ採用時は top/bottom 系の名詞とその generic プレースは削除
-    const DROP_GENERIC_RE = /\b(?:top|bottom)\b/i;
-
-    list = list.filter((t, i) => {
-      // 既に使用済み色は削除
-      if (usedColor.has(i)) return false;
-      // トップ／ボトムの名詞は落とす
-      if (TOP_RE.test(t) || BOTTOM_RE.test(t)) return false;
-      // "white top" / "azure bottom" のような generic プレースも落とす
-      if (new RegExp(`\\b${COLOR_WORD}\\s+(top|bottom)\\b`, 'i').test(t)) return false;
-      // 裸の色単語（スペースなし）は落とす
-      if (COLORS_RE.test(t) && !/\s/.test(String(t))) return false;
-      // "plain ◯◯" が残っていたら plain を剥いだ名詞に正規化
-      if (/^\s*plain\s+/i.test(t)) {
-        const noPlain = t.replace(/^\s*plain\s+/i, '');
-        return (list[i] = noPlain), true;
-      }
-      // "top" / "bottom" だけの素片は念のため落とす
-      if (DROP_GENERIC_RE.test(t) && !/\s/.test(String(t))) return false;
-
-      return true;
-    });
-
-  } else {
-    // ---------- 上下コーデ ----------
-    if (idx.top >= 0) {
-      const colorTop = takeColorFor('top', domTop);
-      combineAt(idx.top, TOP_RE, colorTop);
-    }
-    if (idx.bottom >= 0) {
-      const colorBottom = takeColorFor('bottom', domBottom);
-      combineAt(idx.bottom, BOTTOM_RE, colorBottom);
-    }
-
-    // 靴は独立して処理
-    if (idx.shoes >= 0) {
-      const colorShoes = takeColorFor('shoes', domShoes);
-      combineAt(idx.shoes, SHOES_RE, colorShoes);
-    }
-
-    // 後処理：使い切った色トークンや裸の色語、genericプレース等を掃除
-    list = list.filter((t, i) => {
-      // 使用済み色トークンは消す
-      if (usedColor.has(i)) return false;
-      // 裸の色単語は消す（"white" のように単独）
-      if (COLORS_RE.test(t) && !/\s/.test(String(t))) return false;
-      // "plain ◯◯" は plain を剥がして残す
-      if (/^\s*plain\s+/i.test(t)) { list[i] = t.replace(/^\s*plain\s+/i, ''); return true; }
-      // "white top/bottom/shoes" の generic プレースは全て消す（すでに名詞へ結合済み）
-      if (new RegExp(`\\b${COLOR_WORD}\\s+(top|bottom|shoes|dress)\\b`, 'i').test(t)) return false;
-      // "top" / "bottom" / "shoes" / "dress" 単体の素片も消す
-      if (/\b(?:top|bottom|shoes|dress)\b/i.test(t) && !/\s/.test(String(t))) return false;
-
-      return true;
-    });
+  if (idx.dress >= 0) combineAt(idx.dress,  DRESS_RE,  domText("tag_top") /*ワンピはtop色*/, 'dress');
+  if (idx.dress < 0) {
+    if (idx.top    >= 0) combineAt(idx.top,    TOP_RE,    domColorTop,    'top');
+    if (idx.bottom >= 0) combineAt(idx.bottom, BOTTOM_RE, domColorBottom, 'bottom');
   }
+  if (idx.shoes >= 0)   combineAt(idx.shoes,  SHOES_RE,  domColorShoes,  'shoes');
 
-  // 重複を軽く除去（順序保持のため Set 化→配列化）
-  const out = [];
-  const seen = new Set();
-  for (const t of list){
-    const k = t;
-    if (!seen.has(k)) { seen.add(k); out.push(k); }
-  }
-  return out;
+  const out = list.filter((_,i) => !usedColor.has(i));
+  return Array.from(new Set(out));
 }
 
 // === 一式（ワンピ）優先：重複衣服の排除＆色プレースホルダの置換 ===
