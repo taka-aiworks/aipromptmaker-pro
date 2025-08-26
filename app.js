@@ -176,32 +176,32 @@ function pmGetNeg(){
 // ・normalizeTag を適用（背景などの表記統一）
 function getFixedLearn(){
   const raw = [
-    // 髪色・瞳色・肌色
-    pmTextById('tagH'),
-    pmTextById('tagE'),
-    pmTextById('tagSkin'),
-    pmPickOne('ID_HAIR'),
-    pmPickOne('ID_EYE'),
-    pmPickOne('ID_SKIN'),
+    // 髪色・瞳色・肌色（ラベル）
+    document.getElementById('tagH')?.textContent?.trim(),
+    document.getElementById('tagE')?.textContent?.trim(),
+    document.getElementById('tagSkin')?.textContent?.trim(),
 
-    // 年齢・性別・体型・身長
-    pmPickOne('ID_AGE'),
-    pmPickOne('ID_GENDER'),
-    pmPickOne('ID_BODY'),
-    pmPickOne('ID_HEIGHT')
+    // 髪型・目の形（scroller 選択）
+    (typeof _selectedChipText==='function' ? _selectedChipText('#hairStyle') : ''),
+    (typeof _selectedChipText==='function' ? _selectedChipText('#eyeShape')  : ''),
+
+    // 年齢・性別・体型・身長（scroller 選択）
+    (typeof _selectedChipText==='function' ? _selectedChipText('#bf_age')    : ''),
+    (typeof _selectedChipText==='function' ? _selectedChipText('#bf_gender') : ''),
+    (typeof _selectedChipText==='function' ? _selectedChipText('#bf_body')   : ''),
+    (typeof _selectedChipText==='function' ? _selectedChipText('#bf_height') : '')
   ].filter(Boolean);
 
   const fixed = Array.from(
     new Set(
       raw.flatMap(s => String(s).split(/\s*,\s*/))
-         .map(t => t.trim())
+         .map(t => (typeof normalizeTag==='function' ? normalizeTag(t.trim()) : t.trim()))
          .filter(Boolean)
     )
   );
 
   return fixed;
 }
-
 function getNegLearn(){
   const useDef = !!document.getElementById("useDefaultNeg")?.checked;
   const extra  = (document.getElementById("negLearn")?.value
