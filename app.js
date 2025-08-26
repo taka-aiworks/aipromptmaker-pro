@@ -171,11 +171,52 @@ function pmGetNeg(){
 }
 
 /* ===== 学習モード ===== */
+// 置き換え推奨：固定タグを多源（fixedLearn/fixedManual/ベースUI）から吸い上げ
 function getFixedLearn(){
-  const v = document.getElementById("fixedLearn")?.value
-         ?? document.getElementById("fixedManual")?.value; // 旧ID互換
-  return splitTags(v);
+  const pullText = sel => {
+    const el = document.querySelector(sel);
+    const v  = (el && typeof el.value === "string") ? el.value : "";
+    return v.split(/[,\n]/).map(s=>normalizeTag(s)).map(s=>s.trim()).filter(Boolean);
+  };
+
+  // 既存：テキストエリア
+  const fromFixed   = pullText("#fixedLearn");
+  const fromManual  = pullText("#fixedManual");
+
+  // 追加：UI側に“ベース情報”があるなら拾う（どれか1つでも存在すればOK）
+  // 例）タグチップ、セレクト、隠しinput などから data-tag / value / text を吸う
+  const fromBaseUI = (()=> {
+    const out = [];
+
+    // チップ型（例：#baseChar .tag[data-tag]）
+    document.querySelectorAll('#baseChar .tag,[data-taggroup="base"] .tag').forEach(el=>{
+      const t = normalizeTag(el.getAttribute('data-tag') || el.textContent || "");
+      if (t) out.push(t);
+    });
+
+    // セレクト/インプット慣用ID（あれば）
+    ['#hairColor','#eyeColor','#irisColor','#hair','#eyes'].forEach(sel=>{
+      const el = document.querySelector(sel);
+      const v  = (el && (el.value || el.getAttribute('data-tag') || el.textContent)) || "";
+      if (v) out.push(normalizeTag(v));
+    });
+
+    // データ属性（例：<div id="charBase" data-tags="blonde hair, blue eyes">）
+    const base = document.querySelector('#charBase');
+    if (base && base.dataset && base.dataset.tags){
+      base.dataset.tags.split(/[,\n]/).forEach(s=>{
+        const t = normalizeTag(s);
+        if (t) out.push(t.trim());
+      });
+    }
+
+    return out.filter(Boolean);
+  })();
+
+  // まとめて重複排除
+  return Array.from(new Set([...fromFixed, ...fromManual, ...fromBaseUI]));
 }
+
 function getNegLearn(){
   const useDef = !!document.getElementById("useDefaultNeg")?.checked;
   const extra  = (document.getElementById("negLearn")?.value
