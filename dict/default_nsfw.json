@@ -27,6 +27,9 @@
       { "tag": "biting_sheet",     "ja": "シーツを噛む", "level": "L2" },
       { "tag": "arched_back_face", "ja": "のけぞり絶頂顔", "level": "L2" },
       { "tag": "sweaty_face",      "ja": "汗だくの顔", "level": "L2" },
+      { "tag": "post_orgasm_daze", "ja": "絶頂後放心顔", "level": "L2" },
+      { "tag": "blissful_smile",   "ja": "恍惚スマイル", "level": "L2" },
+      { "tag": "fainting_face",    "ja": "失神顔",       "level": "L3" },
     
       { "tag": "terror",           "ja": "恐怖", "level": "L3" },
       { "tag": "agony",            "ja": "苦悶", "level": "L3" },
@@ -52,6 +55,8 @@
       { "tag": "topless",       "ja": "上半身裸", "level": "L2" },
       { "tag": "bottomless",    "ja": "下半身裸", "level": "L2" },
       { "tag": "nude",          "ja": "全裸", "level": "L2" },
+      { "tag": "nip_slip",  "ja": "乳首チラ", "level": "L1" },
+      { "tag": "ass_peek",  "ja": "尻チラ（パンツずらし）", "level": "L1" },
       { "tag": "visible_pubic_hair", "ja": "陰毛が見えている", "level": "L2" },
       { "tag": "pubic_hair_peek",  "ja": "陰毛チラ見え", "level": "L1" },
       { "tag": "pubic_hair_out",   "ja": "下着からはみ毛", "level": "L2" },
@@ -61,7 +66,7 @@
       { "tag": "bondage_exposure", "ja": "拘束露出", "level": "L3" }
     ],
 
-          "situation": [
+      "situation": [
       { "tag": "suggestive_pose", "ja": "含みのあるポーズ", "level": "L1" },
       { "tag": "mirror_selfie", "ja": "鏡越しの自撮り", "level": "L1" },
       { "tag": "after_shower", "ja": "入浴後・濡れ髪", "level": "L1" },
@@ -101,7 +106,11 @@
       { "tag": "coprophagia",    "ja": "スカトロ食", "level": "L3" },
       { "tag": "dirty_skin",     "ja": "肌が汚れている（糞尿）", "level": "L3" },
       { "tag": "dirty_clothes",  "ja": "服が汚れている（糞尿）", "level": "L3" },
-      { "tag": "toilet_play",    "ja": "トイレプレイ", "level": "L3" }
+      { "tag": "toilet_play",    "ja": "トイレプレイ", "level": "L3" },
+      { "tag": "caught_in_the_act", "ja": "行為中に見つかる", "level": "L2" },
+      { "tag": "public_toilet",     "ja": "公衆トイレ",       "level": "L2" },
+      { "tag": "locker_room",       "ja": "ロッカールーム",   "level": "L1" },
+      { "tag": "voyeur_camera",     "ja": "盗撮カメラ視点",   "level": "L3" }
     ],
 
       "lighting": [
@@ -124,6 +133,8 @@
         { "tag": "blue_neon",        "ja": "青ネオン光（妖艶）", "level": "L1" },
         { "tag": "underlight_erotic","ja": "下からのライト（フェティッシュ）", "level": "L1" },
         { "tag": "moody_bedroom",    "ja": "ベッドルームの薄暗い照明", "level": "L1" },
+        { "tag": "blacklight",      "ja": "ブラックライト",   "level": "L2" },
+        { "tag": "flashlight_pov",  "ja": "懐中電灯光POV",   "level": "L3" },
       
         { "tag": "spotlight_focus",  "ja": "スポットライトで局所強調", "level": "L2" },
         { "tag": "silhouette_light", "ja": "逆光シルエットで輪郭強調", "level": "L2" },
@@ -149,6 +160,9 @@
       { "tag": "reverse_cowgirl",    "ja": "バック騎乗位ポーズ",       "level": "L2" },
       { "tag": "doggy_style",        "ja": "バックポーズ（後背位）",   "level": "L2" },
       { "tag": "spooning_pose",      "ja": "添い寝体位（スプーン）",   "level": "L2" },
+      { "tag": "frog_pose",        "ja": "M字開脚",        "level": "L2" },
+      { "tag": "reverse_spooning", "ja": "逆スプーン体位", "level": "L2" },
+      { "tag": "leg_lock",         "ja": "脚絡ませ固定",   "level": "L2" },
       { "tag": "oral_pose",          "ja": "オーラル体勢",             "level": "L2" },
       { "tag": "facesitting",        "ja": "顔面騎乗位",               "level": "L2" },
       { "tag": "sixty_nine",         "ja": "69体勢",                   "level": "L2" },
@@ -230,6 +244,8 @@
       { "tag": "collar_and_leash",  "ja": "首輪とリード",        "level": "L2" },
       { "tag": "nipple_clamps",     "ja": "乳首クリップ",        "level": "L2" },
       { "tag": "butt_plug",         "ja": "アナルプラグ",        "level": "L2" },
+      { "tag": "anal_beads",     "ja": "アナルビーズ",       "level": "L2" },
+      { "tag": "rope_harness",   "ja": "縄ボディハーネス",   "level": "L2" },
       { "tag": "vibrator",          "ja": "バイブ",              "level": "L2" },
       { "tag": "dildo",             "ja": "ディルド",            "level": "L2" },
       { "tag": "strap_on",          "ja": "ストラップオン",      "level": "L2" },
@@ -251,6 +267,8 @@
       { "tag": "blazer_uniform_r18", "ja": "ブレザー制服（えっち仕様）","level": "L1" },
       { "tag": "gym_bloomers",       "ja": "体操着ブルマ",             "level": "L1" },
       { "tag": "idol_costume_r18",   "ja": "アイドル衣装（えっち仕様）","level": "L1" },
+      { "tag": "nude_apron",      "ja": "裸エプロン",         "level": "L2" },
+      { "tag": "gym_swimsuit_r18","ja": "競泳水着（えっち仕様）", "level": "L2" },
     
       { "tag": "bikini",             "ja": "ビキニ",                  "level": "L2" },
       { "tag": "micro_bikini",       "ja": "マイクロビキニ",          "level": "L2" },
@@ -356,6 +374,8 @@
       { "tag": "milky_breasts", "ja": "母乳体型", "level": "L2" },
       { "tag": "lactating", "ja": "母乳分泌", "level": "L2" },
       { "tag": "pregnant_body", "ja": "妊娠体型（お腹ふくらみ）", "level": "L2" },
+      { "tag": "succubus_body",   "ja": "淫魔体型",    "level": "L2" },
+      { "tag": "emaciated_body",  "ja": "やつれ体型",  "level": "L3" },
       { "tag": "postpartum_body", "ja": "産後体型", "level": "L2" },
       { "tag": "chubby", "ja": "ぽっちゃり", "level": "L1" },
       { "tag": "plump", "ja": "ふくよか", "level": "L1" },
@@ -411,7 +431,9 @@
       { "tag": "nipple_clamps", "ja": "乳首クリップ", "level": "L2" },
       { "tag": "weighted_clamps", "ja": "重り付き乳首クリップ", "level": "L3" },
       { "tag": "injured_nipples", "ja": "傷ついた乳首", "level": "L3" },
-      { "tag": "bleeding_nipples", "ja": "出血乳首", "level": "L3" }
+      { "tag": "bleeding_nipples", "ja": "出血乳首", "level": "L3" },
+      { "tag": "twisted_nipples",       "ja": "ひねられ乳首",       "level": "L2" },
+      { "tag": "vacuum_pump_nipples",   "ja": "ポンプで膨らんだ乳首", "level": "L3" }
     ]
     }
   }
