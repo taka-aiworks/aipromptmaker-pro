@@ -98,48 +98,49 @@
             <span>タグ: <code class="tag" id="tagSkin">fair skin</code></span></div>
         </div>
       </div>
-
-      <fieldset id="fsSeparates">
-        <!-- g3 → g4 に修正して4列対応 -->
-        <div class="grid g4">
-          <div class="panel">
-            <h4 style="margin:0 0 6px">トップス（1つ）</h4>
-            <div id="outfit_top" class="scroller"></div>
-          </div>
-      
-          <div class="panel">
-            <h4 style="margin:0 0 6px">ワンピース（1つ）</h4>
-            <fieldset id="fsDress" disabled>
-              <div id="outfit_dress" class="scroller"></div>
-              <div class="mini">選択時は「下カラー」は自動で無効</div>
-            </fieldset>
-          </div>
-      
-          <div class="panel">
-            <h4 style="margin:0 0 6px">下カテゴリ</h4>
-            <div class="row mini" id="bottomCategoryRadios" style="gap:10px">
-              <label class="inline"><input type="radio" name="bottomCat" id="bottomCat_pants" value="pants" checked> ボトムス（ズボン）</label>
-              <label class="inline"><input type="radio" name="bottomCat" id="bottomCat_skirt" value="skirt"> スカート</label>
-            </div>
-      
-            <fieldset id="fsBottom_pants" class="swap-target" style="margin-top:8px">
-              <h4 class="mini" style="margin:0 0 6px">ボトムス（ズボン・1つ）</h4>
-              <div id="outfit_pants" class="scroller"></div>
-            </fieldset>
-      
-            <fieldset id="fsBottom_skirt" class="swap-target" style="margin-top:8px">
-              <h4 class="mini" style="margin:0 0 6px">スカート（1つ）</h4>
-              <div id="outfit_skirt" class="scroller"></div>
-            </fieldset>
-          </div>
-      
-          <!-- 👇 ここに追加 --><!-- 靴（複数可） ※ 基本情報 > 服（自由） の中に置く -->
-          <div class="panel">
-            <h4 style="margin:0 0 6px">靴（複数可）</h4>
-            <div id="p_outfit_shoes" class="scroller"></div>
-          </div>
+    
+    <fieldset id="fsSeparates">
+      <!-- g3 → g4 に修正して4列対応 -->
+      <div class="grid g4">
+        <div class="panel">
+          <h4 style="margin:0 0 6px">トップス（1つ）</h4>
+          <div id="outfit_top" class="scroller"></div>
         </div>
-      </fieldset>
+    
+        <div class="panel">
+          <h4 style="margin:0 0 6px">ワンピース（1つ）</h4>
+          <fieldset id="fsDress" disabled>
+            <div id="outfit_dress" class="scroller"></div>
+            <div class="mini">選択時は「下カラー」は自動で無効</div>
+          </fieldset>
+        </div>
+    
+        <div class="panel">
+          <h4 style="margin:0 0 6px">下カテゴリ</h4>
+          <div class="row mini" id="bottomCategoryRadios" style="gap:10px">
+            <label class="inline"><input type="radio" name="bottomCat" id="bottomCat_pants" value="pants" checked> ボトムス（ズボン）</label>
+            <label class="inline"><input type="radio" name="bottomCat" id="bottomCat_skirt" value="skirt"> スカート</label>
+          </div>
+    
+          <fieldset id="fsBottom_pants" class="swap-target" style="margin-top:8px">
+            <h4 class="mini" style="margin:0 0 6px">ボトムス（ズボン・1つ）</h4>
+            <div id="outfit_pants" class="scroller"></div>
+          </fieldset>
+    
+          <fieldset id="fsBottom_skirt" class="swap-target" style="margin-top:8px">
+            <h4 class="mini" style="margin:0 0 6px">スカート（1つ）</h4>
+            <div id="outfit_skirt" class="scroller"></div>
+          </fieldset>
+        </div>
+    
+        <!-- 👇 靴（ラジオ選択＋注意書き付き） -->
+        <div class="panel">
+          <h4 style="margin:0 0 6px">靴（1つ選択）</h4>
+          <div id="p_outfit_shoes" class="scroller"></div>
+          <div class="mini">※ 学習時にはノイズになる可能性があります</div>
+        </div>
+      </div>
+    </fieldset>
 
       <!-- カラー指定（固定） -->
       <div class="card" style="margin-top:10px">
@@ -184,7 +185,7 @@
 
           <div class="panel" id="panel_shoes">
             <div class="row mini">
-              <label class="inline"><input type="checkbox" id="use_shoes" checked> 靴色を使う</label>
+              <label class="inline"><input type="checkbox" id="use_shoes"> 靴色を使う</label>
             </div>
             <div class="wheel-box">
               <div id="wheel_shoes" class="wheel"></div><div id="thumb_shoes" class="thumb"></div>
