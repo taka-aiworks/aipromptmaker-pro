@@ -172,38 +172,39 @@ function pmGetNeg(){
 
 /* ===== 学習モード：固定+基本情報を集約（pm系ナシ / bf_* 対応） ===== */
 function getFixedLearn(){
+  // 手入力の固定タグ（どちらか存在する方）
   const fromFixed =
-    document.getElementById("fixedLearn")?.value ??
-    document.getElementById("fixedManual")?.value ??
-    "";
+    (document.getElementById("fixedLearn")?.value ?? "") ||
+    (document.getElementById("fixedManual")?.value ?? "");
 
   const tokens = [];
 
-  // 基本情報（scroller は getMany で）
+  // ▼ 基本情報（scroller系は getMany から拾う）
   const addMany = (id)=>{
-    try {
-      if (typeof getMany === 'function') {
+    try{
+      if (typeof getMany === "function"){
         const v = getMany(id) || [];
         if (Array.isArray(v) && v.length) tokens.push(...v);
       }
-    } catch(_) {}
+    }catch(_){}
   };
   ["bf_age","bf_gender","bf_body","bf_height","hairStyle","eyeShape"].forEach(addMany);
 
-  // 色：髪/瞳/肌（←ここは OK。確定タグを使う）
+  // ▼ 色：髪/瞳/肌（確定タグ表示をそのまま使う）
   const txt = id => (document.getElementById(id)?.textContent || "").trim();
   tokens.push(txt("tagH"), txt("tagE"), txt("tagSkin"));
 
-  // ❌ 服パーツと服カラー（tag_top / tag_bottom / tag_shoes）は fixed に入れない
+  // ※ 服パーツ/服カラーはここには入れない（後段で合成するため）
   // ["outfit_top","outfit_dress","outfit_pants","outfit_skirt","outfit_shoes"].forEach(addMany);
   // tokens.push(txt("tag_top"), txt("tag_bottom"), txt("tag_shoes"));
 
+  // ▼ まとめ → 分割 → 正規化 → 一意化
   const merged = [fromFixed, ...tokens.filter(Boolean)].join(", ");
-  const split = (typeof splitTags === 'function')
+  const split = (typeof splitTags === "function")
     ? splitTags(merged)
     : merged.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
 
-  const normed = (typeof normalizeTag === 'function') ? split.map(normalizeTag) : split;
+  const normed = (typeof normalizeTag === "function") ? split.map(normalizeTag) : split;
   return Array.from(new Set(normed));
 }
 
