@@ -172,10 +172,33 @@ function pmGetNeg(){
 
 /* ===== 学習モード ===== */
 function getFixedLearn(){
-  const v = document.getElementById("fixedLearn")?.value
-         ?? document.getElementById("fixedManual")?.value; // 旧ID互換
-  return splitTags(v);
+  const fromFixed = document.getElementById("fixedLearn")?.value
+                 ?? document.getElementById("fixedManual")?.value
+                 ?? "";
+
+  const basics = [
+    // 基本情報
+    document.getElementById("ID_AGE")?.value,
+    document.getElementById("ID_GENDER")?.value,
+    document.getElementById("ID_BODY")?.value,
+    document.getElementById("ID_HEIGHT")?.value,
+    // 髪/瞳/肌（確定 or ラベル）
+    document.getElementById("ID_HAIR")?.value,
+    document.getElementById("ID_EYE")?.value,
+    document.getElementById("ID_SKIN")?.value,
+    document.getElementById("tagH")?.value,
+    document.getElementById("tagE")?.value,
+    document.getElementById("tagSkin")?.value
+  ].filter(Boolean).join(", ");
+
+  // カンマ分割 → 正規化 → 重複除去
+  const fixed = Array.from(new Set(
+    (fromFixed + (fromFixed && basics ? ", " : "") + basics)
+      .split(/\s*,\s*/).map(normalizeTag).filter(Boolean)
+  ));
+  return fixed;
 }
+
 function getNegLearn(){
   const useDef = !!document.getElementById("useDefaultNeg")?.checked;
   const extra  = (document.getElementById("negLearn")?.value
