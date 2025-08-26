@@ -4607,6 +4607,13 @@ function buildBatchLearning(n){
 
     // 最終ペアリング（ここで white t-shirt / azure shorts へ結合 & 使われた色は除去）
     if (typeof pairWearColors === 'function') p = pairWearColors(p);
+      // ★ ペアリング済みなら単独色を掃除
+      const COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
+      p = p.filter(t=>{
+        // 服名詞と結合されていない「裸の色単語」は捨てる
+        if (COLOR_WORD_RE.test(t) && !/\s/.test(t)) return false;
+        return true;
+      });
 
     // 排他/整理
     if (typeof fixExclusives === 'function') p = fixExclusives(p);
