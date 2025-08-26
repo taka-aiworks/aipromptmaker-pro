@@ -4351,6 +4351,84 @@ function getChipOne(id){
 /* ============================================================================
  * 学習モード一括生成（置き換え用 / 服×色は必ず結合・pm系なし）
  * ========================================================================== */
+/* ============================================================================
+ * 学習モード一括生成（全面置き換え版）
+ * - pmValById/pmTextById 等は不使用（DOM直参照）
+ * - 服の名詞は outfit_* の選択からのみ拾う（未選択は入れない／デフォ服は入れない）
+ * - 色タグは tag_top/tag_bottom/tag_shoes（チェックONのみ）→ "white top" 等のプレースにしてから pair
+ * - pairWearColors() を ③.5 の最初と ④ 最終で必ず実行
+ * - 露出注入時も、pair で合成済みの服トークンは OUTFIT_FIXED として保護
+ * ============================================================================ */
+
+/* --- 小物ヘルパ --- */
+function _norm(t){ return (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim(); }
+function _textOf(id){ return (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim(); }
+function _checked(id){ return !!document.getElementById(id)?.checked; }
+
+/* scrollerから“選択中のラベル文字”を1件だけ拾う（選択なし→空） */
+function _pickFromScroller(id){
+  const root = document.getElementById(id);
+  if (!root) return "";
+  const q = root.querySelector(
+    '.selected, .active, .sel, [aria-selected="true"], [data-selected="true"], '+
+    'input[type=radio]:checked + label, .option.selected, .item.selected'
+  );
+  return q?.textContent?.trim() || "";
+}
+
+/* 服の“名詞”だけをDOMから集める（未選択は入れない） */
+function _getOutfitNouns(){
+  const isDress = _checked('outfitModeDress');
+  const nouns = [];
+
+  // ワンピース優先モード：dress が選ばれていれば採用
+  if (isDress){
+    const dress = _pickFromScroller('outfit_dress');
+    if (dress) nouns.push(dress);
+  } else {
+    // 上下モード：top + (pants/skirt のどちらか)
+    const top = _pickFromScroller('outfit_top');
+    if (top) nouns.push(top);
+
+    // bottomカテゴリの選択状況に応じて一方だけ見る
+    const useSkirt = _checked('bottomCat_skirt');
+    const pants = _pickFromScroller('outfit_pants');
+    const skirt = _pickFromScroller('outfit_skirt');
+    if (useSkirt){
+      if (skirt) nouns.push(skirt);
+    } else {
+      if (pants) nouns.push(pants);
+    }
+  }
+
+  // 靴（任意）
+  const shoes = _pickFromScroller('outfit_shoes');
+  if (shoes) nouns.push(shoes);
+
+  // 名詞は正規化して返す
+  return nouns.map(_norm).filter(Boolean);
+}
+
+/* 色タグを "white top" / "azure bottom" / "black shoes" の形で押し込む */
+function _injectWearColorPlaceholders(intoArray){
+  const isDress = _checked('outfitModeDress');
+  const useTop    = _checked('use_top');
+  const useBottom = _checked('useBottomColor');
+  const useShoes  = _checked('use_shoes');
+
+  const pushColor = (ok, tagId, generic)=>{
+    if (!ok) return;
+    const t = _textOf(tagId);
+    if (!t || t === '—') return;
+    intoArray.push(_norm(`${t} ${generic}`));
+  };
+
+  pushColor(useTop, 'tag_top', 'top');
+  if (!isDress) pushColor(useBottom, 'tag_bottom', 'bottom'); // ワンピ時は下色を無効
+  pushColor(useShoes, 'tag_shoes', 'shoes');
+}
+
+/* ====== 本体 ====== */
 function buildBatchLearning(n){
   const out  = [];
   const used = new Set();
@@ -4374,7 +4452,7 @@ function buildBatchLearning(n){
     out.push(r);
   }
 
-  // ③ 割合ミックス適用（VIEW / COMP / EXP / BG / LIGHT）
+  // ③ 割合ミックス適用
   if (typeof applyPercentForTag === 'function' && typeof fillRemainder === 'function' && typeof MIX_RULES === 'object'){
     const rows = out;
 
@@ -4419,7 +4497,7 @@ function buildBatchLearning(n){
     }
   }
 
-  // ③.5 NSFW整理（UI 選択分を各カテゴリ1つだけ反映 + 先頭NSFW付与）
+  // ③.5 NSFW整理 + 服×色 中間ペアリング＆保護
   {
     const nsfwOn = !!document.getElementById("nsfwLearn")?.checked;
 
@@ -4441,14 +4519,12 @@ function buildBatchLearning(n){
 
     const keepOneFrom = (arr, poolRaw)=>{
       if (!Array.isArray(arr) || !poolRaw || !poolRaw.length) return arr;
-      const pool = new Set(poolRaw.map(normalizeTag));
-      let kept = false;
-      const ret = [];
+      const pool = new Set(poolRaw.map(_norm));
+      let kept = false, ret = [];
       for (const t of arr){
-        const nt = normalizeTag(t);
-        if (pool.has(nt)) {
-          if (!kept){ ret.push(t); kept = true; }
-        } else ret.push(t);
+        const nt = _norm(t);
+        if (pool.has(nt)) { if (!kept){ ret.push(t); kept = true; } }
+        else ret.push(t);
       }
       return ret;
     };
@@ -4456,40 +4532,39 @@ function buildBatchLearning(n){
     for (const r of out){
       let p = Array.isArray(r.pos) ? r.pos.slice()
             : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
-      p = (p || []).map(normalizeTag);
+      p = (p || []).map(_norm);
 
-      // 先に色×服を一度合成（露出掃除で落とさないように）
-      const beforePair = new Set(p);
+      // ★ 服名詞（DOM選択）を注入（未選択は入れない）
+      p.push(..._getOutfitNouns());
+
+      // ★ 色プレースを注入（チェックONのみ）
+      _injectWearColorPlaceholders(p);
+
+      // ★ 中間ペアリング（white t-shirt などへ）
       if (typeof pairWearColors === 'function') p = pairWearColors(p);
-      const OUTFIT_FIXED = new Set(
-        p.filter(t => !beforePair.has(t)).map(normalizeTag)
-      );
 
-      const chosenExpr   = gExpr[0]   || "";
-      const chosenExpo   = gExpo[0]   || "";
-      const chosenSitu   = gSitu[0]   || "";
-      const chosenLight  = gLight[0]  || "";
-      const chosenPose   = gPose[0]   || "";
-      const chosenAcc    = gAcc[0]    || "";
-      const chosenOutfit = gOutfit[0] || "";
-      const chosenBody   = gBody[0]   || "";
-      const chosenNip    = gNip[0]    || "";
-      const chosenUnder  = gUnder[0]  || "";
+      // ここで生まれた合成服を OUTFIT_FIXED として保護
+      const OUTFIT_FIXED = new Set(p.map(_norm).filter(s=>{
+        // 合成の判定：色+スペース+名詞 っぽいものを保護（大雑把でOK）
+        return /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+\S/.test(s);
+      }));
 
       // 表情
+      const chosenExpr = gExpr[0] || "";
       if (chosenExpr){
         const sfwExprGroup = Array.from(new Set([
           ...((typeof getMany==='function' ? (getMany("expr")||[]) : [])),
           ...(MIX_RULES?.expr?.group || []),
           "neutral expression"
-        ])).map(normalizeTag);
-        p = p.filter(t => !sfwExprGroup.includes(normalizeTag(t)));
+        ])).map(_norm);
+        p = p.filter(t => !sfwExprGroup.includes(_norm(t)));
         if (!p.includes(chosenExpr)) p.push(chosenExpr);
       } else {
         p = keepOneFrom(p, gExpr);
       }
 
       // 露出（保護対象は残す）
+      const chosenExpo = gExpo[0] || "";
       if (chosenExpo){
         if (typeof applyNudePriority === 'function')          p = applyNudePriority(p);
         if (typeof enforceOnePieceExclusivity === 'function') p = enforceOnePieceExclusivity(p);
@@ -4503,12 +4578,12 @@ function buildBatchLearning(n){
 
           p = p.filter(s=>{
             const x  = String(s);
-            const nx = normalizeTag(x);
+            const nx = _norm(x);
             if (OUTFIT_FIXED.has(nx)) return true; // 合成済み服は保護
             if (CLOTH_NOUN_RE.test(x))  return false;
             if (COLOR_PLACE_RE.test(x)) return false;
             if (FOOTWEAR_RE.test(x))    return false;
-            if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false;
+            if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false; // 単独色の掃除
             return true;
           });
         }
@@ -4517,11 +4592,17 @@ function buildBatchLearning(n){
         p = keepOneFrom(p, gExpo);
       }
 
-      // シチュ/光
+      // シチュ/光・その他
+      const chosenSitu  = gSitu[0]  || "";
+      const chosenLight = gLight[0] || "";
       if (gSitu.length){  p = keepOneFrom(p, gSitu);  if (chosenSitu  && !p.includes(chosenSitu))  p.push(chosenSitu); }
       if (gLight.length){ p = keepOneFrom(p, gLight); if (chosenLight && !p.includes(chosenLight)) p.push(chosenLight); }
-
-      // ポーズ/アクセ/衣装/身体/乳首/下着
+      const chosenPose   = gPose[0]   || "";
+      const chosenAcc    = gAcc[0]    || "";
+      const chosenOutfit = gOutfit[0] || "";
+      const chosenBody   = gBody[0]   || "";
+      const chosenNip    = gNip[0]    || "";
+      const chosenUnder  = gUnder[0]  || "";
       if (gPose.length)   { p = keepOneFrom(p, gPose);   if (chosenPose   && !p.includes(chosenPose))   p.push(chosenPose); }
       if (gAcc.length)    { p = keepOneFrom(p, gAcc);    if (chosenAcc    && !p.includes(chosenAcc))    p.push(chosenAcc); }
       if (gOutfit.length) { p = keepOneFrom(p, gOutfit); if (chosenOutfit && !p.includes(chosenOutfit)) p.push(chosenOutfit); }
@@ -4542,61 +4623,49 @@ function buildBatchLearning(n){
     }
   }
 
-  // ④ 最終整形（★色は {color} top/bottom/shoes で注入→pair→裸色掃除）
+  // ④ 最終整形（固定/基本情報を前段注入 → 色プレース注入 → 最終ペアリング）
   for (const r of out){
     let p = Array.isArray(r.pos) ? r.pos.slice()
           : (typeof r.prompt === 'string' ? r.prompt.split(/\s*,\s*/) : []);
-    p = (p || []).map(normalizeTag);
+    p = (p || []).map(_norm);
 
+    // 固定（あなたの getFixedLearn をそのまま）
     const fixed = (typeof getFixedLearn === 'function') ? (getFixedLearn() || []) : [];
 
     // 基本情報（DOM直）
     const basicsRaw = [
-      document.getElementById('bf_age')?.value,
-      document.getElementById('bf_gender')?.value,
-      document.getElementById('bf_body')?.value,
-      document.getElementById('bf_height')?.value,
-      document.getElementById('hairStyle')?.value,
-      document.getElementById('eyeShape')?.value,
-      // 髪/瞳/肌のタグは code.tag 要素なので textContent 優先
-      (document.getElementById('tagH')?.textContent || document.getElementById('tagH')?.value),
-      (document.getElementById('tagE')?.textContent || document.getElementById('tagE')?.value),
-      (document.getElementById('tagSkin')?.textContent || document.getElementById('tagSkin')?.value)
+      _textOf('bf_age'),
+      _textOf('bf_gender'),
+      _textOf('bf_body'),
+      _textOf('bf_height'),
+      _textOf('hairStyle'),
+      _textOf('eyeShape'),
+      // 色ホイールのテキストタグ（右側の code.tag の中身）
+      _textOf('tagH'), _textOf('tagE'), _textOf('tagSkin')
     ].filter(Boolean);
 
     const basics = basicsRaw
       .flatMap(s => String(s).split(/\s*,\s*/))
-      .map(normalizeTag)
+      .map(_norm)
       .filter(Boolean);
 
-    // 固定 → 基本情報 → 既存p
-    p = [...fixed, ...basics, ...p].filter(Boolean);
+    // 服の名詞をもう一度前段で確実に注入（未選択は入れない）
+    const outfitNouns = _getOutfitNouns();
 
-    // ★ 色タグ注入（チェックONのみ / ワンピ時は下色無視）※ {color} place 形式
-    (function injectWearColors(){
-      const t = id => (document.getElementById(id)?.textContent || '').trim();
-      const add = (ok, color, place)=>{
-        const c = String(color||'').trim();
-        if (!ok || !c || c === '—') return;
-        p.push(normalizeTag(`${c} ${place}`)); // 例: "white top"
-      };
-      const useTop    = !!document.getElementById('use_top')?.checked;
-      const useBottom = !!document.getElementById('useBottomColor')?.checked;
-      const useShoes  = !!document.getElementById('use_shoes')?.checked;
-      const isDress   = !!document.getElementById('outfitModeDress')?.checked;
-      add(useTop,    t('tag_top'),    'top');
-      if (!isDress) add(useBottom, t('tag_bottom'), 'bottom');
-      add(useShoes,  t('tag_shoes'),  'shoes');
-    })();
+    // 固定 → 基本情報 → 既存p → 服名詞
+    p = [...fixed, ...basics, ...outfitNouns, ...p].filter(Boolean);
 
-    // ★ 最終ペアリング
+    // 色プレース（チェックONのみ）を注入
+    _injectWearColorPlaceholders(p);
+
+    // 最終ペアリング
     if (typeof pairWearColors === 'function') p = pairWearColors(p);
 
-    // ★ 裸の色単語を掃除（white / azure など）
+    // ペアリング済みなら裸の色単語は掃除
     const COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
     p = p.filter(t => !(COLOR_WORD_RE.test(t) && !/\s/.test(t)));
 
-    // 仕上げ
+    // 排他/順序
     if (typeof fixExclusives === 'function') p = fixExclusives(p);
     p = Array.from(new Set(p));
     if (typeof enforceSingleBackground === 'function') p = enforceSingleBackground(p);
@@ -4605,7 +4674,7 @@ function buildBatchLearning(n){
     if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
     if (typeof enforceHeadOrder  === 'function') p = enforceHeadOrder(p);
 
-    // NSFW 先頭固定
+    // NSFW 最終ガード
     if (p.includes("NSFW") && p[0] !== "NSFW"){
       p = p.filter(t => t !== "NSFW");
       p.unshift("NSFW");
