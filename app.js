@@ -173,54 +173,43 @@ function pmGetNeg(){
 /* ===== 学習モード ===== */
 // 固定ワードを配列で返す（#fixedLearn 優先、無ければ #fixedManual）
 // ・カンマ / 改行 / 全角読点「、」で分割
-// ・normalizeTag を適用（背景などの表記統一）＋ UIの実ID直読み版
+// ・normalizeTag を適用（背景などの表記統一）
+//   ※新しい関数は増やさず、この関数だけ置き換え
 function getFixedLearn(){
-  const takeText = id => {
-    const el = document.getElementById(id);
-    if (!el) return "";
-    const v = (el.value ?? el.textContent ?? "").trim();
-    return v;
-  };
-  const takeSelectVal = id => {
-    const el = document.getElementById(id);
-    if (!el) return "";
-    const v = (el.value || "").trim();
-    return v;
-  };
-  const takeRadioVal = name => {
-    const el = document.querySelector(`input[name="${name}"]:checked`);
-    return el ? String(el.value || "").trim() : "";
-  };
+  // --- テキスト入力（CSV可）
+  const hairTxt  = (typeof pmTextById==='function' ? pmTextById('tagH')      : '') || '';
+  const eyeTxt   = (typeof pmTextById==='function' ? pmTextById('tagE')      : '') || '';
+  const skinTxt  = (typeof pmTextById==='function' ? pmTextById('tagSkin')   : '') || '';
+  const clothTxt = (typeof pmTextById==='function' ? pmTextById('tagCloth')  : '') || '';
 
-  // 入力ソース（撮影モード用ヘルパは禁止）
+  // --- select系は value だけ取る（multiple対応）
+  const elAGE    = document.getElementById('ID_AGE');
+  const elGENDER = document.getElementById('ID_GENDER');
+  const elBODY   = document.getElementById('ID_BODY');
+  const elHEIGHT = document.getElementById('ID_HEIGHT');
+  const elHairSt = document.getElementById('hairStyle');
+  const elEyeSh  = document.getElementById('eyeShape');
+
+  const ageVal    = elAGE    ? (elAGE.multiple    ? Array.from(elAGE.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ')    : String(elAGE.value||'').trim())    : '';
+  const genderVal = elGENDER ? (elGENDER.multiple ? Array.from(elGENDER.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ') : String(elGENDER.value||'').trim()) : '';
+  const bodyVal   = elBODY   ? (elBODY.multiple   ? Array.from(elBODY.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ')   : String(elBODY.value||'').trim())   : '';
+  const heightVal = elHEIGHT ? (elHEIGHT.multiple ? Array.from(elHEIGHT.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ') : String(elHEIGHT.value||'').trim()) : '';
+  const hairStyle = elHairSt ? (elHairSt.multiple ? Array.from(elHairSt.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ') : String(elHairSt.value||'').trim()) : '';
+  const eyeShape  = elEyeSh  ? (elEyeSh.multiple  ? Array.from(elEyeSh.selectedOptions).map(o=>o.value.trim()).filter(Boolean).join(', ')  : String(elEyeSh.value||'').trim())  : '';
+
+  // まとめ → CSV分割 → 正規化 → ユニーク
   const raw = [
-    // 髪・瞳・肌（テキスト欄）
-    takeText('tagH'),
-    takeText('tagE'),
-    takeText('tagSkin'),
-
-    // 髪型・目型（<select>）
-    takeSelectVal('hairStyle'),
-    takeSelectVal('eyeShape'),
-
-    // 年齢・性別・体型・身長（ラジオ：bf_*）
-    takeRadioVal('bf_age'),
-    takeRadioVal('bf_gender'),
-    takeRadioVal('bf_body'),
-    takeRadioVal('bf_height'),
+    hairTxt, eyeTxt, skinTxt, clothTxt,   // テキスト入力（髪/瞳/肌/服=色結合済み）
+    ageVal, genderVal, bodyVal, heightVal, // 基本属性（select）
+    hairStyle, eyeShape                    // 形状（select）
   ].filter(Boolean);
 
-  // カンマ区切りを展開 → 正規化 → 順序保持ユニーク
-  const fixed = [];
-  const seen = new Set();
-  for (const s of raw){
-    for (const t of String(s).split(/\s*,\s*/)){
-      const tag = normalizeTag(t.trim());
-      if (!tag || seen.has(tag)) continue;
-      seen.add(tag);
-      fixed.push(tag);
-    }
-  }
+  const fixed = Array.from(new Set(
+    raw.flatMap(s => String(s).split(/\s*,\s*/))
+       .map(t => normalizeTag(String(t).trim()))
+       .filter(Boolean)
+  ));
+
   return fixed;
 }
 
