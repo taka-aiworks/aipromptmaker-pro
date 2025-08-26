@@ -2469,7 +2469,7 @@ function renderSFW(){
   radioList($("#outfit_pants"),  C.pants, "outfit_pants", {checkFirst:false});
   radioList($("#outfit_skirt"),  C.skirt, "outfit_skirt", {checkFirst:false});
   radioList($("#outfit_dress"),  C.dress, "outfit_dress", {checkFirst:false});
-  radioList($("#outfit_shoes"),  C.dress, "outfit_dress", {checkFirst:false});
+  radioList($("#outfit_shoes"),  C.dress, "outfit_shoes", {checkFirst:false});
   checkList($("#p_outfit_shoes"), C.shoes, "p_outfit_shoes");
   checkList($("#p_outfit_top"),   C.top,   "p_outfit_top");
   checkList($("#p_outfit_pants"), C.pants, "p_outfit_pants");
