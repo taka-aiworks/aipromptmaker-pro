@@ -3716,18 +3716,32 @@ function enforceOnePieceExclusivity(parts){
 
 
 // ===== 排他ガード（表情/構図/視点の同時混入を防ぐ） =====
-
-// ユーティリティ：グループ内は1つだけ残す
-function pickOneFromGroup(parts, group, preferOrder = null){
-  const S = new Set(parts);
-  const hits = group.filter(g => S.has(g));
-  if (hits.length <= 1) return parts;
-
-  let keep = hits[0];
-  if (Array.isArray(preferOrder) && preferOrder.length){
-    for (const cand of preferOrder){ if (S.has(cand)) { keep = cand; break; } }
-  }
-  return parts.filter(t => !(group.includes(t) && t !== keep));
+// === 共通：タグ表記ゆれ吸収（front_view ⇔ front view） ==================
+function _canon(t){
+  return String(t||"").toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ").trim();
+}
+function _has(parts, tag){
+  const c = _canon(tag);
+  return parts.some(x => _canon(x) === c);
+}
+// 既存配列のスタイルに合わせて出力（配列内に1個でも _ があれば _ を使う）
+function _styleOut(tag, parts){
+  const useUnderscore = parts.some(x => /_/.test(String(x)));
+  return useUnderscore ? tag.replace(/ /g, "_") : tag;
+}
+// GROUP のいずれかに当たる要素を除去
+function _withoutGroup(parts, GROUP){
+  const G = GROUP.map(_canon);
+  return parts.filter(x => !G.includes(_canon(x)));
+}
+// PREFER/GROUPの順で1つだけ残す
+function pickOneFromGroup(parts, GROUP, PREFER){
+  const keep =
+    (PREFER || []).find(t => _has(parts, t)) ||
+    (GROUP  || []).find(t => _has(parts, t));
+  if (!keep) return parts;
+  const rest = _withoutGroup(parts, GROUP);
+  return [...rest, _styleOut(keep, parts)];
 }
 
 // 表情：必ず1つだけ
@@ -3778,7 +3792,57 @@ function ensureCompExclusive(parts){
   return parts.filter(t => !(GROUP.includes(t) && t !== keep));
 }
 
-// 視点：front / three-quarters / profile / back は1つに
+// 表情：必ず1つだけ
+function ensureExprExclusive(parts){
+  const GROUP = [
+    "neutral expression",
+    "smiling",
+    "smiling open mouth",
+    "serious",
+    "determined",
+    "slight blush",
+    "surprised (mild)",
+    "pouting (slight)"
+  ];
+  const PREFER = [
+    "neutral expression",
+    "smiling",
+    "slight blush",
+    "surprised (mild)",
+    "pouting (slight)",
+    "smiling open mouth",
+    "serious",
+    "determined"
+  ];
+  return pickOneFromGroup(parts, GROUP, PREFER);
+}
+
+// 構図/距離：portrait と full body 等を同時にしない
+// wide shot は他の距離があれば落とす
+function ensureCompExclusive(parts){
+  const GROUP = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
+
+  // 現在ヒット
+  const hits = GROUP.filter(g => _has(parts, g));
+  if (hits.length <= 1) return parts;
+
+  // 他があれば wide shot を候補から外す
+  let pool = hits;
+  if (hits.some(t => _canon(t) !== _canon("wide shot"))) {
+    pool = hits.filter(t => _canon(t) !== _canon("wide shot"));
+  }
+
+  // 優先順位（“広い”方を優先、最後に wide shot）
+  const PREFER = ["full body","waist up","upper body","bust","portrait","close-up","wide shot"];
+  const keep = PREFER.find(t => pool.some(h => _canon(h)===_canon(t))) || pool[0];
+
+  // keep 以外を除去して、keep を現在のスタイルで戻す
+  let out = _withoutGroup(parts, GROUP);
+  out.push(_styleOut(keep, parts));
+  return out;
+}
+
+// 視点：front / three-quarters / profile / side / back は1つに
 function ensureViewExclusive(parts){
   const GROUP = ["front view","three-quarters view","profile view","side view","back view"];
   const PREFER = ["three-quarters view","front view","profile view","back view","side view"];
@@ -3789,31 +3853,24 @@ function ensureViewExclusive(parts){
 function fixExclusives(parts){
   let p = (Array.isArray(parts) ? parts : []).filter(Boolean);
 
-  // 表情：1つ
-  if (typeof ensureExprExclusive === 'function') {
-    p = ensureExprExclusive(p);
-  }
-  // 構図：1つ
-  if (typeof ensureCompExclusive === 'function') {
-    p = ensureCompExclusive(p);
-  }
-  // 視点：1つ（← これが抜けてた）
-  if (typeof ensureViewExclusive === 'function') {
-    p = ensureViewExclusive(p);
-  }
-  // 背景：1つ（辞書準拠／plain優先ルールは関数側で）
-  if (typeof enforceSingleBackground === 'function') {
-    p = enforceSingleBackground(p);
-  }
-  // ライティング：1つ（SFW/NSFW混在を1回で統合）
-  if (typeof unifyLightingOnce === 'function') {
-    p = unifyLightingOnce(p);
-  }
+  if (typeof ensureExprExclusive === 'function')  p = ensureExprExclusive(p);
+  if (typeof ensureCompExclusive === 'function')  p = ensureCompExclusive(p);
+  if (typeof ensureViewExclusive === 'function')  p = ensureViewExclusive(p);
 
-  // 仕上げの重複除去（順序維持）
-  p = Array.from(new Set(p));
+  // 背景：1つ（関数側で plain 優先等やってるならそのまま）
+  if (typeof enforceSingleBackground === 'function') p = enforceSingleBackground(p);
 
-  return p;
+  // ライティング：SFW/NSFW統合を1回
+  if (typeof unifyLightingOnce === 'function') p = unifyLightingOnce(p);
+
+  // 仕上げの重複除去（正規化で比較→既存順維持で1本化）
+  const seen = new Set();
+  const out = [];
+  for (const t of p){
+    const c = _canon(t);
+    if (!seen.has(c)){ seen.add(c); out.push(t); }
+  }
+  return out;
 }
 
 
