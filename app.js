@@ -160,9 +160,15 @@ function stripMultiHints(parts){
   return parts.filter(t => !MULTI_HINT_RE.test(String(t)));
 }
 
-
 /* ===== JSONベース：カテゴリ単一化の基盤 ===== */
-const SINGLETON_CATS = ['background','pose','composition','view','expressions','lighting'];
+const SINGLETON_CATS = [
+  'background',
+  'pose',
+  'composition',
+  'view',
+  'expression',   // ← JSONは単数
+  'lighting'
+];
 
 // 足りないときに自動補完する既定（好みで調整OK）
 const CAT_DEFAULTS = {
