@@ -1451,38 +1451,42 @@ function radioList(el, list, name, {checkFirst = true} = {}) {
 }
 
 const getOne  = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
-// 汎用：id で囲われたボックスから「選択されている語」を英字タグ化して配列で返す
-function getMany(id){
-  const box = document.getElementById(id);
-  if(!box) return [];
 
-  // 1) ラジオ/チェックボックス優先
-  const pickedInputs = box.querySelectorAll('input[type=radio]:checked, input[type=checkbox]:checked');
-  if (pickedInputs.length){
-    return [...pickedInputs]
-      .map(el => toTag(el.value || el.nextElementSibling?.textContent || ""))
-      .filter(Boolean);
+// === 共通: data-en 優先でタグ化 ===
+function _toEnTagFromEl(el){
+  if (!el) return "";
+  const en = el.getAttribute?.("data-en");
+  const raw = en || el.value || el.textContent || "";
+  return toTag(raw); // ← 既存の toTag を使用（none/指定なしも掃除）
+}
+
+// === 複数値を取得（scroller の chip.on や選択済みボタンに対応）===
+function getMany(idOrName){
+  // 1) id 指定（学習モードの scroller は id がある）
+  const root = document.getElementById(idOrName);
+  if (root) {
+    // 学習/撮影/量産の scroller で選択状態になり得るものを広く拾う
+    const nodes = root.querySelectorAll(
+      '.chip.on,' +                     // chip 方式
+      '.wm-item.is-selected,' +         // 単語モードカード方式（必要なら）
+      '[aria-selected="true"],' +       // ARIA
+      '[data-selected="true"],' +
+      '.selected,.active,.sel,' +
+      '.option.selected,.item.selected,' +
+      'input[type=checkbox]:checked,' + // 保険
+      'input[type=radio]:checked'       // 保険
+    );
+    return Array.from(nodes).map(_toEnTagFromEl).filter(Boolean);
   }
 
-  // 2) クラス/ARIA/data-selected で選択状態のUI（.chip.on など）
-  const pickedUi = box.querySelectorAll(
-    '.on, .selected, .active, .sel, .current, .chosen, .option.selected, .item.selected,'+
-    '[aria-selected="true"], [data-selected="true"], [aria-pressed="true"]'
-  );
-  if (pickedUi.length){
-    return [...pickedUi].map(el => toTag(el.textContent || el.value || "")).filter(Boolean);
-  }
-
-  // 3) “単一選択っぽい要素”が data-value を持っている場合
-  const dataVal = box.getAttribute('data-value');
-  if (dataVal) {
-    const t = toTag(dataVal);
-    return t ? [t] : [];
+  // 2) name 指定（旧: ラジオ/チェックボックス用）
+  const els = document.querySelectorAll(`input[name="${idOrName}"]:checked`);
+  if (els?.length) {
+    return Array.from(els).map(_toEnTagFromEl).filter(Boolean);
   }
 
   return [];
 }
-
 
 
 
