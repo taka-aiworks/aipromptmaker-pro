@@ -1317,10 +1317,11 @@ function buildBatchLearning(n){
 
 
 
-/* ===== 撮影モード：ビルド（日本語/none除去 + NSFW先頭 + ワンピ色補正 + 学習順序） ===== */
+/* ===== 撮影モード：ビルド（NSFW先頭/solo2番目固定・R-15/R-18除去） ===== */
 function pmBuildOne(){
   let p = ["solo"];
 
+  // 基本情報
   const basics = [
     pickTag('bf_age'), pickTag('bf_gender'), pickTag('bf_body'), pickTag('bf_height'),
     pickTag('hairStyle'), pickTag('eyeShape'),
@@ -1356,22 +1357,57 @@ function pmBuildOne(){
       pickTag('pl_nsfw_expo'), pickTag('pl_nsfw_underwear'), pickTag('pl_nsfw_outfit'),
       pickTag('pl_nsfw_situ'), pickTag('pl_nsfw_pose'),      pickTag('pl_nsfw_acc'),
       pickTag('pl_nsfw_body'), pickTag('pl_nsfw_nipple')
-    ].filter(Boolean);
+    ].filter(Boolean); // pickTagがasTag経由で英語化
+
     if (ex2) expr = ex2;
     if (li2) lite = li2;
+
     if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p, new Set());
     p.push(...nsfwAdd);
-    p.unshift('NSFW');
   }
 
+  // シーン確定
   p.push(...[bg, pose, comp, view, expr, lite].filter(Boolean));
+
+  // 共通整形
   p = finalizePromptArray(p);
+
+  // —— ここで最終的にヘッダを強制整列（NSFW先頭 → soloを2番目）——
+  // R-15 / R-18 等級ラベル除去
+  p = p.filter(t => !/^R-?1[58]$/i.test(String(t||"")));
+
+  // NSFWの位置を先頭に固定
+  const hasNSFW = nsfwOn; // チェックボックス基準
+  if (hasNSFW){
+    p = p.filter(t => String(t).toUpperCase() !== "NSFW");
+    // solo を一旦抜いておく
+    p = p.filter(t => t !== "solo");
+    // ヘッダ確定
+    p = ["NSFW", "solo", ...p];
+  } else {
+    // SFW：soloは先頭に1つだけ
+    const idx = p.indexOf("solo");
+    if (idx > 0){ p.splice(idx,1); p.unshift("solo"); }
+    if (idx === -1){ p.unshift("solo"); }
+  }
 
   // 固定タグ
   const fixed = (document.getElementById('fixedPlanner')?.value || "").trim();
   if (fixed){
     const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
     p = finalizePromptArray([...f.map(asTag).filter(Boolean), ...p]);
+    // ヘッダ再固定（固定タグで崩れた場合に備え再度）
+    if (hasNSFW){
+      p = p.filter(t => String(t).toUpperCase() !== "NSFW" && t !== "solo");
+      p = ["NSFW", "solo", ...p];
+    } else {
+      p = p.filter((t,i)=> t!=="solo" || i===0);
+      if (p[0] !== "solo"){
+        const i = p.indexOf("solo");
+        if (i>0){ p.splice(i,1); p.unshift("solo"); }
+        if (i===-1) p.unshift("solo");
+      }
+    }
   }
 
   // ネガ
