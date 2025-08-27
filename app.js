@@ -4280,7 +4280,8 @@ function normalizeTag(t){
   if (ANCHORS.has(k)) s = k.replace(/ /g, "_");
   return s;
 }
-B
+
+
 // 任意の文字列→英語タグ（日本語→辞書化してるならここで対応。無ければ normalize だけ）
 function toTag(txt){
   return normalizeTag(txt);
