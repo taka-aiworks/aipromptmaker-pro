@@ -612,6 +612,151 @@ function buildOneLearning(extraSeed = 0){
 
 
 
+/* ====================== 学習モード：全面置き換え（toTag統一 + 辞書カテゴリで補完/掃除：重複なし） ====================== */
+function buildBatchLearning(n){
+  const rows = [];
+  const wantCount = Math.max(1, Number(n)||1);
+
+  const _to    = t => (typeof toTag==='function' ? toTag(t) : String(t||"").trim());
+  const _norm  = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
+  const _text  = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
+  const _pick  = id => _to(typeof pickOneFromScroller==='function' ? pickOneFromScroller(id) : "");
+  const _tag   = id => _to(_text(id));
+
+  for (let i=0;i<wantCount;i++){
+    let p = ["solo"];
+
+    // 1girl / 1boy
+    if (typeof getGenderCountTag === 'function'){
+      const g = getGenderCountTag() || "";
+      if (g) p.push(_norm(_to(g)));
+    }
+
+    // 基本情報
+    p.push(
+      ...[
+        _pick('bf_age'), _pick('bf_gender'), _pick('bf_body'), _pick('bf_height'),
+        _pick('hairStyle'), _pick('eyeShape'),
+        _tag('tagH'), _tag('tagE'), _tag('tagSkin')
+      ].filter(Boolean).map(_norm)
+    );
+
+    // シーン系
+    p.push(
+      ...[
+        _pick('bg'), _pick('pose'), _pick('comp'),
+        _pick('view'), _pick('expr'), _pick('lightLearn')
+      ].filter(Boolean).map(_norm)
+    );
+
+    // 固定アクセ（1種 + 色）
+    {
+      const accSel = (document.getElementById('learn_acc')?.value || "").trim();
+      const accTag = _to(accSel);
+      const accClr = _tag('tag_learnAcc');
+      if (accTag) p.push(accClr ? `${accClr} ${accTag}` : accTag);
+    }
+
+    // 服（SFW）：名詞→色プレース→色ペアリング
+    if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns());
+    if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
+    if (typeof pairWearColors==='function')              p = pairWearColors(p);
+
+    // NSFW（選択分のみ）
+    const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
+    if (nsfwOn){
+      const add = [
+        _pick('nsfwL_expo'), _pick('nsfwL_underwear'), _pick('nsfwL_outfit'),
+        _pick('nsfwL_expr'), _pick('nsfwL_situ'),     _pick('nsfwL_light'),
+        _pick('nsfwL_pose'), _pick('nsfwL_acc'),      _pick('nsfwL_body'), _pick('nsfwL_nipple')
+      ].filter(Boolean).map(_norm);
+
+      // SFW服を掃除（strip関数があれば優先）
+      if (typeof stripSfwWearWhenNSFW==='function'){
+        p = stripSfwWearWhenNSFW(p);
+      } else {
+        const CLOTH_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
+        const COLOR_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+(top|bottom|dress|shoes)\b/i;
+        const SHOES_RE  = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
+        p = p.filter(s=>{
+          const x = String(s);
+          if (COLOR_RE.test(x)) return false;
+          if (CLOTH_RE.test(x)) return false;
+          if (SHOES_RE.test(x)) return false;
+          return true;
+        });
+      }
+
+      p.push(...add);
+      // 先頭に NSFW を1つ
+      p = p.filter(t => String(t).toUpperCase() !== "NSFW");
+      p.unshift("NSFW");
+    }
+
+    // —— 辞書カテゴリで 1カテゴリ=1つ（不足は辞書デフォ補完）——
+    if (typeof enforceSingletonByCategory==='function'){
+      p = enforceSingletonByCategory(p, { addDefaults: true });
+    }
+
+    // 仕上げ：色の単独掃除 → 排他/順序 → 背景/ライト単一化
+    if (typeof dropBareColors==='function')           p = dropBareColors(p);
+    if (typeof fixExclusives==='function')            p = fixExclusives(p);
+    if (typeof ensurePromptOrder==='function')        p = ensurePromptOrder(p);
+    if (typeof enforceHeadOrder==='function')         p = enforceHeadOrder(p);
+    if (typeof enforceSingleBackground==='function')  p = enforceSingleBackground(p);
+    if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
+
+    // 固定タグ（先頭付与）
+    {
+      const fixed = (document.getElementById('fixedLearn')?.value || "").trim();
+      if (fixed){
+        const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
+        p = [...f.map(t=>_norm(_to(t))).filter(Boolean), ...p];
+      }
+    }
+
+    // 最終：強力重複除去（toTag 同一視で完全排除）
+    if (typeof dedupeStable==='function') {
+      p = dedupeStable(p);
+    } else {
+      const seen = new Set(), out = [];
+      for (const t of p){
+        const k = _to(t);
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        out.push(k);
+      }
+      p = out;
+    }
+
+    // ネガ
+    const useDefNeg = !!document.getElementById('useDefaultNeg')?.checked;
+    const addNeg    = (document.getElementById('negLearn')?.value || "").trim();
+    const negParts  = [];
+    if (useDefNeg){
+      const d = (typeof getCommonDefaultNeg==='function') ? getCommonDefaultNeg() : "";
+      if (d) negParts.push(d);
+    }
+    if (addNeg) negParts.push(addNeg);
+    const neg = negParts.filter(Boolean).join(", ");
+
+    // seed
+    const seed = (typeof seedFromName==='function')
+      ? seedFromName(document.getElementById('charName')?.value || "", (i+1))
+      : (i+1);
+
+    const prompt = p.join(", ");
+    rows.push({ seed, pos:p, neg, prompt, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` });
+  }
+  return rows;
+}
+
+
+
+
+
+
+
 
 // ===== 撮影モード：ビルド（英語化 + ワンピース色修正 + 順序統一） =====
 function pmBuildOne(){
@@ -5389,144 +5534,6 @@ window._getOutfitNouns = getOutfitNouns; */
 
 
 
-/* ====================== 学習モード：全面置き換え（toTag統一 + 辞書カテゴリで補完/掃除：重複なし） ====================== */
-function buildBatchLearning(n){
-  const rows = [];
-  const wantCount = Math.max(1, Number(n)||1);
-
-  const _to    = t => (typeof toTag==='function' ? toTag(t) : String(t||"").trim());
-  const _norm  = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
-  const _text  = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
-  const _pick  = id => _to(typeof pickOneFromScroller==='function' ? pickOneFromScroller(id) : "");
-  const _tag   = id => _to(_text(id));
-
-  for (let i=0;i<wantCount;i++){
-    let p = ["solo"];
-
-    // 1girl / 1boy
-    if (typeof getGenderCountTag === 'function'){
-      const g = getGenderCountTag() || "";
-      if (g) p.push(_norm(_to(g)));
-    }
-
-    // 基本情報
-    p.push(
-      ...[
-        _pick('bf_age'), _pick('bf_gender'), _pick('bf_body'), _pick('bf_height'),
-        _pick('hairStyle'), _pick('eyeShape'),
-        _tag('tagH'), _tag('tagE'), _tag('tagSkin')
-      ].filter(Boolean).map(_norm)
-    );
-
-    // シーン系
-    p.push(
-      ...[
-        _pick('bg'), _pick('pose'), _pick('comp'),
-        _pick('view'), _pick('expr'), _pick('lightLearn')
-      ].filter(Boolean).map(_norm)
-    );
-
-    // 固定アクセ（1種 + 色）
-    {
-      const accSel = (document.getElementById('learn_acc')?.value || "").trim();
-      const accTag = _to(accSel);
-      const accClr = _tag('tag_learnAcc');
-      if (accTag) p.push(accClr ? `${accClr} ${accTag}` : accTag);
-    }
-
-    // 服（SFW）：名詞→色プレース→色ペアリング
-    if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns());
-    if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
-    if (typeof pairWearColors==='function')              p = pairWearColors(p);
-
-    // NSFW（選択分のみ）
-    const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
-    if (nsfwOn){
-      const add = [
-        _pick('nsfwL_expo'), _pick('nsfwL_underwear'), _pick('nsfwL_outfit'),
-        _pick('nsfwL_expr'), _pick('nsfwL_situ'),     _pick('nsfwL_light'),
-        _pick('nsfwL_pose'), _pick('nsfwL_acc'),      _pick('nsfwL_body'), _pick('nsfwL_nipple')
-      ].filter(Boolean).map(_norm);
-
-      // SFW服を掃除（strip関数があれば優先）
-      if (typeof stripSfwWearWhenNSFW==='function'){
-        p = stripSfwWearWhenNSFW(p);
-      } else {
-        const CLOTH_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
-        const COLOR_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+(top|bottom|dress|shoes)\b/i;
-        const SHOES_RE  = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
-        p = p.filter(s=>{
-          const x = String(s);
-          if (COLOR_RE.test(x)) return false;
-          if (CLOTH_RE.test(x)) return false;
-          if (SHOES_RE.test(x)) return false;
-          return true;
-        });
-      }
-
-      p.push(...add);
-      // 先頭に NSFW を1つ
-      p = p.filter(t => String(t).toUpperCase() !== "NSFW");
-      p.unshift("NSFW");
-    }
-
-    // —— 辞書カテゴリで 1カテゴリ=1つ（不足は辞書デフォ補完）——
-    if (typeof enforceSingletonByCategory==='function'){
-      p = enforceSingletonByCategory(p, { addDefaults: true });
-    }
-
-    // 仕上げ：色の単独掃除 → 排他/順序 → 背景/ライト単一化
-    if (typeof dropBareColors==='function')           p = dropBareColors(p);
-    if (typeof fixExclusives==='function')            p = fixExclusives(p);
-    if (typeof ensurePromptOrder==='function')        p = ensurePromptOrder(p);
-    if (typeof enforceHeadOrder==='function')         p = enforceHeadOrder(p);
-    if (typeof enforceSingleBackground==='function')  p = enforceSingleBackground(p);
-    if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
-
-    // 固定タグ（先頭付与）
-    {
-      const fixed = (document.getElementById('fixedLearn')?.value || "").trim();
-      if (fixed){
-        const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
-        p = [...f.map(t=>_norm(_to(t))).filter(Boolean), ...p];
-      }
-    }
-
-    // 最終：強力重複除去（toTag 同一視で完全排除）
-    if (typeof dedupeStable==='function') {
-      p = dedupeStable(p);
-    } else {
-      const seen = new Set(), out = [];
-      for (const t of p){
-        const k = _to(t);
-        if (!k || seen.has(k)) continue;
-        seen.add(k);
-        out.push(k);
-      }
-      p = out;
-    }
-
-    // ネガ
-    const useDefNeg = !!document.getElementById('useDefaultNeg')?.checked;
-    const addNeg    = (document.getElementById('negLearn')?.value || "").trim();
-    const negParts  = [];
-    if (useDefNeg){
-      const d = (typeof getCommonDefaultNeg==='function') ? getCommonDefaultNeg() : "";
-      if (d) negParts.push(d);
-    }
-    if (addNeg) negParts.push(addNeg);
-    const neg = negParts.filter(Boolean).join(", ");
-
-    // seed
-    const seed = (typeof seedFromName==='function')
-      ? seedFromName(document.getElementById('charName')?.value || "", (i+1))
-      : (i+1);
-
-    const prompt = p.join(", ");
-    rows.push({ seed, pos:p, neg, prompt, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` });
-  }
-  return rows;
-}
 
 
 
