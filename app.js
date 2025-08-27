@@ -4905,7 +4905,7 @@ window._getOutfitNouns = getOutfitNouns; */
 
 
 
-/* ====================== 学習モード：全面置き換え（toTag統一 + 補完/掃除） ====================== */
+/* ====================== 学習モード：全面置き換え（toTag統一 + 補完/掃除：重複なし） ====================== */
 function buildBatchLearning(n){
   const rows = [];
   const wantCount = Math.max(1, Number(n)||1);
@@ -4913,29 +4913,27 @@ function buildBatchLearning(n){
   // 安全ヘルパ
   const _norm   = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
   const _textOf = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
-  const _pick   = id => toTag(pickOneFromScroller(id));         // ← scrollerは必ず toTag 経由
-  const _tagTxt = id => toTag(_textOf(id));                      // ← code.tag 等の英字タグも toTag 経由
+  const _pick   = id => toTag(pickOneFromScroller(id));   // scrollerは必ず toTag 経由
+  const _tagTxt = id => toTag(_textOf(id));               // code.tag 等の英字タグも toTag 経由
+  const _has = (arr, re) => arr.some(t => re.test(String(t)));
+  const _drop = (arr, re) => arr.filter(t => !re.test(String(t)));
 
   for (let i=0;i<wantCount;i++){
     let p = ["solo"];
 
-    // 先頭に 1girl / 1boy を自動付与
+    // 1girl / 1boy
     const genderCount = (typeof getGenderCountTag === 'function') ? (getGenderCountTag() || "") : "";
     if (genderCount) p.push(_norm(genderCount));
 
     // --- 基本情報（英語タグ化） ---
     const basics = [
-      _pick('bf_age'),
-      _pick('bf_gender'),
-      _pick('bf_body'),
-      _pick('bf_height'),
-      _pick('hairStyle'),
-      _pick('eyeShape'),
+      _pick('bf_age'), _pick('bf_gender'), _pick('bf_body'), _pick('bf_height'),
+      _pick('hairStyle'), _pick('eyeShape'),
       _tagTxt('tagH'), _tagTxt('tagE'), _tagTxt('tagSkin')
     ].filter(Boolean).map(_norm);
     p.push(...basics);
 
-    // --- 学習で選んだ“シーン系” ---
+    // --- シーン系（選択分のみ） ---
     const bg   = _pick('bg');
     const pose = _pick('pose');
     const comp = _pick('comp');
@@ -4945,15 +4943,17 @@ function buildBatchLearning(n){
     p.push(...[bg, pose, comp, view, expr, lite].filter(Boolean).map(_norm));
 
     // --- 固定アクセ（1種 + 色） ---
-    const accSel = (document.getElementById('learn_acc')?.value || "").trim();
-    const accTag = toTag(accSel);
-    const accClr = _tagTxt('tag_learnAcc'); // 例: "black"
-    if (accTag) p.push(accClr ? `${accClr} ${accTag}` : accTag);
+    {
+      const accSel = (document.getElementById('learn_acc')?.value || "").trim();
+      const accTag = toTag(accSel);
+      const accClr = _tagTxt('tag_learnAcc'); // 例: "black"
+      if (accTag) p.push(accClr ? `${accClr} ${accTag}` : accTag);
+    }
 
     // --- 服（SFW）名詞→色プレース→ペアリング ---
-    if (typeof getOutfitNouns==='function')               p.push(...getOutfitNouns());
-    if (typeof injectWearColorPlaceholders==='function')   injectWearColorPlaceholders(p);
-    if (typeof pairWearColors==='function')                p = pairWearColors(p);
+    if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns());
+    if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
+    if (typeof pairWearColors==='function')              p = pairWearColors(p);
 
     // --- NSFW（選択分のみ採用・優先） ---
     const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
@@ -4971,7 +4971,7 @@ function buildBatchLearning(n){
 
       // pair後の「色 + 名詞」だけ保護
       const outfitFixed = new Set(
-        p.filter(s => /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+\S/.test(String(s)))
+        p.filter(s => /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+\S/i.test(String(s)))
          .map(_norm)
       );
 
@@ -4993,7 +4993,7 @@ function buildBatchLearning(n){
         }
       }
 
-      // NSFW側の選択を後勝ちで追記
+      // NSFW側を後勝ちで
       p.push(...[expo, und, outf, ex2, situ, li2, po2, ac2, bo2, nip].filter(Boolean).map(_norm));
 
       // 先頭に NSFW（重複除去）
@@ -5001,27 +5001,33 @@ function buildBatchLearning(n){
       p.unshift("NSFW");
     }
 
-    // === B: アンカー補完（_ と半角空白を同一視）========================
+    // === B: アンカー補完（カテゴリに“何も無い時だけ”追加）================
     {
       const asText = p.join(", ").toLowerCase().replace(/_/g, ' ');
-
-      const hasView = /\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/.test(asText);
-      if (!hasView) p.push("front view");
-
-      const hasBg = /\b(plain background|studio background|solid background)\b/.test(asText);
-      if (!hasBg) p.push("plain background");
-
-      const hasBody = /\b(upper body|bust|waist up|portrait|full body)\b/.test(asText);
-      if (!hasBody) p.push("upper body");
-
-      const hasExpr = /\b(neutral expression|smiling|serious|determined|slight blush|surprised \(mild\)|pouting \(slight\))\b/.test(asText);
-      if (!hasExpr) p.push("neutral expression");
-
-      const hasLight = /\b(soft lighting|even lighting|normal lighting)\b/.test(asText);
-      if (!hasLight) p.push("soft lighting");
-
-      const hasComp = /\b(centered composition|center composition)\b/.test(asText);
-      if (!hasComp) p.push("centered composition");
+      // 視点
+      if (!/\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/.test(asText)) {
+        p.push("front view");
+      }
+      // 背景
+      if (!/\b(plain background|studio background|solid background)\b/.test(asText)) {
+        p.push("plain background");
+      }
+      // 身体フレーミング
+      if (!/\b(upper body|bust|waist up|portrait|full body)\b/.test(asText)) {
+        p.push("upper body");
+      }
+      // 表情
+      if (!/\b(neutral expression|smiling|serious|determined|slight blush|surprised \(mild\)|pouting \(slight\))\b/.test(asText)) {
+        p.push("neutral expression");
+      }
+      // ライティング
+      if (!/\b(soft lighting|even lighting|normal lighting)\b/.test(asText)) {
+        p.push("soft lighting");
+      }
+      // 構図
+      if (!/\b(centered composition|center composition)\b/.test(asText)) {
+        p.push("centered composition");
+      }
     }
 
     // --- 単独色掃除 → 排他/順序 調整 ---
@@ -5032,11 +5038,54 @@ function buildBatchLearning(n){
     if (typeof enforceSingleBackground==='function')  p = enforceSingleBackground(p);
     if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
 
-    // === C: full body があるなら upper/bust/waist_up/portrait を掃除 ===
+    // === C: カテゴリ内の重複掃除（最終） ================================
     {
-      const hasFull = p.some(t => /\bfull[_\s]?body\b/i.test(String(t)));
-      if (hasFull) {
-        p = p.filter(t => !/\b(upper[_\s]?body|bust|waist[_\s]?up|portrait)\b/i.test(String(t)));
+      // full body があるなら upper/bust/waist_up/portrait を除去
+      const hasFull = _has(p, /\bfull[_\s]?body\b/i);
+      if (hasFull) p = _drop(p, /\b(upper[_\s]?body|bust|waist[_\s]?up|portrait)\b/i);
+
+      // 背景は 1 つだけ
+      const seenBg = new Set();
+      p = p.filter(t=>{
+        const s = String(t).toLowerCase().replace(/_/g,' ');
+        if (/\b(plain background|studio background|solid background)\b/.test(s)){
+          if (seenBg.size) return false;
+          seenBg.add('bg');
+        }
+        return true;
+      });
+
+      // ライティングも 1 つだけ（既存優先：soft / even / normal の順で残す）
+      const lightRank = (s)=>{
+        if (/soft[_\s]?lighting/i.test(s)) return 1;
+        if (/even[_\s]?lighting/i.test(s)) return 2;
+        if (/normal[_\s]?lighting/i.test(s)) return 3;
+        return 99;
+      };
+      let lights = p.filter(x=>/\b(soft[_\s]?lighting|even[_\s]?lighting|normal[_\s]?lighting)\b/i.test(String(x)));
+      if (lights.length>1){
+        const keep = lights.sort((a,b)=>lightRank(String(a))-lightRank(String(b)))[0];
+        p = p.filter(x=>!/\b(soft[_\s]?lighting|even[_\s]?lighting|normal[_\s]?lighting)\b/i.test(String(x)));
+        p.push(keep);
+      }
+
+      // 視点も 1 つだけ（front をデフォ優先）
+      const VIEW_RE = /\b(front[_\s]?view|three-quarters[_\s]?view|profile[_\s]?view|side[_\s]?view|back[_\s]?view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/i;
+      let views = p.filter(x=>VIEW_RE.test(String(x)));
+      if (views.length>1){
+        const pref = ['front view','three-quarters view'];
+        const pick = views.find(v=>/front[_\s]?view/i.test(String(v))) || views.find(v=>/three-quarters[_\s]?view/i.test(String(v))) || views[0];
+        p = p.filter(x=>!VIEW_RE.test(String(x)));
+        p.push(pick);
+      }
+
+      // 表情も 1 つだけ（neutral をデフォ優先）
+      const EXPR_RE = /\b(neutral[_\s]?expression|smiling|serious|determined|slight blush|surprised \(mild\)|pouting \(slight\))\b/i;
+      let exprs = p.filter(x=>EXPR_RE.test(String(x)));
+      if (exprs.length>1){
+        const pick = exprs.find(v=>/neutral[_\s]?expression/i.test(String(v))) || exprs[0];
+        p = p.filter(x=>!EXPR_RE.test(String(x)));
+        p.push(pick);
       }
     }
 
@@ -5044,10 +5093,12 @@ function buildBatchLearning(n){
     p = Array.from(new Set(p.map(_norm))).filter(Boolean);
 
     // --- 固定タグ（先頭付与） ---
-    const fixed = (document.getElementById('fixedLearn')?.value || "").trim();
-    if (fixed){
-      const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
-      p = [...f.map(t=>toTag(t)).filter(Boolean).map(_norm), ...p];
+    {
+      const fixed = (document.getElementById('fixedLearn')?.value || "").trim();
+      if (fixed){
+        const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
+        p = [...f.map(t=>toTag(t)).filter(Boolean).map(_norm), ...p];
+      }
     }
 
     // --- ネガ（既定 + 任意） ---
