@@ -1311,15 +1311,19 @@ function buildBatchLearning(n){
       _tag('tagH'), _tag('tagE'), _tag('tagSkin')
     ].filter(Boolean).map(_norm));
 
-    // ===== シーン（MIX_RULES優先） =====
-    // UIで選ばれているものがあればその中で抽選、無ければMIX_RULESのgroupから抽選
-    const bg     = pickByMixRules('bg',   'bg')   || pickOneFromUI('bg')   || pickTag('bg');
-    const comp   = pickByMixRules('comp', 'comp') || pickOneFromUI('comp') || pickTag('comp');
-    const view   = pickByMixRules('view', 'view') || pickOneFromUI('view') || pickTag('view');
-    const expr   = pickByMixRules('expr', 'expr') || pickOneFromUI('expr') || pickTag('expr') || "neutral expression";
-    const light  = pickByMixRules('light','lightLearn') || pickOneFromUI('lightLearn') || pickTag('lightLearn') || "soft lighting";
-
-    p.push(...[bg, comp, view, expr, light].filter(Boolean).map(_norm));
+    // 学習モード：シーン部だけMIX_RULES優先で差し替え
+      // 置換対象：buildBatchLearning 内の「// シーン」ブロック
+      
+      // —— ここから置換 —— 
+      // シーン（MIX_RULES優先 → 未選択はUIの単一選択をフォールバック）
+      const bg   = (typeof pickWithMixRules==='function' ? pickWithMixRules('bg')   : null) || pickTag('bg');
+      const comp = (typeof pickWithMixRules==='function' ? pickWithMixRules('comp') : null) || pickTag('comp');
+      const view = (typeof pickWithMixRules==='function' ? pickWithMixRules('view') : null) || pickTag('view');
+      const expr = (typeof pickWithMixRules==='function' ? pickWithMixRules('expr') : null) || pickTag('expr');
+      const lite = (typeof pickWithMixRules==='function' ? pickWithMixRules('light'): null) || pickTag('lightLearn');
+      
+      p.push(...[bg, comp, view, expr, lite].filter(Boolean));
+      // —— ここまで置換 ——
 
     // 固定アクセ
     {
