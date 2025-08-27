@@ -4518,6 +4518,10 @@ function buildOneLearning(extraSeed = 0){
       p = [...f, ...p];
     }
   }
+    // ← 固定タグ前置で崩れたヘッダ順をここで再矯正
+  if (typeof enforceHeadOrder === 'function') {
+    p = enforceHeadOrder(p);
+  }
 
   // 最終：強力重複除去（toTag 同一視）
   if (typeof dedupeStable==='function'){
