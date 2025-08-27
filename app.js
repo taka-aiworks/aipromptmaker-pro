@@ -565,33 +565,6 @@ function pairWearColors(arr){
 }
 
 
-/* ===== helpers for 撮影モード ===== */
-// UI→英語tag
-function asTag(x){
-  if (!x) return "";
-  const s = String(x).trim();
-  if (!s || s.toLowerCase()==="none") return "";
-  if (window.TAGMAP){
-    if (TAGMAP.id2tag?.has(s)) return TAGMAP.id2tag.get(s);
-    const low = s.toLowerCase();
-    if (TAGMAP.en?.has(low))   return TAGMAP.en.get(low);
-    if (TAGMAP.ja2tag?.has(s)) return TAGMAP.ja2tag.get(s);
-    if (TAGMAP.label2tag?.has(s)) return TAGMAP.label2tag.get(s);
-  }
-  if (typeof toEnTagStrict==='function') return toEnTagStrict(s);
-  if (typeof toTag==='function')         return toTag(s);
-  return s;
-}
-function pickTag(id){
-  const v = (typeof pickOneFromScroller==='function') ? pickOneFromScroller(id) : "";
-  if (!v) return "";
-  return asTag(v);
-}
-function textTag(id){
-  const el = document.getElementById(id);
-  const v = (el?.textContent || el?.value || "").trim();
-  return asTag(v);
-}
 function forceDressColor(p, topColor){
   return (p||[]).map(tag=>{
     const t = String(tag||"");
