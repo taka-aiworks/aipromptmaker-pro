@@ -4260,12 +4260,12 @@ function _labelToTag(el){
   return String(raw).trim().toLowerCase();
 }
 
-// 英語タグへ正規化（空白はすべてアンダースコアに統一）
+// 英語タグへ正規化（StableDiffusion向けにアンダースコアで統一）
 function normalizeTag(t){
   return String(t||"")
     .trim()
-    .replace(/\s+/g, '_')  // 空白は全部 _
-    .replace(/_+/g, '_');  // __ を _ にまとめる
+    .replace(/\s+/g, '_')   // 空白は全部アンダースコア
+    .replace(/_+/g, '_');   // 連続する _ を1つにまとめる
 }
 
 // 任意の文字列→英語タグ（日本語→辞書化してるならここで対応。無ければ normalize だけ）
