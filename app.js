@@ -4310,13 +4310,59 @@ function dedupeStable(arr){
   return out;
 }
 
-// ===== 学習モード：1枚テスト（辞書カテゴリ単一化・toTag統一） =====
+// ===== 学習モード：1枚テスト（辞書カテゴリ単一化・toTag統一・学習モードと同じ順序） =====
 function buildOneLearning(extraSeed = 0){
   const _to    = t => (typeof toTag==='function' ? toTag(t) : String(t||"").trim());
   const _norm  = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
   const _text  = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
   const _pick  = id => _to(typeof pickOneFromScroller==='function' ? pickOneFromScroller(id) : "");
   const _tag   = id => _to(_text(id));
+
+  // --- Fallback: 学習モードと同じ並びのローカル順序（ensurePromptOrderが無い場合用） ---
+  function ensurePromptOrderLocal(arr){
+    const key = s => String(s||"").toLowerCase().replace(/_/g,' ');
+    // 学習モードの順序に合わせる：solo/人数 → 見た目 → 基本属性 → シーン（背景/ポーズ/構図/視点/表情/光） → 服/アクセ → NSFW補助 → その他
+    const buckets = [
+      // 0: 固定先頭
+      t => /^solo$/.test(key(t)) || /^\d+\s*(girl|boy|boys|girls)\b/.test(key(t)) ? 0 : null,
+      // 1: 見た目（髪/目/肌）
+      t => /\bhair\b/.test(key(t)) ? 1 : null,
+      t => /\beyes?\b/.test(key(t)) ? 1.1 : null,
+      t => /\bskin\b/.test(key(t)) ? 1.2 : null,
+      // 2: 基本属性
+      t => /\b(late|early|teen|adult|child)\b|\bage\b/.test(key(t)) ? 2 : null,
+      t => /\b(female|male|androgynous)\b/.test(key(t)) ? 2.1 : null,
+      t => /\b(slim|voluptuous|curvy|athletic|petite)\b/.test(key(t)) ? 2.2 : null,
+      t => /\b(height)\b|average height|short|tall/.test(key(t)) ? 2.3 : null,
+      t => /\b(bob|ponytail|hair)\b/.test(key(t)) ? 2.4 : null,
+      t => /\b(almond|round|slanted)\s*eyes?\b/.test(key(t)) ? 2.5 : null,
+      // 3: シーン系
+      t => /(?:^| )plain background|studio background|background$/.test(key(t)) ? 3 : null,         // 背景
+      t => /\b(pose|standing|sitting|kneeling|lying)\b/.test(key(t)) ? 3.1 : null,                   // ポーズ
+      t => /\b(centered composition|composition)\b/.test(key(t)) ? 3.2 : null,                       // 構図
+      t => /\b(front view|three-quarters|profile|side view|back view|looking|eye-level|angle)\b/.test(key(t)) ? 3.3 : null, // 視点
+      t => /\b(neutral expression|smiling|serious|determined|blush|pouting|surprised)\b/.test(key(t)) ? 3.4 : null,        // 表情
+      t => /\b(soft lighting|even lighting|normal lighting|lighting)\b/.test(key(t)) ? 3.5 : null,   // 光
+      // 4: 服・アクセ（SFW）
+      t => /\b(top|bottom|skirt|pants|shorts|jeans|dress|one ?piece|gown|shoes|boots|sandals|t-?shirt|shirt|blouse|hoodie|jacket|coat)\b/.test(key(t)) ? 4 : null,
+      t => /\b(ribbon|glasses|earrings|necklace|bracelet|choker|hat|hairpin|accessor|bag)\b/.test(key(t)) ? 4.5 : null,
+      // 5: NSFW系（ヘッダは先頭に置くけど、要素の相対順は後勝ちのまま）
+      t => /^nsfw$/.test(key(t)) ? -0.5 : null,
+      t => /\b(exposure|underwear|lingerie|bikini|swimsuit|nipple|areola|pasties|topless|bottomless|nude)\b/.test(key(t)) ? 5 : null,
+      t => /\b(situation|setting)\b/.test(key(t)) ? 5.1 : null,
+      t => /\bpose\b/.test(key(t)) && /nsfw/.test(key(t)) ? 5.2 : null,
+      t => /\b(acc|accessory)\b/.test(key(t)) && /nsfw/.test(key(t)) ? 5.3 : null,
+      t => /\b(lighting)\b/.test(key(t)) && /nsfw/.test(key(t)) ? 5.4 : null,
+      t => /\b(body)\b/.test(key(t)) && /nsfw/.test(key(t)) ? 5.5 : null,
+      // 9: その他（残り）
+      _ => 9
+    ];
+    return (arr||[]).slice().sort((a,b)=>{
+      const ra = buckets.reduce((r,f)=> r ?? f(a), null);
+      const rb = buckets.reduce((r,f)=> r ?? f(b), null);
+      return (ra ?? 9) - (rb ?? 9);
+    });
+  }
 
   let p = ["solo"];
 
@@ -4386,15 +4432,17 @@ function buildOneLearning(extraSeed = 0){
     p.unshift("NSFW");
   }
 
-  // —— ここが肝：辞書カテゴリで 1カテゴリ=1つ（不足は辞書デフォ補完）——
+  // —— 辞書カテゴリで 1カテゴリ=1つ（不足は辞書デフォ補完 / 後勝ち）——
   if (typeof enforceSingletonByCategory==='function'){
-    p = enforceSingletonByCategory(p, { addDefaults: true });
+    p = enforceSingletonByCategory(p, { addDefaults: true, keep: 'last' });
   }
 
   // 仕上げ：色の単独掃除 → 排他/順序 → 背景/ライト単一化
   if (typeof dropBareColors==='function')           p = dropBareColors(p);
   if (typeof fixExclusives==='function')            p = fixExclusives(p);
+  // ← 学習モードと同じ：ここで順序を確定
   if (typeof ensurePromptOrder==='function')        p = ensurePromptOrder(p);
+  else                                              p = ensurePromptOrderLocal(p);
   if (typeof enforceHeadOrder==='function')         p = enforceHeadOrder(p);
   if (typeof enforceSingleBackground==='function')  p = enforceSingleBackground(p);
   if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
@@ -4410,7 +4458,7 @@ function buildOneLearning(extraSeed = 0){
 
   // 最終：強力重複除去（toTag 同一視）
   if (typeof dedupeStable==='function'){
-    p = dedupeStable(p); // 既存ヘルパがあるなら採用
+    p = dedupeStable(p);
   } else {
     const seen = new Set(), out = [];
     for (const t of p){
