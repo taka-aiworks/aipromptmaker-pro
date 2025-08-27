@@ -994,16 +994,6 @@ function _forceDressColor(p){
 }
 
 
-// === 共通ヘルパ：プレースホルダ掃除 ===
-const PLACEHOLDER_WORDS = new Set([
-  'background','body','view','expression','upper_body','full_body'
-]);
-function dropPlaceholders(arr){
-  return (arr||[]).filter(t=>{
-    const s = String(t||'').trim().toLowerCase();
-    return s && !PLACEHOLDER_WORDS.has(s);
-  });
-}
 
 // === 共通ヘルパ：最終整形（単一化→順序→重複→プレース掃除→NSFW/solo先頭）===
 function finalizePromptArray(p){
