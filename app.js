@@ -653,29 +653,30 @@ function finalizePromptArray(p){
 
 
 /* ===================== COMMON PATCHES ===================== */
-
-// 表示名→英語タグの強制変換（I18N／辞書優先→英語塊の抽出→toTag→normalize）
-function toEnTagStrict(t){
-  let s = String(t||"").trim();
-  if (!s) return "";
-
-  // I18N双方向マップがあれば優先
-  if (window && window.TAG_I18N && window.TAG_I18N[s]) s = window.TAG_I18N[s];
-
-  // 「日本語 + 英語」混在は最後の英語塊を採用
-  const EN_CHUNK = /[A-Za-z0-9][A-Za-z0-9'’\- ]*/g;
-  const chunks = s.match(EN_CHUNK);
-  if (chunks && chunks.length) {
-    s = chunks[chunks.length - 1].trim();
-  } else {
-    // 英語塊が無い場合はCJKを落として英字のみ最後の砦
-    s = s.replace(/[\p{Script=Han}\p{Hiragana}\p{Katakana}ー々〆〇]+/gu, " ")
-         .replace(/\s{2,}/g," ")
-         .trim();
+// 汎用：{tag, ja}配列から <select> を構築
+function populateSelect(selectId, items, { includeNone=true, noneLabel="なし" } = {}){
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  el.innerHTML = "";
+  if (includeNone){
+    const opt = document.createElement("option");
+    opt.value = ""; opt.textContent = noneLabel;
+    el.appendChild(opt);
   }
-  s = (typeof toTag==='function') ? toTag(s) : s;
-  s = (typeof normalizeTag==='function') ? normalizeTag(s) : s.trim();
-  return s;
+  (items||[]).forEach(it=>{
+    const opt = document.createElement("option");
+    opt.value = it.tag || "";                       // 英語タグ ← 出力にそのまま使う
+    opt.textContent = it.ja || it.tag || "";        // 表示は日本語（なければ英語）
+    el.appendChild(opt);
+  });
+}
+
+// 辞書からカテゴリを安全に読む
+function getDictList(dictRoot, categoryPath){
+  // 例: getDictList(window.NSFW, ["categories","expression"])
+  try{
+    return categoryPath.reduce((o,k)=> (o||{})[k], dictRoot) || [];
+  }catch(_){ return []; }
 }
 
 // 表示名→タグの解決（JSON辞書の name / tag / alias を総当たり）
