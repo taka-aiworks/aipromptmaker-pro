@@ -4575,13 +4575,14 @@ function _norm(t){
 function toTag(s){
   const x = String(s || "").trim();
   if (!x) return "";
-  if (/^(指定なし|none)$/i.test(x)) return "";  // none/指定なしは捨てる
+  if (/^(指定なし|none)$/i.test(x)) return "";  // none系だけ捨てる
 
-  // 末尾の英語フレーズ全体（空白・ハイフン・アンダースコア許容）を抜く
-  const m = x.match(/([A-Za-z][A-Za-z0-9_\-]*(?:[ \-][A-Za-z0-9_\-]+)*)\s*$/);
-  const tag = m ? m[1] : x;                       // 英語部分が無ければ全体を使用（保険）
-  const t = (typeof normalizeTag === 'function') ? normalizeTag(tag) : tag.toLowerCase();
-  return t;
+  // 英語フレーズがあればそれを取る
+  const m = x.match(/([A-Za-z][A-Za-z0-9_\-]*(?:[ \-][A-Za-z0-9_\-]+)*)/);
+  if (m) return (typeof normalizeTag==='function') ? normalizeTag(m[1]) : m[1].toLowerCase();
+
+  // 英語部分がなければ全体を残す（日本語混ざっても削らない）
+  return (typeof normalizeTag==='function') ? normalizeTag(x) : x.toLowerCase();
 }
 
 // scroller の選択テキスト → toTag 経由で英語タグ化
