@@ -1452,14 +1452,6 @@ function radioList(el, list, name, {checkFirst = true} = {}) {
 
 const getOne  = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
 
-// === 共通: data-en 優先でタグ化 ===
-function _toEnTagFromEl(el){
-  if (!el) return "";
-  const en = el.getAttribute?.("data-en");
-  const raw = en || el.value || el.textContent || "";
-  return toTag(raw); // ← 既存の toTag を使用（none/指定なしも掃除）
-}
-
 // === 複数値を取得（scroller の chip.on や選択済みボタンに対応）===
 function getMany(idOrName){
   // 1) id 指定（学習モードの scroller は id がある）
@@ -4290,29 +4282,74 @@ function _labelToTag(el){
   return String(raw).trim().toLowerCase();
 }
 
-// scroller から “1件だけ” 選択を取得（英語タグ優先）
+// ===== scroller から “1件だけ” 選択を取得（英語タグ優先・堅牢版） =====
 function pickOneFromScroller(rootId){
-  const root = document.getElementById(rootId);
+  const root = typeof rootId === "string" ? document.getElementById(rootId) : rootId;
   if (!root) return "";
 
-  // 優先順で 1 つ拾う
+  // 優先順で 1 つ拾う（chip系 → 単語モードカード → ARIA/data → stateクラス → 入力系）
   const q =
-    root.querySelector('.chip.on') ||                 // chip
-    root.querySelector('.wm-item.is-selected') ||     // 単語モードカード
+    root.querySelector('.chip.on') ||
+    root.querySelector('.wm-item.is-selected') ||
     root.querySelector('[aria-selected="true"]') ||
     root.querySelector('[data-selected="true"]') ||
-    root.querySelector('.selected,.active,.sel,.option.selected,.item.selected') ||
-    root.querySelector('input[type=radio]:checked') || // ラジオ（保険）
-    root.querySelector('input[type=checkbox]:checked'); // チェック（保険）
+    root.querySelector('.selected, .active, .sel, .option.selected, .item.selected') ||
+    root.querySelector('input[type="radio"]:checked') ||
+    root.querySelector('input[type="checkbox"]:checked');
 
   if (!q) return "";
 
-  // ラジオ/チェックボックスなら隣の label も見る
+  // input（radio/checkbox）は隣の label に英語タグがあるケースが多いので優先して読む
   if (q.tagName === 'INPUT') {
     const lab = q.nextElementSibling;
-    return _toEnTagFromEl(lab) || _toEnTagFromEl(q);
+    return _toEnTagFromEl(lab) || _toEnTagFromEl(q) || "";
   }
-  return _toEnTagFromEl(q);
+  return _toEnTagFromEl(q) || "";
+}
+
+// ===== 要素から英語タグを抽出（data-en / .wm-en / code.tag を優先）=====
+function _toEnTagFromEl(el){
+  if (!el) return "";
+  try {
+    const pickTexts = [];
+    // data-* 優先
+    if (el.dataset) {
+      if (el.dataset.en)  pickTexts.push(el.dataset.en);
+      if (el.dataset.tag) pickTexts.push(el.dataset.tag);
+    }
+    // 属性でも拾う
+    if (el.getAttribute) {
+      const de = el.getAttribute('data-en');
+      const dt = el.getAttribute('data-tag');
+      if (de) pickTexts.push(de);
+      if (dt) pickTexts.push(dt);
+    }
+    // 単語モード構造（小さな英語行）
+    const wmEn = el.querySelector?.('.wm-en')?.textContent;
+    if (wmEn) pickTexts.push(wmEn);
+    // code.tag（色タグなど）
+    const codeTag = el.querySelector?.('code.tag')?.textContent;
+    if (codeTag) pickTexts.push(codeTag);
+    // 候補が無ければ value / textContent を最後に使う
+    if ('value' in el && el.value) pickTexts.push(String(el.value));
+    if (el.textContent) pickTexts.push(el.textContent);
+
+    // 文字列を整形
+    const cleaned = pickTexts
+      .map(s => String(s || '').trim())
+      .filter(Boolean);
+
+    if (!cleaned.length) return "";
+
+    // “英語タグっぽい”ものを優先（英数・記号中心）
+    const enLike = cleaned.find(s => /^[a-z0-9 _\-()+:]+$/i.test(s)) || cleaned[0];
+
+    // 最終正規化（toTag があれば使用、無ければ軽く整形）
+    if (typeof toTag === 'function') return toTag(enLike);
+    return enLike.replace(/\s+/g, ' ').trim();
+  } catch {
+    return "";
+  }
 }
 
 // scroller から “複数” 選択を取得（英語タグの配列で返す）
