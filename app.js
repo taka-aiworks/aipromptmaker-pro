@@ -462,59 +462,6 @@ function forceDressColor(p, topColorWord){
 
 
 
-// ===== I18N: JSONから英語タグ辞書を作成（app起動時に一度だけ実行） =====
-(async function initTagI18N(){
-  try {
-    window.TAG_I18N = window.TAG_I18N || {};
-    // 既に読み込み済みならスキップ
-    if (Object.keys(window.TAG_I18N).length) return;
-
-    const loadJson = async (path)=> {
-      const res = await fetch(path);
-      if (!res.ok) throw new Error('fetch failed: '+path);
-      return await res.json();
-    };
-
-    const swf = await loadJson('dict/default_sfw.json');
-    const nsf = await loadJson('dict/default_nsfw.json');
-
-    const harvest = (obj, key) => {
-      const arr = (obj && Array.isArray(obj[key])) ? obj[key] : [];
-      arr.forEach(it=>{
-        const tag = (it && (it.tag || it.en || it.name || it)) || "";
-        const jp  = (it && (it.jp  || it.ja)) || "";
-        if (jp && tag) window.TAG_I18N[String(jp).trim()] = String(tag).trim();
-      });
-    };
-
-    // 代表的カテゴリを走査（存在チェックしながら）
-    const scan = (root)=>{
-      if (!root) return;
-      Object.keys(root).forEach(k=>{
-        harvest(root, k);
-      });
-    };
-    scan(swf);
-    scan(nsf);
-
-    // よくある固定の日本語→英語（JSON無い場合の最後の砦）
-    Object.assign(window.TAG_I18N, {
-      "無地背景": "plain background",
-      "通常光": "normal lighting",
-      "逆光": "backlighting",
-      "ニュートラル": "neutral expression",
-      "正面": "front view",
-      "全身": "full body",
-      "直立/立ち": "standing",
-    });
-  } catch (e){
-    console.warn('TAG_I18N init failed:', e);
-    window.TAG_I18N = window.TAG_I18N || {};
-  }
-})();
-
-
-
 // --- 英語タグ強制（日本語+英語混在も英語だけ抽出） ---
 function toEnTagStrict(t){
   let s = String(t||"").trim();
