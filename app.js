@@ -213,6 +213,82 @@ function getTag2Cat(){
 }
 
 
+// 1) JSONから「tag -> category」を作る（toTagで統一）
+function buildTagCatalogFromJSON() {
+  const cat = {};
+  const S = (window && window.SFW) ? window.SFW : {};
+  const add = (k)=>{
+    const arr = Array.isArray(S[k]) ? S[k] : [];
+    for (const it of arr){
+      const raw = (it && (it.tag ?? it)) || "";
+      const t = (typeof toTag==='function') ? toTag(raw) : String(raw||"").trim();
+      if (!t) continue;
+      // outfit は各要素に cat があるので特別扱い
+      if (k === 'outfit' && it && it.cat){
+        cat[t] = it.cat; // top / pants / skirt / dress / shoes
+      } else {
+        cat[t] = k;      // background / pose / composition / view / expressions / lighting など
+      }
+    }
+  };
+  // 必要なキーを全部なめる
+  ['background','pose','composition','view','expressions','lighting',
+   'age','gender','body_type','height','hair_style','eyes','face','skin_body',
+   'outfit','accessories','colors'
+  ].forEach(add);
+  return cat;
+}
+
+// 2) カテゴリ単一化（辞書で “後勝ち置き換え”）、不足はデフォ補完
+function enforceSingletonByCategory(arr, opt={ addDefaults:true }) {
+  const toT = t => (typeof toTag==='function') ? toTag(t) : String(t||"").trim();
+  const catMap = (window.__TAG_CAT__ ||= buildTagCatalogFromJSON());
+
+  // この順で補完用のデフォルト
+  const defaults = {
+    pose:         'standing',
+    composition:  'upper body',
+    view:         'front view',
+    expressions:  'neutral expression',
+    lighting:     'soft lighting',
+    background:   'plain_background', // ← snake_caseで保持
+  };
+
+  // 先に toTag 化
+  const tokens = (arr||[]).map(toT).filter(Boolean);
+
+  // 1カテゴリ=1つに “最後に出たもの” を採用
+  const keepLast = {};         // cat -> token
+  const order    = [];         // 出現順を保持
+  for (const t of tokens){
+    const c = catMap[t];
+    if (!c) { // 辞書外はそのまま通す（上書きなし）
+      order.push(t);
+      continue;
+    }
+    keepLast[c] = t; // 後勝ち
+  }
+
+  // 元の非辞書トークン + カテゴリ代表だけを再構成
+  const seenNonDict = new Set();
+  const out = [];
+  for (const t of tokens){
+    if (!catMap[t]){
+      const key = t;
+      if (!seenNonDict.has(key)){ out.push(t); seenNonDict.add(key); }
+    }
+  }
+  // 指定カテゴリは 1 つだけ差し込む（出現順はざっくり固定順）
+  const ORDERED_CATS = ['background','pose','composition','view','expressions','lighting'];
+  for (const c of ORDERED_CATS){
+    if (keepLast[c]) out.push(keepLast[c]);
+    else if (opt.addDefaults && defaults[c]) out.push(toT(defaults[c]));
+  }
+  return out;
+}
+
+
+
 /* ===== 各カテゴリ 1 つだけを残す（JSONベース） ===== */
 function enforceSingletonByCategory(tags, { addDefaults=true }={}){
   const out = [];
@@ -4234,39 +4310,44 @@ function dedupeStable(arr){
   return out;
 }
 
-// ===== 学習モード：1枚テスト（辞書カテゴリで単一化・toTag統一） =====
+// ===== 学習モード：1枚テスト（辞書カテゴリ単一化・toTag統一） =====
 function buildOneLearning(extraSeed = 0){
-  const _norm   = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
-  const _textOf = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
-  const _pick   = id => toTag(pickOneFromScroller(id));
-  const _tagTxt = id => toTag(_textOf(id));
+  const _to    = t => (typeof toTag==='function' ? toTag(t) : String(t||"").trim());
+  const _norm  = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
+  const _text  = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
+  const _pick  = id => _to(typeof pickOneFromScroller==='function' ? pickOneFromScroller(id) : "");
+  const _tag   = id => _to(_text(id));
 
   let p = ["solo"];
 
   // 1girl / 1boy
-  const genderCount = (typeof getGenderCountTag === 'function') ? (getGenderCountTag() || "") : "";
-  if (genderCount) p.push(_norm(genderCount));
+  if (typeof getGenderCountTag === 'function'){
+    const g = getGenderCountTag() || "";
+    if (g) p.push(_to(g));
+  }
 
   // 基本情報
-  const basics = [
-    _pick('bf_age'), _pick('bf_gender'), _pick('bf_body'), _pick('bf_height'),
-    _pick('hairStyle'), _pick('eyeShape'),
-    _tagTxt('tagH'), _tagTxt('tagE'), _tagTxt('tagSkin')
-  ].filter(Boolean).map(_norm);
-  p.push(...basics);
+  p.push(
+    ...[
+      _pick('bf_age'), _pick('bf_gender'), _pick('bf_body'), _pick('bf_height'),
+      _pick('hairStyle'), _pick('eyeShape'),
+      _tag('tagH'), _tag('tagE'), _tag('tagSkin')
+    ].filter(Boolean).map(_norm)
+  );
 
-  // シーン系
-  const scene = [
-    _pick('bg'), _pick('pose'), _pick('comp'),
-    _pick('view'), _pick('expr'), _pick('lightLearn')
-  ].filter(Boolean).map(_norm);
-  p.push(...scene);
+  // シーン系（選択分）
+  p.push(
+    ...[
+      _pick('bg'), _pick('pose'), _pick('comp'),
+      _pick('view'), _pick('expr'), _pick('lightLearn')
+    ].filter(Boolean).map(_norm)
+  );
 
   // 固定アクセ（1種 + 色）
   {
     const accSel = (document.getElementById('learn_acc')?.value || "").trim();
-    const accTag = toTag(accSel);
-    const accClr = _tagTxt('tag_learnAcc');
+    const accTag = _to(accSel);
+    const accClr = _tag('tag_learnAcc');
     if (accTag) p.push(accClr ? `${accClr} ${accTag}` : accTag);
   }
 
@@ -4279,43 +4360,38 @@ function buildOneLearning(extraSeed = 0){
   const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
   if (nsfwOn){
     const take = id => _pick(id);
-    const add = [take('nsfwL_expo'), take('nsfwL_underwear'), take('nsfwL_outfit'),
-                 take('nsfwL_expr'), take('nsfwL_situ'), take('nsfwL_light'),
-                 take('nsfwL_pose'), take('nsfwL_acc'), take('nsfwL_body'), take('nsfwL_nipple')]
-                 .filter(Boolean).map(_norm);
+    const add = [
+      take('nsfwL_expo'), take('nsfwL_underwear'), take('nsfwL_outfit'),
+      take('nsfwL_expr'), take('nsfwL_situ'), take('nsfwL_light'),
+      take('nsfwL_pose'), take('nsfwL_acc'), take('nsfwL_body'), take('nsfwL_nipple')
+    ].filter(Boolean).map(_norm);
 
-    // pair後の「色 + 名詞」は保護しつつ SFW服を掃除（関数が無ければフォールバック）
-    const outfitFixed = new Set(
-      p.filter(s => /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+\S/i.test(String(s)))
-       .map(_norm)
-    );
+    // SFW服の掃除（関数があれば優先・無ければ簡易版）
     if (typeof stripSfwWearWhenNSFW==='function'){
-      p = stripSfwWearWhenNSFW(p, outfitFixed);
+      p = stripSfwWearWhenNSFW(p);
     } else {
       const CLOTH_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
       const COLOR_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+(top|bottom|dress|shoes)\b/i;
       const SHOES_RE  = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
       p = p.filter(s=>{
         const x = String(s);
-        if (outfitFixed.has(_norm(x))) return true;
         if (COLOR_RE.test(x)) return false;
         if (CLOTH_RE.test(x)) return false;
         if (SHOES_RE.test(x)) return false;
         return true;
       });
     }
-
     p.push(...add);
     p = p.filter(t => String(t).toUpperCase() !== "NSFW");
     p.unshift("NSFW");
   }
 
-  // JSONカテゴリで 1カテゴリ=1つ（足りなければ辞書デフォ補完）
+  // —— ここが肝：辞書カテゴリで 1カテゴリ=1つ（不足は辞書デフォ補完）——
   if (typeof enforceSingletonByCategory==='function'){
     p = enforceSingletonByCategory(p, { addDefaults: true });
   }
 
-  // 仕上げ：色の単独掃除→排他/順序→背景/ライトの単一化
+  // 仕上げ：色の単独掃除 → 排他/順序 → 背景/ライト単一化
   if (typeof dropBareColors==='function')           p = dropBareColors(p);
   if (typeof fixExclusives==='function')            p = fixExclusives(p);
   if (typeof ensurePromptOrder==='function')        p = ensurePromptOrder(p);
@@ -4323,15 +4399,28 @@ function buildOneLearning(extraSeed = 0){
   if (typeof enforceSingleBackground==='function')  p = enforceSingleBackground(p);
   if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
 
-  // 固定タグ（学習タブの固定）を先頭に付ける
-  const fixed = (typeof getFixedLearn === 'function') ? (getFixedLearn() || []) : [];
-  if (fixed.length){
-    const f = fixed.map(t => toTag(t)).filter(Boolean).map(_norm);
-    p = [...f, ...p];
+  // 固定タグ（学習タブの固定）を先頭に
+  if (typeof getFixedLearn === 'function'){
+    const fixed = getFixedLearn() || [];
+    if (fixed.length){
+      const f = fixed.map(_to).filter(Boolean).map(_norm);
+      p = [...f, ...p];
+    }
   }
 
-  // 最終：強力重複除去（固定タグも含めて一掃）
-  p = dedupeStable(p);
+  // 最終：強力重複除去（toTag 同一視）
+  if (typeof dedupeStable==='function'){
+    p = dedupeStable(p); // 既存ヘルパがあるなら採用
+  } else {
+    const seen = new Set(), out = [];
+    for (const t of p){
+      const k = _to(t);
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push(k);
+    }
+    p = out;
+  }
 
   // seed / neg
   const seed = (typeof seedFromName === 'function')
