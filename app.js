@@ -4290,39 +4290,29 @@ function _labelToTag(el){
   return String(raw).trim().toLowerCase();
 }
 
-// scroller から “1件だけ” 選択を取得（英語タグで返す・chip/ラジオ両対応）
+// scroller から “1件だけ” 選択を取得（英語タグ優先）
 function pickOneFromScroller(rootId){
   const root = document.getElementById(rootId);
   if (!root) return "";
 
-  // 1) chip系（クラス名は広めに対応）
-  const chip =
-    root.querySelector('.chip.on, .chip.selected, .wm-item.on, .wm-item.is-selected');
-  if (chip) return _labelToTag(chip);
+  // 優先順で 1 つ拾う
+  const q =
+    root.querySelector('.chip.on') ||                 // chip
+    root.querySelector('.wm-item.is-selected') ||     // 単語モードカード
+    root.querySelector('[aria-selected="true"]') ||
+    root.querySelector('[data-selected="true"]') ||
+    root.querySelector('.selected,.active,.sel,.option.selected,.item.selected') ||
+    root.querySelector('input[type=radio]:checked') || // ラジオ（保険）
+    root.querySelector('input[type=checkbox]:checked'); // チェック（保険）
 
-  // 2) ARIAや data-selected 系
-  const aria =
-    root.querySelector('[role="option"][aria-selected="true"],' +
-                       '[aria-checked="true"],[aria-pressed="true"],' +
-                       '[data-selected="true"]');
-  if (aria) return _labelToTag(aria);
+  if (!q) return "";
 
-  // 3) 汎用 selected 風クラス
-  const klass =
-    root.querySelector('.selected, .active, .sel, .current, .chosen, .option.selected, .item.selected');
-  if (klass) return _labelToTag(klass);
-
-  // 4) ラジオ（隣接ラベル or 自身の value）
-  const r = root.querySelector('input[type=radio]:checked');
-  if (r){
-    // label が直後にある or 祖先 label のどちらもケア
-    const lab = (r.nextElementSibling && r.nextElementSibling.tagName === 'LABEL')
-      ? r.nextElementSibling
-      : r.closest('label');
-    return _labelToTag(lab) || _labelToTag(r);
+  // ラジオ/チェックボックスなら隣の label も見る
+  if (q.tagName === 'INPUT') {
+    const lab = q.nextElementSibling;
+    return _toEnTagFromEl(lab) || _toEnTagFromEl(q);
   }
-
-  return "";
+  return _toEnTagFromEl(q);
 }
 
 // scroller から “複数” 選択を取得（英語タグの配列で返す）
