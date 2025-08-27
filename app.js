@@ -4275,32 +4275,50 @@ const norm = (t)=> (typeof normalizeTag==='function') ? normalizeTag(String(t||"
 const textOf = (id)=> (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
 const checked = (id)=> !!document.getElementById(id)?.checked;
 
-// data-en / data-tag を優先してテキスト抽出
+// ▼テキスト→英語タグ化（data-en 優先）の共通ヘルパ
 function _labelToTag(el){
   if (!el) return "";
-  const en = el.getAttribute?.("data-en") || el.getAttribute?.("data-tag") || "";
-  const raw = (el.textContent || "").trim();
-  return norm(en || raw);
+  const en = (el.dataset && (el.dataset.en || el.getAttribute?.("data-en"))) || "";
+  const raw = en || el.value || el.textContent || "";
+  // 既存の toTag / norm があれば尊重
+  if (typeof toTag === "function") return toTag(raw);
+  if (typeof norm  === "function") return norm(String(raw).trim());
+  return String(raw).trim().toLowerCase();
 }
 
-// scroller から “1件だけ” 選択を取得（英語タグで返す）
+// scroller から “1件だけ” 選択を取得（英語タグで返す・chip/ラジオ両対応）
 function pickOneFromScroller(rootId){
   const root = document.getElementById(rootId);
   if (!root) return "";
-  const q = root.querySelector(
-    '[role="option"][aria-selected="true"],' +
-    '[aria-checked="true"],[aria-pressed="true"],' +
-    '[data-selected="true"],' +
-    '.selected,.active,.sel,.option.selected,.item.selected,' +
-    'input[type=radio]:checked'
-  );
-  if (!q) return "";
-  // ラジオの場合は隣接ラベルも見る
-  if (q.tagName === 'INPUT' && q.type === 'radio') {
-    const lab = q.nextElementSibling;
-    return _labelToTag(lab) || norm(q.value);
+
+  // 1) chip系（クラス名は広めに対応）
+  const chip =
+    root.querySelector('.chip.on, .chip.selected, .wm-item.on, .wm-item.is-selected');
+  if (chip) return _labelToTag(chip);
+
+  // 2) ARIAや data-selected 系
+  const aria =
+    root.querySelector('[role="option"][aria-selected="true"],' +
+                       '[aria-checked="true"],[aria-pressed="true"],' +
+                       '[data-selected="true"]');
+  if (aria) return _labelToTag(aria);
+
+  // 3) 汎用 selected 風クラス
+  const klass =
+    root.querySelector('.selected, .active, .sel, .current, .chosen, .option.selected, .item.selected');
+  if (klass) return _labelToTag(klass);
+
+  // 4) ラジオ（隣接ラベル or 自身の value）
+  const r = root.querySelector('input[type=radio]:checked');
+  if (r){
+    // label が直後にある or 祖先 label のどちらもケア
+    const lab = (r.nextElementSibling && r.nextElementSibling.tagName === 'LABEL')
+      ? r.nextElementSibling
+      : r.closest('label');
+    return _labelToTag(lab) || _labelToTag(r);
   }
-  return _labelToTag(q);
+
+  return "";
 }
 
 // scroller から “複数” 選択を取得（英語タグの配列で返す）
