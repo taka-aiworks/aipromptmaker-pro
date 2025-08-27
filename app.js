@@ -4569,90 +4569,78 @@ function _norm(t){
   return Array.from(new Set(P));
 } */
 
-// 日本語＋英語混在のラベル（「後半ティーン late teen」など）から
-// 末尾の“英語フレーズ全体”を抽出して正規化する。
+// ===== ラベル正規化：末尾の英語フレーズを抽出して normalize =====
 // 例: "極端な寄り extreme close-up" → "extreme close-up"
+//     "後半ティーン late teen"       → "late teen"
 function toTag(s){
   const x = String(s || "").trim();
   if (!x) return "";
-  if (/^(指定なし|none)$/i.test(x)) return "";  // none系だけ捨てる
+  if (/^(指定なし|none)$/i.test(x)) return ""; // none系は捨てる
 
-  // 英語フレーズがあればそれを取る
-  const m = x.match(/([A-Za-z][A-Za-z0-9_\-]*(?:[ \-][A-Za-z0-9_\-]+)*)/);
-  if (m) return (typeof normalizeTag==='function') ? normalizeTag(m[1]) : m[1].toLowerCase();
-
-  // 英語部分がなければ全体を残す（日本語混ざっても削らない）
-  return (typeof normalizeTag==='function') ? normalizeTag(x) : x.toLowerCase();
+  // 英字で始まる語を含む「末尾フレーズ全体」を保持（スペース/ハイフン/アンダースコア許可）
+  const m = x.match(/([A-Za-z][A-Za-z0-9_\-]*(?:[ \-][A-Za-z0-9_\-]+)*)\s*$/);
+  const tag = m ? m[1] : x;
+  return (typeof normalizeTag === 'function') ? normalizeTag(tag) : tag.toLowerCase();
 }
 
-// scroller の選択テキスト → toTag 経由で英語タグ化
+// ===== scrollerから「選択中の表示テキスト」を取り、toTagで正規化 =====
 function pickOneFromScroller(id){
   const root = document.getElementById(id);
   if (!root) return "";
-  const q = root.querySelector(
-    '.selected, .active, .sel, [aria-selected="true"], [data-selected="true"], ' +
-    'input[type=radio]:checked + label, .option.selected, .item.selected'
-  );
-  return toTag(q?.textContent || "");
+
+  // よくある選択状態（広めにカバー）
+  const q =
+    root.querySelector('.selected, .active, .sel, .current, .chosen, .option.selected, .item.selected') ||
+    root.querySelector('[aria-selected="true"], [data-selected="true"], [aria-pressed="true"]') ||
+    // ラジオ型（label連結 or value）
+    (()=>{
+      const r = root.querySelector('input[type=radio]:checked');
+      if (!r) return null;
+      return (r.nextElementSibling && r.nextElementSibling.tagName === 'LABEL')
+        ? r.nextElementSibling
+        : r;
+    })();
+
+  const raw = q?.textContent || q?.value || "";
+  return toTag(raw);
 }
 
-// （保険）NSFW時に SFW服/色プレース/靴を掃除
-function stripSfwWearWhenNSFW(arr){
-  const CLOTH_RE  = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\s+coat|tank\s+top|camisole|turtleneck|off-shoulder\s+top|crop\s+top|sweatshirt|blazer|skirt|pleated\s+skirt|long\s+skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\s+shorts|dress|one[-\s]?piece|sundress|gown)\b/i;
-  const SHOES_RE  = /\b(shoes|boots|heels|sandals|sneakers|loafers|mary\s+janes|geta|zori)\b/i;
-  const COLOR_PLACE_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+(top|bottom|dress|shoes)\b/i;
-  return (arr || []).filter(s=>{
-    const x = String(s);
-    if (COLOR_PLACE_RE.test(x)) return false;
-    if (CLOTH_RE.test(x))       return false;
-    if (SHOES_RE.test(x))       return false;
+// ===== NSFW選択時に SFW服/色プレース/靴を掃除 =====
+function stripSfwWearWhenNSFW(parts, lockedSet = new Set()){
+  const CLOTH_NOUN_RE = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\s*coat|tank\s*top|camisole|turtleneck|off-shoulder\s*top|crop\s*top|sweatshirt|blazer|skirt|pleated\s*skirt|long\s*skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\s*shorts|dress|one[-\s]?piece|sundress|gown|kimono(?:\s+dress)?|yukata|cheongsam|qipao|swimsuit|bikini|leotard)\b/i;
+  const SHOES_RE      = /\b(shoes|boots|heels|sandals|sneakers|loafers|mary\s*jan(es)?|geta|zori)\b/i;
+  const COLOR_PLACE_RE= /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+\b(top|bottom|dress|shoes)\b/i;
+
+  return (parts||[]).filter(s=>{
+    const t = String(s||"");
+    if (lockedSet.has(toTag(t))) return true; // ロック指定があれば残す
+    if (COLOR_PLACE_RE.test(t)) return false; // 例: "white top"
+    if (CLOTH_NOUN_RE.test(t))  return false; // 服名詞（SFW）
+    if (SHOES_RE.test(t))       return false; // 靴
     return true;
   });
 }
 
-// 服の「実選択」を英語タグで取得（指定なし→空を返す）
-function getOutfitSelectionState(){
-  const pick = (id)=>{
-    const root = document.getElementById(id);
-    if (!root) return "";
-    const q = root.querySelector(
-      '.selected, .active, .sel, [aria-selected="true"], [data-selected="true"], '+
-      'input[type=radio]:checked + label, .option.selected, .item.selected'
-    );
-    return toTag(q?.textContent || "");
-  };
-
-  const isDress   = !!document.getElementById('outfitModeDress')?.checked;
-  const useSkirt  = !!document.getElementById('bottomCat_skirt')?.checked;
-
-  const top    = isDress ? "" : pick('outfit_top');
-  const dress  = isDress ? pick('outfit_dress') : "";
-  const bottom = isDress ? "" : (useSkirt ? pick('outfit_skirt') : pick('outfit_pants'));
-  const shoes  = pick('outfit_shoes');
-
-  return { isDress, top, bottom, dress, shoes };
-}
-
-/* ====================== 撮影モード：置き換え（修正版） ====================== */
+// ===== 撮影モード：ビルド =====
 function pmBuildOne(){
   const norm   = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
   const textOf = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
-  const pick   = id => toTag(pickOneFromScroller(id));
+  const pick   = id => pickOneFromScroller(id); // 返り値は既に toTag 済み
 
+  // 先頭固定
   let p = ["solo"];
 
-  // 基本情報（未選択＝“指定なし none”なら空）
-  p.push(
-    ...[
-      pick('bf_age'),
-      pick('bf_gender'),
-      pick('bf_body'),
-      pick('bf_height'),
-      pick('hairStyle'),
-      pick('eyeShape'),
-      toTag(textOf('tagH')), toTag(textOf('tagE')), toTag(textOf('tagSkin'))
-    ].filter(Boolean)
-  );
+  // 基本情報（すべて英語抽出/toTag）
+  const basics = [
+    pick('bf_age'),
+    pick('bf_gender'),
+    pick('bf_body'),
+    pick('bf_height'),
+    pick('hairStyle'),
+    pick('eyeShape'),
+    toTag(textOf('tagH')), toTag(textOf('tagE')), toTag(textOf('tagSkin')),
+  ].filter(Boolean);
+  p.push(...basics);
 
   // 撮影で確定のシーン
   const bg    = pick('pl_bg');
@@ -4662,13 +4650,16 @@ function pmBuildOne(){
   const exprS = pick('pl_expr');
   const liteS = pick('pl_light');
 
-  const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
+  // SFWデフォ表情/光
   let expr = exprS || "neutral expression";
   let lite = liteS || "soft lighting";
 
-  // NSFW 選択
-  let nsfwSelected = [];
+  // NSFW on/off
+  const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
+
+  // --- NSFW 選択の取得 ---
   let pickedExpo="", pickedUnder="", pickedOutfit="";
+  let nsfwSelected = [];
   if (nsfwOn){
     pickedExpo   = pick('pl_nsfw_expo');
     pickedUnder  = pick('pl_nsfw_underwear');
@@ -4684,42 +4675,32 @@ function pmBuildOne(){
 
     if (ex2) expr = ex2;
     if (li2) lite = li2;
-
     nsfwSelected = [pickedExpo, pickedUnder, pickedOutfit, situ, po2, ac2, bo2, nip].filter(Boolean);
   }
 
-  // 服：SFWかNSFWかで分岐
-  const sel = getOutfitSelectionState();
-
-  const isNSFWWearLike = !!(pickedExpo || pickedUnder || pickedOutfit);
-  if (!isNSFWWearLike){
-    // SFW：まず名詞（選ばれている物だけ）
-    if (sel.top)    p.push(sel.top);
-    if (sel.dress)  p.push(sel.dress);
-    if (sel.bottom) p.push(sel.bottom);
-    if (sel.shoes)  p.push(sel.shoes);
-
-    // 次に色（名詞があるものだけ付ける）
-    injectWearColorPlaceholders(p, sel);
-
-    // 名詞と色を結合
-    if (typeof pairWearColors==='function') p = pairWearColors(p);
+  // --- 服（SFW vs NSFW） ---
+  const useNSFWWear = !!(pickedExpo || pickedUnder || pickedOutfit);
+  if (useNSFWWear){
+    // 露出/下着/衣装が一つでも選ばれていれば、SFW服は採用しない＆掃除
+    p = stripSfwWearWhenNSFW(p, new Set());
+    p.push(...nsfwSelected);
   } else {
-    // NSFW：SFW服を掃除してから NSFW衣装類を入れる
-    p = stripSfwWearWhenNSFW(p);
-    if (nsfwSelected.length) p.push(...nsfwSelected);
+    // SFW服：名詞 → 色プレース → ペアリング
+    if (typeof getOutfitNouns==='function')               p.push(...getOutfitNouns());
+    if (typeof injectWearColorPlaceholders==='function')  injectWearColorPlaceholders(p);
+    if (typeof pairWearColors==='function')               p = pairWearColors(p);
   }
 
-  // シーン確定
+  // シーン確定（日本語混入は pick が排除済み）
   p.push(...[bg, comp, pose, view, expr, lite].filter(Boolean));
 
   // 単独色掃除 → 排他/順序
-  if (typeof dropBareColors==='function') p = dropBareColors(p);
-  if (typeof fixExclusives==='function')        p = fixExclusives(p);
-  if (typeof ensurePromptOrder==='function')    p = ensurePromptOrder(p);
-  if (typeof enforceHeadOrder==='function')     p = enforceHeadOrder(p);
-  if (typeof enforceSingleBackground==='function') p = enforceSingleBackground(p);
-  if (typeof unifyLightingOnce==='function')    p = unifyLightingOnce(p);
+  if (typeof dropBareColors==='function')            p = dropBareColors(p);
+  if (typeof fixExclusives==='function')             p = fixExclusives(p);
+  if (typeof ensurePromptOrder==='function')         p = ensurePromptOrder(p);
+  if (typeof enforceHeadOrder==='function')          p = enforceHeadOrder(p);
+  if (typeof enforceSingleBackground==='function')   p = enforceSingleBackground(p);
+  if (typeof unifyLightingOnce==='function')         p = unifyLightingOnce(p);
 
   // 固定タグ（先頭）
   const fixed = (document.getElementById('fixedPlanner')?.value || "").trim();
@@ -4745,6 +4726,7 @@ function pmBuildOne(){
   if (addNeg) negParts.push(addNeg);
   const neg = negParts.filter(Boolean).join(", ");
 
+  // seed
   const name = (document.getElementById('charName')?.value || "");
   const seed = (typeof seedFromName==='function') ? seedFromName(name,1) : 1;
 
