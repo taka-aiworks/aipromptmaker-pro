@@ -1452,29 +1452,36 @@ function radioList(el, list, name, {checkFirst = true} = {}) {
 
 const getOne  = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
 
-// === 複数値を取得（scroller の chip.on や選択済みボタンに対応）===
+// === 複数値を取得（scroller / chip / 単語カード / ARIA / 旧radio/checkbox 全対応）===
 function getMany(idOrName){
-  // 1) id 指定（学習モードの scroller は id がある）
+  const norm = s => (typeof toTag === 'function' ? toTag(String(s||'')) : String(s||'').trim());
+
+  // 1) id 指定（学習・撮影・量産の scroller は id あり）
   const root = document.getElementById(idOrName);
   if (root) {
-    // 学習/撮影/量産の scroller で選択状態になり得るものを広く拾う
     const nodes = root.querySelectorAll(
-      '.chip.on,' +                     // chip 方式
-      '.wm-item.is-selected,' +         // 単語モードカード方式（必要なら）
+      '.chip.on,' +                     // chip方式
+      '.wm-item.is-selected,' +         // 単語モードカード
       '[aria-selected="true"],' +       // ARIA
       '[data-selected="true"],' +
-      '.selected,.active,.sel,' +
+      '.selected,.active,.sel,' +       // 状態クラス
       '.option.selected,.item.selected,' +
-      'input[type=checkbox]:checked,' + // 保険
-      'input[type=radio]:checked'       // 保険
+      'input[type="checkbox"]:checked,' + // 保険
+      'input[type="radio"]:checked'       // 保険
     );
-    return Array.from(nodes).map(_toEnTagFromEl).filter(Boolean);
+    const out = Array.from(nodes).map(_toEnTagFromEl).map(norm).filter(Boolean);
+
+    // 重複除去（DOM順を維持）
+    const seen = new Set();
+    return out.filter(t => (seen.has(t) ? false : (seen.add(t), true)));
   }
 
-  // 2) name 指定（旧: ラジオ/チェックボックス用）
+  // 2) name 指定（旧: ラジオ/チェックボックス）
   const els = document.querySelectorAll(`input[name="${idOrName}"]:checked`);
   if (els?.length) {
-    return Array.from(els).map(_toEnTagFromEl).filter(Boolean);
+    const out = Array.from(els).map(_toEnTagFromEl).map(norm).filter(Boolean);
+    const seen = new Set();
+    return out.filter(t => (seen.has(t) ? false : (seen.add(t), true)));
   }
 
   return [];
