@@ -1452,38 +1452,25 @@ function radioList(el, list, name, {checkFirst = true} = {}) {
 
 const getOne  = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
 
-// === 複数値を取得（scroller / chip / 単語カード / ARIA / 旧radio/checkbox 全対応）===
+// 複数値を取得（chip.on / is-selected / ARIA / 入力系）
 function getMany(idOrName){
-  const norm = s => (typeof toTag === 'function' ? toTag(String(s||'')) : String(s||'').trim());
-
-  // 1) id 指定（学習・撮影・量産の scroller は id あり）
   const root = document.getElementById(idOrName);
   if (root) {
     const nodes = root.querySelectorAll(
-      '.chip.on,' +                     // chip方式
-      '.wm-item.is-selected,' +         // 単語モードカード
-      '[aria-selected="true"],' +       // ARIA
+      '.chip.on,' +
+      '.wm-item.is-selected,' +
+      '[aria-selected="true"],' +
       '[data-selected="true"],' +
-      '.selected,.active,.sel,' +       // 状態クラス
+      '.selected,.active,.sel,' +
       '.option.selected,.item.selected,' +
-      'input[type="checkbox"]:checked,' + // 保険
-      'input[type="radio"]:checked'       // 保険
+      'input[type=checkbox]:checked,' +
+      'input[type=radio]:checked'
     );
-    const out = Array.from(nodes).map(_toEnTagFromEl).map(norm).filter(Boolean);
-
-    // 重複除去（DOM順を維持）
-    const seen = new Set();
-    return out.filter(t => (seen.has(t) ? false : (seen.add(t), true)));
+    return Array.from(nodes).map(_toEnTagFromEl).filter(Boolean);
   }
-
-  // 2) name 指定（旧: ラジオ/チェックボックス）
+  // name=... （旧ラジオ/チェックボックス）
   const els = document.querySelectorAll(`input[name="${idOrName}"]:checked`);
-  if (els?.length) {
-    const out = Array.from(els).map(_toEnTagFromEl).map(norm).filter(Boolean);
-    const seen = new Set();
-    return out.filter(t => (seen.has(t) ? false : (seen.add(t), true)));
-  }
-
+  if (els?.length) return Array.from(els).map(_toEnTagFromEl).filter(Boolean);
   return [];
 }
 
@@ -3878,40 +3865,6 @@ function fillRemainder(rows, groupTags, fallbackTag){
 }
 window.fillRemainder = fillRemainder;
 
-// ▼ 正規化：辞書準拠（profileは“side”に吸収しない／light gray → gray_seamless）
-function normalizeTag(t){
-  if (!t) return "";
-  const raw = String(t).trim();
-
-  // --- NSFW は例外で大文字維持 ---
-  if (/^nsfw$/i.test(raw)) return "NSFW";
-
-  const s = raw.toLowerCase();
-
-  // ---- view ----
-  if (s==="3/4 view" || s==="three quarters view") return "three-quarters view";
-  if (s==="profile") return "profile view"; // 吸収せず表記だけ統一
-
-  // ---- composition ----
-  if (s==="close up" || s==="closeup") return "close-up";
-  if (s==="bust shot" || s==="bust-up" || s==="bust up") return "bust";
-  if (s==="upper-body" || s==="upperbody") return "upper body";
-
-  // ---- background（snake_caseへ統一）----
-  if (s==="plain background")  return "plain_background";
-  if (s==="solid background")  return "solid_background";
-  if (s==="studio background") return "studio_background";
-  if (s==="white background")  return "white_background";
-  if (s==="white seamless")    return "white_seamless";
-  if (s==="light gray background" || s==="light grey background") return "gray_seamless";
-
-  // ---- lighting ----
-  if (s==="rim lighting") return "rim light";        // 辞書：rim light
-  if (s==="back light" || s==="back-lighting") return "backlighting";
-  if (s==="studio lighting") return "flat studio lighting"; // 辞書：flat studio lighting
-
-  return s;
-}
 
 
 // 追加：タグ配列をホワイトリストで絞る共通関数
@@ -4239,6 +4192,18 @@ function buildOneLearning(extraSeed = 0){
 }
 
 
+// 1枚テスト（学習タブのカード）への出力
+document.getElementById('btnOneLearn')?.addEventListener('click', () => {
+  const { pos, neg } = buildOneLearning(1);
+  const all = `${pos.join(", ")}${neg ? `\n\nNegative prompt: ${neg}` : ""}`;
+  const $ = (id)=>document.getElementById(id);
+  $('#outLearnTestAll').textContent    = all;
+  $('#outLearnTestPrompt').textContent = pos.join(", ");
+  $('#outLearnTestNeg').textContent    = neg || "";
+});
+
+
+
 // 背景など“グループ内は1つだけ”にする共通ユーティリティ
 function enforceSingleFromGroup(p, group, fallback){
   if (!Array.isArray(p) || !Array.isArray(group) || group.length===0) return p || [];
@@ -4295,74 +4260,57 @@ function _labelToTag(el){
   return String(raw).trim().toLowerCase();
 }
 
-// ===== scroller から “1件だけ” 選択を取得（英語タグ優先・堅牢版） =====
-function pickOneFromScroller(rootId){
-  const root = typeof rootId === "string" ? document.getElementById(rootId) : rootId;
-  if (!root) return "";
-
-  // 優先順で 1 つ拾う（chip系 → 単語モードカード → ARIA/data → stateクラス → 入力系）
-  const q =
-    root.querySelector('.chip.on') ||
-    root.querySelector('.wm-item.is-selected') ||
-    root.querySelector('[aria-selected="true"]') ||
-    root.querySelector('[data-selected="true"]') ||
-    root.querySelector('.selected, .active, .sel, .option.selected, .item.selected') ||
-    root.querySelector('input[type="radio"]:checked') ||
-    root.querySelector('input[type="checkbox"]:checked');
-
-  if (!q) return "";
-
-  // input（radio/checkbox）は隣の label に英語タグがあるケースが多いので優先して読む
-  if (q.tagName === 'INPUT') {
-    const lab = q.nextElementSibling;
-    return _toEnTagFromEl(lab) || _toEnTagFromEl(q) || "";
-  }
-  return _toEnTagFromEl(q) || "";
+// 英語タグへ正規化（空白/アンダースコア/余計な空白を整える）
+function normalizeTag(t){
+  return String(t||"")
+    .replace(/\s+/g, ' ')
+    .replace(/\s*_\s*/g, ' ')
+    .trim();
 }
 
-// ===== 要素から英語タグを抽出（data-en / .wm-en / code.tag を優先）=====
+// 任意の文字列→英語タグ（日本語→辞書化してるならここで対応。無ければ normalize だけ）
+function toTag(txt){
+  return normalizeTag(txt);
+}
+
+// 要素から“英語タグ”を安全に取り出す総合関数
 function _toEnTagFromEl(el){
-  if (!el) return "";
-  try {
-    const pickTexts = [];
-    // data-* 優先
-    if (el.dataset) {
-      if (el.dataset.en)  pickTexts.push(el.dataset.en);
-      if (el.dataset.tag) pickTexts.push(el.dataset.tag);
+  if(!el) return "";
+
+  // 1) data-en があれば最優先
+  const den = el.getAttribute?.('data-en');
+  if (den) return normalizeTag(den);
+
+  // 2) ボタン/入力の value
+  const val = (el.value || el.getAttribute?.('value') || "");
+  if (val && /[A-Za-z]/.test(val)) return normalizeTag(val);
+
+  // 3) 単語モードカード: <small class="wm-en">english</small>
+  const enSmall = el.querySelector?.('.wm-en')?.textContent;
+  if (enSmall) return normalizeTag(enSmall);
+
+  // 4) <code class="tag">english</code> を拾う
+  const codeTag = el.querySelector?.('code.tag, code')?.textContent;
+  if (codeTag) return normalizeTag(codeTag);
+
+  // 5) ラベル連結: <input ...><label data-en="...">..</label>
+  if (el.tagName === 'INPUT'){
+    const lab = el.nextElementSibling;
+    if (lab){
+      const labDen = lab.getAttribute?.('data-en');
+      if (labDen) return normalizeTag(labDen);
+      const labSmall = lab.querySelector?.('.wm-en')?.textContent;
+      if (labSmall) return normalizeTag(labSmall);
+      const labCode  = lab.querySelector?.('code.tag, code')?.textContent;
+      if (labCode) return normalizeTag(labCode);
+      const labTxt = lab.textContent?.trim();
+      if (labTxt) return toTag(labTxt);
     }
-    // 属性でも拾う
-    if (el.getAttribute) {
-      const de = el.getAttribute('data-en');
-      const dt = el.getAttribute('data-tag');
-      if (de) pickTexts.push(de);
-      if (dt) pickTexts.push(dt);
-    }
-    // 単語モード構造（小さな英語行）
-    const wmEn = el.querySelector?.('.wm-en')?.textContent;
-    if (wmEn) pickTexts.push(wmEn);
-    // code.tag（色タグなど）
-    const codeTag = el.querySelector?.('code.tag')?.textContent;
-    if (codeTag) pickTexts.push(codeTag);
-    // 候補が無ければ value / textContent を最後に使う
-    if ('value' in el && el.value) pickTexts.push(String(el.value));
-    if (el.textContent) pickTexts.push(el.textContent);
-
-    // 文字列を整形
-    const cleaned = pickTexts
-      .map(s => String(s || '').trim())
-      .filter(Boolean);
-
-    if (!cleaned.length) return "";
-
-    // “英語タグっぽい”ものを優先（英数・記号中心）
-    const enLike = cleaned.find(s => /^[a-z0-9 _\-()+:]+$/i.test(s)) || cleaned[0];
-
-    // 最終正規化（toTag があれば使用、無ければ軽く整形）
-    if (typeof toTag === 'function') return toTag(enLike);
-    return enLike.replace(/\s+/g, ' ').trim();
-  } catch {
-    return "";
   }
+
+  // 6) テキスト最後の砦
+  const txt = el.textContent || "";
+  return toTag(txt);
 }
 
 // scroller から “複数” 選択を取得（英語タグの配列で返す）
@@ -4678,41 +4626,29 @@ function _norm(t){
 // =====================================================
 // 共通：ラベル → 英語タグ抽出＆正規化 / scroller選択取得
 // =====================================================
-function toTag(s){
-  const x = String(s || "").trim();
-  if (!x) return "";
-  // 「指定なし / none」は捨てる
-  if (/^(指定なし|none)$/i.test(x)) return "";
 
-  // 後方の“英語で始まるフレーズ全体”を抜き出す
-  // 例: "極端な寄り extreme close-up" → "extreme close-up"
-  const m = x.match(/([A-Za-z][A-Za-z0-9_\-]*(?:[ \-][A-Za-z0-9_\-]+)*)\s*$/);
-  const tag = m ? m[1] : x;
-
-  return (typeof normalizeTag === 'function')
-    ? normalizeTag(tag)
-    : tag.toLowerCase();
-}
-
-function pickOneFromScroller(id){
-  const root = document.getElementById(id);
+// scroller から “1件だけ” 選択を取得（英語タグ優先・堅牢版）
+function pickOneFromScroller(rootId){
+  const root = typeof rootId === "string" ? document.getElementById(rootId) : rootId;
   if (!root) return "";
 
-  // よくある選択状態を広めにカバー
-  const el =
-    root.querySelector('.selected, .active, .sel, .current, .chosen, .option.selected, .item.selected') ||
-    root.querySelector('[aria-selected="true"], [data-selected="true"], [aria-pressed="true"]') ||
-    (()=>{
-      const r = root.querySelector('input[type=radio]:checked');
-      if (!r) return null;
-      // label 連結の場合はそのテキストを優先、無ければ value
-      return (r.nextElementSibling && r.nextElementSibling.tagName === 'LABEL')
-        ? r.nextElementSibling
-        : r;
-    })();
+  // chip系 → 単語カード → ARIA/data → stateクラス → 入力系 の優先順で1つ
+  const q =
+    root.querySelector('.chip.on') ||
+    root.querySelector('.wm-item.is-selected') ||
+    root.querySelector('[aria-selected="true"]') ||
+    root.querySelector('[data-selected="true"]') ||
+    root.querySelector('.selected, .active, .sel, .option.selected, .item.selected') ||
+    root.querySelector('input[type="radio"]:checked') ||
+    root.querySelector('input[type="checkbox"]:checked');
 
-  const raw = el?.textContent || el?.value || "";
-  return toTag(raw);
+  if (!q) return "";
+
+  if (q.tagName === 'INPUT') {
+    const lab = q.nextElementSibling;
+    return _toEnTagFromEl(lab) || _toEnTagFromEl(q) || "";
+  }
+  return _toEnTagFromEl(q) || "";
 }
 
 // ===== NSFW選択時に SFW服/色プレース/靴を掃除 =====
