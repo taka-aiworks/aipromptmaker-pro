@@ -6734,6 +6734,8 @@ function initAll(){
   bindLearnTest();
   bindLearnBatch();
   bindGASTools();
+  // 画面初期化のどこか（DOMContentLoaded等）で必ず1回コール
+  initTagDictionaries();
 
   // ← ここでは “服系のバインド” は呼ばない（UIがまだ無い）
 
@@ -6763,8 +6765,7 @@ function initAll(){
     initSkinTone();
     initNSFWStatusBadge();
     initCopyTripletAllModes();
-    // 画面初期化のどこか（DOMContentLoaded等）で必ず1回コール
-    initTagDictionaries();
+
 
 
     // 5) 量産タブのイベント等はUIが揃ってから
