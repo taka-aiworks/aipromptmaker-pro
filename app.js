@@ -756,11 +756,65 @@ function buildBatchLearning(n){
   const rows = [];
   const wantCount = Math.max(1, Number(n)||1);
 
-  const _to    = t => (typeof toTag==='function' ? toTag(t) : String(t||"").trim());
+  // --- 共通ショートカット ---
+  const _to    = t => (typeof toEnTagStrict==='function' ? toEnTagStrict(t) : (typeof toTag==='function' ? toTag(t) : String(t||"").trim()));
   const _norm  = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
   const _text  = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
   const _pick  = id => _to(typeof pickOneFromScroller==='function' ? pickOneFromScroller(id) : "");
   const _tag   = id => _to(_text(id));
+
+  // --- ローカル整形ヘルパ ---
+  const stripSeparatesWhenDressPresent = (arr)=>{
+    const p = Array.isArray(arr) ? arr.slice() : [];
+    const dressRe = /\b(dress|one[-\s]?piece|qipao|cheongsam|yukata|kimono(?:\s+dress)?|gown|sundress|hanbok)\b/i;
+    if (!p.some(s=>dressRe.test(String(s||"")))) return p;
+    const COLOR_PLACE_RE = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold|emerald)\b\s+(top|bottom)/i;
+    const SEP_RE = /\b(top|bottom|skirt|pants|shorts|jeans)\b/i;
+    return p.filter(s=>{
+      const x = String(s||"");
+      if (COLOR_PLACE_RE.test(x)) return false;
+      if (SEP_RE.test(x))        return false;
+      return true;
+    });
+  };
+
+  const finalize = (p)=>{
+    // カテゴリ単一化（後勝ち＝NSFW優先 / 不足は補完）
+    if (typeof enforceSingletonByCategory==='function'){
+      p = enforceSingletonByCategory(p, { addDefaults: true, keep: 'last' });
+    }
+
+    // ワンピ時に上下＋色プレース掃除
+    p = stripSeparatesWhenDressPresent(p);
+
+    // 仕上げ
+    if (typeof dropBareColors==='function')           p = dropBareColors(p);
+    if (typeof fixExclusives==='function')            p = fixExclusives(p);
+    if (typeof ensurePromptOrder==='function')        p = ensurePromptOrder(p);
+    if (typeof enforceHeadOrder==='function')         p = enforceHeadOrder(p);
+    if (typeof enforceSingleBackground==='function')  p = enforceSingleBackground(p);
+    if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
+
+    // 固定タグで先頭が崩れたら再矯正
+    if (typeof enforceHeadOrder==='function')         p = enforceHeadOrder(p);
+
+    // soloを必ず先頭に
+    if (p[0] !== "solo"){
+      const idx = p.indexOf("solo");
+      if (idx > 0){ p.splice(idx,1); p.unshift("solo"); }
+    }
+
+    // 重複除去（toTag同一視）
+    if (typeof dedupeStable==='function') return dedupeStable(p);
+    const seen = new Set(), out = [];
+    for (const t of p){
+      const k = _to(t);
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push(k);
+    }
+    return out;
+  };
 
   for (let i=0;i<wantCount;i++){
     let p = ["solo"];
@@ -815,7 +869,7 @@ function buildBatchLearning(n){
         p = stripSfwWearWhenNSFW(p);
       } else {
         const CLOTH_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
-        const COLOR_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+(top|bottom|dress|shoes)\b/i;
+        const COLOR_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange|emerald)\b\s+(top|bottom|dress|shoes)\b/i;
         const SHOES_RE  = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
         p = p.filter(s=>{
           const x = String(s);
@@ -832,19 +886,6 @@ function buildBatchLearning(n){
       p.unshift("NSFW");
     }
 
-    // —— 辞書カテゴリで 1カテゴリ=1つ（不足は辞書デフォ補完）——
-    if (typeof enforceSingletonByCategory==='function'){
-      p = enforceSingletonByCategory(p, { addDefaults: true });
-    }
-
-    // 仕上げ：色の単独掃除 → 排他/順序 → 背景/ライト単一化
-    if (typeof dropBareColors==='function')           p = dropBareColors(p);
-    if (typeof fixExclusives==='function')            p = fixExclusives(p);
-    if (typeof ensurePromptOrder==='function')        p = ensurePromptOrder(p);
-    if (typeof enforceHeadOrder==='function')         p = enforceHeadOrder(p);
-    if (typeof enforceSingleBackground==='function')  p = enforceSingleBackground(p);
-    if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
-
     // 固定タグ（先頭付与）
     {
       const fixed = (document.getElementById('fixedLearn')?.value || "").trim();
@@ -854,19 +895,8 @@ function buildBatchLearning(n){
       }
     }
 
-    // 最終：強力重複除去（toTag 同一視で完全排除）
-    if (typeof dedupeStable==='function') {
-      p = dedupeStable(p);
-    } else {
-      const seen = new Set(), out = [];
-      for (const t of p){
-        const k = _to(t);
-        if (!k || seen.has(k)) continue;
-        seen.add(k);
-        out.push(k);
-      }
-      p = out;
-    }
+    // 最終整形（カテゴリ単一化→ワンピ掃除→排他/順序→ライト統一→重複除去→solo先頭）
+    p = finalize(p);
 
     // ネガ
     const useDefNeg = !!document.getElementById('useDefaultNeg')?.checked;
@@ -877,7 +907,7 @@ function buildBatchLearning(n){
       if (d) negParts.push(d);
     }
     if (addNeg) negParts.push(addNeg);
-    const neg = negParts.filter(Boolean).join(", ");
+    const neg = negParts.filter(Boolean).map(_to).map(_norm).join(", ");
 
     // seed
     const seed = (typeof seedFromName==='function')
