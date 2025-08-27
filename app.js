@@ -340,41 +340,46 @@ function enforceSingletonByCategory(tags, { addDefaults=true }={}){
 }
 
 
-
 // --- 英語タグ強制: 日英混在「白背景 white background」→ "white background" 等に統一 ---
 function toEnTagStrict(t){
-  let s = String(t||"").trim();
+  let s = String(t || "").trim();
   if (!s) return "";
 
-  // もし辞書の双方向マップがあるなら先に使う（任意）
-  // 例: window.TAG_I18N["白背景"] = "plain background" など
-  if (window && window.TAG_I18N && window.TAG_I18N[s]) {
-    s = window.TAG_I18N[s];
+  // i18n辞書（任意）
+  try {
+    if (typeof window !== "undefined" && window.TAG_I18N && window.TAG_I18N[s]) {
+      s = window.TAG_I18N[s];
+    }
+  } catch(_) {}
+
+  // "/" 区切りがあれば最後の要素を使う（例: "悲しみ/sad" → "sad"）
+  if (s.includes("/")) {
+    const parts = s.split("/").map(x => x.trim()).filter(Boolean);
+    if (parts.length) s = parts[parts.length - 1];
   }
 
-  // 「日本語 + 半角スペース + 英語」や「/」区切りに対応して、最後の英語塊を優先
-  // 例: "上を指差す pointing up" → "pointing up"
-  //     "虫の目視点 worm's-eye view" → "worm's-eye view"
-  //     "悲しみ sad" → "sad"
-  //     "白背景 white background" → "white background"
+  // 「日本語 + 半角スペース + 英語」対応：英語塊の最後を採用
+  // 例: "虫の目視点 worm's-eye view" → "worm's-eye view"
   const EN_CHUNK = /[A-Za-z0-9][A-Za-z0-9'’\- ]*/g;
   const chunks = s.match(EN_CHUNK);
   if (chunks && chunks.length) {
     s = chunks[chunks.length - 1].trim();
   } else {
-    // 英語塊が見つからない場合：CJKを削って英字のみを残す（最後の砦）
+    // 英語塊が見つからない場合は CJK をスペースに
+    // CJK統合漢字, 互換, 拡張A(ざっくり), ひらがな, カタカナ, 記号類
     s = s
-      .replace(/[\p{Script=Han}\p{Hiragana}\p{Katakana}ー々〆〇]+/gu, " ")
+      .replace(/[\u3400-\u9FFF\uF900-\uFAFF\u3040-\u309F\u30A0-\u30FF\u3000-\u303F]+/g, " ")
       .replace(/\s{2,}/g, " ")
       .trim();
   }
 
-  // 最後に toTag/normalize 経由で英語タグ形へ（snake/space統一などは既存関数に準拠）
-  s = (typeof toTag === 'function') ? toTag(s) : s;
-  s = (typeof normalizeTag === 'function') ? normalizeTag(s) : s.trim();
+  // 最後に toTag / normalize 経由で英語タグへ
+  if (typeof toTag === "function") s = toTag(s);
+  if (typeof normalizeTag === "function") s = normalizeTag(s);
+  else s = String(s || "").trim();
+
   return s;
 }
-
 
 
 // 文字列→配列共通
