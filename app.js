@@ -370,7 +370,7 @@ function splitTags(v){
     };
 
     const swf = await loadJson('dict/default_sfw.json');
-    const nsf = await loadJson('dicr/default_nsfw.json');
+    const nsf = await loadJson('dict/default_nsfw.json');
 
     const harvest = (obj, key) => {
       const arr = (obj && Array.isArray(obj[key])) ? obj[key] : [];
