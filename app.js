@@ -4260,12 +4260,27 @@ function _labelToTag(el){
   return String(raw).trim().toLowerCase();
 }
 
-// 英語タグへ正規化（StableDiffusion向けにアンダースコアで統一）
+// 英語タグへ正規化（アンカー系だけアンダースコア化）
 function normalizeTag(t){
-  return String(t||"")
-    .trim()
-    .replace(/\s+/g, '_')   // 空白は全部アンダースコア
-    .replace(/_+/g, '_');   // 連続する _ を1つにまとめる
+  let s = String(t||"")
+    .replace(/\s*_\s*/g, " ")   // 余計な _ を一旦スペースに
+    .replace(/\s+/g, " ")       // 連続空白を1つに
+    .trim();
+
+  // “安定させたいアンカー語”だけアンダースコア化
+  const ANCHORS = new Set([
+    "plain background","studio background","solid background",
+    "upper body","full body","bust","waist up","portrait",
+    "centered composition","center composition",
+    "front view","back view","side view","profile view",
+    "three quarters view","three-quarter view","three-quarters view",
+    "eye level","low angle","high angle",
+    "soft lighting","even lighting","normal lighting"
+  ]);
+
+  const k = s.toLowerCase();
+  if (ANCHORS.has(k)) s = k.replace(/ /g, "_");
+  return s;
 }
 
 // 任意の文字列→英語タグ（日本語→辞書化してるならここで対応。無ければ normalize だけ）
