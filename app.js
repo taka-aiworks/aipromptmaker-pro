@@ -1076,6 +1076,30 @@ function buildNeg({useDefault=false, userNeg=""}={}){
 }
 
 
+// ▼ 学習モード：NSFW収集ヘルパ（複数→単一の順で拾う。ID表記ゆれも面倒見る）
+function _collectNSFW(idsOrId){
+  const ids = Array.isArray(idsOrId) ? idsOrId : [idsOrId];
+  let out = [];
+  for (const id of ids){
+    // 1) 複数選択（getMany）があれば最優先
+    if (typeof getMany === 'function'){
+      const many = getMany(id) || [];
+      if (many.length){
+        out.push(...many.map(asTag).filter(Boolean));
+        continue;
+      }
+    }
+    // 2) 単一選択（pickOneFromScroller）でフォールバック
+    if (typeof pickOneFromScroller === 'function'){
+      const one = pickOneFromScroller(id);
+      if (one) out.push(asTag(one));
+    }
+  }
+  return out;
+}
+const _isRating = t => /^R-?1[58]$/i.test(String(t||""));
+
+
 
 
 
@@ -1257,18 +1281,29 @@ function buildBatchLearning(n){
 
     // NSFW（複数選択に対応）
     const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
-    if (nsfwOn){
-      const add = []
-        .concat(
-          _gma('nsfwL_expo'), _gma('nsfwL_underwear'), _gma('nsfwL_outfit'),
-          _gma('nsfwL_expr'), _gma('nsfwL_situ'),      _gma('nsfwL_light'),
-          _gma('nsfwL_pose'), _gma('nsfwL_acc'),       _gma('nsfwL_body'), _gma('nsfwL_nipple')
-        )
-        .map(asTag).filter(Boolean).map(_norm).filter(t=>!_isRating(t));
+   if (nsfwOn){
+     const add = []
+       .concat(
+         _collectNSFW(['nsfwL_expo','nsfwLearn_expo','nsfw_expo']),
+         _collectNSFW(['nsfwL_underwear','nsfwLearn_underwear','nsfw_underwear']),
+         _collectNSFW(['nsfwL_outfit','nsfwLearn_outfit','nsfw_outfit']),
+         _collectNSFW(['nsfwL_expr','nsfwLearn_expr','nsfw_expr']),
+         _collectNSFW(['nsfwL_situ','nsfwLearn_situ','nsfw_situ']),
+         _collectNSFW(['nsfwL_light','nsfwLearn_light','nsfw_light']),
+         _collectNSFW(['nsfwL_pose','nsfwLearn_pose','nsfw_pose']),
+         _collectNSFW(['nsfwL_acc','nsfwLearn_acc','nsfw_acc']),
+         _collectNSFW(['nsfwL_body','nsfwLearn_body','nsfw_body']),
+         _collectNSFW(['nsfwL_nipple','nsfwLearn_nipple','nsfw_nipple'])
+       )
+       .map(t => String(t).trim())
+       .filter(Boolean)
+       .map(normalizeTag ? normalizeTag : (x=>x))
+       .filter(t => !_isRating(t));
+   
+     if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
+     p.push(...add);
+   }
 
-      if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
-      p.push(...add);
-    }
 
     // 共通整形
     p = finalizePromptArray(p);
