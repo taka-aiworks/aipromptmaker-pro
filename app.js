@@ -17,7 +17,7 @@ async function initTagDictionaries(){
     catch(_){ return null; }
   }
   const [sfw, nsfw] = await Promise.all([
-    safeLoad('default_sfw.json'), safeLoad('default_nsfw.json')
+    safeLoad('dict/default_sfw.json'), safeLoad('dict/default_nsfw.json')
   ]);
 
   function addAll(obj, nsKey){
