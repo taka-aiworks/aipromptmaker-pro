@@ -4259,14 +4259,12 @@ function _labelToTag(el){
   return String(raw).trim().toLowerCase();
 }
 
-// 英語タグへ正規化（アンカー系だけアンダースコア化）
 function normalizeTag(t){
   let s = String(t||"")
-    .replace(/\s*_\s*/g, " ")   // 余計な _ を一旦スペースに
-    .replace(/\s+/g, " ")       // 連続空白を1つに
+    .replace(/\s*_\s*/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 
-  // “安定させたいアンカー語”だけアンダースコア化
   const ANCHORS = new Set([
     "plain background","studio background","solid background",
     "upper body","full body","bust","waist up","portrait",
@@ -4274,14 +4272,15 @@ function normalizeTag(t){
     "front view","back view","side view","profile view",
     "three quarters view","three-quarter view","three-quarters view",
     "eye level","low angle","high angle",
-    "soft lighting","even lighting","normal lighting"
+    "soft lighting","even lighting","normal lighting",
+    "neutral expression"              // ← 追加
   ]);
 
   const k = s.toLowerCase();
   if (ANCHORS.has(k)) s = k.replace(/ /g, "_");
   return s;
 }
-
+B
 // 任意の文字列→英語タグ（日本語→辞書化してるならここで対応。無ければ normalize だけ）
 function toTag(txt){
   return normalizeTag(txt);
@@ -4848,7 +4847,7 @@ window._getOutfitNouns = getOutfitNouns; */
 
 
 
-/* ====================== 学習モード：全面置き換え（toTag統一） ====================== */
+/* ====================== 学習モード：全面置き換え（toTag統一 + 補完/掃除） ====================== */
 function buildBatchLearning(n){
   const rows = [];
   const wantCount = Math.max(1, Number(n)||1);
@@ -4861,6 +4860,10 @@ function buildBatchLearning(n){
 
   for (let i=0;i<wantCount;i++){
     let p = ["solo"];
+
+    // 先頭に 1girl / 1boy を自動付与
+    const genderCount = (typeof getGenderCountTag === 'function') ? (getGenderCountTag() || "") : "";
+    if (genderCount) p.push(_norm(genderCount));
 
     // --- 基本情報（英語タグ化） ---
     const basics = [
@@ -4940,6 +4943,29 @@ function buildBatchLearning(n){
       p.unshift("NSFW");
     }
 
+    // === B: アンカー補完（_ と半角空白を同一視）========================
+    {
+      const asText = p.join(", ").toLowerCase().replace(/_/g, ' ');
+
+      const hasView = /\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/.test(asText);
+      if (!hasView) p.push("front view");
+
+      const hasBg = /\b(plain background|studio background|solid background)\b/.test(asText);
+      if (!hasBg) p.push("plain background");
+
+      const hasBody = /\b(upper body|bust|waist up|portrait|full body)\b/.test(asText);
+      if (!hasBody) p.push("upper body");
+
+      const hasExpr = /\b(neutral expression|smiling|serious|determined|slight blush|surprised \(mild\)|pouting \(slight\))\b/.test(asText);
+      if (!hasExpr) p.push("neutral expression");
+
+      const hasLight = /\b(soft lighting|even lighting|normal lighting)\b/.test(asText);
+      if (!hasLight) p.push("soft lighting");
+
+      const hasComp = /\b(centered composition|center composition)\b/.test(asText);
+      if (!hasComp) p.push("centered composition");
+    }
+
     // --- 単独色掃除 → 排他/順序 調整 ---
     if (typeof dropBareColors==='function')           p = dropBareColors(p);
     if (typeof fixExclusives==='function')            p = fixExclusives(p);
@@ -4947,6 +4973,17 @@ function buildBatchLearning(n){
     if (typeof enforceHeadOrder==='function')         p = enforceHeadOrder(p);
     if (typeof enforceSingleBackground==='function')  p = enforceSingleBackground(p);
     if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
+
+    // === C: full body があるなら upper/bust/waist_up/portrait を掃除 ===
+    {
+      const hasFull = p.some(t => /\bfull[_\s]?body\b/i.test(String(t)));
+      if (hasFull) {
+        p = p.filter(t => !/\b(upper[_\s]?body|bust|waist[_\s]?up|portrait)\b/i.test(String(t)));
+      }
+    }
+
+    // 重複の最終除去
+    p = Array.from(new Set(p.map(_norm))).filter(Boolean);
 
     // --- 固定タグ（先頭付与） ---
     const fixed = (document.getElementById('fixedLearn')?.value || "").trim();
