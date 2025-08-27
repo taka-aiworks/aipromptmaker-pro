@@ -4191,7 +4191,7 @@ function buildOneLearning(extraSeed = 0){
   return { seed, pos, neg, text: `${pos.join(", ")} --neg ${neg} seed:${seed}` };
 }
 
-
+/*
 // 1枚テスト（学習タブのカード）への出力
 document.getElementById('btnOneLearn')?.addEventListener('click', () => {
   const { pos, neg } = buildOneLearning(1);
@@ -4200,8 +4200,7 @@ document.getElementById('btnOneLearn')?.addEventListener('click', () => {
   $('#outLearnTestAll').textContent    = all;
   $('#outLearnTestPrompt').textContent = pos.join(", ");
   $('#outLearnTestNeg').textContent    = neg || "";
-});
-
+}); */
 
 
 // 背景など“グループ内は1つだけ”にする共通ユーティリティ
