@@ -4218,7 +4218,7 @@ function ensureNSFWHead(arr){
 
 
 
-/* ===== 基本情報タブ：1枚テスト ===== */
+/* ===== 学習モード：1枚テスト（辞書カテゴリで単一化・toTag統一） ===== */
 function buildOneLearning(extraSeed = 0){
   const _norm   = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
   const _textOf = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
@@ -4239,41 +4239,49 @@ function buildOneLearning(extraSeed = 0){
   ].filter(Boolean).map(_norm);
   p.push(...basics);
 
-  // シーン系（学習タブの“軽い揺らし”と同じ項目）
-  const bg   = _pick('bg');
-  const pose = _pick('pose');
-  const comp = _pick('comp');
-  const view = _pick('view');
-  const expr = _pick('expr');
-  const lite = _pick('lightLearn');
-  p.push(...[bg, pose, comp, view, expr, lite].filter(Boolean).map(_norm));
+  // シーン系
+  const scene = [
+    _pick('bg'), _pick('pose'), _pick('comp'),
+    _pick('view'), _pick('expr'), _pick('lightLearn')
+  ].filter(Boolean).map(_norm);
+  p.push(...scene);
 
-  // 服（SFW）名詞→色プレース→ペアリング
+  // 固定アクセ（1種 + 色）
+  {
+    const accSel = (document.getElementById('learn_acc')?.value || "").trim();
+    const accTag = toTag(accSel);
+    const accClr = _tagTxt('tag_learnAcc');
+    if (accTag) p.push(accClr ? `${accClr} ${accTag}` : accTag);
+  }
+
+  // 服（SFW）：名詞→色プレース→色ペアリング
   if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns());
   if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
   if (typeof pairWearColors==='function')              p = pairWearColors(p);
 
-  // ===== B: アンカー補完 =====
-  {
-    const asText = p.join(", ").toLowerCase().replace(/_/g, ' ');
-    if (!/\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/.test(asText))
-      p.push("front view");
-    if (!/\b(plain background|studio background|solid background)\b/.test(asText))
-      p.push("plain background");
-    if (!/\b(upper body|bust|waist up|portrait|full body)\b/.test(asText))
-      p.push("upper body");
-    if (!/\b(neutral expression|smiling|serious|determined|slight blush|surprised \(mild\)|pouting \(slight\))\b/.test(asText))
-      p.push("neutral expression");
-    if (!/\b(soft lighting|even lighting|normal lighting)\b/.test(asText))
-      p.push("soft lighting");
-    if (!/\b(centered composition|center composition)\b/.test(asText))
-      p.push("centered composition");
+  // NSFW（手動ON時のみ）
+  const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
+  if (nsfwOn){
+    const take = id => _pick(id);
+    const add = [take('nsfwL_expo'), take('nsfwL_underwear'), take('nsfwL_outfit'),
+                 take('nsfwL_expr'), take('nsfwL_situ'), take('nsfwL_light'),
+                 take('nsfwL_pose'), take('nsfwL_acc'), take('nsfwL_body'), take('nsfwL_nipple')]
+                 .filter(Boolean).map(_norm);
+
+    // SFW服の掃除（関数あれば使用）
+    if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
+
+    p.push(...add);
+    p = p.filter(t => String(t).toUpperCase() !== "NSFW");
+    p.unshift("NSFW");
   }
 
-  // ★ JSONカテゴリで 1カテゴリ=1つ に整理
-  p = enforceSingletonByCategory(p, { addDefaults: true });
+  // ★ JSONカテゴリで 1カテゴリ=1つ（足りなければ辞書デフォ補完）
+  if (typeof enforceSingletonByCategory==='function'){
+    p = enforceSingletonByCategory(p, { addDefaults: true });
+  }
 
-  // 単独色掃除 → 排他/順序
+  // 仕上げ：色の単独掃除→排他/順序→背景/ライトの単一化
   if (typeof dropBareColors==='function')           p = dropBareColors(p);
   if (typeof fixExclusives==='function')            p = fixExclusives(p);
   if (typeof ensurePromptOrder==='function')        p = ensurePromptOrder(p);
@@ -4281,11 +4289,18 @@ function buildOneLearning(extraSeed = 0){
   if (typeof enforceSingleBackground==='function')  p = enforceSingleBackground(p);
   if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
 
-  // 重複の最終除去
+  // 重複除去
   p = Array.from(new Set(p.map(_norm))).filter(Boolean);
 
-  // seed / neg
-  const seed = (typeof seedFromName==='function')
+  // 先頭に固定タグ（学習タブの固定）
+  const fixed = (typeof getFixedLearn === 'function') ? (getFixedLearn() || []) : [];
+  if (fixed.length){
+    const f = fixed.map(t => toTag(t)).filter(Boolean).map(_norm);
+    p = [...f, ...p];
+  }
+
+  // seed / neg（1枚テストは従来の仕組みに合わせる）
+  const seed = (typeof seedFromName === 'function')
     ? seedFromName((document.getElementById('charName')?.value || ''), extraSeed)
     : 0;
 
