@@ -4388,31 +4388,29 @@ function pickManyFromScroller(rootId){
   return Array.from(new Set(out.filter(Boolean)));
 }
 
-// 服の“名詞”を抽出（上下 or ワンピ／靴は任意）
+// === 基本情報タブの服（名詞）を拾う ===
 function getOutfitNouns(){
-  const nouns = [];
-  const isDressMode = checked('outfitModeDress');
-  const useSkirt    = checked('bottomCat_skirt');
+  const out = [];
+  // 上下/ワンピースのモード判定
+  const isOnepiece = document.querySelector('input[name="outfitMode"]:checked')?.value === "onepiece";
 
-  if (isDressMode){
-    const d = pickOneFromScroller('outfit_dress');
-    if (d) nouns.push(d);
+  if (isOnepiece) {
+    const dress = pickOneFromScroller("outfit_dress");
+    if (dress) out.push(dress);
   } else {
-    const top = pickOneFromScroller('outfit_top');
-    if (top) nouns.push(top);
-
-    if (useSkirt){
-      const s = pickOneFromScroller('outfit_skirt');
-      if (s) nouns.push(s);
-    } else {
-      const p = pickOneFromScroller('outfit_pants');
-      if (p) nouns.push(p);
-    }
+    const top = pickOneFromScroller("outfit_top");
+    const pants = pickOneFromScroller("outfit_pants");
+    const skirt = pickOneFromScroller("outfit_skirt");
+    if (top) out.push(top);
+    if (pants) out.push(pants);
+    if (skirt) out.push(skirt);
   }
-  const sh = pickOneFromScroller('outfit_shoes');
-  if (sh) nouns.push(sh);
 
-  return Array.from(new Set(nouns.map(norm).filter(Boolean)));
+  // 靴は共通
+  const shoes = pickOneFromScroller("outfit_shoes");
+  if (shoes) out.push(shoes);
+
+  return out.filter(Boolean);
 }
 window._getOutfitNouns = getOutfitNouns; // 後方互換
 
