@@ -4103,18 +4103,25 @@ function ensureNSFWHead(arr){
 
 
 
-/* ===== 学習モード：置き換え（最終版） ===== */
+/* ===== 学習モード：置き換え（最終版 / 正規化統一） ===== */
 function buildOneLearning(extraSeed = 0){
-  // 1) scroller から “1つだけ” 取る（常に英語タグ化）
+  // 正規化ユーティリティ
+  const norm = t => (typeof normalizeTag==='function')
+    ? normalizeTag(toTag(String(t||"")))
+    : toTag(String(t||""));
+
+  const textOf = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
+
+  // 1) scroller から “1つだけ”
   const one = (id) => {
     const t = (typeof pickOneFromScroller === 'function') ? pickOneFromScroller(id) : "";
     return t ? norm(t) : "";
   };
 
-  // 2) 固定タグ（学習タブの「固定タグ」）
+  // 2) 固定タグ（学習タブ）
   const fixed = (typeof getFixedLearn === 'function') ? (getFixedLearn() || []) : [];
 
-  // 3) 基本情報（年齢/性別/体型/身長/髪型/目の形 + 髪/瞳/肌タグ）
+  // 3) 基本情報
   const basics = [
     one('bf_age'),
     one('bf_gender'),
@@ -4122,12 +4129,12 @@ function buildOneLearning(extraSeed = 0){
     one('bf_height'),
     one('hairStyle'),
     one('eyeShape'),
-    (typeof textOf==='function'? textOf('tagH') : ''),
-    (typeof textOf==='function'? textOf('tagE') : ''),
-    (typeof textOf==='function'? textOf('tagSkin') : '')
-  ].filter(Boolean).map(norm);
+    norm(textOf('tagH')),
+    norm(textOf('tagE')),
+    norm(textOf('tagSkin'))
+  ].filter(Boolean);
 
-  // 4) シーン系（学習タブで選んだものをそのまま）
+  // 4) シーン系
   const scene = [
     one('bg'),
     one('pose'),
@@ -4135,22 +4142,21 @@ function buildOneLearning(extraSeed = 0){
     one('view'),
     one('expr'),
     one('lightLearn')
-  ].filter(Boolean).map(norm);
+  ].filter(Boolean);
 
-  // 5) ベース（solo + 1girl/1boy）
+  // 5) solo + 1girl/1boy
   const partsSolo = ["solo"];
   const genderCount = (typeof getGenderCountTag === 'function' ? (getGenderCountTag()||"") : "");
   if (genderCount) partsSolo.push(genderCount);
 
-  // 6) 服（名詞→色プレース→色ペアリング）— 基本情報タブの選択を必ず反映
+  // 6) 服
   let wear = [];
   if (typeof getOutfitNouns === 'function') wear.push(...getOutfitNouns());
   if (typeof injectWearColorPlaceholders === 'function') injectWearColorPlaceholders(wear);
-  // ここで一旦まとめてからペアリング（他パーツと一緒にやるため、後で再度呼んでもOK）
-  // ※ wear は後段で parts に合流
 
-  // 7) NSFW 学習の追加分
-  const addon = (typeof getSelectedNSFW_Learn === 'function' ? (getSelectedNSFW_Learn()||[]) : []);
+  // 7) NSFW 追加分
+  const addonRaw = (typeof getSelectedNSFW_Learn === 'function' ? (getSelectedNSFW_Learn()||[]) : []);
+  const addon = addonRaw.map(norm);
 
   // 8) NSFW ON 判定
   const ids = ['nsfwLearn','nsfwL','nsfw_learning'];
@@ -4160,24 +4166,24 @@ function buildOneLearning(extraSeed = 0){
     if (el && el.checked) { nsfwOn = true; break; }
   }
 
-  // 9) 一旦全部まとめる（重複排除）
+  // 9) 一旦まとめ
   let parts = Array.from(new Set([
     ...partsSolo,
-    ...fixed,
+    ...fixed.map(norm),
     ...basics,
     ...scene,
     ...wear,
     ...addon
-  ].filter(Boolean).map(norm)));
+  ].filter(Boolean)));
 
-  // 10) 服/露出の優先（ワンピ・全裸などの競合処理）
+  // 10) 服/露出の優先
   if (typeof applyNudePriority === 'function')          parts = applyNudePriority(parts);
   if (typeof enforceOnePieceExclusivity === 'function') parts = enforceOnePieceExclusivity(parts);
 
   // 11) 露出検知
   const isExposure = nsfwOn && (typeof hasExposureLike === 'function') && hasExposureLike(parts);
 
-  // 12) 露出時：色の一次掃除 + ダブり畳み / 非露出：色ペアリング
+  // 12) 色掃除 or ペアリング
   if (isExposure){
     if (typeof stripWearColorsOnce === 'function') parts = stripWearColorsOnce(parts);
     if (typeof collapseExposureDuplicates === 'function') parts = collapseExposureDuplicates(parts);
@@ -4193,7 +4199,7 @@ function buildOneLearning(extraSeed = 0){
   if (typeof stripMultiHints === 'function') parts = stripMultiHints(parts);
   if (typeof forceSoloPos === 'function')    parts = forceSoloPos(parts);
 
-  // 14) アンカー補完（足りないときだけ）
+  // 14) アンカー補完
   const asText = parts.join(", ");
   if (!/\b(front view|three-quarters view|profile view|side view|back view|from below|overhead view|looking down|looking up|eye-level|low angle|high angle)\b/i.test(asText)) parts.push("front view");
   if (!/\b(plain background|studio background|solid background)\b/i.test(asText)) parts.push("plain background");
@@ -4208,12 +4214,12 @@ function buildOneLearning(extraSeed = 0){
   if (typeof ensurePromptOrder === 'function') pos = ensurePromptOrder(pos);
   if (typeof enforceHeadOrder === 'function')  pos = enforceHeadOrder(pos);
 
-  // 16) NSFW時：通常服/色/靴の最終一掃
+  // 16) NSFW時の掃除
   if (nsfwOn && typeof stripNormalWearWhenNSFW === 'function') {
     pos = stripNormalWearWhenNSFW(pos);
   }
 
-  // 17) NSFW トークン（先頭）
+  // 17) NSFW トークン
   pos = pos.filter(t => String(t).toUpperCase() !== "NSFW");
   if (nsfwOn) pos.unshift("NSFW");
 
