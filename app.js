@@ -4358,55 +4358,69 @@ function buildOneLearning(extraSeed = 0){
   const _pick  = id => _to(typeof pickOneFromScroller==='function' ? pickOneFromScroller(id) : "");
   const _tag   = id => _to(_text(id));
 
-  // --- Fallback: 学習モードと同じ並びのローカル順序（ensurePromptOrderが無い場合用） ---
+  // --- Fallback: 学習モードと同じ並び（ensurePromptOrder が無い場合に使用） ---
   function ensurePromptOrderLocal(arr){
-    const key = s => String(s||"").toLowerCase().replace(/_/g,' ');
-    // 学習モードの順序に合わせる：solo/人数 → 見た目 → 基本属性 → シーン（背景/ポーズ/構図/視点/表情/光） → 服/アクセ → NSFW補助 → その他
-    const buckets = [
-      // 0: 固定先頭
-      t => /^solo$/.test(key(t)) || /^\d+\s*(girl|boy|boys|girls)\b/.test(key(t)) ? 0 : null,
-      // 1: 見た目（髪/目/肌）
-      t => /\bhair\b/.test(key(t)) ? 1 : null,
-      t => /\beyes?\b/.test(key(t)) ? 1.1 : null,
-      t => /\bskin\b/.test(key(t)) ? 1.2 : null,
-      // 2: 基本属性
-      t => /\b(late|early|teen|adult|child)\b|\bage\b/.test(key(t)) ? 2 : null,
-      t => /\b(female|male|androgynous)\b/.test(key(t)) ? 2.1 : null,
-      t => /\b(slim|voluptuous|curvy|athletic|petite)\b/.test(key(t)) ? 2.2 : null,
-      t => /\b(height)\b|average height|short|tall/.test(key(t)) ? 2.3 : null,
-      t => /\b(bob|ponytail|hair)\b/.test(key(t)) ? 2.4 : null,
-      t => /\b(almond|round|slanted)\s*eyes?\b/.test(key(t)) ? 2.5 : null,
-      // 3: シーン系
-      t => /(?:^| )plain background|studio background|background$/.test(key(t)) ? 3 : null,         // 背景
-      t => /\b(pose|standing|sitting|kneeling|lying)\b/.test(key(t)) ? 3.1 : null,                   // ポーズ
-      t => /\b(centered composition|composition)\b/.test(key(t)) ? 3.2 : null,                       // 構図
-      t => /\b(front view|three-quarters|profile|side view|back view|looking|eye-level|angle)\b/.test(key(t)) ? 3.3 : null, // 視点
-      t => /\b(neutral expression|smiling|serious|determined|blush|pouting|surprised)\b/.test(key(t)) ? 3.4 : null,        // 表情
-      t => /\b(soft lighting|even lighting|normal lighting|lighting)\b/.test(key(t)) ? 3.5 : null,   // 光
-      // 4: 服・アクセ（SFW）
-      t => /\b(top|bottom|skirt|pants|shorts|jeans|dress|one ?piece|gown|shoes|boots|sandals|t-?shirt|shirt|blouse|hoodie|jacket|coat)\b/.test(key(t)) ? 4 : null,
-      t => /\b(ribbon|glasses|earrings|necklace|bracelet|choker|hat|hairpin|accessor|bag)\b/.test(key(t)) ? 4.5 : null,
-      // 5: NSFW系（ヘッダは先頭に置くけど、要素の相対順は後勝ちのまま）
-      t => /^nsfw$/.test(key(t)) ? -0.5 : null,
-      t => /\b(exposure|underwear|lingerie|bikini|swimsuit|nipple|areola|pasties|topless|bottomless|nude)\b/.test(key(t)) ? 5 : null,
-      t => /\b(situation|setting)\b/.test(key(t)) ? 5.1 : null,
-      t => /\bpose\b/.test(key(t)) && /nsfw/.test(key(t)) ? 5.2 : null,
-      t => /\b(acc|accessory)\b/.test(key(t)) && /nsfw/.test(key(t)) ? 5.3 : null,
-      t => /\b(lighting)\b/.test(key(t)) && /nsfw/.test(key(t)) ? 5.4 : null,
-      t => /\b(body)\b/.test(key(t)) && /nsfw/.test(key(t)) ? 5.5 : null,
-      // 9: その他（残り）
-      _ => 9
-    ];
-    return (arr||[]).slice().sort((a,b)=>{
-      const ra = buckets.reduce((r,f)=> r ?? f(a), null);
-      const rb = buckets.reduce((r,f)=> r ?? f(b), null);
-      return (ra ?? 9) - (rb ?? 9);
-    });
+    const K = s => String(s||"").toLowerCase().replace(/_/g,' ');
+    // 並びの意図：
+    // [0] solo / 人数 → [1] 見た目（髪色/目の形/目色/肌）→ [1.5] 服(SFW) → 
+    // [2] 年齢/性別/体型/身長 → [2.6] 髪型 → 
+    // [3] 背景 → [3.1] ポーズ → [3.4] ライティング → [3.45] 表情 → [3.6] フレーミング → [3.7] 視点 → [3.8] 構図 →
+    // [5] NSFW群（ヘッダは先頭に移す）→ [9] その他
+    function bucket(t){
+      const s = K(t);
+
+      // 先頭
+      if (s === "solo") return 0;
+      if (/^\d+\s*(girl|boy|girls|boys)\b/.test(s)) return 0.2;
+
+      // 見た目（色・形）: hair color / eye shape / eye color / skin
+      if (/\bhair\b/.test(s) && !/\b(bob|ponytail|bun|cut|bangs)\b/.test(s)) return 1.0; // 髪色など（髪型除外）
+      if (/\b(almond|round|slanted|monolid|hooded)\s*eyes?\b/.test(s))      return 1.1; // 目の形
+      if (/\beyes?\b/.test(s))                                               return 1.2; // 目色
+      if (/\bskin\b/.test(s))                                                return 1.3; // 肌
+
+      // 服（SFW）
+      if (/\b(t-?shirt|shirt|blouse|hoodie|jacket|coat|sweater|dress|one ?piece|gown|top|bottom|skirt|pants|shorts|jeans|shoes|boots|sandals)\b/.test(s)) return 1.5;
+
+      // 基本属性
+      if (/\b(late|early|teen|adult|child)\b|\bage\b/.test(s))               return 2.0; // 年齢
+      if (/\b(female|male|androgynous)\b/.test(s))                            return 2.1; // 性別
+      if (/\b(slim|voluptuous|curvy|athletic|petite|build)\b/.test(s))        return 2.2; // 体型
+      if (/\b(average height|short|tall|height)\b/.test(s))                   return 2.3; // 身長
+
+      // 髪型・目の形（外見寄りだけど上の色群の後）
+      if (/\b(bob|ponytail|bun|pixie|bangs|cut)\b/.test(s))                   return 2.6; // 髪型（bob cut 等）
+      // eyeShape は上の 1.1 で拾っている
+
+      // シーン系
+      if (/(?:^| )plain background|studio background|background$/.test(s))    return 3.0; // 背景
+      if (/\b(standing|sitting|kneeling|lying|pose)\b/.test(s))               return 3.1; // ポーズ
+      if (/\b(soft lighting|even lighting|normal lighting|lighting)\b/.test(s)) return 3.4; // 光
+      if (/\b(neutral expression|smiling|serious|determined|blush|pouting|surprised)\b/.test(s)) return 3.45; // 表情
+      if (/\b(full body|upper body|bust|waist up|portrait)\b/.test(s))        return 3.6; // フレーミング
+      if (/\b(front view|three-quarters|profile|side view|back view|looking|eye-level|angle)\b/.test(s)) return 3.7; // 視点
+      if (/\b(centered composition|composition)\b/.test(s))                   return 3.8; // 構図
+
+      // NSFW（ヘッダは別処理で先頭へ）
+      if (s === "nsfw")                                                       return -0.5;
+      if (/\b(exposure|underwear|lingerie|bikini|swimsuit|nipple|areola|pasties|topless|bottomless|nude)\b/.test(s)) return 5.0;
+      if (/\b(situation|setting)\b/.test(s))                                  return 5.1;
+      if (/\bpose\b/.test(s) && /nsfw/.test(s))                               return 5.2;
+      if (/\b(acc|accessory)\b/.test(s) && /nsfw/.test(s))                    return 5.3;
+      if (/\b(lighting)\b/.test(s) && /nsfw/.test(s))                         return 5.4;
+      if (/\b(body)\b/.test(s) && /nsfw/.test(s))                             return 5.5;
+
+      return 9; // その他
+    }
+    // 安定ソート：同バケット内は元順
+    return (arr||[]).map((t,i)=>({t,i,k:bucket(t)}))
+                    .sort((a,b)=> a.k===b.k ? a.i-b.i : a.k-b.k)
+                    .map(x=>x.t);
   }
 
   let p = ["solo"];
 
-  // 1girl / 1boy
+  // 1girl / 1boy（人数タグは関数に委譲）
   if (typeof getGenderCountTag === 'function'){
     const g = getGenderCountTag() || "";
     if (g) p.push(_to(g));
@@ -4480,9 +4494,11 @@ function buildOneLearning(extraSeed = 0){
   // 仕上げ：色の単独掃除 → 排他/順序 → 背景/ライト単一化
   if (typeof dropBareColors==='function')           p = dropBareColors(p);
   if (typeof fixExclusives==='function')            p = fixExclusives(p);
-  // ← 学習モードと同じ：ここで順序を確定
+
+  // 学習モードと同じ順序に確定
   if (typeof ensurePromptOrder==='function')        p = ensurePromptOrder(p);
   else                                              p = ensurePromptOrderLocal(p);
+
   if (typeof enforceHeadOrder==='function')         p = enforceHeadOrder(p);
   if (typeof enforceSingleBackground==='function')  p = enforceSingleBackground(p);
   if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
