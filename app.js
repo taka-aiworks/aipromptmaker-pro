@@ -1422,7 +1422,7 @@ function buildBatchLearning(n){
 
 
 
-/* ===== 撮影モード：UI尊重（デフォ補完なし）/ NSFW→solo固定 / none & Rラベル掃除 ===== */
+/* ===== 撮影モード：UI尊重（補完なし）/ NSFW→solo固定 / none & Rラベル掃除 ===== */
 function pmBuildOne(){
   const _isRating = t => /^R[\s-]?1[58](?:[\s-]?G)?$/i.test(String(t||""));
   const _clean = arr => (arr||[])
@@ -1431,7 +1431,7 @@ function pmBuildOne(){
 
   let p = ["solo"];
 
-  // 基本情報
+  // 基本情報（UIそのまま）
   const basics = [
     pickTag('bf_age'), pickTag('bf_gender'), pickTag('bf_body'), pickTag('bf_height'),
     pickTag('hairStyle'), pickTag('eyeShape'),
@@ -1439,7 +1439,7 @@ function pmBuildOne(){
   ].filter(Boolean);
   p.push(...basics);
 
-  // SFW服
+  // SFW服（名詞→色ペアリング）
   if (typeof getOutfitNouns==='function')              p.push(...getOutfitNouns().map(asTag));
   if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
   if (typeof pairWearColors==='function')              p = pairWearColors(p);
@@ -1452,19 +1452,21 @@ function pmBuildOne(){
   };
   if (typeof applyWearColorPipeline==='function') p = applyWearColorPipeline(p, pal);
 
-  // シーン（UI単一選択をそのまま採用）
+  // シーン（UIだけを採用）
   const bg   = pickTag('pl_bg');
   const comp = pickTag('pl_comp');
   const view = pickTag('pl_view');
   let expr   = pickTag('pl_expr')  || "neutral expression";
   let lite   = pickTag('pl_light') || "soft lighting";
 
-  // NSFW（UIの値のみ・等級は掃除）
+  // —— NSFW（UIの選択だけ反映）——
   const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
+  let nsfwAdd = [];
   if (nsfwOn){
     const ex2  = pickTag('pl_nsfw_expr');
     const li2  = pickTag('pl_nsfw_light');
-    const nsfwAdd = [
+
+    nsfwAdd = [
       pickTag('pl_nsfw_expo'),
       pickTag('pl_nsfw_underwear'),
       pickTag('pl_nsfw_outfit'),
@@ -1477,20 +1479,19 @@ function pmBuildOne(){
 
     if (ex2) expr = ex2;
     if (li2) lite = li2;
-    if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p, new Set());
+
+    // SFW服だけ掃除（第2引数は渡さない：誤消去を避ける）
+    if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
     p.push(...nsfwAdd);
   }
 
   // シーン確定
   p.push(...[bg, comp, view, expr, lite].filter(Boolean));
 
-  // —— 最終整形（UI尊重：補完なし）——
+  // —— 最終整形：UI尊重（補完もカテゴリ潰しもしない）——
   p = _clean(p);
-  if (typeof enforceSingletonByCategory==='function'){
-    // 重要：addDefaults:false で“追加しない”
-    p = enforceSingletonByCategory(p, { addDefaults:false, keep:'last' });
-  }
-  // 並び・相互排他・単一背景/ライトは維持（追加はしない）
+  // ★カテゴリ単一化はしない（NSFW要素を潰さないため）
+  // 並び・排他・単一背景/ライトのみ（非破壊系）
   if (typeof unifyLightingOnce==='function')          p = unifyLightingOnce(p);
   if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
   else if (typeof ensurePromptOrderLocal==='function')p = ensurePromptOrderLocal(p);
@@ -1508,13 +1509,12 @@ function pmBuildOne(){
     if (i===-1) p.unshift("solo");
   }
 
-  // 固定タグ（追加はするが補完はしない）
+  // 固定タグ（追加のみ・補完なし）
   const fixed = (document.getElementById('fixedPlanner')?.value || "").trim();
   if (fixed){
     const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
     p = _clean([ ...f.map(asTag).filter(Boolean), ...p ]);
     if (typeof enforceHeadOrder==='function') p = enforceHeadOrder(p);
-    // ヘッダ再固定
     if (nsfwOn){
       p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
       p = ["NSFW", "solo", ...p];
