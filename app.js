@@ -1382,7 +1382,7 @@ function buildBatchLearning(n){
 
 /* ===== 撮影モード：ビルド（NSFW先頭→solo / R-15/18除去 / ワンピ色補正 / 学習順序 / 成人補正） ===== */
 function pmBuildOne(){
-  const _isRating = t => /^R-?1[58]$/i.test(String(t||""));
+  const _isRating = t => /^R[\s-]?1[58](?:[\s-]?G)?$/i.test(String(t||""));
   const _isNone   = s => !s || String(s).trim().toLowerCase()==="none";
 
   // 単一/複数/テキスト欄をまたいで「英語タグ1つ」を取る（最初に見つかった値）
