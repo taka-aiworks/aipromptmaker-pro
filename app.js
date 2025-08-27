@@ -1156,7 +1156,6 @@ function _collectNSFW(idsOrId){
   }
   return out;
 }
-const _isRating = t => /^R-?1[58]$/i.test(String(t||""));
 
 
 
