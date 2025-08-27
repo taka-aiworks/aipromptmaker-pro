@@ -1451,16 +1451,36 @@ function radioList(el, list, name, {checkFirst = true} = {}) {
 }
 
 const getOne  = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || "";
-// === scroller/チップから選択値を配列で取得 ===
+// 汎用：id で囲われたボックスから「選択されている語」を英字タグ化して配列で返す
 function getMany(id){
-  const root = document.getElementById(id);
-  if (!root) return [];
-  const nodes = root.querySelectorAll(
-    '.chip.on, .selected, .active, [aria-selected="true"], [data-selected="true"], .option.selected, .item.selected'
+  const box = document.getElementById(id);
+  if(!box) return [];
+
+  // 1) ラジオ/チェックボックス優先
+  const pickedInputs = box.querySelectorAll('input[type=radio]:checked, input[type=checkbox]:checked');
+  if (pickedInputs.length){
+    return [...pickedInputs]
+      .map(el => toTag(el.value || el.nextElementSibling?.textContent || ""))
+      .filter(Boolean);
+  }
+
+  // 2) クラス/ARIA/data-selected で選択状態のUI（.chip.on など）
+  const pickedUi = box.querySelectorAll(
+    '.on, .selected, .active, .sel, .current, .chosen, .option.selected, .item.selected,'+
+    '[aria-selected="true"], [data-selected="true"], [aria-pressed="true"]'
   );
-  return Array.from(nodes)
-    .map(el => toTag(el.textContent || el.value || ""))
-    .filter(Boolean);
+  if (pickedUi.length){
+    return [...pickedUi].map(el => toTag(el.textContent || el.value || "")).filter(Boolean);
+  }
+
+  // 3) “単一選択っぽい要素”が data-value を持っている場合
+  const dataVal = box.getAttribute('data-value');
+  if (dataVal) {
+    const t = toTag(dataVal);
+    return t ? [t] : [];
+  }
+
+  return [];
 }
 
 
