@@ -4390,26 +4390,6 @@ function pairWearColors(parts){
   return Array.from(new Set(out));
 }
 
-// NSFW（露出/下着/衣装）が選ばれている行で、SFW服（名詞＆色プレース）を掃除（pair済みは保護）
-function stripSfwWearWhenNSFW(p, outfitFixedSet){
-  const CLOTH_NOUN_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
-  const COLOR_WORD_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
-  const COLOR_PLACE_RE = new RegExp(`${COLOR_WORD_RE.source}\\s+(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\\s]?piece|gown)`,`i`);
-  const FOOTWEAR_RE    = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
-
-  return p.filter(s=>{
-    const x  = String(s);
-    const nx = norm(x);
-    // pairで生成された「色+名詞」は保護
-    if (outfitFixedSet?.has(nx)) return true;
-    // 素の服名詞・色プレ・靴や単独色は削除
-    if (CLOTH_NOUN_RE.test(x))  return false;
-    if (COLOR_PLACE_RE.test(x)) return false;
-    if (FOOTWEAR_RE.test(x))    return false;
-    if (COLOR_WORD_RE.test(x) && !/\s/.test(x)) return false;
-    return true;
-  });
-}
 
 // 単独色トークンの掃除（"white" だけ等）
 function dropBareColors(arr){
@@ -4584,17 +4564,48 @@ function _norm(t){
   return Array.from(new Set(P));
 } */
 
+// 日本語＋英語混在のラベル（「後半ティーン late teen」など）から
+// 末尾の“英語フレーズ全体”を抽出して正規化する。
+// 例: "極端な寄り extreme close-up" → "extreme close-up"
+function toTag(s){
+  const x = String(s || "").trim();
+  if (!x) return "";
+  if (/^(指定なし|none)$/i.test(x)) return "";  // none/指定なしは捨てる
+
+  // 末尾の英語フレーズ全体（空白・ハイフン・アンダースコア許容）を抜く
+  const m = x.match(/([A-Za-z][A-Za-z0-9_\-]*(?:[ \-][A-Za-z0-9_\-]+)*)\s*$/);
+  const tag = m ? m[1] : x;                       // 英語部分が無ければ全体を使用（保険）
+  const t = (typeof normalizeTag === 'function') ? normalizeTag(tag) : tag.toLowerCase();
+  return t;
+}
+
+// scroller の選択テキスト → toTag 経由で英語タグ化
+function pickOneFromScroller(id){
+  const root = document.getElementById(id);
+  if (!root) return "";
+  const q = root.querySelector(
+    '.selected, .active, .sel, [aria-selected="true"], [data-selected="true"], ' +
+    'input[type=radio]:checked + label, .option.selected, .item.selected'
+  );
+  return toTag(q?.textContent || "");
+}
+
+// （保険）NSFW時に SFW服/色プレース/靴を掃除
+function stripSfwWearWhenNSFW(arr){
+  const CLOTH_RE  = /\b(t-?shirt|shirt|blouse|hoodie|sweater|cardigan|jacket|coat|trench\s+coat|tank\s+top|camisole|turtleneck|off-shoulder\s+top|crop\s+top|sweatshirt|blazer|skirt|pleated\s+skirt|long\s+skirt|hakama|shorts|pants|jeans|trousers|leggings|overalls|bermuda\s+shorts|dress|one[-\s]?piece|sundress|gown)\b/i;
+  const SHOES_RE  = /\b(shoes|boots|heels|sandals|sneakers|loafers|mary\s+janes|geta|zori)\b/i;
+  const COLOR_PLACE_RE = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+(top|bottom|dress|shoes)\b/i;
+  return (arr || []).filter(s=>{
+    const x = String(s);
+    if (COLOR_PLACE_RE.test(x)) return false;
+    if (CLOTH_RE.test(x))       return false;
+    if (SHOES_RE.test(x))       return false;
+    return true;
+  });
+}
+
 /* ====================== 撮影モード：置き換え（修正版） ====================== */
 function pmBuildOne(){
-  // 小ヘルパ：scrollerの混在表記「日本語 + 英語」を“英語タグ”へ寄せる
-     const toTag = (s)=>{
-     const x = String(s||"").trim();
-     if (!x) return "";
-     if (/^(指定なし|none)$/i.test(x)) return "";        // ★ ここを追加
-     const m = x.match(/([a-z][a-z0-9_-]+)$/i);
-     const tag = m ? m[1] : x;
-     return (typeof normalizeTag==='function') ? normalizeTag(tag) : tag.toLowerCase();
-   };
   const norm   = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
   const textOf = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
   const pick   = id => toTag(pickOneFromScroller(id));
@@ -4614,7 +4625,7 @@ function pmBuildOne(){
   ].filter(Boolean);
   p.push(...basics);
 
-  // 撮影で確定のシーン（日本語混入を toTag で抑止）
+  // 撮影で確定のシーン
   const bg    = pick('pl_bg');
   const pose  = pick('pl_pose');
   const comp  = pick('pl_comp');
@@ -4625,11 +4636,11 @@ function pmBuildOne(){
   // NSFW on/off
   const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
 
-  // まず SFW の表情/光
+  // SFW の表情/光（デフォ）
   let expr = exprS || "neutral expression";
   let lite = liteS || "soft lighting";
 
-  // --- NSFW 選択の取得（toTagで正規化） ---
+  // --- NSFW 選択の取得 ---
   let nsfwSelected = [];
   let pickedExpo="", pickedUnder="", pickedOutfit="";
   if (nsfwOn){
@@ -4645,9 +4656,8 @@ function pmBuildOne(){
     const bo2  = pick('pl_nsfw_body');
     const nip  = pick('pl_nsfw_nipple');
 
-    // NSFW側があれば SFWより優先
-    if (ex2) expr = ex2;
-    if (li2) lite = li2;
+    if (ex2) expr = ex2;   // NSFWの表情を優先
+    if (li2) lite = li2;   // NSFWの光を優先
 
     nsfwSelected = [pickedExpo, pickedUnder, pickedOutfit, situ, po2, ac2, bo2, nip].filter(Boolean);
   }
@@ -4660,25 +4670,10 @@ function pmBuildOne(){
     if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
     if (typeof pairWearColors==='function') p = pairWearColors(p);
   } else {
-    // NSFWの露出/下着/衣装を採用するので、SFW服＆色プレースは入れない（既に入っていない前提）
-    // もし先に混入していた場合への保険（stripSfwWearWhenNSFW が用意されているなら掃除）
-    if (typeof stripSfwWearWhenNSFW==='function'){
-      p = stripSfwWearWhenNSFW(p, new Set());
-    } else {
-      // 簡易掃除（名詞・色プレース・靴類）
-      const CLOTH_RE  = /\b(top|bottom|skirt|pants|shorts|jeans|t-?shirt|shirt|blouse|sweater|hoodie|jacket|coat|dress|one[-\s]?piece|gown)\b/i;
-      const COLOR_RE  = /\b(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b\s+(top|bottom|dress|shoes)\b/i;
-      const SHOES_RE  = /\b(shoes|boots|sneakers|loafers|sandals|heels|mary janes|geta|zori)\b/i;
-      p = p.filter(s=>{
-        const x = String(s);
-        if (COLOR_RE.test(x)) return false;
-        if (CLOTH_RE.test(x)) return false;
-        if (SHOES_RE.test(x)) return false;
-        return true;
-      });
-    }
-    // NSFWの露出/下着/衣装などを追加
-    p.push(...nsfwSelected);
+    // NSFWの露出/下着/衣装を使う：SFW服＆色プレースは掃除
+    p = stripSfwWearWhenNSFW(p);
+    // 選択した NSFW のタグを追加
+    if (nsfwSelected.length) p.push(...nsfwSelected);
   }
 
   // シーン確定
