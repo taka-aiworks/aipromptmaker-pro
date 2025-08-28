@@ -393,6 +393,155 @@ function splitTags(v){
 
 
 
+// === 学習用ホワイトリスト（辞書準拠） ==================
+const SCOPE = {
+  learning: {
+    background: [
+      "plain_background",
+      "white_background",
+      "solid_background",
+      "studio_background",
+      "white_seamless",
+      "gray_seamless"
+    ],
+    pose: [
+      "standing",
+      "sitting",
+      "hands on hips",
+      "crossed arms",
+      "hand on chest",
+      "hands behind back",
+      "head tilt",
+      "waving"
+      // ※ "arms crossed behind head" は辞書外なので除外
+    ],
+    composition: [
+      "full body",
+      "waist up",
+      "bust",
+      "close-up",
+      "portrait",
+      "centered composition"
+    ],
+    view: [
+      "front view",
+      "three-quarters view",
+      "side view",
+      "profile view", // 追加：配分ルールに合わせる
+      "back view"
+    ],
+    expressions: [
+      "neutral expression",
+      "smiling",
+      "smiling open mouth",
+      "serious",
+      "determined",
+      "slight blush",
+      "surprised (mild)",
+      "pouting (slight)",
+      "teary eyes",
+      "laughing",
+      "embarrassed"
+    ],
+    lighting: [
+      "normal lighting",
+      "even lighting",
+      "soft lighting",
+      "window light",
+      "overcast",
+      "flat studio lighting", // 辞書準拠
+      "backlighting",
+      "rim light"             // 辞書準拠
+    ]
+  }
+};
+
+// === 顔安定版・配分ルール =======================
+const MIX_RULES = {
+  view: {
+    group: ["front view","three-quarters view","side view","profile view","back view"],
+    targets: {
+      "three-quarters view":[0.55,0.65],
+      "front view":[0.30,0.35],
+      "side view":[0.02,0.04],
+      "profile view":[0.01,0.03],
+      "back view":[0.00,0.01]
+    },
+    fallback: "three-quarters view"
+  },
+
+  comp: {
+    group: ["bust","waist up","portrait","upper body","close-up","full body","wide shot"],
+    targets: {
+      "bust":[0.35,0.45],
+      "waist up":[0.30,0.35],
+      "portrait":[0.10,0.15],
+      "upper body":[0.05,0.08],
+      "close-up":[0.03,0.05],
+      "full body":[0.00,0.02],
+      "wide shot":[0.00,0.01]
+    },
+    fallback: "bust"
+  },
+
+  expr: {
+    group: [
+      "neutral expression","smiling","smiling open mouth",
+      "slight blush","serious","determined","pouting (slight)"
+    ],
+    targets: {
+      "neutral expression":[0.55,0.65],
+      "smiling":[0.20,0.25],
+      "smiling open mouth":[0.03,0.05],
+      "slight blush":[0.03,0.05],
+      "serious":[0.01,0.02],
+      "determined":[0.01,0.02],
+      "pouting (slight)":[0.01,0.02]
+    },
+    fallback: "neutral expression"
+  },
+
+  bg: {
+    group: ["plain_background","white_background","studio_background","solid_background","white_seamless","gray_seamless"],
+    targets: {
+      "plain_background":[0.55,0.62],   // 主軸（下げすぎない）
+      "white_background":[0.15,0.22],
+      "studio_background":[0.08,0.12],
+      "solid_background":[0.04,0.07],
+      "white_seamless":[0.01,0.02],
+      "gray_seamless":[0.01,0.02]
+    },
+    fallback: "plain_background"
+  },
+
+  light: {
+    group: ["even lighting","soft lighting","normal lighting","window light","overcast"],
+    targets: {
+      "even lighting":[0.35,0.45],
+      "soft lighting":[0.30,0.35],
+      "normal lighting":[0.15,0.20],
+      "window light":[0.05,0.08],
+      "overcast":[0.00,0.02]
+    },
+    fallback: "even lighting"
+  }
+};
+window.MIX_RULES = MIX_RULES;
+
+// 使っているならそのまま
+const EXPR_ALL = new Set([
+  ...Object.keys(MIX_RULES.expr.targets),
+  MIX_RULES.expr.fallback
+]);
+
+
+
+
+
+
+
+
+
 
 
 
@@ -530,34 +679,80 @@ const NSFW_EXPR_SET = new Set([
   // もし他にも使うならここに追加
 ]);
 
-// 既存 EXPR_ALL（MIX_RULES から生成）と併用して、表情を1つにする（NSFWを優先）
-function unifyExprOnce(arr){
-  if (!Array.isArray(arr)) return arr || [];
-  const a = arr.slice();
+// ===== NSFW優先・単一化ヘルパ =====
+// POSE_ALL は MIX_RULES から自動生成（無ければ空）
+const POSE_ALL = (function(){
+  try {
+    const g = MIX_RULES?.pose?.targets ? Object.keys(MIX_RULES.pose.targets) : [];
+    const fb = MIX_RULES?.pose?.fallback;
+    return new Set([...(g||[]), fb].filter(Boolean).map(s=>String(s).toLowerCase()));
+  } catch { return new Set(); }
+})();
 
-  // どれが「表情」か探す
-  const hits = [];
-  for (let i=0; i<a.length; i++){
-    const t = String(a[i]||"").trim().toLowerCase();
-    if (!t) continue;
-    if (NSFW_EXPR_SET.has(t) || (typeof EXPR_ALL!=='undefined' && EXPR_ALL.has(t))){
-      hits.push({i, t});
+// EXPR_ALL はあなたの既存生成を使用（ここでは参照だけ）
+// NSFW_EXPR_SET / NSFW_POSE_SET は“外部で定義されている前提”にして、無ければ空集合に
+const _NSFW_EXPR = (typeof NSFW_EXPR_SET !== 'undefined') ? NSFW_EXPR_SET : new Set();
+const _NSFW_POSE = (typeof NSFW_POSE_SET !== 'undefined') ? NSFW_POSE_SET : new Set();
+const _EXPR_ALL  = (typeof EXPR_ALL      !== 'undefined') ? EXPR_ALL      : new Set();
+
+// 共通：集合判定
+function _in(set, t){ return set && set.has(String(t||"").toLowerCase()); }
+
+// ===== 表情・ポーズ：NSFW優先で単一化 =====
+(function(){
+  // EXPR_ALL が未定義なら MIX_RULES から生成（既にあるならそのまま使う）
+  const EXPR_FALLBACK = (function(){ try {
+    if (typeof EXPR_ALL !== 'undefined') return EXPR_ALL;
+    const g  = MIX_RULES?.expr?.targets ? Object.keys(MIX_RULES.expr.targets) : [];
+    const fb = MIX_RULES?.expr?.fallback;
+    return new Set([...(g||[]), fb].filter(Boolean).map(s=>String(s).toLowerCase()));
+  } catch { return new Set(); } })();
+
+  // POSE_ALL は MIX_RULES.pose から生成（無ければ空）
+  const POSE_ALL = (function(){ try {
+    const g  = MIX_RULES?.pose?.targets ? Object.keys(MIX_RULES.pose.targets) : [];
+    const fb = MIX_RULES?.pose?.fallback;
+    return new Set([...(g||[]), fb].filter(Boolean).map(s=>String(s).toLowerCase()));
+  } catch { return new Set(); } })();
+
+  // NSFW セット（未定義なら空集合）
+  const _NSFW_EXPR = (typeof NSFW_EXPR_SET !== 'undefined') ? NSFW_EXPR_SET : new Set();
+  const _NSFW_POSE = (typeof NSFW_POSE_SET !== 'undefined') ? NSFW_POSE_SET : new Set();
+
+  const _has = (set, t) => set && set.has(String(t||"").toLowerCase());
+
+  // 表情：NSFWがあればそれを残し1つに
+  window.unifyExprOnce = function(arr){
+    if (!Array.isArray(arr)) return arr || [];
+    const hits = [];
+    for (let i=0;i<arr.length;i++){
+      const raw = String(arr[i]||"").trim(); if (!raw) continue;
+      const t = raw.toLowerCase();
+      if (_has(_NSFW_EXPR,t) || _has(EXPR_FALLBACK,t)) hits.push({i,t});
     }
-  }
-  if (hits.length <= 1) return a;
+    if (hits.length <= 1) return arr;
+    let keep = hits[hits.length-1].i;
+    for (const h of hits){ if (_has(_NSFW_EXPR,h.t)) { keep = h.i; break; } }
+    const drop = new Set(hits.map(h=>h.i).filter(i=>i!==keep));
+    return arr.filter((_,i)=>!drop.has(i));
+  };
 
-  // NSFW表情が1つでもあればそれを残す。なければ最後の表情を残す
-  let keepIdx = hits[hits.length - 1].i;
-  for (const h of hits){
-    if (NSFW_EXPR_SET.has(h.t)) { keepIdx = h.i; break; }
-  }
-
-  // 残す以外の表情を削除
-  const delIdx = new Set(hits.map(h=>h.i).filter(i=>i!==keepIdx));
-  return a.filter((_,i)=>!delIdx.has(i));
-}
-
-
+  // ポーズ：NSFWがあればそれを残し1つに
+  window.unifyPoseOnce = function(arr){
+    if (!Array.isArray(arr)) return arr || [];
+    const hits = [];
+    for (let i=0;i<arr.length;i++){
+      const raw = String(arr[i]||"").trim(); if (!raw) continue;
+      const t = raw.toLowerCase();
+      if (_has(_NSFW_POSE,t) || _has(POSE_ALL,t)) hits.push({i,t});
+    }
+    if (hits.length <= 1) return arr;
+    let keep = hits[hits.length-1].i;
+    for (const h of hits){ if (_has(_NSFW_POSE,h.t)) { keep = h.i; break; } }
+    const drop = new Set(hits.map(h=>h.i).filter(i=>i!==keep));
+    return arr.filter((_,i)=>!drop.has(i));
+  };
+})();
 
 
 
@@ -1405,6 +1600,7 @@ function buildBatchLearning(n){
 
     // ←追加：表情は1つに（NSFW優先）
     p = unifyExprOnce(p);
+    p = unifyPoseOnce(p);
 
 
     // ヘッダ固定（NSFW → solo）
@@ -1543,7 +1739,10 @@ function pmBuildOne(){
 
   // シーン確定
   p.push(...[bg, comp, view, expr, lite].filter(Boolean));
+
+  // ★ 表情・ポーズを NSFW 優先で単一化
   if (typeof unifyExprOnce==='function') p = unifyExprOnce(p);
+  if (typeof unifyPoseOnce==='function') p = unifyPoseOnce(p);
 
   // —— 最終整形：UI尊重（補完もカテゴリ潰しもしない）——
   p = _clean(p);
@@ -1725,6 +1924,7 @@ function buildBatchProduction(n){
 
       // ←ここに追加
       p = unifyExprOnce(p);
+      p = unifyPoseOnce(p);
 
       // 先頭に NSFW を1つだけ
       p = p.filter(t => String(t).toUpperCase()!=="NSFW");
@@ -5557,146 +5757,6 @@ function filterByScope(items, allow) {
   return items.filter(x => s.has(x.tag));
 }
 
-// === 学習用ホワイトリスト（辞書準拠） ==================
-const SCOPE = {
-  learning: {
-    background: [
-      "plain_background",
-      "white_background",
-      "solid_background",
-      "studio_background",
-      "white_seamless",
-      "gray_seamless"
-    ],
-    pose: [
-      "standing",
-      "sitting",
-      "hands on hips",
-      "crossed arms",
-      "hand on chest",
-      "hands behind back",
-      "head tilt",
-      "waving"
-      // ※ "arms crossed behind head" は辞書外なので除外
-    ],
-    composition: [
-      "full body",
-      "waist up",
-      "bust",
-      "close-up",
-      "portrait",
-      "centered composition"
-    ],
-    view: [
-      "front view",
-      "three-quarters view",
-      "side view",
-      "profile view", // 追加：配分ルールに合わせる
-      "back view"
-    ],
-    expressions: [
-      "neutral expression",
-      "smiling",
-      "smiling open mouth",
-      "serious",
-      "determined",
-      "slight blush",
-      "surprised (mild)",
-      "pouting (slight)",
-      "teary eyes",
-      "laughing",
-      "embarrassed"
-    ],
-    lighting: [
-      "normal lighting",
-      "even lighting",
-      "soft lighting",
-      "window light",
-      "overcast",
-      "flat studio lighting", // 辞書準拠
-      "backlighting",
-      "rim light"             // 辞書準拠
-    ]
-  }
-};
-
-// === 顔安定版・配分ルール =======================
-const MIX_RULES = {
-  view: {
-    group: ["front view","three-quarters view","side view","profile view","back view"],
-    targets: {
-      "three-quarters view":[0.55,0.65],
-      "front view":[0.30,0.35],
-      "side view":[0.02,0.04],
-      "profile view":[0.01,0.03],
-      "back view":[0.00,0.01]
-    },
-    fallback: "three-quarters view"
-  },
-
-  comp: {
-    group: ["bust","waist up","portrait","upper body","close-up","full body","wide shot"],
-    targets: {
-      "bust":[0.35,0.45],
-      "waist up":[0.30,0.35],
-      "portrait":[0.10,0.15],
-      "upper body":[0.05,0.08],
-      "close-up":[0.03,0.05],
-      "full body":[0.00,0.02],
-      "wide shot":[0.00,0.01]
-    },
-    fallback: "bust"
-  },
-
-  expr: {
-    group: [
-      "neutral expression","smiling","smiling open mouth",
-      "slight blush","serious","determined","pouting (slight)"
-    ],
-    targets: {
-      "neutral expression":[0.55,0.65],
-      "smiling":[0.20,0.25],
-      "smiling open mouth":[0.03,0.05],
-      "slight blush":[0.03,0.05],
-      "serious":[0.01,0.02],
-      "determined":[0.01,0.02],
-      "pouting (slight)":[0.01,0.02]
-    },
-    fallback: "neutral expression"
-  },
-
-  bg: {
-    group: ["plain_background","white_background","studio_background","solid_background","white_seamless","gray_seamless"],
-    targets: {
-      "plain_background":[0.55,0.62],   // 主軸（下げすぎない）
-      "white_background":[0.15,0.22],
-      "studio_background":[0.08,0.12],
-      "solid_background":[0.04,0.07],
-      "white_seamless":[0.01,0.02],
-      "gray_seamless":[0.01,0.02]
-    },
-    fallback: "plain_background"
-  },
-
-  light: {
-    group: ["even lighting","soft lighting","normal lighting","window light","overcast"],
-    targets: {
-      "even lighting":[0.35,0.45],
-      "soft lighting":[0.30,0.35],
-      "normal lighting":[0.15,0.20],
-      "window light":[0.05,0.08],
-      "overcast":[0.00,0.02]
-    },
-    fallback: "even lighting"
-  }
-};
-window.MIX_RULES = MIX_RULES;
-
-// 使っているならそのまま
-const EXPR_ALL = new Set([
-  ...Object.keys(MIX_RULES.expr.targets),
-  MIX_RULES.expr.fallback
-]);
 
 
 // === NSFWヘッダ統一関数（置き換え版）========================
