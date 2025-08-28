@@ -7285,13 +7285,14 @@ function initAll(){
     renderNSFWProduction();
     initHairEyeAndAccWheels();
 
-    // 4) カラーホイール（固定＆量産）— 戻り値を受け取る！
-    const getTopColor    = initColorWheel("top",     35, 80, 55);
-    const getBottomColor = initColorWheel("bottom", 210, 70, 50);
-    const getShoesColor  = initColorWheel("shoes",    0,  0, 30);
-    initColorWheel("p_top",    35, 80, 55);
-    initColorWheel("p_bottom",210, 70, 50);
-    initColorWheel("p_shoes",   0,  0, 30);
+    // 4) カラーホイール（固定＆量産）— 戻り値を "window" に公開！
+    window.getTopColor    = initColorWheel("top",     35, 80, 55);
+    window.getBottomColor = initColorWheel("bottom", 210, 70, 50);
+    window.getShoesColor  = initColorWheel("shoes",    0,  0, 30);
+
+    window.getPTopColor    = initColorWheel("p_top",     35, 80, 55);
+    window.getPBottomColor = initColorWheel("p_bottom", 210, 70, 50);
+    window.getPShoesColor  = initColorWheel("p_shoes",    0,  0, 30);
 
     // PCへ同期
     function syncWearColors(){
@@ -7299,9 +7300,11 @@ function initAll(){
       const useTop    = document.getElementById("use_top")?.checked;
       const useBottom = document.getElementById("useBottomColor")?.checked;
       const useShoes  = document.getElementById("use_shoes")?.checked;
-      window.PC.top    = useTop    ? (getTopColor?.()    || "") : "";
-      window.PC.bottom = useBottom ? (getBottomColor?.() || "") : "";
-      window.PC.shoes  = useShoes  ? (getShoesColor?.()  || "") : "";
+      window.PC.top    = useTop    ? (window.getTopColor?.()    || "") : "";
+      window.PC.bottom = useBottom ? (window.getBottomColor?.() || "") : "";
+      window.PC.shoes  = useShoes  ? (window.getShoesColor?.()  || "") : "";
+      // デバッグ（必要なら）
+      // console.log('[PC]', window.PC);
     }
 
     // 初期同期
@@ -7312,12 +7315,13 @@ function initAll(){
       document.getElementById(id)?.addEventListener("change", syncWearColors);
     });
 
-    // 色名テキストの変化で同期（ホイール操作時）
+    // 色名ラベルの変化でも同期（ホイール操作反映）
     function observeTag(id){
       const el = document.getElementById(id);
       if (!el) return;
-      const mo = new MutationObserver(()=> syncWearColors());
-      mo.observe(el, { childList:true, characterData:true, subtree:true });
+      new MutationObserver(syncWearColors).observe(el, {
+        childList:true, characterData:true, subtree:true
+      });
     }
     observeTag("tag_top");
     observeTag("tag_bottom");
@@ -7333,6 +7337,9 @@ function initAll(){
 }
 
 document.addEventListener('DOMContentLoaded', initAll);
+
+
+
 function bindOneTestUI(){
   // クリック
   $("#btnOneLearn")?.addEventListener("click", runOneTest);
