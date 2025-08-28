@@ -946,21 +946,21 @@ function toEnTagStrict(t){
     }
     return out;
   };
-   // --- debug handles (console用) ---
-window.WEAR_PIPE_DEBUG = {
-  ensureCatalog,
-  getOutfitMeta,
-  applyWearColorPipeline,
-  pairWearColors,
-  canon,
-  norm,
-  keys(){ return Array.from(ensureCatalog().keys()); },
-  cat(){ return ensureCatalog(); }
 };
 })();
 
 
+const canon2 = s => String(s||"").toLowerCase()
+  .replace(/[_-]+/g,' ')
+  .replace(/\s+/g,' ')
+  .trim();
 
+console.log('[CHK] catalog size', window.SFW_CATALOG?.size);
+console.log('[CHK] keys sample', Array.from(window.SFW_CATALOG?.keys?.() || []).slice(0,10));
+console.log('[CHK] lookup by tag',
+  window.SFW_CATALOG?.get?.(canon2('t-shirt')),
+  window.SFW_CATALOG?.get?.(canon2('jeans'))
+);
 
 
 
