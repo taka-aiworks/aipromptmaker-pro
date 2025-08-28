@@ -71,43 +71,34 @@
 
 
 // DOMに出ている「服の候補」から辞書配列を復元して公開
-(function rebuildFromDOM(){
+// ① 関数化
+window.refreshOutfitDict = function refreshOutfitDict(){
   const byId = {
-    top:    '#outfit_top .scroller-item, #outfit_top *[data-en], #outfit_top button, #outfit_top [value]',
-    pants:  '#outfit_pants .scroller-item, #outfit_pants *[data-en], #outfit_pants button, #outfit_pants [value]',
-    skirt:  '#outfit_skirt .scroller-item, #outfit_skirt *[data-en], #outfit_skirt button, #outfit_skirt [value]',
-    dress:  '#outfit_dress .scroller-item, #outfit_dress *[data-en], #outfit_dress button, #outfit_dress [value]',
-    shoes:  '#outfit_shoes .scroller-item, #outfit_shoes *[data-en], #outfit_shoes button, #outfit_shoes [value]',
+    top:    '#outfit_top [data-en], #outfit_top [value], #outfit_top button, #outfit_top .scroller-item',
+    pants:  '#outfit_pants [data-en], #outfit_pants [value], #outfit_pants button, #outfit_pants .scroller-item',
+    skirt:  '#outfit_skirt [data-en], #outfit_skirt [value], #outfit_skirt button, #outfit_skirt .scroller-item',
+    dress:  '#outfit_dress [data-en], #outfit_dress [value], #outfit_dress button, #outfit_dress .scroller-item',
+    shoes:  '#outfit_shoes [data-en], #outfit_shoes [value], #outfit_shoes button, #outfit_shoes .scroller-item',
   };
-
-  const pickTag = (el) => {
-    // よくある置き方に広く対応（data-en / data-tag / value / テキスト）
-    return (el.dataset?.en || el.dataset?.tag || el.getAttribute?.('value') || el.textContent || '')
-      .trim().toLowerCase().replace(/\s+/g,' ');
-  };
+  const pickTag = (el) =>
+    (el.dataset?.en || el.dataset?.tag || el.getAttribute?.('value') || el.textContent || '')
+    .trim().toLowerCase().replace(/\s+/g,' ');
 
   const dict = [];
   for (const [cat, sel] of Object.entries(byId)) {
     document.querySelectorAll(sel).forEach(el => {
       const tag = pickTag(el);
-      // 空や日本語ラベルだけっぽい行はスキップ
       if (!tag || /[\u3040-\u30ff\u4e00-\u9faf]/.test(tag)) return;
       dict.push({ tag, cat });
     });
   }
-
-  // 去重
   const seen = new Set();
-  const dedup = dict.filter(e => {
-    const k = e.cat + '|' + e.tag;
-    if (seen.has(k)) return false;
-    seen.add(k); return true;
-  });
+  const dedup = dict.filter(e => { const k = e.cat+'|'+e.tag; if (seen.has(k)) return false; seen.add(k); return true; });
 
-  // 公開
   window.__OUTFIT_DICT__ = dedup;
+  window.__OUTFIT_SRC = dedup;           // ← ensureCatalog が拾えるようにスナップショットも更新
   console.log('[DOM→DICT] count =', dedup.length, dedup.slice(0,10));
-})();
+};
 
 (function patchMakeFinal(){
   const orig = window.makeFinalOutfitTags;
