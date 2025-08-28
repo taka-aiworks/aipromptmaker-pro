@@ -1471,6 +1471,16 @@ function pmBuildOne(){
     .map(x => (x||"").trim())
     .filter(x => x && x.toLowerCase()!=='none' && !_isRating(x));
 
+  // 単一/複数どちらのUIにも対応する安全取得
+  const pickManySafe = (id) => {
+    if (typeof getMany === 'function') {
+      const arr = getMany(id) || [];
+      if (Array.isArray(arr) && arr.length) return arr;
+    }
+    const one = (typeof pickOneFromScroller === 'function') ? pickOneFromScroller(id) : "";
+    return one ? [one] : [];
+  };
+
   let p = ["solo"];
 
   // 基本情報（UIそのまま）
@@ -1501,40 +1511,42 @@ function pmBuildOne(){
   let expr   = pickTag('pl_expr')  || "neutral expression";
   let lite   = pickTag('pl_light') || "soft lighting";
 
-  // —— NSFW（UIの選択だけ反映）——
+  // —— NSFW（UIの選択だけ反映：単一/複数どちらでも吸う）——
   const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
   let nsfwAdd = [];
   if (nsfwOn){
-    const ex2  = pickTag('pl_nsfw_expr');
-    const li2  = pickTag('pl_nsfw_light');
-
-    nsfwAdd = [
-      pickTag('pl_nsfw_expo'),
-      pickTag('pl_nsfw_underwear'),
-      pickTag('pl_nsfw_outfit'),
-      pickTag('pl_nsfw_situ'),
-      pickTag('pl_nsfw_pose'),
-      pickTag('pl_nsfw_acc'),
-      pickTag('pl_nsfw_body'),
-      pickTag('pl_nsfw_nipple'),
-    ].map(asTag).filter(Boolean).filter(t=>!_isRating(t));
-
+    // NSFW表情/照明は先に差し替え（撮影は1つ採用）
+    const ex2 = (pickManySafe('pl_nsfw_expr').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
+    const li2 = (pickManySafe('pl_nsfw_light').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     if (ex2) expr = ex2;
     if (li2) lite = li2;
 
-    // SFW服だけ掃除（第2引数は渡さない：誤消去を避ける）
+    // 服・露出・状況など（複数可）
+    nsfwAdd = [
+      ...pickManySafe('pl_nsfw_expo'),
+      ...pickManySafe('pl_nsfw_underwear'),
+      ...pickManySafe('pl_nsfw_outfit'),
+      ...pickManySafe('pl_nsfw_situ'),
+      ...pickManySafe('pl_nsfw_pose'),
+      ...pickManySafe('pl_nsfw_acc'),
+      ...pickManySafe('pl_nsfw_body'),
+      ...pickManySafe('pl_nsfw_nipple'),
+    ]
+    .map(asTag)
+    .map(x => String(x || '').trim())
+    .filter(x => x && x.toLowerCase() !== 'none' && !_isRating(x));
+
+    // SFW服だけ掃除 → NSFW追加
     if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
     p.push(...nsfwAdd);
   }
 
   // シーン確定
   p.push(...[bg, comp, view, expr, lite].filter(Boolean));
-  p = unifyExprOnce(p);
-
+  if (typeof unifyExprOnce==='function') p = unifyExprOnce(p);
 
   // —— 最終整形：UI尊重（補完もカテゴリ潰しもしない）——
   p = _clean(p);
-  // ★カテゴリ単一化はしない（NSFW要素を潰さないため）
   // 並び・排他・単一背景/ライトのみ（非破壊系）
   if (typeof unifyLightingOnce==='function')          p = unifyLightingOnce(p);
   if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
@@ -1563,9 +1575,9 @@ function pmBuildOne(){
       p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
       p = ["NSFW", "solo", ...p];
     } else {
-      const i = p.indexOf("solo");
-      if (i>0){ p.splice(i,1); p.unshift("solo"); }
-      if (i===-1) p.unshift("solo");
+      const i2 = p.indexOf("solo");
+      if (i2>0){ p.splice(i2,1); p.unshift("solo"); }
+      if (i2===-1) p.unshift("solo");
     }
   }
 
