@@ -788,37 +788,31 @@ function toEnTagStrict(t){
 }
 
 
-/* ===================== 服色パイプライン（辞書ベース最小処理） ===================== */
-/* 期待する辞書（どれか1つが存在）:
-   1) window.SFW && SFW.outfit : [{tag, cat, emit?}, ...]
-   2) window.SFW_OUTFIT_DICT  : [{tag, cat, emit?}, ...]
-   ※ emit が無ければ tag をそのまま出力に使う
+/* ===================== 服色パイプライン（辞書ベース・プレースホルダ無し） ===================== */
+/* 期待する辞書:
+   window.SFW && SFW.outfit : [{tag, cat, emit?}, ...]
+   ※ emit が無ければ tag をそのまま出力（UI表示も同じ文字列）
 */
-
 (function(){
-  // ---- 可変：先頭から除去したい固定接頭辞（デフォルトOFF）----
-  // 例: ["plain "] にすると "plain windbreaker" を "windbreaker" として出力（色付け前に）
-  window.OUTFIT_STRIP_PREFIXES = window.OUTFIT_STRIP_PREFIXES || []; // デフォルト: 何もしない
+  // ---- 可変：先頭から除去したい固定接頭辞（必要な時だけ設定）----
+  // 例: window.OUTFIT_STRIP_PREFIXES = ["plain "]
+  window.OUTFIT_STRIP_PREFIXES = window.OUTFIT_STRIP_PREFIXES || [];
 
   // ---- 共通ユーティリティ ----
   const canon = s => String(s||"").toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
   const norm  = s => String(s||"").trim();
   const startsWithAny = (s, arr)=> (arr||[]).some(p=> s.toLowerCase().startsWith(String(p||'').toLowerCase()));
 
-  // 色語彙を JSON から組む（SFW.colors があればそれを使う）
+  // ---- 色語彙（SFW.colors を取り込み）----
   function buildColorRe(){
     const pool = new Set([
-      "white","black","red","blue","green","azure","yellow","pink","purple","brown","beige",
-      "gray","grey","silver","gold","navy","teal","cyan","magenta","orange",
-      "ivory","cream","tan","khaki","olive","maroon","burgundy","indigo","violet",
-      "lavender","mint","peach","coral","aqua","sky blue","light blue","dark blue",
-      "light green","dark green"
+      "white","black","red","blue","green","yellow","pink","purple","orange","brown","gray","grey",
+      "silver","gold","beige","navy","teal","magenta","ivory","khaki","olive","violet","lavender",
+      "mint","peach","light blue","sky blue","dark blue","light green","dark green","turquoise","emerald","crimson","scarlet"
     ]);
     try {
-      const cands =
-        (window.SFW && Array.isArray(window.SFW.colors) ? window.SFW.colors : [])
-        .map(e => e && e.tag).filter(Boolean);
-      cands.forEach(c => pool.add(String(c).toLowerCase()));
+      const list = (window.SFW && Array.isArray(window.SFW.colors)) ? window.SFW.colors : [];
+      list.map(e=>e&&e.tag).filter(Boolean).forEach(t=> pool.add(String(t).toLowerCase()));
     } catch {}
     const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');
     const alt = Array.from(pool).sort((a,b)=>b.length-a.length).map(esc).join('|');
@@ -826,49 +820,43 @@ function toEnTagStrict(t){
   }
   window._COLOR_RE = window._COLOR_RE || buildColorRe();
 
-  // ---- 辞書 -> カタログ化（tag キーで引く / emit は出力文字）----
+  // ---- outfit辞書 -> カタログ化（tag で引く / emit は出力文字）----
   function ensureCatalog(){
     if (window.SFW_CATALOG && window.SFW_CATALOG.size) return window.SFW_CATALOG;
-
-    let src = [];
-    if (window.SFW && Array.isArray(window.SFW.outfit)) src = window.SFW.outfit;
-    else if (Array.isArray(window.SFW_OUTFIT_DICT))     src = window.SFW_OUTFIT_DICT;
-    else if (Array.isArray(window.DEFAULT_SFW))         src = window.DEFAULT_SFW;
-    else if (Array.isArray(window.default_sfw))         src = window.default_sfw;
-
+    const src = (window.SFW && Array.isArray(window.SFW.outfit)) ? window.SFW.outfit : [];
     const m = new Map();
-    for (const e of (src||[])){
+    for (const e of src){
       const tag  = e && e.tag  ? norm(e.tag)  : ""; if (!tag) continue;
       const cat  = e && e.cat  ? norm(e.cat)  : ""; if (!cat) continue;
-      const emit = e && e.emit ? norm(e.emit) : tag; // emit 無ければ tag で出す
+      const emit = e && e.emit ? norm(e.emit) : tag;
       m.set(canon(tag), { cat: canon(cat), emit, tag });
     }
     window.SFW_CATALOG = m;
-    try { if (window.DEBUG_PROMPT_LOG) console.debug('[PROMPT] outfit catalog size=', m.size); } catch{}
     return m;
   }
 
-  // ---- 入力トークンから outfit を判定（色語は一時剥離 → 辞書マッチ）----
+  // ---- 入力トークン -> outfitメタ（先頭の色は一時剥離して辞書照合）----
   function getOutfitMeta(token){
     const raw = norm(token);
     const withoutColor = raw.replace(window._COLOR_RE, '').trim();
     const m = ensureCatalog();
-    const hit = m.get(canon(withoutColor)) || m.get(canon(raw));
-    return hit || null; // {cat, emit, tag} or null
+    // 色を剥いだ形優先 → そのまま
+    return m.get(canon(withoutColor)) || m.get(canon(raw)) || null; // {cat, emit, tag} or null
   }
 
-  // ---- 任意: 「plain 」のような接頭辞を emit から外す（必要な時だけ）----
+  // ---- 任意: 接頭辞（例: "plain "）を emit から除去 ----
   function maybeStripPrefix(s){
     if (!s) return s;
-    return startsWithAny(s, window.OUTFIT_STRIP_PREFIXES) ? s.replace(/^(\S+\s+)/,'').replace(/^plain\s+/i,'').trim() : s;
+    return startsWithAny(s, window.OUTFIT_STRIP_PREFIXES)
+      ? s.replace(/^(\S+\s+)/,'').replace(/^plain\s+/i,'').trim()
+      : s;
   }
 
-  // ---- 既存と互換の PC 取得（opts > window.PC > 空）----
+  // ---- 既存互換：色指定の受け取り（opts > window.PC）----
   function resolvePC(opts){
     const base = { top:"", bottom:"", shoes:"" };
     const glob = (typeof window.PC==='object' && window.PC) ? window.PC : {};
     const pc   = Object.assign({}, base, glob, (opts||{}));
-    // none/空は無視
     for (const k of Object.keys(pc)) {
       const v = String(pc[k] || '').trim().toLowerCase();
       pc[k] = (v && v!=='none') ? v : '';
@@ -876,7 +864,7 @@ function toEnTagStrict(t){
     return pc;
   }
 
-  // ---- 1) dress に top 色を直焼き（辞書ベース・色が未付与のときのみ）----
+  // ---- 1) dress に top 色を直焼き（辞書タグのみ対象）----
   window.pairWearColors = function pairWearColors(arr, opts={}){
     if (!Array.isArray(arr)) return arr || [];
     const PC = resolvePC(opts);
@@ -888,36 +876,29 @@ function toEnTagStrict(t){
         const emit = maybeStripPrefix(meta.emit);
         out.push(`${PC.top} ${emit}`);
       } else {
-        out.push(meta ? maybeStripPrefix(meta.emit) : t); // emit に統一
+        out.push(meta ? maybeStripPrefix(meta.emit) : t); // 辞書ヒットは emit に統一
       }
     }
     return out;
   };
 
-  // ---- 2) 本体：色焼き付け（dress=top / pants+skirt=bottom / shoes=shoes）----
+  // ---- 2) 本体：服だけに色を焼く（プレースホルダは使わない）----
   window.applyWearColorPipeline = function applyWearColorPipeline(p, opts={}){
     if (!Array.isArray(p)) return p || [];
     const PC = resolvePC(opts);
 
-    // 互換：色プレースホルダ注入（あれば）
-    if (typeof injectWearColorPlaceholders==='function'){
-      try { injectWearColorPlaceholders(p, { top:PC.top, bottom:PC.bottom, shoes:PC.shoes }); }
-      catch { injectWearColorPlaceholders(p); }
-    }
-
-    // 先に dress に top 色直焼き（emit へ正規化も兼ねる）
+    // 先に dress へ top 色を直焼き & emit 正規化
     p = window.pairWearColors(p, PC);
 
-    // 服以外を壊さず、服だけに色を付ける
     const out = [];
     for (const token of p){
       let t = norm(token); if (!t) continue;
 
-      // 既に色が先頭にある場合は上書きしない
+      // 既に色が入っているならそのまま
       if (window._COLOR_RE.test(t)) { out.push(t); continue; }
 
       const meta = getOutfitMeta(t);
-      if (!meta) { out.push(t); continue; } // 服以外はそのまま
+      if (!meta) { out.push(t); continue; } // 服以外は触らない
 
       const emit = maybeStripPrefix(meta.emit);
       if (meta.cat === 'top' || meta.cat === 'dress'){
@@ -932,7 +913,6 @@ function toEnTagStrict(t){
     }
     return out;
   };
-
 })();
 
 
