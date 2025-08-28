@@ -1243,79 +1243,94 @@
 })();
 </script>
 <script>
-/* ===================== UI → window.PC 同期（最小） ===================== */
-(function(){
-  // SFW.colors から label→tag の逆引きも作っておく（ピッカーが日本語表示のとき用）
-  const label2tag = (() => {
-    const m = new Map();
-    try {
-      (window.SFW?.colors || []).forEach(c => {
-        const tag = (c.tag || '').toString().trim();
-        const label = (c.label || '').toString().trim();
-        if (tag && label) m.set(label, tag);
-      });
-    } catch {}
-    return m;
-  })();
+/* ========= 服の完成タグをUIで直接生成 ========= */
 
-  const clean = s => (s||'').toString().trim();
-  const asTag = s => clean(s).toLowerCase();
+/* 例:
+   selectedOutfits = ["t-shirt","shorts"]  // UIの選択配列（辞書の tag 文字列）
+   colorTags = { top:"orange", bottom:"blue", shoes:"black" } // ピッカーの文字タグ
+*/
+function makeFinalOutfitTags(selectedOutfits, colorTags) {
+  const sel = Array.isArray(selectedOutfits) ? selectedOutfits.filter(Boolean) : [];
+  const colors = Object.assign({ top:"", bottom:"", shoes:"" }, (colorTags||{}));
 
-  // #tag_top 等の中身（例: "white" / "白" / "—"）を辞書タグへ正規化
-  function readColorTag(which){
-    const el = document.getElementById('tag_'+which);
-    if (!el) return '';
-    let raw = clean(el.textContent || el.innerText);
-    if (!raw || raw === '—' || raw === '-') return '';
+  // 辞書があればカテゴリを引く（なければ推定）
+  const catMap = new Map();
+  try {
+    const dict = (window.SFW && Array.isArray(SFW.outfit)) ? SFW.outfit : [];
+    for (const e of dict) if (e && e.tag && e.cat) catMap.set(String(e.tag).toLowerCase(), String(e.cat).toLowerCase());
+  } catch {}
 
-    // すでに英語タグならそのまま
-    const low = asTag(raw);
-    const knownTags = new Set((window.SFW?.colors || []).map(c => asTag(c.tag)));
-    if (knownTags.has(low)) return low;
+  const getCat = (tag) => {
+    const k = String(tag||"").toLowerCase();
+    if (catMap.has(k)) return catMap.get(k);
+    // 簡易推定（辞書が無い/足りない場合の保険）
+    if (/(dress|kimono|yukata|cheongsam|hanbok|sari|uniform|gown)$/i.test(k)) return "dress";
+    if (/(skirt)$/i.test(k)) return "skirt";
+    if (/(jeans|pants|trousers|shorts|overalls|hakama)$/i.test(k)) return "pants";
+    if (/(boots|sneakers|loafers|mary janes|socks)$/i.test(k)) return "shoes";
+    return "top"; // 迷ったら top とみなす
+  };
 
-    // 日本語ラベルから逆引き
-    if (label2tag.has(raw)) return asTag(label2tag.get(raw));
+  const hasDress = sel.some(t => getCat(t) === "dress");
 
-    // 念のため空白/全角スペースを潰して再チェック
-    raw = raw.replace(/\s+/g,' ').replace(/\u3000/g,' ').trim();
-    const again = asTag(raw);
-    if (knownTags.has(again)) return again;
+  // すでに色名で始まってたら二重付与しないための軽いチェック
+  const colorPool = new Set(
+    ((window.SFW && Array.isArray(SFW.colors) ? SFW.colors.map(c=>c.tag) : [])).concat([
+      "white","black","red","blue","green","yellow","pink","purple","orange","brown","gray","silver","gold","beige","navy",
+      "light blue","sky blue","teal","turquoise","lavender","violet","magenta","crimson","scarlet","emerald","olive",
+      "khaki","ivory","peach","mint"
+    ]).map(s=>String(s).toLowerCase())
+  );
+  const startsWithColor = (s)=>{
+    const t = String(s||"").toLowerCase();
+    return Array.from(colorPool).some(c => t.startsWith(c+" "));
+  };
 
-    // ここまで来たら不明→空（色なし）
-    return '';
+  const out = [];
+  if (hasDress) {
+    // ワンピは top の色を前置き。下の色は無効（下は出力しない）
+    for (const t of sel) {
+      const cat = getCat(t);
+      if (cat === "dress") {
+        const tagged = startsWithColor(t) ? t : (colors.top ? `${colors.top} ${t}` : t);
+        out.push(tagged);
+      } else if (cat === "shoes") {
+        const tagged = startsWithColor(t) ? t : (colors.shoes ? `${colors.shoes} ${t}` : t);
+        out.push(tagged);
+      }
+      // top/pants/skirt は無視
+    }
+  } else {
+    // 通常モード：top / bottom / shoes を色前置
+    for (const t of sel) {
+      const cat = getCat(t);
+      if (cat === "top") {
+        out.push(startsWithColor(t) ? t : (colors.top    ? `${colors.top} ${t}`    : t));
+      } else if (cat === "pants" || cat === "skirt") {
+        out.push(startsWithColor(t) ? t : (colors.bottom ? `${colors.bottom} ${t}` : t));
+      } else if (cat === "shoes") {
+        out.push(startsWithColor(t) ? t : (colors.shoes  ? `${colors.shoes} ${t}`  : t));
+      } else if (cat === "dress") {
+        // 念のため（hasDress=falseなので単独ワンピのとき）
+        out.push(startsWithColor(t) ? t : (colors.top ? `${colors.top} ${t}` : t));
+      } else {
+        out.push(t); // 未分類はそのまま
+      }
+    }
   }
+  return out;
+}
 
-  function syncPC(){
-    const useTop    = document.getElementById('use_top')?.checked ?? false;
-    const useBottom = document.getElementById('useBottomColor')?.checked ?? false;
-    const useShoes  = document.getElementById('use_shoes')?.checked ?? false;
-
-    window.PC = {
-      top:    useTop    ? readColorTag('top')    : '',
-      bottom: useBottom ? readColorTag('bottom') : '',
-      shoes:  useShoes  ? readColorTag('shoes')  : ''
-    };
-    // デバッグ確認したい時だけ
-    try { if (window.DEBUG_PROMPT_LOG) console.debug('[PC]', window.PC); } catch {}
-  }
-
-  // チェックボックス変化で同期
-  ['use_top','useBottomColor','use_shoes'].forEach(id=>{
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('change', syncPC);
-  });
-
-  // ピッカーが #tag_* の表示を書き換えたら同期（イベントが無くても検知できる）
-  ['tag_top','tag_bottom','tag_shoes'].forEach(id=>{
-    const el = document.getElementById(id);
-    if (!el) return;
-    const mo = new MutationObserver(syncPC);
-    mo.observe(el, { childList:true, characterData:true, subtree:true });
-  });
-
-  // 初期反映
-  syncPC();
-})();
+/* ===== 統合：最終トークンを組み立てる（髪・目は今まで通り） =====
+   base = 髪色・目色・体型など（服以外）のトークン配列
+   outfits = 服の選択結果（タグ配列）
+   colorTags = { top, bottom, shoes } ピッカーの文字タグ
+*/
+function buildFinalTokens(base, outfits, colorTags) {
+  const a = Array.isArray(base) ? base.filter(Boolean) : [];
+  const b = makeFinalOutfitTags(outfits, colorTags);
+  return a.concat(b);
+}
 </script>
       
 </body>
