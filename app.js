@@ -456,6 +456,85 @@ const SCOPE = {
   }
 };
 
+
+// === 学習用 NSFW ホワイトリスト（軽度中心・ブレにくい範囲で拡張） ===
+const NSFW_LEARN_SCOPE = {
+  expression: [
+    // L1: ごく軽い表情中心（幅の拡張）
+    "aroused","flushed","embarrassed","seductive_smile",
+    "half_lidded_eyes","bedroom_eyes","lip_bite",
+    "bashful","pouting",
+    // 追加（L2の中でも弱め・視覚的ノイズ少なめ）
+    "moist_lips","tearful"
+    // ※ ahegao/rolling_eyes 等の強すぎるL2は除外のまま
+  ],
+
+  exposure: [
+    // L1: 肌見せ系の軽度
+    "mild_cleavage","off_shoulder","bare_back","leggy",
+    // L2: 透け/濡れ・部分露出（露出そのものだが破綻を起こしにくい範囲）
+    "wet_clothes","see_through","sideboob","underboob"
+    // ※ topless/bottomless/nude は学習ブレが大きいので対象外のまま
+  ],
+
+  situation: [
+    // L1: 日常的/撮影的な軽度シチュ
+    "suggestive_pose","mirror_selfie","after_shower","towel_wrap",
+    "sauna_steam","sunbathing",
+    // L2: “脱ぎかけ/隠し”など控えめ寄り
+    "in_bed_sheets","undressing","zipper_down","covered_nudity",
+    "photoshoot_studio"
+    // ※ 体液・explicit系は除外（学習の安定性重視）
+  ],
+
+  // 追加：背景（学習では安定度が高く、構図に一貫性が出やすい）
+  background: [
+    "beach","poolside","waterpark","beach_night"
+  ],
+
+  lighting: [
+    // 既存で安定していた範囲を維持
+    "softbox","rim_light","backlit","window_glow","golden_hour",
+    "neon","candlelight","low_key","hard_light","colored_gels",
+    "film_noir","dappled_light","spotlight","moody"
+  ],
+
+  // 追加カテゴリも“軽度”に限定
+  pose: [
+    "seductive_pose","lying_on_bed","stretching","crossed_legs",
+    "arched_back","against_wall" // 増やすが、性行為連想の強い体位は除外
+  ],
+
+  outfit: [
+    // 露骨なFetish系を避けつつ、見た目の幅だけ拡張
+    "nightgown","babydoll","camisole","crop_top","see_through_top",
+    "bikini","school_swimsuit","wet_swimsuit"
+  ],
+
+  body: [
+    // L1を追加して“体型バリエーション”を増やす（安定しやすい）
+    "flat_chest","small_breasts","petite_bust",
+    // 既存の一部は維持（誇張すぎるものは外してもOK）
+    "big_breasts","soft_body","wide_hips"
+    // ※ thicc/bubble_butt/slim_thick/hourglass_exaggerated は好みで残してOKだが、
+    //   学習のキャラ安定を優先するなら一旦外すのを推奨
+  ],
+
+  nipples: [
+    // L1のみ（露出度は上がるが、形状要素は比較的安定しやすい）
+    "puffy_nipples","inverted_nipples","large_areolae","dark_areolae"
+    // ※ pierced 等の付加要素は外すと安定
+  ],
+
+  underwear: [
+    // 下着は“透け/レース/スポーツ/ストッキング系”を中心に
+    "lace_panties","sheer_panties","thong","gstring",
+    "lace_bra","sports_bra","stockings","thighhighs"
+  ]
+};
+
+
+
 // === 顔安定版・配分ルール =======================
 const MIX_RULES = {
   view: {
@@ -698,60 +777,59 @@ const _EXPR_ALL  = (typeof EXPR_ALL      !== 'undefined') ? EXPR_ALL      : new 
 // 共通：集合判定
 function _in(set, t){ return set && set.has(String(t||"").toLowerCase()); }
 
-// ===== 表情・ポーズ：NSFW優先で単一化 =====
+// ===== 表情・ポーズ・ライティング：NSFW優先で単一化（MIX_RULES の直後に貼り付け） =====
 (function(){
-  // EXPR_ALL が未定義なら MIX_RULES から生成（既にあるならそのまま使う）
-  const EXPR_FALLBACK = (function(){ try {
-    if (typeof EXPR_ALL !== 'undefined') return EXPR_ALL;
+  const _lc = s => String(s||"").trim().toLowerCase();
+  const _mkSet = (g=[], fb) => new Set([...(g||[]), fb].filter(Boolean).map(_lc));
+  const _has = (set, t) => !!set && set.has(_lc(t));
+
+  // --- 全候補セット（MIX_RULES が無くても安全） ---
+  const EXPR_ALL  = (function(){ try {
+    // 既に外部で定義済みならそれを尊重（顔の安定化ルールと互換）
+    if (typeof window.EXPR_ALL !== 'undefined') return window.EXPR_ALL;
     const g  = MIX_RULES?.expr?.targets ? Object.keys(MIX_RULES.expr.targets) : [];
     const fb = MIX_RULES?.expr?.fallback;
-    return new Set([...(g||[]), fb].filter(Boolean).map(s=>String(s).toLowerCase()));
+    return _mkSet(g, fb);
   } catch { return new Set(); } })();
 
-  // POSE_ALL は MIX_RULES.pose から生成（無ければ空）
-  const POSE_ALL = (function(){ try {
+  const POSE_ALL  = (function(){ try {
     const g  = MIX_RULES?.pose?.targets ? Object.keys(MIX_RULES.pose.targets) : [];
     const fb = MIX_RULES?.pose?.fallback;
-    return new Set([...(g||[]), fb].filter(Boolean).map(s=>String(s).toLowerCase()));
+    return _mkSet(g, fb);
   } catch { return new Set(); } })();
 
-  // NSFW セット（未定義なら空集合）
-  const _NSFW_EXPR = (typeof NSFW_EXPR_SET !== 'undefined') ? NSFW_EXPR_SET : new Set();
-  const _NSFW_POSE = (typeof NSFW_POSE_SET !== 'undefined') ? NSFW_POSE_SET : new Set();
+  const LIGHT_ALL = (function(){ try {
+    const g  = MIX_RULES?.light?.targets ? Object.keys(MIX_RULES.light.targets) : [];
+    const fb = MIX_RULES?.light?.fallback;
+    return _mkSet(g, fb);
+  } catch { return new Set(); } })();
 
-  const _has = (set, t) => set && set.has(String(t||"").toLowerCase());
+  // --- NSFW セット（外部定義があれば採用、無ければ空） ---
+  const NSFW_EXPR  = (typeof window.NSFW_EXPR_SET  !== 'undefined') ? window.NSFW_EXPR_SET  : new Set();
+  const NSFW_POSE  = (typeof window.NSFW_POSE_SET  !== 'undefined') ? window.NSFW_POSE_SET  : new Set();
+  const NSFW_LIGHT = (typeof window.NSFW_LIGHT_SET !== 'undefined') ? window.NSFW_LIGHT_SET : new Set();
 
-  // 表情：NSFWがあればそれを残し1つに
-  window.unifyExprOnce = function(arr){
+  // --- 汎用：NSFW優先でカテゴリ要素を1つに絞る ---
+  const _unifyOne = (arr, nsfwSet, allSet) => {
     if (!Array.isArray(arr)) return arr || [];
     const hits = [];
     for (let i=0;i<arr.length;i++){
       const raw = String(arr[i]||"").trim(); if (!raw) continue;
-      const t = raw.toLowerCase();
-      if (_has(_NSFW_EXPR,t) || _has(EXPR_FALLBACK,t)) hits.push({i,t});
+      const t = _lc(raw);
+      if (_has(nsfwSet,t) || _has(allSet,t)) hits.push({i,t});
     }
     if (hits.length <= 1) return arr;
+    // 既定は最後の一致を残す。NSFWがあればそれを優先
     let keep = hits[hits.length-1].i;
-    for (const h of hits){ if (_has(_NSFW_EXPR,h.t)) { keep = h.i; break; } }
+    for (const h of hits){ if (_has(nsfwSet,h.t)) { keep = h.i; break; } }
     const drop = new Set(hits.map(h=>h.i).filter(i=>i!==keep));
     return arr.filter((_,i)=>!drop.has(i));
   };
 
-  // ポーズ：NSFWがあればそれを残し1つに
-  window.unifyPoseOnce = function(arr){
-    if (!Array.isArray(arr)) return arr || [];
-    const hits = [];
-    for (let i=0;i<arr.length;i++){
-      const raw = String(arr[i]||"").trim(); if (!raw) continue;
-      const t = raw.toLowerCase();
-      if (_has(_NSFW_POSE,t) || _has(POSE_ALL,t)) hits.push({i,t});
-    }
-    if (hits.length <= 1) return arr;
-    let keep = hits[hits.length-1].i;
-    for (const h of hits){ if (_has(_NSFW_POSE,h.t)) { keep = h.i; break; } }
-    const drop = new Set(hits.map(h=>h.i).filter(i=>i!==keep));
-    return arr.filter((_,i)=>!drop.has(i));
-  };
+  // --- 公開関数 ---
+  window.unifyExprOnce  = function(arr){ return _unifyOne(arr, NSFW_EXPR,  EXPR_ALL ); };
+  window.unifyPoseOnce  = function(arr){ return _unifyOne(arr, NSFW_POSE,  POSE_ALL ); };
+  window.unifyLightOnce = function(arr){ return _unifyOne(arr, NSFW_LIGHT, LIGHT_ALL); };
 })();
 
 
@@ -1598,9 +1676,9 @@ function buildBatchLearning(n){
     p = finalizePromptArray(p);
     p = sanitizePromptArray(p);
 
-    // ←追加：表情は1つに（NSFW優先）
-    p = unifyExprOnce(p);
-    p = unifyPoseOnce(p);
+    if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
+    if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
+    if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p);
 
 
     // ヘッダ固定（NSFW → solo）
@@ -1741,8 +1819,10 @@ function pmBuildOne(){
   p.push(...[bg, comp, view, expr, lite].filter(Boolean));
 
   // ★ 表情・ポーズを NSFW 優先で単一化
-  if (typeof unifyExprOnce==='function') p = unifyExprOnce(p);
-  if (typeof unifyPoseOnce==='function') p = unifyPoseOnce(p);
+    if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
+    if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
+    if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p);
+
 
   // —— 最終整形：UI尊重（補完もカテゴリ潰しもしない）——
   p = _clean(p);
@@ -1923,8 +2003,9 @@ function buildBatchProduction(n){
       p.push(...addNS);
 
       // ←ここに追加
-      p = unifyExprOnce(p);
-      p = unifyPoseOnce(p);
+      if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
+      if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
+      if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p);
 
       // 先頭に NSFW を1つだけ
       p = p.filter(t => String(t).toUpperCase()!=="NSFW");
@@ -4815,82 +4896,6 @@ function bindCharIO(){
 }
 
 
-
-// === 学習用 NSFW ホワイトリスト（軽度中心・ブレにくい範囲で拡張） ===
-const NSFW_LEARN_SCOPE = {
-  expression: [
-    // L1: ごく軽い表情中心（幅の拡張）
-    "aroused","flushed","embarrassed","seductive_smile",
-    "half_lidded_eyes","bedroom_eyes","lip_bite",
-    "bashful","pouting",
-    // 追加（L2の中でも弱め・視覚的ノイズ少なめ）
-    "moist_lips","tearful"
-    // ※ ahegao/rolling_eyes 等の強すぎるL2は除外のまま
-  ],
-
-  exposure: [
-    // L1: 肌見せ系の軽度
-    "mild_cleavage","off_shoulder","bare_back","leggy",
-    // L2: 透け/濡れ・部分露出（露出そのものだが破綻を起こしにくい範囲）
-    "wet_clothes","see_through","sideboob","underboob"
-    // ※ topless/bottomless/nude は学習ブレが大きいので対象外のまま
-  ],
-
-  situation: [
-    // L1: 日常的/撮影的な軽度シチュ
-    "suggestive_pose","mirror_selfie","after_shower","towel_wrap",
-    "sauna_steam","sunbathing",
-    // L2: “脱ぎかけ/隠し”など控えめ寄り
-    "in_bed_sheets","undressing","zipper_down","covered_nudity",
-    "photoshoot_studio"
-    // ※ 体液・explicit系は除外（学習の安定性重視）
-  ],
-
-  // 追加：背景（学習では安定度が高く、構図に一貫性が出やすい）
-  background: [
-    "beach","poolside","waterpark","beach_night"
-  ],
-
-  lighting: [
-    // 既存で安定していた範囲を維持
-    "softbox","rim_light","backlit","window_glow","golden_hour",
-    "neon","candlelight","low_key","hard_light","colored_gels",
-    "film_noir","dappled_light","spotlight","moody"
-  ],
-
-  // 追加カテゴリも“軽度”に限定
-  pose: [
-    "seductive_pose","lying_on_bed","stretching","crossed_legs",
-    "arched_back","against_wall" // 増やすが、性行為連想の強い体位は除外
-  ],
-
-  outfit: [
-    // 露骨なFetish系を避けつつ、見た目の幅だけ拡張
-    "nightgown","babydoll","camisole","crop_top","see_through_top",
-    "bikini","school_swimsuit","wet_swimsuit"
-  ],
-
-  body: [
-    // L1を追加して“体型バリエーション”を増やす（安定しやすい）
-    "flat_chest","small_breasts","petite_bust",
-    // 既存の一部は維持（誇張すぎるものは外してもOK）
-    "big_breasts","soft_body","wide_hips"
-    // ※ thicc/bubble_butt/slim_thick/hourglass_exaggerated は好みで残してOKだが、
-    //   学習のキャラ安定を優先するなら一旦外すのを推奨
-  ],
-
-  nipples: [
-    // L1のみ（露出度は上がるが、形状要素は比較的安定しやすい）
-    "puffy_nipples","inverted_nipples","large_areolae","dark_areolae"
-    // ※ pierced 等の付加要素は外すと安定
-  ],
-
-  underwear: [
-    // 下着は“透け/レース/スポーツ/ストッキング系”を中心に
-    "lace_panties","sheer_panties","thong","gstring",
-    "lace_bra","sports_bra","stockings","thighhighs"
-  ]
-};
 
 
 
