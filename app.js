@@ -1684,7 +1684,7 @@ function buildOneLearning(extraSeed = 0){
   if (typeof pairWearColors==='function')              p = pairWearColors(p);
   _dbg('after pairWearColors', {diff:_diff(prePair, p), p: p.slice()});
 
-  // カラーパレット
+  // カラーパレット（UI由来の色取得）
   const normColor = v => {
     const s = String(v||'').trim().toLowerCase();
     return (s && s!=='none') ? s : '';
@@ -1696,13 +1696,12 @@ function buildOneLearning(extraSeed = 0){
   };
   _dbg('palette (top/bottom/shoes)', pal);
 
-  const hadPal = !!(pal.top || pal.bottom || pal.shoes);
-  // 服色の適用
+  // 服色の適用（中間段階）
   const preColor = p.slice();
-   if (typeof applyWearColorPipeline==='function'){
-     p = applyWearColorPipeline(p, window.PC || {});
-     _dbg('after applyWearColorPipeline', {diff:_diff(preColor, p), p: p.slice()});
-   }
+  if (typeof applyWearColorPipeline==='function'){
+    p = applyWearColorPipeline(p, window.PC || pal || {});
+    _dbg('after applyWearColorPipeline', {diff:_diff(preColor, p), p: p.slice()});
+  }
 
   // NSFW
   const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
@@ -1773,6 +1772,13 @@ function buildOneLearning(extraSeed = 0){
   ].filter(Boolean).join(", ");
   const neg = (typeof buildNegative === 'function') ? buildNegative(baseNeg) : baseNeg;
   _dbg('neg', neg);
+
+  // ✅ 最終色付け（最後にもう一度。後工程で色が剥がれてもここで復活）
+  if (typeof applyWearColorPipeline==='function'){
+    const beforeFinal = p.slice();
+    p = applyWearColorPipeline(p, window.PC || pal || {});
+    _dbg('final applyWearColorPipeline', {diff:_diff(beforeFinal, p), PC: window.PC, p: p.slice()});
+  }
 
   const text = `${p.join(", ")}${neg?` --neg ${neg}`:""} seed:${seed}`;
   _dbg('return', {prompt:p.join(", "), seed, neg});
