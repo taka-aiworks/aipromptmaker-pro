@@ -743,19 +743,7 @@ function textTag(id){
   const v  = (el?.textContent || el?.value || "").trim();
   return asTag(v);
 }
-/* ===== Dress color fix (use TOP color for one-piece/dress/gown) ===== */
-const COLOR_WORD = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
-function forceDressColor(p, topColorWord){
-  if (!Array.isArray(p) || !topColorWord) return p;
-  return p.map(tag=>{
-    const t = String(tag||"");
-    if (/\b(one ?-?piece|dress|gown)\b/i.test(t)){
-      const base = t.replace(new RegExp(`^${COLOR_WORD.source}\\s+`,'i'), '');
-      return `${topColorWord} ${base}`.trim();
-    }
-    return t;
-  });
-}
+
 
 
 
@@ -800,37 +788,138 @@ function toEnTagStrict(t){
 }
 
 
+/* ===================== 服色パイプライン（JSON辞書対応版） ===================== */
+/* 期待する辞書：
+   window.SFW_OUTFIT_DICT = [
+     { tag: "plain t-shirt", cat: "top" },
+     { tag: "plain jeans",   cat: "pants" },
+     { tag: "plain skirt",   cat: "skirt" },
+     { tag: "plain boots",   cat: "shoes" },
+     { tag: "plain dress",   cat: "dress" },
+     ...
+   ];
+*/
 
+/* --- 内部ユーティリティ --- */
+(function initSfwCatalog(){
+  // 一度だけ Map化（小文字タグ → cat）
+  if (window.SFW_CATALOG_MAP) return;
+  const src =
+    (Array.isArray(window.SFW_OUTFIT_DICT) && window.SFW_OUTFIT_DICT) ||
+    (Array.isArray(window.DEFAULT_SFW)     && window.DEFAULT_SFW)     ||
+    (Array.isArray(window.default_sfw)     && window.default_sfw)     ||
+    [];
 
-
-
-function pairWearColors(arr){
-  if (!Array.isArray(arr)) return arr;
-  const out = [];
-  for (const t of arr){
-    if (!t) continue;
-    // ワンピース・ドレス → top の色を直接適用
-    if (/\b(dress|one[-\s]?piece|gown)\b/i.test(t)){
-      if (window.PC && window.PC.top){
-        out.push(`${window.PC.top} ${t}`);
-        continue;
-      }
+  try {
+    const m = new Map();
+    for (const e of src){
+      const t = (e && e.tag) ? String(e.tag).trim().toLowerCase() : "";
+      const c = (e && e.cat) ? String(e.cat).trim().toLowerCase() : "";
+      if (!t || !c) continue;
+      m.set(t, c);
     }
-    out.push(t);
+    window.SFW_CATALOG_MAP = m;
+  } catch { window.SFW_CATALOG_MAP = new Map(); }
+})();
+
+function _normTag(t){
+  return String(t||"").trim();
+}
+function _key(t){
+  return _normTag(t).toLowerCase();
+}
+// すでに色が先頭に付いていそうか判定（簡易）
+const _COLOR_RE = /^(?:white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i;
+
+// JSON辞書からカテゴリを引く。無ければフォールバック推定（最小限）
+function getOutfitCatFromDict(tag){
+  const k = _key(tag);
+  const m = window.SFW_CATALOG_MAP;
+  if (m && m.size && m.has(k)) return m.get(k); // 辞書ヒット
+
+  // — フォールバック（辞書未整備のときだけ）—
+  if (/\b(dress|one[-\s]?piece|gown)\b/i.test(tag))   return "dress";
+  if (/\b(skirt)\b/i.test(tag))                        return "skirt";
+  if (/\b(pants|jeans|trousers|shorts)\b/i.test(tag))  return "pants";
+  if (/\b(shoes|boots|sneakers|loafers|heels|sandals|geta|zori)\b/i.test(tag)) return "shoes";
+  if (/\b(top|t-?shirt|blouse|sweater|hoodie|cardigan)\b/i.test(tag)) return "top";
+  return ""; // 不明
+}
+
+// 既存の window.PC を尊重しつつ opts を優先（tests用）
+function _resolvePC(opts){
+  const base = { top:"", bottom:"", shoes:"" };
+  const glob = (typeof window.PC==='object' && window.PC) ? window.PC : {};
+  return Object.assign({}, base, glob, (opts||{}));
+}
+
+/* --- 置き換え：ワンピ → top 色を直焼き（JSON辞書で判定） --- */
+function pairWearColors(arr){
+  if (!Array.isArray(arr)) return arr || [];
+  const out = [];
+  const PC  = _resolvePC(); // window.PC を見にいく（top/bottom/shoes）
+
+  for (const raw of arr){
+    const t = _normTag(raw);
+    if (!t) continue;
+
+    const cat = getOutfitCatFromDict(t);
+    if (cat === "dress" && PC.top && !_COLOR_RE.test(t)){
+      out.push(`${PC.top} ${t}`);
+    } else {
+      out.push(t);
+    }
   }
   return out;
 }
 
+/* --- 置き換え：色焼き付け（top/bottom/shoes + dress=top） --- */
+function applyWearColorPipeline(p, opts={}){
+  if (!Array.isArray(p)) return p || [];
+  const PC = _resolvePC(opts); // {top,bottom,shoes}
 
-function forceDressColor(p, topColor){
-  return (p||[]).map(tag=>{
-    const t = String(tag||"");
-    if (/\b(one ?-?piece|dress|gown)\b/i.test(t)){
-      return `${topColor} ${t.replace(/^(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\s+/i, '')}`;
+  // （既存仕様）色プレースホルダの注入
+  if (typeof injectWearColorPlaceholders==='function'){
+    try { injectWearColorPlaceholders(p, {top:PC.top, bottom:PC.bottom, shoes:PC.shoes}); }
+    catch { injectWearColorPlaceholders(p); }
+  }
+
+  // まずワンピ直焼き（idempotentに）
+  p = pairWearColors(p);
+
+  // 各タグをカテゴリに応じて色付け
+  const out = [];
+  for (const raw of p){
+    let t = _normTag(raw);
+    if (!t){ continue; }
+
+    // 既に色が付いてたらスキップ（上塗りしない）
+    if (_COLOR_RE.test(t)) { out.push(t); continue; }
+
+    const cat = getOutfitCatFromDict(t);
+    if (cat === "top" || cat === "dress"){
+      out.push(PC.top ? `${PC.top} ${t}` : t);
+    } else if (cat === "pants" || cat === "skirt"){
+      out.push(PC.bottom ? `${PC.bottom} ${t}` : t);
+    } else if (cat === "shoes"){
+      out.push(PC.shoes ? `${PC.shoes} ${t}` : t);
+    } else {
+      out.push(t); // 服以外 or 不明カテゴリはそのまま
     }
-    return t;
-  });
+  }
+
+  return out;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1235,36 +1324,7 @@ function mapUIToTag(s){
 }
 
 
-// SFWの服に選択色をしっかり焼き付け（dressはtop色、shoesはshoes色）
-function applyWearColorPipeline(p, opts={}){
-  const PC = Object.assign({top:"", bottom:"", shoes:""}, opts||{});
-  if (typeof injectWearColorPlaceholders==='function'){
-    try { injectWearColorPlaceholders(p, {top:PC.top, bottom:PC.bottom, shoes:PC.shoes}); }
-    catch(e){ injectWearColorPlaceholders(p); }
-  }
-  if (typeof pairWearColors==='function') p = pairWearColors(p);
 
-  // dress: top色を適用
-  if (PC.top){
-    p = p.map(tag=>{
-      if (/\b(one ?-?piece|dress|gown)\b/i.test(tag) && !/^(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i.test(tag)){
-        return `${PC.top} ${tag}`;
-      }
-      return tag;
-    });
-  }
-  // shoes: shoes色を適用
-  if (PC.shoes){
-    p = p.map(tag=>{
-      if (/\b(shoes|boots|sneakers|loafers|heels|sandals|geta|zori)\b/i.test(tag) &&
-          !/^(white|black|red|blue|green|azure|yellow|pink|purple|brown|beige|gray|grey|silver|gold|navy|teal|cyan|magenta|orange)\b/i.test(tag)){
-        return `${PC.shoes} ${tag}`;
-      }
-      return tag;
-    });
-  }
-  return p;
-}
 
 // NSFWヘッダを**常に先頭**へ（重複除去）
 function pushNSFWFirst(p){
@@ -1424,22 +1484,7 @@ function pushNSFWFirst(arr){
   return out;
 }
 
-// ワンピ色は top 色を適用（例: "magenta one-piece"）
-const _COLOR_WORD = /\b(white|black|red|blue|azure|navy|teal|cyan|magenta|green|yellow|orange|pink|purple|brown|beige|gray|grey|silver|gold)\b/i;
-function _forceDressColor(p){
-  let topColor = "";
-  if (typeof getProdWearColorTag==='function') topColor = (getProdWearColorTag('top')||"").trim();
-  if (!topColor && typeof getWearColorTag==='function') topColor = (getWearColorTag('top')||"").trim();
-  if (!topColor) return p;
-  return (p||[]).map(tag=>{
-    const t = String(tag||"");
-    if (/\b(one ?-?piece|dress|gown)\b/i.test(t)){
-      const base = t.replace(new RegExp(`^${_COLOR_WORD.source}\\s+`,'i'), '');
-      return `${topColor} ${base}`.trim();
-    }
-    return t;
-  });
-}
+
 
 
 
