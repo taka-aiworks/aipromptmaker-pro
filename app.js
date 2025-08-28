@@ -825,7 +825,14 @@ function toEnTagStrict(t){
   window.OUTFIT_STRIP_PREFIXES = window.OUTFIT_STRIP_PREFIXES || [];
 
   // ---- 共通ユーティリティ ----
-  const canon = s => String(s||"").toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+  // これで置き換え
+   const canon = s => String(s||"")
+     // ハイフン/マイナス系ぜんぶ → スペース
+     .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D_-]+/g, ' ')
+     // 余分な空白を1つに
+     .replace(/\s+/g, ' ')
+     .toLowerCase()
+     .trim();
   const norm  = s => String(s||"").trim();
   const startsWithAny = (s, arr)=> (arr||[]).some(p=> s.toLowerCase().startsWith(String(p||'').toLowerCase()));
 
