@@ -788,149 +788,152 @@ function toEnTagStrict(t){
 }
 
 
-/* ===================== 服色パイプライン（辞書堅牢化パッチ・最終版） ===================== */
-/* 期待する辞書:
-   window.SFW_OUTFIT_DICT = [
-     { tag: "plain t-shirt", cat: "top"    },
-     { tag: "mechanic overalls", cat: "dress" }, // 一体型は dress 扱いでOK
-     { tag: "plain skirt",   cat: "skirt"  },
-     { tag: "plain jeans",   cat: "pants"  },
-     { tag: "plain boots",   cat: "shoes"  },
-     { tag: "plain dress",   cat: "dress"  },
-     ...
-   ];
+/* ===================== 服色パイプライン（辞書ベース最小処理） ===================== */
+/* 期待する辞書（どれか1つが存在）:
+   1) window.SFW && SFW.outfit : [{tag, cat, emit?}, ...]
+   2) window.SFW_OUTFIT_DICT  : [{tag, cat, emit?}, ...]
+   ※ emit が無ければ tag をそのまま出力に使う
 */
 
-// ---- 1) カノニカル化（辞書キーと入力タグを同じ規則で揃える）
-function _canon(s){
-  return String(s||"")
-    .toLowerCase()
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-function _normTag(t){ return String(t||"").trim(); }
-function _key(t){ return _canon(t); }
+(function(){
+  // ---- 可変：先頭から除去したい固定接頭辞（デフォルトOFF）----
+  // 例: ["plain "] にすると "plain windbreaker" を "windbreaker" として出力（色付け前に）
+  window.OUTFIT_STRIP_PREFIXES = window.OUTFIT_STRIP_PREFIXES || []; // デフォルト: 何もしない
 
-// ---- 2) 色ワード検出（UI登録色も動的に取り込む）
-function _buildColorRegex(){
-  const base = [
-    "white","black","red","blue","green","azure","yellow","pink","purple","brown","beige",
-    "gray","grey","silver","gold","navy","teal","cyan","magenta","orange",
-    "ivory","cream","tan","khaki","olive","maroon","burgundy","indigo","violet",
-    "lavender","mint","peach","coral","aqua","sky blue","light blue","dark blue",
-    "light green","dark green"
-  ];
-  const pool = new Set(base);
-  try{
-    if (Array.isArray(window.WEAR_COLOR_WORDS)) window.WEAR_COLOR_WORDS.forEach(c=> c && pool.add(String(c).toLowerCase().trim()));
-    if (Array.isArray(window.PALETTE_COLORS))   window.PALETTE_COLORS.forEach(c=> c && pool.add(String(c).toLowerCase().trim()));
-  }catch{}
-  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
-  const alt = Array.from(pool).sort((a,b)=>b.length-a.length).map(esc).join('|');
-  return new RegExp(`^(?:${alt})(?:\\s|-)+`, 'i');
-}
-window._COLOR_RE = window._COLOR_RE || _buildColorRegex();
+  // ---- 共通ユーティリティ ----
+  const canon = s => String(s||"").toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+  const norm  = s => String(s||"").trim();
+  const startsWithAny = (s, arr)=> (arr||[]).some(p=> s.toLowerCase().startsWith(String(p||'').toLowerCase()));
 
-// ---- 3) カタログ（辞書）遅延初期化 & リフレッシュ
-function _ensureCatalog(){
-  if (window.SFW_CATALOG_MAP && window.SFW_CATALOG_MAP.size) return window.SFW_CATALOG_MAP;
-  const src =
-    (Array.isArray(window.SFW_OUTFIT_DICT) && window.SFW_OUTFIT_DICT) ||
-    (Array.isArray(window.DEFAULT_SFW)     && window.DEFAULT_SFW)     ||
-    (Array.isArray(window.default_sfw)     && window.default_sfw)     ||
-    [];
-  const m = new Map();
-  try {
-    for (const e of src){
-      const t = (e && e.tag) ? _key(e.tag) : "";
-      const c = (e && e.cat) ? _canon(e.cat) : "";
-      if (!t || !c) continue;
-      m.set(t, c);
-    }
-  } catch {}
-  window.SFW_CATALOG_MAP = m;
-  try { if (window.DEBUG_PROMPT_LOG) console.debug('[PROMPT] catalog built size=', m.size); } catch{}
-  return m;
-}
-
-// ---- 4) 辞書照合（先頭色は一時的に剥がしてキー化）
-function getOutfitCatFromDict(tag){
-  const raw = _normTag(tag);
-  const m   = _ensureCatalog();
-  const stripped = raw.replace(window._COLOR_RE || /^$/, '').trim(); // 先頭の色ワードだけ剥離
-  const k = _key(stripped || raw);
-  if (m.has(k)) return m.get(k);
-
-  // フォールバック（辞書に無い時のみ最小限）
-  if (/\b(dress|one\s?piece|gown|overalls|jumpsuit|romper)\b/i.test(raw)) return "dress";
-  if (/\b(skirt)\b/i.test(raw))                       return "skirt";
-  if (/\b(pants|jeans|trousers|shorts)\b/i.test(raw)) return "pants";
-  if (/\b(shoes|boots|sneakers|loafers|heels|sandals|geta|zori)\b/i.test(raw)) return "shoes";
-  if (/\b(top|t\s?shirt|blouse|sweater|hoodie|cardigan)\b/i.test(raw)) return "top";
-  return "";
-}
-
-// ---- 5) 色解決（window.PC と opts をマージ：opts優先）
-function _resolvePC(opts){
-  const base = { top:"", bottom:"", shoes:"" };
-  const glob = (typeof window.PC==='object' && window.PC) ? window.PC : {};
-  return Object.assign({}, base, glob, (opts||{})); // ← pal一本化して使う
-}
-
-// ---- 6) ワンピには top 色を直焼き（optsを伝播）
-function pairWearColors(arr, opts={}){
-  if (!Array.isArray(arr)) return arr || [];
-  const out = [];
-  const PC  = _resolvePC(opts);
-  for (const raw of arr){
-    const t = _normTag(raw);
-    if (!t) continue;
-    const cat = getOutfitCatFromDict(t);
-    if (cat === "dress" && PC.top && !(window._COLOR_RE).test(t)){
-      out.push(`${PC.top} ${t}`);
-    } else {
-      out.push(t);
-    }
+  // 色語彙を JSON から組む（SFW.colors があればそれを使う）
+  function buildColorRe(){
+    const pool = new Set([
+      "white","black","red","blue","green","azure","yellow","pink","purple","brown","beige",
+      "gray","grey","silver","gold","navy","teal","cyan","magenta","orange",
+      "ivory","cream","tan","khaki","olive","maroon","burgundy","indigo","violet",
+      "lavender","mint","peach","coral","aqua","sky blue","light blue","dark blue",
+      "light green","dark green"
+    ]);
+    try {
+      const cands =
+        (window.SFW && Array.isArray(window.SFW.colors) ? window.SFW.colors : [])
+        .map(e => e && e.tag).filter(Boolean);
+      cands.forEach(c => pool.add(String(c).toLowerCase()));
+    } catch {}
+    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');
+    const alt = Array.from(pool).sort((a,b)=>b.length-a.length).map(esc).join('|');
+    return new RegExp(`^(?:${alt})(?:\\s|-)+`, 'i');
   }
-  return out;
-}
+  window._COLOR_RE = window._COLOR_RE || buildColorRe();
 
-// ---- 7) 本体：色焼き付け（dress=top / shoes=shoes / 他はcatで分岐）
-function applyWearColorPipeline(p, opts={}){
-  if (!Array.isArray(p)) return p || [];
-  const PC = _resolvePC(opts);
+  // ---- 辞書 -> カタログ化（tag キーで引く / emit は出力文字）----
+  function ensureCatalog(){
+    if (window.SFW_CATALOG && window.SFW_CATALOG.size) return window.SFW_CATALOG;
 
-  // プレースホルダ注入（互換）
-  if (typeof injectWearColorPlaceholders==='function'){
-    try { injectWearColorPlaceholders(p, {top:PC.top, bottom:PC.bottom, shoes:PC.shoes}); }
-    catch { injectWearColorPlaceholders(p); }
+    let src = [];
+    if (window.SFW && Array.isArray(window.SFW.outfit)) src = window.SFW.outfit;
+    else if (Array.isArray(window.SFW_OUTFIT_DICT))     src = window.SFW_OUTFIT_DICT;
+    else if (Array.isArray(window.DEFAULT_SFW))         src = window.DEFAULT_SFW;
+    else if (Array.isArray(window.default_sfw))         src = window.default_sfw;
+
+    const m = new Map();
+    for (const e of (src||[])){
+      const tag  = e && e.tag  ? norm(e.tag)  : ""; if (!tag) continue;
+      const cat  = e && e.cat  ? norm(e.cat)  : ""; if (!cat) continue;
+      const emit = e && e.emit ? norm(e.emit) : tag; // emit 無ければ tag で出す
+      m.set(canon(tag), { cat: canon(cat), emit, tag });
+    }
+    window.SFW_CATALOG = m;
+    try { if (window.DEBUG_PROMPT_LOG) console.debug('[PROMPT] outfit catalog size=', m.size); } catch{}
+    return m;
   }
 
-  // 先に dress へ top 色を（optsを渡すのがポイント）
-  p = pairWearColors(p, PC);
-
-  const out = [];
-  for (const raw of p){
-    let t = _normTag(raw);
-    if (!t) continue;
-
-    // 既に色が先頭にあれば上書きしない
-    if ((window._COLOR_RE).test(t)) { out.push(t); continue; }
-
-    const cat = getOutfitCatFromDict(t);
-    if (cat === "top" || cat === "dress"){
-      out.push(PC.top    ? `${PC.top} ${t}`    : t);
-    } else if (cat === "pants" || cat === "skirt"){
-      out.push(PC.bottom ? `${PC.bottom} ${t}` : t);
-    } else if (cat === "shoes"){
-      out.push(PC.shoes  ? `${PC.shoes} ${t}`  : t);
-    } else {
-      out.push(t); // 服以外/不明はそのまま
-    }
+  // ---- 入力トークンから outfit を判定（色語は一時剥離 → 辞書マッチ）----
+  function getOutfitMeta(token){
+    const raw = norm(token);
+    const withoutColor = raw.replace(window._COLOR_RE, '').trim();
+    const m = ensureCatalog();
+    const hit = m.get(canon(withoutColor)) || m.get(canon(raw));
+    return hit || null; // {cat, emit, tag} or null
   }
-  return out;
-}
+
+  // ---- 任意: 「plain 」のような接頭辞を emit から外す（必要な時だけ）----
+  function maybeStripPrefix(s){
+    if (!s) return s;
+    return startsWithAny(s, window.OUTFIT_STRIP_PREFIXES) ? s.replace(/^(\S+\s+)/,'').replace(/^plain\s+/i,'').trim() : s;
+  }
+
+  // ---- 既存と互換の PC 取得（opts > window.PC > 空）----
+  function resolvePC(opts){
+    const base = { top:"", bottom:"", shoes:"" };
+    const glob = (typeof window.PC==='object' && window.PC) ? window.PC : {};
+    const pc   = Object.assign({}, base, glob, (opts||{}));
+    // none/空は無視
+    for (const k of Object.keys(pc)) {
+      const v = String(pc[k] || '').trim().toLowerCase();
+      pc[k] = (v && v!=='none') ? v : '';
+    }
+    return pc;
+  }
+
+  // ---- 1) dress に top 色を直焼き（辞書ベース・色が未付与のときのみ）----
+  window.pairWearColors = function pairWearColors(arr, opts={}){
+    if (!Array.isArray(arr)) return arr || [];
+    const PC = resolvePC(opts);
+    const out = [];
+    for (const token of arr){
+      const t = norm(token); if (!t) continue;
+      const meta = getOutfitMeta(t);
+      if (meta && meta.cat === 'dress' && PC.top && !window._COLOR_RE.test(t)){
+        const emit = maybeStripPrefix(meta.emit);
+        out.push(`${PC.top} ${emit}`);
+      } else {
+        out.push(meta ? maybeStripPrefix(meta.emit) : t); // emit に統一
+      }
+    }
+    return out;
+  };
+
+  // ---- 2) 本体：色焼き付け（dress=top / pants+skirt=bottom / shoes=shoes）----
+  window.applyWearColorPipeline = function applyWearColorPipeline(p, opts={}){
+    if (!Array.isArray(p)) return p || [];
+    const PC = resolvePC(opts);
+
+    // 互換：色プレースホルダ注入（あれば）
+    if (typeof injectWearColorPlaceholders==='function'){
+      try { injectWearColorPlaceholders(p, { top:PC.top, bottom:PC.bottom, shoes:PC.shoes }); }
+      catch { injectWearColorPlaceholders(p); }
+    }
+
+    // 先に dress に top 色直焼き（emit へ正規化も兼ねる）
+    p = window.pairWearColors(p, PC);
+
+    // 服以外を壊さず、服だけに色を付ける
+    const out = [];
+    for (const token of p){
+      let t = norm(token); if (!t) continue;
+
+      // 既に色が先頭にある場合は上書きしない
+      if (window._COLOR_RE.test(t)) { out.push(t); continue; }
+
+      const meta = getOutfitMeta(t);
+      if (!meta) { out.push(t); continue; } // 服以外はそのまま
+
+      const emit = maybeStripPrefix(meta.emit);
+      if (meta.cat === 'top' || meta.cat === 'dress'){
+        out.push(PC.top    ? `${PC.top} ${emit}`    : emit);
+      } else if (meta.cat === 'pants' || meta.cat === 'skirt'){
+        out.push(PC.bottom ? `${PC.bottom} ${emit}` : emit);
+      } else if (meta.cat === 'shoes'){
+        out.push(PC.shoes  ? `${PC.shoes} ${emit}`  : emit);
+      } else {
+        out.push(emit);
+      }
+    }
+    return out;
+  };
+
+})();
 
 
 
