@@ -524,6 +524,40 @@ function forceDressColor(p, topColor){
 
 
 
+// ===== NSFW表情セット & 単一化 =====
+const NSFW_EXPR_SET = new Set([
+  "flushed", "aroused", "seductive smile", "embarrassed",
+  // もし他にも使うならここに追加
+]);
+
+// 既存 EXPR_ALL（MIX_RULES から生成）と併用して、表情を1つにする（NSFWを優先）
+function unifyExprOnce(arr){
+  if (!Array.isArray(arr)) return arr || [];
+  const a = arr.slice();
+
+  // どれが「表情」か探す
+  const hits = [];
+  for (let i=0; i<a.length; i++){
+    const t = String(a[i]||"").trim().toLowerCase();
+    if (!t) continue;
+    if (NSFW_EXPR_SET.has(t) || (typeof EXPR_ALL!=='undefined' && EXPR_ALL.has(t))){
+      hits.push({i, t});
+    }
+  }
+  if (hits.length <= 1) return a;
+
+  // NSFW表情が1つでもあればそれを残す。なければ最後の表情を残す
+  let keepIdx = hits[hits.length - 1].i;
+  for (const h of hits){
+    if (NSFW_EXPR_SET.has(h.t)) { keepIdx = h.i; break; }
+  }
+
+  // 残す以外の表情を削除
+  const delIdx = new Set(hits.map(h=>h.i).filter(i=>i!==keepIdx));
+  return a.filter((_,i)=>!delIdx.has(i));
+}
+
+
 
 
 
@@ -1369,6 +1403,10 @@ function buildBatchLearning(n){
     p = finalizePromptArray(p);
     p = sanitizePromptArray(p);
 
+    // ←追加：表情は1つに（NSFW優先）
+    p = unifyExprOnce(p);
+
+
     // ヘッダ固定（NSFW → solo）
     if (nsfwOn){
       p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
@@ -1491,6 +1529,8 @@ function pmBuildOne(){
 
   // シーン確定
   p.push(...[bg, comp, view, expr, lite].filter(Boolean));
+  p = unifyExprOnce(p);
+
 
   // —— 最終整形：UI尊重（補完もカテゴリ潰しもしない）——
   p = _clean(p);
@@ -1670,6 +1710,9 @@ function buildBatchProduction(n){
 
       if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
       p.push(...addNS);
+
+      // ←ここに追加
+      p = unifyExprOnce(p);
 
       // 先頭に NSFW を1つだけ
       p = p.filter(t => String(t).toUpperCase()!=="NSFW");
