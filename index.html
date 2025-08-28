@@ -1242,5 +1242,81 @@
   });
 })();
 </script>
+<script>
+/* ===================== UI → window.PC 同期（最小） ===================== */
+(function(){
+  // SFW.colors から label→tag の逆引きも作っておく（ピッカーが日本語表示のとき用）
+  const label2tag = (() => {
+    const m = new Map();
+    try {
+      (window.SFW?.colors || []).forEach(c => {
+        const tag = (c.tag || '').toString().trim();
+        const label = (c.label || '').toString().trim();
+        if (tag && label) m.set(label, tag);
+      });
+    } catch {}
+    return m;
+  })();
+
+  const clean = s => (s||'').toString().trim();
+  const asTag = s => clean(s).toLowerCase();
+
+  // #tag_top 等の中身（例: "white" / "白" / "—"）を辞書タグへ正規化
+  function readColorTag(which){
+    const el = document.getElementById('tag_'+which);
+    if (!el) return '';
+    let raw = clean(el.textContent || el.innerText);
+    if (!raw || raw === '—' || raw === '-') return '';
+
+    // すでに英語タグならそのまま
+    const low = asTag(raw);
+    const knownTags = new Set((window.SFW?.colors || []).map(c => asTag(c.tag)));
+    if (knownTags.has(low)) return low;
+
+    // 日本語ラベルから逆引き
+    if (label2tag.has(raw)) return asTag(label2tag.get(raw));
+
+    // 念のため空白/全角スペースを潰して再チェック
+    raw = raw.replace(/\s+/g,' ').replace(/\u3000/g,' ').trim();
+    const again = asTag(raw);
+    if (knownTags.has(again)) return again;
+
+    // ここまで来たら不明→空（色なし）
+    return '';
+  }
+
+  function syncPC(){
+    const useTop    = document.getElementById('use_top')?.checked ?? false;
+    const useBottom = document.getElementById('useBottomColor')?.checked ?? false;
+    const useShoes  = document.getElementById('use_shoes')?.checked ?? false;
+
+    window.PC = {
+      top:    useTop    ? readColorTag('top')    : '',
+      bottom: useBottom ? readColorTag('bottom') : '',
+      shoes:  useShoes  ? readColorTag('shoes')  : ''
+    };
+    // デバッグ確認したい時だけ
+    try { if (window.DEBUG_PROMPT_LOG) console.debug('[PC]', window.PC); } catch {}
+  }
+
+  // チェックボックス変化で同期
+  ['use_top','useBottomColor','use_shoes'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', syncPC);
+  });
+
+  // ピッカーが #tag_* の表示を書き換えたら同期（イベントが無くても検知できる）
+  ['tag_top','tag_bottom','tag_shoes'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+    const mo = new MutationObserver(syncPC);
+    mo.observe(el, { childList:true, characterData:true, subtree:true });
+  });
+
+  // 初期反映
+  syncPC();
+})();
+</script>
+      
 </body>
 </html>
