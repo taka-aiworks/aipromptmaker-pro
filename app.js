@@ -3,6 +3,87 @@
    （分割版 / 軽量化込み）
    ========================= */
 
+
+
+
+/* ================== DEBUG SHIM (single source of truth) ==================
+ * 使い方:
+ *   - window.DEBUG_PROMPT_LOG = true/false で全体のON/OFF
+ *   - _dbg(label, value, channel?) で値をログしつつそのまま返す（パイプ的に使える）
+ *   - _diff(before, after) で配列差分 {added, removed}
+ *   - ログ例: [DBG][PROMPT-LEARN] after applyWearColorPipeline {"added":[...], ...}
+ * 置き場所: ファイルの一番上（他の関数より前）
+ * 削除: このブロックをまるごと消す or DEBUG_PROMPT_LOG=false
+ * ======================================================================= */
+(function(){
+  // 全体トグル
+  window.DEBUG_PROMPT_LOG = (typeof window.DEBUG_PROMPT_LOG === 'boolean') ? window.DEBUG_PROMPT_LOG : true;
+
+  // 安全JSON化（関数・undefined・循環参照に対応）
+  function safeStringify(v){
+    try{
+      const seen = new WeakSet();
+      return JSON.stringify(v, (k, val) => {
+        if (typeof val === 'function')   return `[Function ${val.name||'anon'}]`;
+        if (typeof val === 'undefined')  return '[undefined]';
+        if (typeof val === 'object' && val !== null){
+          if (seen.has(val)) return '[Circular]';
+          seen.add(val);
+        }
+        return val;
+      });
+    }catch(e){
+      try { return String(v); } catch { return '[Unserializable]'; }
+    }
+  }
+
+  // ロガー（上書き・統一）
+  window._dbg = function(label, value, channel='PROMPT'){
+    try{
+      if (!window.DEBUG_PROMPT_LOG) return value;
+      const s = safeStringify(value);
+      // console.log を使うことで devtools の詳細レベルに左右されにくくする
+      console.log('[DBG]['+channel+']', label, s);
+    }catch(_){}
+    return value;
+  };
+
+  // 差分（配列想定）
+  window._diff = function(before, after){
+    const b = new Set(before || []);
+    const a = new Set(after  || []);
+    return {
+      added:  (after  || []).filter(x => !b.has(x)),
+      removed:(before || []).filter(x => !a.has(x)),
+    };
+  };
+
+  // パイプ用タップ（副作用ログして値を返す）
+  window._tap = function(value, label='tap', channel='PROMPT'){
+    return window._dbg(label, value, channel);
+  };
+
+  // 起動Ping
+  try { console.log('[DBG] shim ready'); } catch(_){}
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ===== Tag Dictionary Bootstrap (SFW/NSFW) ===== */
 window.TAGMAP = {
   en: new Map(),      // "plain background" -> "plain background"
@@ -1469,83 +1550,9 @@ function _collectNSFW(idsOrId){
 
 
 
-// ==== DBG shim（常時表示・安全化）====
-// ・必ずファイルの一番上（他の関数より前）に置く
-// ・logを使うのでConsoleのレベル設定に関係なく見える
-(function(){
-  if (!window._dbg) {
-    window._dbg = function(label, v){
-      try {
-        // 循環参照でも落ちないように
-        let out = v;
-        try { out = JSON.stringify(v); } catch(_) { /* そのまま表示 */ }
-        console.log('[DBG]', label, out);
-      } catch (_) {}
-      return v;
-    };
-  }
-  // 動作確認用の初回Ping（1回だけ）
-  try { console.log('[DBG] shim ready'); } catch(_){}
-})();
 
 
 
-
-// === Safe debug helper (落ちない版) ===
-function _dbg(label, v){
-  try{
-    const seen = new WeakSet();
-    const s = JSON.stringify(v, (k, val) => {
-      if (typeof val === 'function') return `[Function ${val.name||'anon'}]`;
-      if (typeof val === 'undefined') return '[undefined]';
-      if (typeof val === 'object' && val !== null){
-        if (seen.has(val)) return '[Circular]';
-        seen.add(val);
-      }
-      return val;
-    });
-    if (typeof console !== 'undefined' && console.debug){
-      console.debug('[DBG]', label, s);
-    }
-  }catch(e){
-    if (typeof console !== 'undefined' && console.debug){
-      console.debug('[DBG]', label, '(unserializable)', String(e && e.message || e));
-    }
-  }
-  return v; // パイプ的に使える
-}
-
-
-
-
-
-
-
-
-
-
-
-/* ====== DEBUG SHIM (消しやすいワンブロック) ====== */
-window.DEBUG_PROMPT_LOG = true; // ← ログ全部切りたければ false
-(function(){
-  const safe = (v)=>{
-    try { return JSON.stringify(v); } catch { return String(v); }
-  };
-  window._dbg = function(label, v){
-    try {
-      if (window.DEBUG_PROMPT_LOG) console.debug('[PROMPT-LEARN]', label, v);
-    } catch {}
-    return v; // パイプ書式でそのまま返す
-  };
-  window._diff = function(before, after){
-    const b = new Set(before || []);
-    const a = new Set(after || []);
-    return {
-      added:  (after  || []).filter(x=>!b.has(x)),
-      removed:(before || []).filter(x=>!a.has(x)),
-    };
-  };
-})();
 
 
 
