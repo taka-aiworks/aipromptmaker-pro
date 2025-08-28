@@ -70,7 +70,87 @@
 
 
 
+// DOMに出ている「服の候補」から辞書配列を復元して公開
+(function rebuildFromDOM(){
+  const byId = {
+    top:    '#outfit_top .scroller-item, #outfit_top *[data-en], #outfit_top button, #outfit_top [value]',
+    pants:  '#outfit_pants .scroller-item, #outfit_pants *[data-en], #outfit_pants button, #outfit_pants [value]',
+    skirt:  '#outfit_skirt .scroller-item, #outfit_skirt *[data-en], #outfit_skirt button, #outfit_skirt [value]',
+    dress:  '#outfit_dress .scroller-item, #outfit_dress *[data-en], #outfit_dress button, #outfit_dress [value]',
+    shoes:  '#outfit_shoes .scroller-item, #outfit_shoes *[data-en], #outfit_shoes button, #outfit_shoes [value]',
+  };
 
+  const pickTag = (el) => {
+    // よくある置き方に広く対応（data-en / data-tag / value / テキスト）
+    return (el.dataset?.en || el.dataset?.tag || el.getAttribute?.('value') || el.textContent || '')
+      .trim().toLowerCase().replace(/\s+/g,' ');
+  };
+
+  const dict = [];
+  for (const [cat, sel] of Object.entries(byId)) {
+    document.querySelectorAll(sel).forEach(el => {
+      const tag = pickTag(el);
+      // 空や日本語ラベルだけっぽい行はスキップ
+      if (!tag || /[\u3040-\u30ff\u4e00-\u9faf]/.test(tag)) return;
+      dict.push({ tag, cat });
+    });
+  }
+
+  // 去重
+  const seen = new Set();
+  const dedup = dict.filter(e => {
+    const k = e.cat + '|' + e.tag;
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  });
+
+  // 公開
+  window.__OUTFIT_DICT__ = dedup;
+  console.log('[DOM→DICT] count =', dedup.length, dedup.slice(0,10));
+})();
+
+(function patchMakeFinal(){
+  const orig = window.makeFinalOutfitTags;
+  if (typeof orig !== 'function') return console.warn('makeFinalOutfitTags not found');
+
+  window.makeFinalOutfitTags = function(selectedOutfits, colorTags){
+    // ここで辞書ソースを差し替え（SFW.outfit → __OUTFIT_DICT__ フォールバック）
+    const sel = Array.isArray(selectedOutfits) ? selectedOutfits.filter(Boolean) : [];
+    const colors = Object.assign({ top:"", bottom:"", shoes:"" }, (colorTags||{}));
+
+    // 1) 優先は SFW.outfit、無ければ 2) __OUTFIT_DICT__、どちらも無ければ []。
+    const dict = (window.SFW?.outfit && Array.isArray(window.SFW.outfit))
+      ? window.SFW.outfit
+      : (Array.isArray(window.__OUTFIT_DICT__) ? window.__OUTFIT_DICT__ : []);
+
+    const catMap = new Map();
+    for (const e of dict) if (e && e.tag && e.cat)
+      catMap.set(String(e.tag).toLowerCase(), String(e.cat).toLowerCase());
+
+    const guessCat = (tag) => {
+      const k = String(tag||"").toLowerCase();
+      if (catMap.has(k)) return catMap.get(k);
+      if (/(dress|kimono|yukata|cheongsam|hanbok|sari|uniform|gown)$/.test(k)) return "dress";
+      if (/skirt$/.test(k)) return "skirt";
+      if (/(jeans|pants|trousers|shorts|overalls|hakama)$/.test(k)) return "pants";
+      if (/(boots|sneakers|loafers|mary janes|socks)$/.test(k)) return "shoes";
+      return "top";
+    };
+
+    // 以降は元のロジックを使うため、catだけ差し替える
+    // 手っ取り早く：元関数に渡す前に window.SFW を“見えるよう”に偽装する作戦も可
+    const _SFW = window.SFW;
+    try {
+      // 一時SFWを置いて元の実装を有効化
+      window.SFW = Object.assign({}, _SFW, { outfit: dict });
+      return orig.call(this, sel, colors);
+    } finally {
+      window.SFW = _SFW;
+    }
+  };
+
+  console.log('[patch] makeFinalOutfitTags uses __OUTFIT_DICT__ fallback');
+})();
 
 
 
