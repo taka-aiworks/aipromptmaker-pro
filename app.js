@@ -897,55 +897,64 @@ function toEnTagStrict(t){
     return pc;
   }
 
-  // ---- 1) dress に top 色を直焼き（辞書タグのみ対象）----
-  window.pairWearColors = function pairWearColors(arr, opts={}){
-    if (!Array.isArray(arr)) return arr || [];
-    const PC = resolvePC(opts);
-    const out = [];
-    for (const token of arr){
-      const t = norm(token); if (!t) continue;
-      const meta = getOutfitMeta(t);
-      if (meta && meta.cat === 'dress' && PC.top && !window._COLOR_RE.test(t)){
-        const emit = maybeStripPrefix(meta.emit);
-        out.push(`${PC.top} ${emit}`);
-      } else {
-        out.push(meta ? maybeStripPrefix(meta.emit) : t); // 辞書ヒットは emit に統一
-      }
-    }
-    return out;
-  };
-
-  // ---- 2) 本体：服だけに色を焼く（プレースホルダは使わない）----
-  window.applyWearColorPipeline = function applyWearColorPipeline(p, opts={}){
-    if (!Array.isArray(p)) return p || [];
-    const PC = resolvePC(opts);
-
-    // 先に dress へ top 色を直焼き & emit 正規化
-    p = window.pairWearColors(p, PC);
-
-    const out = [];
-    for (const token of p){
-      let t = norm(token); if (!t) continue;
-
-      // 既に色が入っているならそのまま
-      if (window._COLOR_RE.test(t)) { out.push(t); continue; }
-
-      const meta = getOutfitMeta(t);
-      if (!meta) { out.push(t); continue; } // 服以外は触らない
-
+  // ---- 1) ここを修正：pairWearColors 先頭で ensureCatalog() を必ず実行
+window.pairWearColors = function pairWearColors(arr, opts={}){
+  ensureCatalog(); // ★追加：空配列でもカタログを初期化
+  if (!Array.isArray(arr)) return arr || [];
+  const PC = resolvePC(opts);
+  const out = [];
+  for (const token of arr){
+    const t = norm(token); if (!t) continue;
+    const meta = getOutfitMeta(t);
+    if (meta && meta.cat === 'dress' && PC.top && !window._COLOR_RE.test(t)){
       const emit = maybeStripPrefix(meta.emit);
-      if (meta.cat === 'top' || meta.cat === 'dress'){
-        out.push(PC.top    ? `${PC.top} ${emit}`    : emit);
-      } else if (meta.cat === 'pants' || meta.cat === 'skirt'){
-        out.push(PC.bottom ? `${PC.bottom} ${emit}` : emit);
-      } else if (meta.cat === 'shoes'){
-        out.push(PC.shoes  ? `${PC.shoes} ${emit}`  : emit);
-      } else {
-        out.push(emit);
-      }
+      out.push(`${PC.top} ${emit}`);
+    } else {
+      out.push(meta ? maybeStripPrefix(meta.emit) : t);
     }
-    return out;
-  };
+  }
+  return out;
+};
+
+// ---- 2) ここも修正：applyWearColorPipeline 先頭で ensureCatalog() を必ず実行
+window.applyWearColorPipeline = function applyWearColorPipeline(p, opts={}){
+  ensureCatalog(); // ★追加：必ず辞書を作る
+  if (!Array.isArray(p)) return p || [];
+  const PC = resolvePC(opts);
+
+  // 先に dress へ top 色を直焼き & emit 正規化
+  p = window.pairWearColors(p, PC);
+
+  const out = [];
+  for (const token of p){
+    let t = norm(token); if (!t) continue;
+
+    if (window._COLOR_RE.test(t)) { out.push(t); continue; }
+
+    const meta = getOutfitMeta(t);
+    if (!meta) { out.push(t); continue; }
+
+    const emit = maybeStripPrefix(meta.emit);
+    if (meta.cat === 'top' || meta.cat === 'dress'){
+      out.push(PC.top    ? `${PC.top} ${emit}`    : emit);
+    } else if (meta.cat === 'pants' || meta.cat === 'skirt'){
+      out.push(PC.bottom ? `${PC.bottom} ${emit}` : emit);
+    } else if (meta.cat === 'shoes'){
+      out.push(PC.shoes  ? `${PC.shoes} ${emit}`  : emit);
+    } else {
+      out.push(emit);
+    }
+  }
+  return out;
+};
+
+// ---- 3) （任意）明示初期化API：どこからでも叩けるように
+window.initWearColorEngine = function(){
+  const m = ensureCatalog();
+  window._COLOR_RE = window._COLOR_RE || buildColorRe();
+  try { console.log('[BOOT] SFW_CATALOG size =', m?.size); } catch{}
+  return m;
+};
 })();
 
 
