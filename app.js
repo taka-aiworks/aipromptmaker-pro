@@ -153,6 +153,39 @@
 })();
 
 
+function getColorTagsFromUI(){
+  const onepiece = document.querySelector('input[name="outfitMode"]:checked')?.value === 'onepiece';
+  const topOn    = document.querySelector('#use_top')?.checked;
+  const bottomOn = document.querySelector('#useBottomColor')?.checked && !onepiece;
+  const shoesOn  = document.querySelector('#use_shoes')?.checked;
+
+  const tag = sel => {
+    const t = document.querySelector(sel)?.textContent?.trim() || '';
+    return (t === '—') ? '' : t; // 未操作は空
+  };
+
+  return {
+    top:    topOn    ? tag('#tag_top')    : '',
+    bottom: bottomOn ? tag('#tag_bottom') : '',
+    shoes:  shoesOn  ? tag('#tag_shoes')  : ''
+  };
+}
+
+(function patchMakeFinal(){
+  const orig = window.makeFinalOutfitTags;
+  if (typeof orig !== 'function') { console.warn('makeFinalOutfitTags not found'); return; }
+
+  window.makeFinalOutfitTags = function(selectedOutfits, colorTags){
+    const hasColors = !!(colorTags && (colorTags.top || colorTags.bottom || colorTags.shoes));
+    const colors = hasColors ? colorTags : getColorTagsFromUI(); // ←ここが肝
+    return orig.call(this, selectedOutfits, colors);
+  };
+  console.log('[patch] makeFinalOutfitTags now falls back to UI colors');
+})();
+
+
+
+
 
 
 
