@@ -70,7 +70,12 @@
 
 
 
-
+console.log('[PICKER]', {
+  top:    getWearColorTag?.('top'),
+  bottom: getWearColorTag?.('bottom'),
+  shoes:  getWearColorTag?.('shoes'),
+  typeof_top: typeof getWearColorTag?.('top')
+});
 
 
 
