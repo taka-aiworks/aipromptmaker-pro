@@ -1547,8 +1547,33 @@ function buildOneLearning(extraSeed = 0){
   // 服（SFW）
   if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns().map(asTag));
   if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
+
+// ここで一度状態を確認
+_dbg('before pairWearColors', p);
+
+
+
+   
   if (typeof pairWearColors==='function')              p = pairWearColors(p);
 
+
+
+  // ここで pal を作って適用している場合はここにも差し込む
+  const pal = {
+    top:   (getWearColorTag?.('top')    || getProdWearColorTag?.('top')    || ''),
+    bottom:(getWearColorTag?.('bottom') || getProdWearColorTag?.('bottom') || ''),
+    shoes: (getWearColorTag?.('shoes')  || getProdWearColorTag?.('shoes')  || '')
+  };
+  _dbg('pal(top/bottom/shoes)', pal);
+
+  if (typeof applyWearColorPipeline==='function'){
+    p = _dbg('after applyWearColorPipeline', applyWearColorPipeline(p, pal));
+  }
+   
+
+
+
+   
   // NSFW
   const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
   if (nsfwOn){
