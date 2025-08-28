@@ -1697,13 +1697,12 @@ function buildOneLearning(extraSeed = 0){
   _dbg('palette (top/bottom/shoes)', pal);
 
   const hadPal = !!(pal.top || pal.bottom || pal.shoes);
+  // 服色の適用
   const preColor = p.slice();
-  if (hadPal && typeof applyWearColorPipeline==='function'){
-    p = applyWearColorPipeline(p, pal);
-    _dbg('after applyWearColorPipeline', {diff:_diff(preColor, p), p: p.slice()});
-  } else {
-    _dbg('skip applyWearColorPipeline', {hadPal, reason: 'no pal or function missing'});
-  }
+   if (typeof applyWearColorPipeline==='function'){
+     p = applyWearColorPipeline(p, window.PC || {});
+     _dbg('after applyWearColorPipeline', {diff:_diff(preColor, p), p: p.slice()});
+   }
 
   // NSFW
   const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
