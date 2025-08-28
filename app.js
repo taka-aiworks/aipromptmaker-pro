@@ -788,20 +788,31 @@ function toEnTagStrict(t){
 }
 
 
-/* ===================== 服色パイプライン（辞書堅牢化パッチ） ===================== */
+/* ===================== 服色パイプライン（辞書堅牢化パッチ・最終版） ===================== */
+/* 期待する辞書:
+   window.SFW_OUTFIT_DICT = [
+     { tag: "plain t-shirt", cat: "top"    },
+     { tag: "mechanic overalls", cat: "dress" }, // 一体型は dress 扱いでOK
+     { tag: "plain skirt",   cat: "skirt"  },
+     { tag: "plain jeans",   cat: "pants"  },
+     { tag: "plain boots",   cat: "shoes"  },
+     { tag: "plain dress",   cat: "dress"  },
+     ...
+   ];
+*/
 
-// ---- 1) カノニカル化（辞書キーと入力タグを同じ規則で揃える）----
+// ---- 1) カノニカル化（辞書キーと入力タグを同じ規則で揃える）
 function _canon(s){
   return String(s||"")
     .toLowerCase()
-    .replace(/[_-]+/g, ' ')     // _ と - を空白へ統一
-    .replace(/\s+/g, ' ')       // 連続空白を1つへ
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 function _normTag(t){ return String(t||"").trim(); }
 function _key(t){ return _canon(t); }
 
-// ---- 2) 色ワードの検出（既知＋UI側の色語で動的RE）----
+// ---- 2) 色ワード検出（UI登録色も動的に取り込む）
 function _buildColorRegex(){
   const base = [
     "white","black","red","blue","green","azure","yellow","pink","purple","brown","beige",
@@ -821,7 +832,7 @@ function _buildColorRegex(){
 }
 window._COLOR_RE = window._COLOR_RE || _buildColorRegex();
 
-// ---- 3) カタログ（辞書）遅延初期化 & リフレッシュ ----
+// ---- 3) カタログ（辞書）遅延初期化 & リフレッシュ
 function _ensureCatalog(){
   if (window.SFW_CATALOG_MAP && window.SFW_CATALOG_MAP.size) return window.SFW_CATALOG_MAP;
   const src =
@@ -843,31 +854,31 @@ function _ensureCatalog(){
   return m;
 }
 
-// ---- 4) 辞書照合（先頭色は一時的に剥がしてキー化）----
+// ---- 4) 辞書照合（先頭色は一時的に剥がしてキー化）
 function getOutfitCatFromDict(tag){
   const raw = _normTag(tag);
   const m   = _ensureCatalog();
-  const stripped = raw.replace(window._COLOR_RE || /^$/, '').trim(); // 先頭色だけ剥がす
+  const stripped = raw.replace(window._COLOR_RE || /^$/, '').trim(); // 先頭の色ワードだけ剥離
   const k = _key(stripped || raw);
   if (m.has(k)) return m.get(k);
 
-  // フォールバック（辞書に無い時のみ）
-  if (/\b(dress|one\s?piece|gown)\b/i.test(raw)) return "dress";
-  if (/\b(skirt)\b/i.test(raw)) return "skirt";
+  // フォールバック（辞書に無い時のみ最小限）
+  if (/\b(dress|one\s?piece|gown|overalls|jumpsuit|romper)\b/i.test(raw)) return "dress";
+  if (/\b(skirt)\b/i.test(raw))                       return "skirt";
   if (/\b(pants|jeans|trousers|shorts)\b/i.test(raw)) return "pants";
   if (/\b(shoes|boots|sneakers|loafers|heels|sandals|geta|zori)\b/i.test(raw)) return "shoes";
   if (/\b(top|t\s?shirt|blouse|sweater|hoodie|cardigan)\b/i.test(raw)) return "top";
   return "";
 }
 
-// ---- 5) 色解決（window.PC と opts をマージ）----
+// ---- 5) 色解決（window.PC と opts をマージ：opts優先）
 function _resolvePC(opts){
   const base = { top:"", bottom:"", shoes:"" };
   const glob = (typeof window.PC==='object' && window.PC) ? window.PC : {};
-  return Object.assign({}, base, glob, (opts||{}));
+  return Object.assign({}, base, glob, (opts||{})); // ← pal一本化して使う
 }
 
-// ---- 6) dress に top 色を直焼き（optsを伝播）----
+// ---- 6) ワンピには top 色を直焼き（optsを伝播）
 function pairWearColors(arr, opts={}){
   if (!Array.isArray(arr)) return arr || [];
   const out = [];
@@ -885,7 +896,7 @@ function pairWearColors(arr, opts={}){
   return out;
 }
 
-// ---- 7) 本体：色焼き付け（dress=top / shoes=shoes / 他はcatで分岐）----
+// ---- 7) 本体：色焼き付け（dress=top / shoes=shoes / 他はcatで分岐）
 function applyWearColorPipeline(p, opts={}){
   if (!Array.isArray(p)) return p || [];
   const PC = _resolvePC(opts);
@@ -896,7 +907,7 @@ function applyWearColorPipeline(p, opts={}){
     catch { injectWearColorPlaceholders(p); }
   }
 
-  // 先にdressへtop色を（optsを渡すのがポイント）
+  // 先に dress へ top 色を（optsを渡すのがポイント）
   p = pairWearColors(p, PC);
 
   const out = [];
@@ -904,7 +915,7 @@ function applyWearColorPipeline(p, opts={}){
     let t = _normTag(raw);
     if (!t) continue;
 
-    // 既に色が先頭にあるなら上塗りしない
+    // 既に色が先頭にあれば上書きしない
     if ((window._COLOR_RE).test(t)) { out.push(t); continue; }
 
     const cat = getOutfitCatFromDict(t);
@@ -915,12 +926,11 @@ function applyWearColorPipeline(p, opts={}){
     } else if (cat === "shoes"){
       out.push(PC.shoes  ? `${PC.shoes} ${t}`  : t);
     } else {
-      out.push(t);
+      out.push(t); // 服以外/不明はそのまま
     }
   }
   return out;
 }
-
 
 
 
