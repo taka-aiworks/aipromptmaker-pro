@@ -17,7 +17,7 @@
  * ======================================================================= */
 (function(){
   // 全体トグル
-  window.DEBUG_PROMPT_LOG = (typeof window.DEBUG_PROMPT_LOG === 'boolean') ? window.DEBUG_PROMPT_LOG : true;
+  window.DEBUG_PROMPT_LOG = (typeof window.DEBUG_PROMPT_LOG === 'boolean') ? window.DEBUG_PROMPT_LOG : false;
 
   // 安全JSON化（関数・undefined・循環参照に対応）
   function safeStringify(v){
@@ -79,7 +79,8 @@ console.log('[PICKER]', {
 
 
 
-
+makeFinalOutfitTags(["t-shirt","jeans"], {top:"orange", bottom:"blue", shoes:""});
+// 期待: ["orange t-shirt","blue jeans"]
 
 
 
