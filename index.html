@@ -1332,6 +1332,31 @@ function buildFinalTokens(base, outfits, colorTags) {
   return a.concat(b);
 }
 </script>
+<script>
+
+  // タブ初期化後に1回（遅延）
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    window.refreshOutfitDict?.();
+    window.initWearColorEngine?.(); // catalog.size ログが>0になるはず
+  }, 0);
+});
+
+// さらに保険：#panelBasic 内の 5 つのリストに MutationObserver
+['#outfit_top','#outfit_pants','#outfit_skirt','#outfit_dress','#outfit_shoes'].forEach(sel=>{
+  const host = document.querySelector(sel);
+  if (!host) return;
+  const mo = new MutationObserver(()=> {
+    window.refreshOutfitDict?.();
+    window.initWearColorEngine?.();
+  });
+  mo.observe(host, { childList:true, subtree:true });
+});
+
+
+</script>
+
+
       
 </body>
 </html>
