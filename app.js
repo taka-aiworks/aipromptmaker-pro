@@ -783,6 +783,37 @@ function toEnTagStrict(t){
 }
 
 
+
+// 初期化
+  window.PC = { top:"", bottom:"", shoes:"" };
+  window.USE_TOP_COLOR = false;
+  window.USE_BOTTOM_COLOR = false;
+  window.USE_SHOES_COLOR = false;
+
+  // トップ（例：オレンジを選んだとき）
+  function setTopColorTag(tag){           // tag 例: "orange" or ""
+    window.PC.top = tag || "";
+    window.USE_TOP_COLOR = !!document.getElementById('use_top').checked && !!tag;
+    document.getElementById('tag_top').textContent = tag || "—";
+  }
+  // ボトム（例：ブルー）
+  function setBottomColorTag(tag){
+    window.PC.bottom = tag || "";
+    window.USE_BOTTOM_COLOR = !!document.getElementById('useBottomColor').checked && !!tag;
+    document.getElementById('tag_bottom').textContent = tag || "—";
+  }
+  // 靴（必要なら）
+  function setShoesColorTag(tag){
+    window.PC.shoes = tag || "";
+    window.USE_SHOES_COLOR = !!document.querySelector('#panel_shoes #use_shoes')?.checked && !!tag;
+    document.getElementById('tag_shoes').textContent = tag || "—";
+  }
+
+
+
+
+
+
 /* ===================== 服色パイプライン（辞書ベース・プレースホルダ無し） ===================== */
 /* 期待する辞書:
    window.SFW && SFW.outfit : [{tag, cat, emit?}, ...]
