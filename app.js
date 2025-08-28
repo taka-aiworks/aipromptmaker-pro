@@ -7297,6 +7297,13 @@ function initAll(){
     renderSFW();
     window.__SFW_RENDERED = true;
 
+    // --- 辞書ロード後にカタログを強制初期化（空処理でOK）
+      if (Array.isArray(window.SFW?.outfit) && typeof window.pairWearColors === 'function') {
+        window.pairWearColors([]); // ← ensureCatalog() が走って SFW_CATALOG が生える
+        console.log('[BOOT] SFW_CATALOG size =', window.SFW_CATALOG?.size);
+      }
+
+     
     // 2) 服まわり補助
     bindBottomCategoryGuess();
     bindBottomCategoryRadios();
