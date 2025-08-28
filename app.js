@@ -1525,36 +1525,64 @@ function _dbg(label, v){
 
 
 
-/* ===== 学習モード：1枚テスト（asTag統一・カテゴリ単一化・NSFW先頭処理） ===== */
+/* ====== DEBUG SHIM (消しやすいワンブロック) ====== */
+window.DEBUG_PROMPT_LOG = true; // ← ログ全部切りたければ false
+(function(){
+  const safe = (v)=>{
+    try { return JSON.stringify(v); } catch { return String(v); }
+  };
+  window._dbg = function(label, v){
+    try {
+      if (window.DEBUG_PROMPT_LOG) console.debug('[PROMPT-LEARN]', label, v);
+    } catch {}
+    return v; // パイプ書式でそのまま返す
+  };
+  window._diff = function(before, after){
+    const b = new Set(before || []);
+    const a = new Set(after || []);
+    return {
+      added:  (after  || []).filter(x=>!b.has(x)),
+      removed:(before || []).filter(x=>!a.has(x)),
+    };
+  };
+})();
+
+
+
+/* ===== 学習モード：1枚テスト（ログ入り版） ===== */
 function buildOneLearning(extraSeed = 0){
+  _dbg('enter buildOneLearning', {extraSeed});
+
   const _norm = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
   const _text = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
   const _tag  = id => asTag(_text(id));
 
   let p = ["solo"];
+  _dbg('init p', p.slice());
 
   // 人数（1girl / 1boy）
   if (typeof getGenderCountTag === 'function'){
     const g = getGenderCountTag() || "";
     if (g) p.push(asTag(g));
   }
+  _dbg('after genderCount', p.slice());
 
   // 基本情報
-  p.push(
-    ...[
-      pickTag('bf_age'), pickTag('bf_gender'), pickTag('bf_body'), pickTag('bf_height'),
-      pickTag('hairStyle'), pickTag('eyeShape'),
-      _tag('tagH'), _tag('tagE'), _tag('tagSkin')
-    ].filter(Boolean).map(_norm)
-  );
+  const basics = [
+    pickTag('bf_age'), pickTag('bf_gender'), pickTag('bf_body'), pickTag('bf_height'),
+    pickTag('hairStyle'), pickTag('eyeShape'),
+    _tag('tagH'), _tag('tagE'), _tag('tagSkin')
+  ].filter(Boolean).map(_norm);
+  p.push(...basics);
+  _dbg('after basics', p.slice());
 
   // シーン系
-  p.push(
-    ...[
-      pickTag('bg'), pickTag('pose'), pickTag('comp'),
-      pickTag('view'), pickTag('expr'), pickTag('lightLearn')
-    ].filter(Boolean).map(_norm)
-  );
+  const scene = [
+    pickTag('bg'), pickTag('pose'), pickTag('comp'),
+    pickTag('view'), pickTag('expr'), pickTag('lightLearn')
+  ].filter(Boolean).map(_norm);
+  p.push(...scene);
+  _dbg('after scene', p.slice());
 
   // 固定アクセ
   {
@@ -1563,57 +1591,70 @@ function buildOneLearning(extraSeed = 0){
     const accClr = _tag('tag_learnAcc');
     if (accTag) p.push(accClr ? `${accClr} ${accTag}` : accTag);
   }
+  _dbg('after fixed-acc', p.slice());
 
   // 服（SFW）
   if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns().map(asTag));
   if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
+  _dbg('after nouns/placeholders', p.slice());
 
-// ここで一度状態を確認
-_dbg('before pairWearColors', p);
-
-
-
-   
+  // （任意）pair → ログ
+  const prePair = p.slice();
   if (typeof pairWearColors==='function')              p = pairWearColors(p);
+  _dbg('after pairWearColors', {diff:_diff(prePair, p), p: p.slice()});
 
-
-
-  // ここで pal を作って適用している場合はここにも差し込む
-  const pal = {
-    top:   (getWearColorTag?.('top')    || getProdWearColorTag?.('top')    || ''),
-    bottom:(getWearColorTag?.('bottom') || getProdWearColorTag?.('bottom') || ''),
-    shoes: (getWearColorTag?.('shoes')  || getProdWearColorTag?.('shoes')  || '')
+  // カラーパレット
+  const normColor = v => {
+    const s = String(v||'').trim().toLowerCase();
+    return (s && s!=='none') ? s : '';
   };
-  _dbg('pal(top/bottom/shoes)', pal);
+  const pal = {
+    top:   normColor(getWearColorTag?.('top')    || getProdWearColorTag?.('top')),
+    bottom:normColor(getWearColorTag?.('bottom') || getProdWearColorTag?.('bottom')),
+    shoes: normColor(getWearColorTag?.('shoes')  || getProdWearColorTag?.('shoes')),
+  };
+  _dbg('palette (top/bottom/shoes)', pal);
 
-  if (typeof applyWearColorPipeline==='function'){
-    p = _dbg('after applyWearColorPipeline', applyWearColorPipeline(p, pal));
+  const hadPal = !!(pal.top || pal.bottom || pal.shoes);
+  const preColor = p.slice();
+  if (hadPal && typeof applyWearColorPipeline==='function'){
+    p = applyWearColorPipeline(p, pal);
+    _dbg('after applyWearColorPipeline', {diff:_diff(preColor, p), p: p.slice()});
+  } else {
+    _dbg('skip applyWearColorPipeline', {hadPal, reason: 'no pal or function missing'});
   }
-   
 
-
-
-   
   // NSFW
   const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
+  _dbg('nsfw flag', nsfwOn);
+
   if (nsfwOn){
+    const preStrip = p.slice();
+    if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
+    _dbg('after stripSfwWearWhenNSFW', {diff:_diff(preStrip, p), p: p.slice()});
+
     const add = [
       pickTag('nsfwL_expo'), pickTag('nsfwL_underwear'), pickTag('nsfwL_outfit'),
       pickTag('nsfwL_expr'), pickTag('nsfwL_situ'),     pickTag('nsfwL_light'),
       pickTag('nsfwL_pose'), pickTag('nsfwL_acc'),      pickTag('nsfwL_body'), pickTag('nsfwL_nipple')
     ].filter(Boolean).map(_norm);
 
-    if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
     p.push(...add);
+    _dbg('after push NSFW items', {added:add, p: p.slice()});
 
     // NSFWヘッダは必ず先頭
     p = p.filter(t => String(t).toUpperCase() !== "NSFW");
     p.unshift("NSFW");
+    _dbg('after NSFW header', p.slice());
   }
 
   // ===== 共通仕上げ =====
+  const preFinalize = p.slice();
   if (typeof finalizePromptArray === 'function'){
     p = finalizePromptArray(p);
+    _dbg('after finalizePromptArray', {diff:_diff(preFinalize, p), p: p.slice()});
+  } else {
+    _dbg('skip finalizePromptArray', 'function not found');
   }
 
   // 固定タグ（学習タブ）
@@ -1621,8 +1662,14 @@ _dbg('before pairWearColors', p);
     const fixed = getFixedLearn() || [];
     if (fixed.length){
       const f = fixed.map(asTag).filter(Boolean).map(_norm);
+      const preFixed = p.slice();
       p = [...f, ...p];
-      if (typeof enforceHeadOrder==='function') p = enforceHeadOrder(p);
+      _dbg('after fixedLearn prepend', {added:f, diff:_diff(preFixed, p), p: p.slice()});
+      if (typeof enforceHeadOrder==='function'){
+        const preHead = p.slice();
+        p = enforceHeadOrder(p);
+        _dbg('after enforceHeadOrder', {diff:_diff(preHead, p), p: p.slice()});
+      }
     }
   }
 
@@ -1631,11 +1678,13 @@ _dbg('before pairWearColors', p);
     const idx = p.indexOf("solo");
     if (idx > 0){ p.splice(idx,1); p.unshift("solo"); }
   }
+  _dbg('ensure solo head', p.slice());
 
   // seed / neg
   const seed = (typeof seedFromName === 'function')
     ? seedFromName((document.getElementById('charName')?.value || ''), extraSeed)
     : 0;
+  _dbg('seed', seed);
 
   const EXTRA_NEG = ["props","accessories","smartphone","phone","camera"];
   const baseNeg = [
@@ -1643,8 +1692,11 @@ _dbg('before pairWearColors', p);
     ...EXTRA_NEG
   ].filter(Boolean).join(", ");
   const neg = (typeof buildNegative === 'function') ? buildNegative(baseNeg) : baseNeg;
+  _dbg('neg', neg);
 
-  return { seed, pos:p, neg, text: `${p.join(", ")}${neg?` --neg ${neg}`:""} seed:${seed}` };
+  const text = `${p.join(", ")}${neg?` --neg ${neg}`:""} seed:${seed}`;
+  _dbg('return', {prompt:p.join(", "), seed, neg});
+  return { seed, pos:p, neg, text };
 }
 
 
