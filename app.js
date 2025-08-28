@@ -7324,10 +7324,16 @@ function initAll(){
 
   loadDefaultDicts().then(()=>{
     // 1) UI描画
-    // loadDefaultDicts().then(()=> { ... }) の「renderSFW()」の直後で一度だけ呼ぶ
+   // initAll() の loadDefaultDicts().then(()=>{ ... }) ブロック内
    renderSFW();
    window.__SFW_RENDERED = true;
-   window.initWearColorEngine?.(); // ← ここで catalog.size がログに出る
+   
+   // ★ここを追加：辞書スナップショットを固定
+   window.__OUTFIT_SRC = Array.isArray(window.SFW?.outfit) ? window.SFW.outfit.slice() : [];
+   console.log('[BOOT] outfit snapshot length =', window.__OUTFIT_SRC.length);
+   
+   // カラエンジン起動（ログが size>0 になるはず）
+   window.initWearColorEngine?.();
 
      
     // 2) 服まわり補助
