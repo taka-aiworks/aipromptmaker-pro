@@ -7268,47 +7268,71 @@ function initAll(){
   bindLearnTest();
   bindLearnBatch();
   bindGASTools();
-  // 画面初期化のどこか（DOMContentLoaded等）で必ず1回コール
   initTagDictionaries();
 
-  // ← ここでは “服系のバインド” は呼ばない（UIがまだ無い）
-
   loadDefaultDicts().then(()=>{
-    // 1) 辞書ロード後にUIを描画
-    renderSFW();                    // 量産タブの p_outfit_* / p_bg などもここで生成
+    // 1) UI描画
+    renderSFW();
     window.__SFW_RENDERED = true;
 
-    // 2) 服まわりの補助バインドは描画後に
-    bindBottomCategoryGuess();      // （クリックで __bottomCat 推定）
-    bindBottomCategoryRadios();     // ← 移動：radio 生成後にバインド
+    // 2) 服まわり補助
+    bindBottomCategoryGuess();
+    bindBottomCategoryRadios();
     fillAccessorySlots();
 
-    // 3) NSFWリストや各種ピッカー
+    // 3) NSFWや各種ピッカー
     renderNSFWLearning();
     renderNSFWProduction();
     initHairEyeAndAccWheels();
 
-    // 4) カラーホイール（基本／量産）
-    initColorWheel("top",     35, 80, 55);
-    initColorWheel("bottom", 210, 70, 50);
-    initColorWheel("shoes",    0,  0, 30);
+    // 4) カラーホイール（固定＆量産）— 戻り値を受け取る！
+    const getTopColor    = initColorWheel("top",     35, 80, 55);
+    const getBottomColor = initColorWheel("bottom", 210, 70, 50);
+    const getShoesColor  = initColorWheel("shoes",    0,  0, 30);
     initColorWheel("p_top",    35, 80, 55);
     initColorWheel("p_bottom",210, 70, 50);
     initColorWheel("p_shoes",   0,  0, 30);
+
+    // PCへ同期
+    function syncWearColors(){
+      window.PC = window.PC || {};
+      const useTop    = document.getElementById("use_top")?.checked;
+      const useBottom = document.getElementById("useBottomColor")?.checked;
+      const useShoes  = document.getElementById("use_shoes")?.checked;
+      window.PC.top    = useTop    ? (getTopColor?.()    || "") : "";
+      window.PC.bottom = useBottom ? (getBottomColor?.() || "") : "";
+      window.PC.shoes  = useShoes  ? (getShoesColor?.()  || "") : "";
+    }
+
+    // 初期同期
+    syncWearColors();
+
+    // トグル変更で同期
+    ["use_top","useBottomColor","use_shoes"].forEach(id=>{
+      document.getElementById(id)?.addEventListener("change", syncWearColors);
+    });
+
+    // 色名テキストの変化で同期（ホイール操作時）
+    function observeTag(id){
+      const el = document.getElementById(id);
+      if (!el) return;
+      const mo = new MutationObserver(()=> syncWearColors());
+      mo.observe(el, { childList:true, characterData:true, subtree:true });
+    }
+    observeTag("tag_top");
+    observeTag("tag_bottom");
+    observeTag("tag_shoes");
 
     initSkinTone();
     initNSFWStatusBadge();
     initCopyTripletAllModes();
 
-
-
-    // 5) 量産タブのイベント等はUIが揃ってから
-    bindProduction();               // ← 移動：renderSFW 後に実行
+    // 5) 量産タブのイベント
+    bindProduction();
   });
 }
 
 document.addEventListener('DOMContentLoaded', initAll);
-
 function bindOneTestUI(){
   // クリック
   $("#btnOneLearn")?.addEventListener("click", runOneTest);
