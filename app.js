@@ -946,7 +946,6 @@ function toEnTagStrict(t){
     }
     return out;
   };
-};
 })();
 
 
