@@ -946,6 +946,17 @@ function toEnTagStrict(t){
     }
     return out;
   };
+   // --- debug handles (console用) ---
+window.WEAR_PIPE_DEBUG = {
+  ensureCatalog,
+  getOutfitMeta,
+  applyWearColorPipeline,
+  pairWearColors,
+  canon,
+  norm,
+  keys(){ return Array.from(ensureCatalog().keys()); },
+  cat(){ return ensureCatalog(); }
+};
 })();
 
 
