@@ -668,6 +668,172 @@
       { "tag": "spotlight", "label": "スポットライト" },
       { "tag": "overcast", "label": "曇天光" },
       { "tag": "volumetric light", "label": "ゴッドレイ" }
-    ]
+    ],
+  "emotion_primary": [
+    { "tag": "joy", "label": "喜び" },
+    { "tag": "anger", "label": "怒り" },
+    { "tag": "sadness", "label": "悲しみ" },
+    { "tag": "fear", "label": "恐れ" },
+    { "tag": "surprise", "label": "驚き" },
+    { "tag": "disgust", "label": "嫌悪" },
+    { "tag": "calm", "label": "落ち着き" },
+    { "tag": "embarrassment", "label": "照れ" }
+  ],
+
+  "emotion_detail": [
+    { "tag": "delighted", "label": "嬉しそう" },
+    { "tag": "cheerful", "label": "陽気" },
+    { "tag": "proud", "label": "誇らしい" },
+    { "tag": "furious", "label": "激怒" },
+    { "tag": "annoyed", "label": "苛立ち" },
+    { "tag": "tearful", "label": "涙ぐむ" },
+    { "tag": "sobbing", "label": "すすり泣き" },
+    { "tag": "nervous", "label": "緊張" },
+    { "tag": "shocked", "label": "ショック" },
+    { "tag": "disappointed", "label": "落胆" },
+    { "tag": "bashful", "label": "はにかみ" }
+  ],
+
+  "facial_expression": [
+    { "tag": "smiling", "label": "微笑み" },
+    { "tag": "big_smile", "label": "満面の笑み" },
+    { "tag": "laughing", "label": "笑っている" },
+    { "tag": "neutral_expression", "label": "ニュートラル" },
+    { "tag": "frown", "label": "への字口" },
+    { "tag": "pout", "label": "むくれ顔" },
+    { "tag": "crying", "label": "泣き顔" },
+    { "tag": "teary_eyes", "label": "涙目" },
+    { "tag": "angry_look", "label": "怒り顔" },
+    { "tag": "surprised", "label": "驚き顔" },
+    { "tag": "embarrassed_face", "label": "照れ顔" },
+    { "tag": "determined", "label": "決意の表情" }
+  ],
+
+  "mouth_state": [
+    { "tag": "mouth_closed", "label": "口を閉じる" },
+    { "tag": "slight_open_mouth", "label": "口を少し開ける" },
+    { "tag": "open_mouth", "label": "口を開ける" },
+    { "tag": "smirk", "label": "ニヤリ" },
+    { "tag": "grin", "label": "歯を見せて笑う" },
+    { "tag": "tongue_out_small", "label": "舌を少し出す" },
+    { "tag": "biting_lip_light", "label": "軽く唇を噛む" },
+    { "tag": "shouting", "label": "叫ぶ" },
+    { "tag": "whispering", "label": "ささやく" },
+    { "tag": "talking", "label": "話している" }
+  ],
+
+  "eye_state": [
+    { "tag": "eyes_open", "label": "目を開ける" },
+    { "tag": "eyes_half_closed", "label": "半目" },
+    { "tag": "eyes_closed", "label": "目を閉じる" },
+    { "tag": "teary", "label": "うるんだ目" },
+    { "tag": "widened_eyes", "label": "見開く" },
+    { "tag": "wink_left", "label": "左ウインク" },
+    { "tag": "wink_right", "label": "右ウインク" }
+  ],
+
+  "gaze": [
+    { "tag": "at_viewer", "label": "視線こちら" },
+    { "tag": "away", "label": "視線そらす" },
+    { "tag": "down", "label": "下を見る" },
+    { "tag": "up", "label": "上を見る" }
+  ],
+
+  "body_orientation": [
+    { "tag": "front_view", "label": "正面" },
+    { "tag": "three_quarter_view", "label": "やや斜め" },
+    { "tag": "side_view", "label": "横向き" },
+    { "tag": "back_view", "label": "背面" },
+    { "tag": "over_shoulder", "label": "振り向き（肩越し）" }
+  ],
+
+  "camera_angle": [
+    { "tag": "eye_level", "label": "アイレベル" },
+    { "tag": "high_angle", "label": "俯瞰（やや上）" },
+    { "tag": "low_angle", "label": "ローアングル（やや下）" },
+    { "tag": "top_down", "label": "真上" },
+    { "tag": "worm_view", "label": "超ロー/虫の目" }
+  ],
+
+  "framing": [
+    { "tag": "full_body", "label": "全身" },
+    { "tag": "knees_up", "label": "膝上" },
+    { "tag": "waist_up", "label": "腰上" },
+    { "tag": "bust", "label": "バストアップ" },
+    { "tag": "close_up_face", "label": "顔のアップ" }
+  ],
+
+  "composition": [
+    { "tag": "centered", "label": "中央配置" },
+    { "tag": "rule_of_thirds", "label": "三分割構図" },
+    { "tag": "leading_lines", "label": "リーディングライン" },
+    { "tag": "dutch_angle", "label": "水平傾き（ダッチ）" }
+  ],
+
+  "pose_manga": [
+    { "tag": "standing", "label": "立ち" },
+    { "tag": "sitting", "label": "座り" },
+    { "tag": "running", "label": "走る" },
+    { "tag": "walking", "label": "歩く" },
+    { "tag": "jumping", "label": "跳ぶ" },
+    { "tag": "pointing", "label": "指差し" },
+    { "tag": "arms_crossed", "label": "腕組み" },
+    { "tag": "hand_on_hip", "label": "腰に手" },
+    { "tag": "hands_behind_back", "label": "後ろ手" },
+    { "tag": "hands_together_chest", "label": "胸の前で手を組む" },
+    { "tag": "covering_mouth", "label": "口元を押さえる" },
+    { "tag": "facepalm", "label": "額に手（困惑）" },
+    { "tag": "wiping_tears", "label": "涙を拭う" },
+    { "tag": "victory_pose", "label": "Vサイン" },
+    { "tag": "praying_pose", "label": "祈る" }
+  ],
+
+  "hand_action": [
+    { "tag": "holding_smartphone", "label": "スマホを持つ" },
+    { "tag": "holding_book", "label": "本を持つ/読む" },
+    { "tag": "holding_food", "label": "食べ物を持つ" },
+    { "tag": "holding_pen", "label": "ペンを持つ/書く" },
+    { "tag": "holding_bag", "label": "バッグを持つ" },
+    { "tag": "drinking", "label": "飲み物を飲む" },
+    { "tag": "eating", "label": "食べる" },
+    { "tag": "waving", "label": "手を振る" },
+    { "tag": "thumbs_up", "label": "サムズアップ" },
+    { "tag": "peace_sign", "label": "ピースサイン" }
+  ],
+
+  "props_light": [
+    { "tag": "smartphone", "label": "スマホ" },
+    { "tag": "book", "label": "本/ノート" },
+    { "tag": "pen", "label": "ペン" },
+    { "tag": "cup", "label": "カップ/ペットボトル" },
+    { "tag": "snack", "label": "お菓子/軽食" },
+    { "tag": "umbrella", "label": "傘" },
+    { "tag": "headphones_small", "label": "小型イヤホン/ヘッドホン" }
+  ],
+
+  "speech_act": [
+    { "tag": "shouting", "label": "叫ぶ" },
+    { "tag": "whispering", "label": "ささやく" },
+    { "tag": "talking", "label": "話す" }
+  ],
+
+  "effect_manga": [
+    { "tag": "speed_lines", "label": "スピード線" },
+    { "tag": "impact_lines", "label": "集中線" },
+    { "tag": "sweat_drop", "label": "冷や汗マーク" },
+    { "tag": "anger_mark", "label": "怒りマーク" },
+    { "tag": "blush", "label": "頬染め" },
+    { "tag": "vein_bulge", "label": "血管浮き" },
+    { "tag": "teardrops", "label": "涙エフェクト" },
+    { "tag": "motion_blur", "label": "モーションブラー" }
+  ],
+
+  "movement_action": [
+    { "tag": "turning_head", "label": "振り向く" },
+    { "tag": "leaning_forward", "label": "身を乗り出す" },
+    { "tag": "leaning_back", "label": "のけぞる（軽）" },
+    { "tag": "ducking", "label": "かがむ" },
+    { "tag": "stretching", "label": "伸びをする" }
+  ]
   }
 }
