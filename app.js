@@ -955,6 +955,27 @@ window.initWearColorEngine = function(){
   try { console.log('[BOOT] SFW_CATALOG size =', m?.size); } catch{}
   return m;
 };
+
+// 服色IIFEの末尾（initWearColorEngine定義の直後あたり）に追加
+window.__WEAR_VERSION = 'v3'; // ←あなたの好きな値でOK
+
+// 既存の関数をラップして、呼ばれるたびに中の辞書状況を必ず出す
+const _origPair = window.pairWearColors;
+window.pairWearColors = function(arr, opts){
+  const m = ensureCatalog();
+  console.log('[WEAR]', window.__WEAR_VERSION, 'pairWearColors() catalog.size=', m?.size,
+              'has t-shirt?', m?.has(canon('t-shirt')), 'has jeans?', m?.has(canon('jeans')));
+  return _origPair.call(this, arr, opts);
+};
+
+const _origPipe = window.applyWearColorPipeline;
+window.applyWearColorPipeline = function(p, opts){
+  const m = ensureCatalog();
+  console.log('[WEAR]', window.__WEAR_VERSION, 'applyWearColorPipeline() catalog.size=', m?.size,
+              'PC=', opts || {});
+  return _origPipe.call(this, p, opts);
+};
+   
 })();
 
 
@@ -7303,14 +7324,10 @@ function initAll(){
 
   loadDefaultDicts().then(()=>{
     // 1) UI描画
-    renderSFW();
-    window.__SFW_RENDERED = true;
-
-    // --- 辞書ロード後にカタログを強制初期化（空処理でOK）
-      if (Array.isArray(window.SFW?.outfit) && typeof window.pairWearColors === 'function') {
-        window.pairWearColors([]); // ← ensureCatalog() が走って SFW_CATALOG が生える
-        console.log('[BOOT] SFW_CATALOG size =', window.SFW_CATALOG?.size);
-      }
+    // loadDefaultDicts().then(()=> { ... }) の「renderSFW()」の直後で一度だけ呼ぶ
+   renderSFW();
+   window.__SFW_RENDERED = true;
+   window.initWearColorEngine?.(); // ← ここで catalog.size がログに出る
 
      
     // 2) 服まわり補助
