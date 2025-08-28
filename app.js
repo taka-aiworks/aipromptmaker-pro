@@ -618,6 +618,29 @@ const EXPR_ALL = new Set([
 
 
 
+// 一時デバッグヘルパ
+function _dbg(label, v){ try{ console.debug('[DBG]', label, JSON.stringify(v)); }catch{} return v; }
+
+// 例：撮影モードの色適用まわりに差し込む
+_dbg('pal(top/bottom/shoes)', pal);
+_dbg('before colors (nouns+placeholders)', p);
+
+if (typeof pairWearColors==='function') p = _dbg('after pairWearColors', pairWearColors(p));
+
+if (typeof applyWearColorPipeline==='function') p = _dbg('after applyWearColorPipeline', applyWearColorPipeline(p, pal));
+
+// もし NSFW ON のとき
+_dbg('before stripSfwWearWhenNSFW', p);
+if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
+_dbg('after stripSfwWearWhenNSFW', p);
+
+// finalize 前後
+_dbg('before dropBareColors', p);
+if (typeof dropBareColors==='function') p = dropBareColors(p);
+_dbg('after dropBareColors', p);
+
+
+
 
 
 
