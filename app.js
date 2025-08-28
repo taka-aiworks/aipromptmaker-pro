@@ -855,19 +855,29 @@ function toEnTagStrict(t){
 
   // ---- outfit辞書 -> カタログ化（tag で引く / emit は出力文字）----
   function ensureCatalog(){
-    if (window.SFW_CATALOG && window.SFW_CATALOG.size) return window.SFW_CATALOG;
-    const src = (window.SFW && Array.isArray(window.SFW.outfit)) ? window.SFW.outfit : [];
-    const m = new Map();
-    for (const e of src){
-      const tag  = e && e.tag  ? norm(e.tag)  : ""; if (!tag) continue;
-      const cat  = e && e.cat  ? norm(e.cat)  : ""; if (!cat) continue;
-      const emit = e && e.emit ? norm(e.emit) : tag;
-      m.set(canon(tag), { cat: canon(cat), emit, tag });
-    }
-    window.SFW_CATALOG = m;
-    return m;
-  }
+  // 既に作ってあればそれを使う
+  if (window.SFW_CATALOG && window.SFW_CATALOG.size) return window.SFW_CATALOG;
 
+  // ★スナップショットを最優先に使う
+  let src = Array.isArray(window.__OUTFIT_SRC) && window.__OUTFIT_SRC.length
+            ? window.__OUTFIT_SRC
+            : (Array.isArray(window.SFW?.outfit) ? window.SFW.outfit : []);
+
+  const m = new Map();
+  for (const e of (src || [])){
+    const tag  = e?.tag ? norm(e.tag) : ""; if (!tag) continue;
+    const cat  = e?.cat ? norm(e.cat) : ""; if (!cat) continue;
+    const emit = e?.emit ? norm(e.emit) : tag;
+    m.set(canon(tag), { cat: canon(cat), emit, tag });
+  }
+  window.SFW_CATALOG = m;
+  try {
+    console.log('[WEAR] ensureCatalog built, size=', m.size);
+  } catch {}
+  return m;
+}
+
+   
   // ---- 入力トークン -> outfitメタ（先頭の色は一時剥離して辞書照合）----
   function getOutfitMeta(token){
     const raw = norm(token);
