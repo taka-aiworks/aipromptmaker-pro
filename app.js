@@ -618,30 +618,6 @@ const EXPR_ALL = new Set([
 
 
 
-// === Safe debug helper (落ちない版) ===
-function _dbg(label, v){
-  try{
-    const seen = new WeakSet();
-    const s = JSON.stringify(v, (k, val) => {
-      if (typeof val === 'function') return `[Function ${val.name||'anon'}]`;
-      if (typeof val === 'undefined') return '[undefined]';
-      if (typeof val === 'object' && val !== null){
-        if (seen.has(val)) return '[Circular]';
-        seen.add(val);
-      }
-      return val;
-    });
-    if (typeof console !== 'undefined' && console.debug){
-      console.debug('[DBG]', label, s);
-    }
-  }catch(e){
-    if (typeof console !== 'undefined' && console.debug){
-      console.debug('[DBG]', label, '(unserializable)', String(e && e.message || e));
-    }
-  }
-  return v; // パイプ的に使える
-}
-
 
 
 
@@ -1493,7 +1469,51 @@ function _collectNSFW(idsOrId){
 
 
 
+// ==== DBG shim（常時表示・安全化）====
+// ・必ずファイルの一番上（他の関数より前）に置く
+// ・logを使うのでConsoleのレベル設定に関係なく見える
+(function(){
+  if (!window._dbg) {
+    window._dbg = function(label, v){
+      try {
+        // 循環参照でも落ちないように
+        let out = v;
+        try { out = JSON.stringify(v); } catch(_) { /* そのまま表示 */ }
+        console.log('[DBG]', label, out);
+      } catch (_) {}
+      return v;
+    };
+  }
+  // 動作確認用の初回Ping（1回だけ）
+  try { console.log('[DBG] shim ready'); } catch(_){}
+})();
 
+
+
+
+// === Safe debug helper (落ちない版) ===
+function _dbg(label, v){
+  try{
+    const seen = new WeakSet();
+    const s = JSON.stringify(v, (k, val) => {
+      if (typeof val === 'function') return `[Function ${val.name||'anon'}]`;
+      if (typeof val === 'undefined') return '[undefined]';
+      if (typeof val === 'object' && val !== null){
+        if (seen.has(val)) return '[Circular]';
+        seen.add(val);
+      }
+      return val;
+    });
+    if (typeof console !== 'undefined' && console.debug){
+      console.debug('[DBG]', label, s);
+    }
+  }catch(e){
+    if (typeof console !== 'undefined' && console.debug){
+      console.debug('[DBG]', label, '(unserializable)', String(e && e.message || e));
+    }
+  }
+  return v; // パイプ的に使える
+}
 
 
 
