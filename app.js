@@ -1113,6 +1113,40 @@ console.log('[CHK] lookup by tag',
 );
 
 
+// 追加: UI から照明候補セットを取る（正規表現なし）
+function getLightingCandidatesFromUI(){
+  const vals = [];
+
+  // セレクトやスクロール UI から候補値を吸う
+  const grab = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === 'SELECT') {
+      for (const opt of el.options) {
+        const v = (opt.value || opt.textContent || "").trim();
+        if (v) vals.push(v);
+      }
+    }
+    // スクロールUIや独自UI向けに、候補を返す関数があるなら併用（なければ無視される）
+    if (typeof getMany === 'function') {
+      const alt = getMany(id + '_all'); // 実装していなければ [] が返る想定
+      if (Array.isArray(alt)) for (const v of alt) if (v) vals.push(String(v).trim());
+    }
+  };
+
+  // SFW/NSFW 両方の照明UIを候補に
+  grab('pl_light');
+  grab('pl_nsfw_light');
+
+  // 表記ゆれ（アンダースコア等）だけは UI の表示どおりに整える
+  const norm = s => String(s||'').replace(/_/g,' ').trim().toLowerCase();
+  return new Set(vals.map(norm));
+}
+
+
+
+
+
 
 
 
@@ -2194,6 +2228,16 @@ function pmBuildOne(){
   // シーン確定（pose を含める）
   p.push(...[bg, pose, comp, view, expr, lite].filter(Boolean));
 
+    // ★ 撮影モードは「照明＝UIの選択1個」に固定（正規表現は使わない）
+  const lightingSet = getLightingCandidatesFromUI();
+  const norm = s => String(s||'').replace(/_/g,' ').trim().toLowerCase();
+  const chosenLite = norm(lite);
+  p = p.filter(t => {
+    const isLightingCandidate = lightingSet.has(norm(t));
+    // 候補に該当するものは「選んだ1個」以外すべて除去
+    return !isLightingCandidate || norm(t) === chosenLite;
+  });
+   
   console.log('[DBG][PL] after push', p);
 
   // ★ 表情・ポーズ・ライトを NSFW 優先で単一化
