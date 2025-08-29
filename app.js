@@ -2249,7 +2249,6 @@ function pmBuildOne(){
   };
 
   // --- UI文字列 → 純タグ解決（辞書ヒットのみ／フォールバックなし／正規表現なし）---
-  // 1) そのままタグ一致 2) ラベル一致→tag 3) 「ラベル + スペース + tag」の最後の語がタグ一致なら採用
   const uiToTagStrictLocal = (raw, dict)=>{
     const s = AS_IS(raw);
     if (!s) return "";
@@ -2265,20 +2264,6 @@ function pmBuildOne(){
     if (last && dict.tags.has(last)) return last;
 
     return "";
-  };
-
-  // ★最終ガード：プレースホルダ"background"を必ず捨て、UI背景を1つだけ確実に残す
-  const _finalizeBackgroundOnce = (arr, uiBgTag) => {
-    const toK = s => String(s||'').trim().toLowerCase();
-    const out = (Array.isArray(arr) ? arr : []).filter(t => toK(t) !== 'background'); // プレースホルダ除去
-    const k = toK(uiBgTag);
-    if (k){
-      const has = out.some(t => toK(t) === k);
-      if (!has) out.push(uiBgTag); // まだ無ければ注入
-    }
-    if (typeof ensurePromptOrder === 'function') return ensurePromptOrder(out);
-    if (typeof ensurePromptOrderLocal === 'function') return ensurePromptOrderLocal(out);
-    return out;
   };
 
   // 単一/複数どちらのUIにも対応する安全取得
@@ -2314,7 +2299,7 @@ function pmBuildOne(){
   };
   if (typeof applyWearColorPipeline==='function') p = applyWearColorPipeline(p, pal);
 
-  // シーン（UIそのまま取らず、辞書で“純タグ”に解決）
+  // シーン（辞書で“純タグ”に解決）
   const bgTag   = uiToTagStrictLocal(pickTag('pl_bg'),   D.bg);
   const poseTag = uiToTagStrictLocal(pickTag('pl_pose'), D.pose);
   const compTag = uiToTagStrictLocal(pickTag('pl_comp'), D.comp);
@@ -2358,12 +2343,17 @@ function pmBuildOne(){
   if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
   if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
 
-  // —— 最終整形（UI尊重）——
+  // —— 最終整形（順序→排他→ヘッダ）——
   p = _clean(p);
   if (typeof ensurePromptOrder==='function')           p = ensurePromptOrder(p);
   else if (typeof ensurePromptOrderLocal==='function') p = ensurePromptOrderLocal(p);
   if (typeof fixExclusives==='function')               p = fixExclusives(p);
   if (typeof enforceHeadOrder==='function')            p = enforceHeadOrder(p);
+
+  // ★ 背景を1つに揃える（量産モードと同じヘルパを使用）
+  if (typeof enforceSingleBackground === 'function') {
+    p = enforceSingleBackground(p);
+  }
 
   // ライト一本化（NSFW優先・フォールバック無し）
   if (typeof isLightingTag === 'function'){
@@ -2403,10 +2393,11 @@ function pmBuildOne(){
       if (i2>0){ p.splice(i2,1); p.unshift("solo"); }
       if (i2===-1) p.unshift("solo");
     }
+    // （固定タグ追加後も背景は1つに）
+    if (typeof enforceSingleBackground === 'function') {
+      p = enforceSingleBackground(p);
+    }
   }
-
-  // ★最終：背景プレースホルダ除去＋UI背景（純タグ）の強制保持
-  p = _finalizeBackgroundOnce(p, bgTag);
 
   // ネガ
   const useDefNeg = !!document.getElementById('pl_useDefaultNeg')?.checked;
