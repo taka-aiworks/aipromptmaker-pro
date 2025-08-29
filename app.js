@@ -6251,28 +6251,63 @@ function _labelToTag(el){
 }
 
 function normalizeTag(t){
-  // 小文字化＋trimのみ（アンダースコアは触らない）
-  let s = String(t || "").toLowerCase().trim();
-  if (!s) return "";
+  // 小文字化＆空白の正規化（アンダースコアは壊さない）
+  let s = String(t||"")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 
-  // ——— 必要最小限のエイリアス正規化（MIX_RULESのキーに合わせる）———
-  // view（スペース区切りのまま）
-  if (s === "three quarters view" || s === "three-quarters view") s = "three-quarter view";
+  // スペース表記 → snake_case への正規化（主要どころを網羅）
+  const ALIAS_TO_SNAKE = new Map([
+    // background 系
+    ["plain background",  "plain_background"],
+    ["white background",  "white_background"],
+    ["studio background", "studio_background"],
+    ["solid background",  "solid_background"],
+    ["white seamless",    "white_seamless"],
+    ["gray seamless",     "gray_seamless"],
 
-  // background（snake_caseに統一）
-  const bgAliases = {
-    "plain background":  "plain_background",
-    "white background":  "white_background",
-    "studio background": "studio_background",
-    "solid background":  "solid_background",
-    "white seamless":    "white_seamless",
-    "gray seamless":     "gray_seamless"
-  };
-  if (bgAliases[s]) s = bgAliases[s];
+    // view（既にMIX_RULESはスペース表記なのでそのままでもOKだが念のため）
+    ["front view",            "front view"],
+    ["back view",             "back view"],
+    ["side view",             "side view"],
+    ["profile view",          "profile view"],
+    ["three quarters view",   "three-quarter view"],
+    ["three-quarters view",   "three-quarter view"],
+    ["three-quarter view",    "three-quarter view"],
 
-  // comp / expr / light はMIX_RULESにそのままある表記に揃えるだけ
-  // 例：余計な連続空白を詰める（スペースは保持）
-  s = s.replace(/\s+/g, " ");
+    // composition
+    ["upper body", "upper body"],
+    ["full body",  "full body"],
+    ["waist up",   "waist up"],
+    ["bust",       "bust"],
+    ["portrait",   "portrait"],
+    ["close-up",   "close-up"],
+    ["wide shot",  "wide shot"],
+
+    // lighting
+    ["soft lighting",  "soft lighting"],
+    ["even lighting",  "even lighting"],
+    ["normal lighting","normal lighting"],
+    ["window light",   "window light"],
+    ["overcast",       "overcast"],
+
+    // expression
+    ["neutral expression", "neutral expression"],
+    ["smiling",            "smiling"],
+    ["smiling open mouth", "smiling open mouth"],
+    ["slight blush",       "slight blush"],
+    ["serious",            "serious"],
+    ["determined",         "determined"],
+    ["pouting (slight)",   "pouting (slight)"],
+  ]);
+
+  // まず既知のスペース表記を snake_case/正規表記へ
+  if (ALIAS_TO_SNAKE.has(s)) s = ALIAS_TO_SNAKE.get(s);
+
+  // 裸ワードの保険（中途半端に残ったときの最後の砦）
+  if (s === "background") s = "plain_background";
+  if (s === "seamless")   s = "white_seamless";
 
   return s;
 }
