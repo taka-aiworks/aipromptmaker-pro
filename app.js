@@ -2219,6 +2219,7 @@ function pmBuildOne(){
     .filter(x => x && x.toLowerCase()!=='none' && !_isRating(x));
   const norm = s => String(s||'').replace(/_/g,' ').trim().toLowerCase();
 
+  // 単一/複数どちらのUIにも対応する安全取得
   const pickManySafe = (id) => {
     if (typeof getMany === 'function') {
       const arr = getMany(id) || [];
@@ -2251,25 +2252,25 @@ function pmBuildOne(){
   };
   if (typeof applyWearColorPipeline==='function') p = applyWearColorPipeline(p, pal);
 
-  // シーン（UIそのまま・ここ重要：プレースホルダ入れない）
-  const bg   = pickTag('pl_bg');   // ← UI選択の文字列をそのまま
+  // シーン（UIそのまま）
+  const bg   = pickTag('pl_bg');
   const pose = pickTag('pl_pose');
   const comp = pickTag('pl_comp');
   const view = pickTag('pl_view');
   let expr   = pickTag('pl_expr')  || "neutral expression";
-  let lite   = pickTag('pl_light') || "soft lighting";
-  const chosenLiteRaw = lite;
+  let lite   = pickTag('pl_light') || "soft lighting";   // UIの照明をそのまま使う
+  const chosenLiteRaw = lite;                             // SFWで選んだライトの生値
   const chosenLite    = norm(lite);
 
   // —— NSFW（UIだけ反映）——
   const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
   let nsfwAdd = [];
-  let nsfwLightChosen = "";
+  let nsfwLightChosen = ""; // ★ 追加：NSFWライト保持
   if (nsfwOn){
     const ex2 = (pickManySafe('pl_nsfw_expr').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     const li2 = (pickManySafe('pl_nsfw_light').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     if (ex2) expr = ex2;
-    if (li2) { lite = li2; nsfwLightChosen = li2; }
+    if (li2) { lite = li2; nsfwLightChosen = li2; } // NSFWのライト選択を最優先・保持
     nsfwAdd = [
       ...pickManySafe('pl_nsfw_expo'),
       ...pickManySafe('pl_nsfw_underwear'),
@@ -2287,35 +2288,41 @@ function pmBuildOne(){
     p.push(...nsfwAdd);
   }
 
-  // シーン確定（選択値を素直に入れる）
+  console.log('[DBG][PL] before push', {bg, pose, comp, view, expr, lite});
+
+  // シーン確定（※撮影モードのアクセは使わない）
   p.push(...[bg, pose, comp, view, expr, lite].filter(Boolean));
 
-  // 表情・ポーズ単一化（ライトは後で）
+  console.log('[DBG][PL] after push', p);
+
+  // ★ 表情・ポーズのみ単一化（照明はここでは触らない）
   if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
   if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
 
   // —— 最終整形（UI尊重）——
   p = _clean(p);
-  if (typeof ensurePromptOrder==='function')           p = ensurePromptOrder(p);
-  else if (typeof ensurePromptOrderLocal==='function') p = ensurePromptOrderLocal(p);
-  if (typeof fixExclusives==='function')               p = fixExclusives(p);
-  if (typeof enforceHeadOrder==='function')            p = enforceHeadOrder(p);
-
-  // ★ ここを変更：背景のプレースホルダは使わない
-  // （旧）if (typeof enforceSingleBackground==='function') p = enforceSingleBackground(p);
-  // （新）リテラル "background" は常に除去（UI選択の具体背景だけ残す）
-  p = p.filter(t => String(t).trim().toLowerCase() !== 'background');
+  if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
+  else if (typeof ensurePromptOrderLocal==='function')p = ensurePromptOrderLocal(p);
+  if (typeof fixExclusives==='function')              p = fixExclusives(p);
+  if (typeof enforceHeadOrder==='function')           p = enforceHeadOrder(p);
+  if (typeof enforceSingleBackground==='function')    p = enforceSingleBackground(p);
 
   // ★ ライト一本化（NSFW優先・フォールバック無し）
   {
     const desiredLight = nsfwOn ? (nsfwLightChosen || "") : (chosenLiteRaw || "");
     if (typeof isLightingTag === 'function') {
+      // 既存のライトタグを全て除去
       p = p.filter(t => !isLightingTag(t));
+      // 選ぶべきライトがあれば 1 つだけ入れる
       if (desiredLight) p.push(desiredLight);
-      if (typeof ensurePromptOrder==='function')           p = ensurePromptOrder(p);
-      else if (typeof ensurePromptOrderLocal==='function') p = ensurePromptOrderLocal(p);
+      // 並びの最終調整
+      if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
+      else if (typeof ensurePromptOrderLocal==='function')p = ensurePromptOrderLocal(p);
     }
+    // isLightingTag がなければ何もしない（フォールバック無し）
   }
+
+  console.log('[DBG][PL] final', p);
 
   // ヘッダ固定（NSFW→solo）
   if (nsfwOn){
@@ -2327,17 +2334,17 @@ function pmBuildOne(){
     if (i===-1) p.unshift("solo");
   }
 
+  // LoRA を最前列へ（必ず solo より前）
   if (typeof putLoraAtHead === 'function') {
     p = putLoraAtHead(p, { nsfwOn });
   }
 
-  // 固定タグ（追加のみ）
+  // 固定タグ（追加のみ・補完なし）→ 後ろに追加（LoRAより前に出さない）
   const fixed = (document.getElementById('fixedPlanner')?.value || "").trim();
   if (fixed){
     const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
     p = _clean([ ...p, ...f.map(asTag).filter(Boolean) ]);
     if (typeof enforceHeadOrder==='function') p = enforceHeadOrder(p);
-    // ヘッダ再固定
     if (nsfwOn){
       p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
       p = ["NSFW", "solo", ...p];
@@ -2346,8 +2353,6 @@ function pmBuildOne(){
       if (i2>0){ p.splice(i2,1); p.unshift("solo"); }
       if (i2===-1) p.unshift("solo");
     }
-    // 念のためプレースホルダ再除去
-    p = p.filter(t => String(t).trim().toLowerCase() !== 'background');
   }
 
   // ネガ
