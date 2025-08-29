@@ -26,7 +26,7 @@
       { "tag": "fearful_cry",      "ja": "怯え泣き顔",              "level": "L3" },
       { "tag": "resigned_face",    "ja": "諦め顔",                  "level": "L2" },
       { "tag": "overjoyed",        "ja": "歓喜の笑顔",              "level": "L1" },
-      { "tag": "dizzy_face",       "ja": "ぐるぐる目（くらくら）",  "level": "L1" }
+      { "tag": "dizzy_face",       "ja": "ぐるぐる目（くらくら）",  "level": "L1" },
     
       { "tag": "tongue_out",       "ja": "舌を出す", "level": "L2" },
       { "tag": "panting",          "ja": "息を荒くする", "level": "L2" },
