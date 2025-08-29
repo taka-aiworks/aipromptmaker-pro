@@ -508,7 +508,7 @@ const SINGLETON_CATS = [
 
 // 足りないときに自動補完する既定（好みで調整OK）
 const CAT_DEFAULTS = {
-  background:  'plain background',
+  background:  'plain_background',
   pose:        'standing',
   composition: 'upper body',
   view:        'front view',
@@ -1887,7 +1887,7 @@ function finalizePromptArray(p){
   else if (typeof ensurePromptOrderLocal==='function') p = ensurePromptOrderLocal(p);
   if (typeof fixExclusives==='function') p = fixExclusives(p);
   if (typeof enforceHeadOrder==='function') p = enforceHeadOrder(p);
-  if (typeof enforceSingleBackground==='function') p = enforceSingleBackground(p);
+  // if (typeof enforceSingleBackground==='function') p = enforceSingleBackground(p);
 
   // プレースホルダ掃除＆重複排除
   p = dropPlaceholders(p);
