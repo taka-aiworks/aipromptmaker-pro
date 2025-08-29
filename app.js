@@ -587,69 +587,30 @@ function splitTags(v){
 
 
 
-// === 学習用ホワイトリスト（辞書準拠） ==================
+// === 表記ゆれ修正（辞書準拠） ==================
 const SCOPE = {
   learning: {
     background: [
-      "plain_background",
-      "white_background",
-      "solid_background",
-      "studio_background",
-      "white_seamless",
-      "gray_seamless"
+      "plain_background","white_background","solid_background",
+      "studio_background","white_seamless","gray_seamless"
     ],
     pose: [
-      "standing",
-      "sitting_chair",
-      "sitting_floor_agura",
-      "sitting_floor_seiza",
-      "crouching",
-      "kneeling",
-      "one_knee_kneel",
-      "leaning_forward",
-      "leaning_back",
-      "tiptoe",
-      "stretching",
-      "bowing",
-      "arched_back"
+      "standing","sitting","hands on hips","crossed arms",
+      "hand on chest","hands behind back","head tilt","waving"
     ],
     composition: [
-      "full body",
-      "waist up",
-      "bust",
-      "close-up",
-      "portrait",
-      "centered composition"
+      "full body","waist up","bust","close-up","portrait","centered composition"
     ],
     view: [
-      "front view",
-      "three-quarter view", // ← 修正：s抜き
-      "side view",
-      "profile view",
-      "back view"
+      "front view","three-quarter view","side view","profile view","back view" // ← 修正
     ],
     expressions: [
-      "neutral_expression",
-      "smiling",
-      "smiling_open_mouth",
-      "serious",
-      "determined",
-      "slight_blush",
-      "surprised_mild",
-      "pouting",
-      "teary_eyes",
-      "laughing",
-      "embarrassed_face"
+      "neutral expression","smiling","smiling open mouth","serious","determined",
+      "slight blush","surprised (mild)","pouting (slight)","teary eyes","laughing","embarrassed"
     ],
     lighting: [
-      "normal lighting",
-      "even lighting",
-      "soft lighting",
-      "window light",
-      "overcast",
-      "flat studio lighting",
-      "backlighting",
-      "rim light"
+      "normal lighting","even lighting","soft lighting","window light","overcast",
+      "flat studio lighting","backlighting","rim light"
     ]
   }
 };
@@ -657,17 +618,16 @@ const SCOPE = {
 // === 顔安定版・配分ルール =======================
 const MIX_RULES = {
   view: {
-    group: ["front view","three-quarter view","side view","profile view","back view"],
+    group: ["front view","three-quarter view","side view","profile view","back view"], // ← 修正
     targets: {
-      "three-quarter view":[0.55,0.65],
+      "three-quarter view":[0.55,0.65], // ← 修正
       "front view":[0.30,0.35],
       "side view":[0.02,0.04],
       "profile view":[0.01,0.03],
       "back view":[0.00,0.01]
     },
-    fallback: "three-quarter view"
+    fallback: "three-quarter view" // ← 修正
   },
-
   comp: {
     group: ["bust","waist up","portrait","upper body","close-up","full body","wide shot"],
     targets: {
@@ -681,24 +641,22 @@ const MIX_RULES = {
     },
     fallback: "bust"
   },
-
   expr: {
     group: [
-      "neutral_expression","smiling","smiling_open_mouth",
-      "slight_blush","serious","determined","pouting"
+      "neutral expression","smiling","smiling open mouth",
+      "slight blush","serious","determined","pouting (slight)"
     ],
     targets: {
-      "neutral_expression":[0.55,0.65],
+      "neutral expression":[0.55,0.65],
       "smiling":[0.20,0.25],
-      "smiling_open_mouth":[0.03,0.05],
-      "slight_blush":[0.03,0.05],
+      "smiling open mouth":[0.03,0.05],
+      "slight blush":[0.03,0.05],
       "serious":[0.01,0.02],
       "determined":[0.01,0.02],
-      "pouting":[0.01,0.02]
+      "pouting (slight)":[0.01,0.02]
     },
-    fallback: "neutral_expression"
+    fallback: "neutral expression"
   },
-
   bg: {
     group: ["plain_background","white_background","studio_background","solid_background","white_seamless","gray_seamless"],
     targets: {
@@ -711,7 +669,6 @@ const MIX_RULES = {
     },
     fallback: "plain_background"
   },
-
   light: {
     group: ["even lighting","soft lighting","normal lighting","window light","overcast"],
     targets: {
@@ -726,10 +683,60 @@ const MIX_RULES = {
 };
 window.MIX_RULES = MIX_RULES;
 
-const EXPR_ALL = new Set([
-  ...Object.keys(MIX_RULES.expr.targets),
-  MIX_RULES.expr.fallback
-]);
+const EXPR_ALL = new Set([...Object.keys(MIX_RULES.expr.targets), MIX_RULES.expr.fallback]);
+
+// === outfitの取り込み方針 =======================
+// mode: 'off'（入れない / 推奨デフォ）| 'on'（そのまま入れる）| 'neutral'（汎用タグに置換）
+const TRAINING_POLICY = {
+  outfit: { mode: 'off', neutral_tag: 'casual outfit' } // neutral_tag は辞書内の汎用衣装タグ
+};
+
+// ユーザ選択を元に学習タグを構築
+function buildTrainingTags(userSel = {}) {
+  const tags = [];
+
+  // --- identity最小限（例） ---
+  if (userSel.hair_style) tags.push(userSel.hair_style);
+  if (userSel.hair_color) tags.push(userSel.hair_color);
+  if (userSel.eye_color)  tags.push(userSel.eye_color);
+
+  // --- outfitの扱いを制御 ---
+  const mode = TRAINING_POLICY.outfit.mode;
+  if (mode === 'on' && userSel.outfit) {
+    tags.push(userSel.outfit);
+  } else if (mode === 'neutral') {
+    // 具体的な衣装は捨てて、汎用タグだけ入れる（分布を若干安定させる）
+    tags.push(TRAINING_POLICY.outfit.neutral_tag);
+  }
+  // 'off' の場合は一切入れない
+
+  // --- 自動サンプリング（学習安定プリセット） ---
+  const pickByRule = (rule) => {
+    const r = Math.random();
+    let acc = 0;
+    for (const k of rule.group) {
+      const [lo, hi] = rule.targets[k] || [0,0];
+      const p = (lo + hi) / 2;
+      acc += p;
+      if (r <= acc) return k;
+    }
+    return rule.fallback;
+  };
+
+  tags.push(
+    pickByRule(MIX_RULES.view),
+    pickByRule(MIX_RULES.comp),
+    pickByRule(MIX_RULES.expr),
+    pickByRule(MIX_RULES.bg),
+    pickByRule(MIX_RULES.light)
+  );
+
+  // ポーズはホワイトリストから軽くばらす
+  const POSE_POOL = SCOPE.learning.pose;
+  tags.push(POSE_POOL[Math.floor(Math.random() * POSE_POOL.length)]);
+
+  return Array.from(new Set(tags));
+}
 
 
 // === 学習用 NSFW ホワイトリスト（軽度中心・ブレにくい範囲で拡張） ===
