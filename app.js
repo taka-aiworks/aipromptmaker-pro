@@ -2003,9 +2003,12 @@ function buildBatchLearning(n){
 
     // ---- NSFW（学習：outfit/body を固定で入れる）----
     if (nsfwOn){
+      // SFW服を掃除
       if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
-      if (nsfwOutfitSel.length) p.push(...nsfwOutfitSel.map(_norm));
-      if (nsfwBodySel.length)   p.push(...nsfwBodySel.map(_norm));
+      // 念のため "nsfw" 文字列は混入させない
+      const notNS = t => String(t).trim().toUpperCase() !== "NSFW";
+      if (nsfwOutfitSel.length) p.push(...nsfwOutfitSel.map(_norm).filter(notNS));
+      if (nsfwBodySel.length)   p.push(...nsfwBodySel.map(_norm).filter(notNS));
     }
 
     // ---- シーン系（MIX_RULESのみ／フォールバック無し）----
@@ -2016,9 +2019,9 @@ function buildBatchLearning(n){
     const lite = (typeof pickByMixRules==='function') ? pickByMixRules('light','lightLearn') : "";
     p.push(...[bg, comp, view, expr, lite].filter(Boolean));
 
-    // ---- ここからは buildPromptCore に一本化（デフォ補完を無効化）----
+    // ---- buildPromptCore でまとめる（※最後にNSFW/soloヘッダを強制）----
     const charName = document.getElementById('charName')?.value || "";
-    const out = (typeof buildPromptCore==='function')
+    let out = (typeof buildPromptCore==='function')
       ? buildPromptCore({
           tags: p,
           nsfwOn,
@@ -2027,15 +2030,34 @@ function buildBatchLearning(n){
           useDefNeg,
           charName,
           seedOffset: (i+1),
-          singletonDefaults: false, // ← 学習モードはデフォ補完なし
+          // buildPromptCore 側で無視されても支障ないよう最終でヘッダ強制する
+          singletonDefaults: false,
           singletonKeep: 'last'
         })
       : (function fallback(){
           const seed = (typeof seedFromName==='function') ? seedFromName(charName, (i+1)) : (i+1);
           const neg  = (typeof buildNegative==='function') ? buildNegative(addNeg, useDefNeg) : addNeg;
           const prompt = Array.from(new Set(p.filter(Boolean))).join(", ");
-          return { seed, pos:p, neg, prompt, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` };
+          return { seed, pos:p.slice(), neg, prompt, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` };
         })();
+
+    // === ヘッダ最終固定（NSFW → solo）===
+    if (nsfwOn && out && Array.isArray(out.pos)){
+      const body = out.pos.filter(t => {
+        const s = String(t||"").trim();
+        const u = s.toUpperCase();
+        return u !== "NSFW" && s !== "solo";
+      });
+      out.pos = ["NSFW", "solo", ...body];
+      out.prompt = out.pos.join(", ");
+      out.text = `${out.prompt}${out.neg?` --neg ${out.neg}`:""} seed:${out.seed}`;
+    } else if (!nsfwOn && out && Array.isArray(out.pos)){
+      // NSFWでない場合は solo を先頭にしておく（保険）
+      const body = out.pos.filter(t => String(t||"").trim() !== "solo");
+      out.pos = ["solo", ...body];
+      out.prompt = out.pos.join(", ");
+      out.text = `${out.prompt}${out.neg?` --neg ${out.neg}`:""} seed:${out.seed}`;
+    }
 
     rows.push(out);
   }
