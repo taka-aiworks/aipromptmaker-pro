@@ -497,25 +497,25 @@
       { "tag": "focus on hands", "label": "手元寄り" }
     ],
     "view": [
-      { "tag": "front view", "label": "正面" },
-      { "tag": "three-quarter view", "label": "斜め" },
-      { "tag": "side view", "label": "横向き（全身）" },
-      { "tag": "profile view", "label": "横顔（顔メイン）" },
-      { "tag": "back view", "label": "背面" },
+      { "tag": "front_view", "label": "正面" },
+      { "tag": "three-quarter_view", "label": "斜め" },
+      { "tag": "side_view", "label": "横向き（全身）" },
+      { "tag": "profile_view", "label": "横顔（顔メイン）" },
+      { "tag": "back_view", "label": "背面" },
     
       { "tag": "eye-level", "label": "アイレベル" },
-      { "tag": "low angle", "label": "見上げ（ロー）" },
-      { "tag": "high angle", "label": "見下ろし（ハイ）" },
-      { "tag": "from below", "label": "煽り（下から）" },
-      { "tag": "looking down", "label": "俯瞰（上から）" },
-      { "tag": "overhead view", "label": "真上から" },
-      { "tag": "worm's-eye view", "label": "虫の目視点" },
-      { "tag": "bird's-eye view", "label": "鳥瞰" },
+      { "tag": "low_angle", "label": "見上げ（ロー）" },
+      { "tag": "high_angle", "label": "見下ろし（ハイ）" },
+      { "tag": "from_below", "label": "煽り（下から）" },
+      { "tag": "looking_down", "label": "俯瞰（上から）" },
+      { "tag": "overhead_view", "label": "真上から" },
+      { "tag": "worm's-eye_view", "label": "虫の目視点" },
+      { "tag": "bird's-eye_view", "label": "鳥瞰" },
     
-      { "tag": "point of view", "label": "主観視点" },
-      { "tag": "over-the-shoulder view", "label": "肩越し視点" },
-      { "tag": "dutch angle", "label": "斜めアングル（ダッチ）" },
-      { "tag": "dynamic angle", "label": "動きのあるアングル" }
+      { "tag": "point_of_view", "label": "主観視点" },
+      { "tag": "over-the-shoulder_view", "label": "肩越し視点" },
+      { "tag": "dutch_angle", "label": "斜めアングル（ダッチ）" },
+      { "tag": "dynamic_angle", "label": "動きのあるアングル" }
     ],
     "expressions": [
       { "tag": "neutral_expression", "label": "ニュートラル" },
