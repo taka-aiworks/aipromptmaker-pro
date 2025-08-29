@@ -17,7 +17,7 @@
  * ======================================================================= */
 (function(){
   // 全体トグル
-  window.DEBUG_PROMPT_LOG = (typeof window.DEBUG_PROMPT_LOG === 'boolean') ? window.DEBUG_PROMPT_LOG : true;
+  window.DEBUG_PROMPT_LOG = (typeof window.DEBUG_PROMPT_LOG === 'boolean') ? window.DEBUG_PROMPT_LOG : false;
 
   // 安全JSON化（関数・undefined・循環参照に対応）
   function safeStringify(v){
@@ -1438,39 +1438,95 @@ function finalizePromptArray(p){
   if (typeof enforceSingletonByCategory === 'function'){
     p = enforceSingletonByCategory(p, {
       addDefaults: true,
-      keep: 'last',                 // 互換のため残す（未使用なら無視される）
-      noDefaultsFor: ['background'] // ★ plain_background 等を勝手に入れない
+/* ---------- 共通ヘルパ：仕上げの順序を強制（UI背景を刈らない版＋デバッグログ） ---------- */
+function finalizePromptArray(p){
+  // ====== デバッグトグル ======
+  // 有効化: window.DEBUG_FINALIZE = true;
+  const TAG = '[DBG][FINALIZE]';
+  const on  = !!window.DEBUG_FINALIZE;
+  const snap = (arr)=> Array.isArray(arr) ? arr.slice() : [];
+
+  const log = (...args)=> { if (on) console.log(TAG, ...args); };
+  const step = (name, fn)=>{
+    const before = snap(p);
+    try{
+      const out = fn(before);
+      p = Array.isArray(out) ? out : before;  // 失敗時は巻き戻し
+      log(name, { before, after: snap(p) });
+    }catch(e){
+      log(name + ' [ERROR]', e);
+      p = before;
+    }
+  };
+
+  p = p || [];
+  log('INPUT', snap(p));
+
+  // 服の整合（ワンピ時は上下とその色プレースを落とす）
+  if (typeof stripSeparatesWhenDressPresent === 'function'){
+    step('stripSeparatesWhenDressPresent', arr => stripSeparatesWhenDressPresent(arr));
+  }
+
+  // 靴の色はユーザー未指定なら外す
+  if (typeof dropColorizedShoesUnlessUserSelected === 'function'){
+    step('dropColorizedShoesUnlessUserSelected', arr => dropColorizedShoesUnlessUserSelected(arr));
+  }
+
+  // JSONカテゴリ単一化（背景のデフォ補完は抑制：UI優先）
+  if (typeof enforceSingletonByCategory === 'function'){
+    step('enforceSingletonByCategory', arr =>
+      enforceSingletonByCategory(arr, {
+        addDefaults: true,
+        keep: 'last',                 // 互換用（未使用実装なら無視される）
+        noDefaultsFor: ['background'] // ★ plain_background 等を勝手に入れない
+      })
+    );
+  }
+
+  // ライトは最終1つ（※後段でNSFWライトを優先する処理が別にあるならそれを尊重）
+  if (typeof unifyLightingOnce === 'function'){
+    step('unifyLightingOnce', arr => unifyLightingOnce(arr));
+  }
+
+  // 排他・順序（背景は刈らない：★ enforceSingleBackground は呼ばない）
+  if (typeof dropBareColors === 'function'){
+    step('dropBareColors', arr => dropBareColors(arr));
+  }
+  if (typeof fixExclusives === 'function'){
+    step('fixExclusives', arr => fixExclusives(arr));
+  }
+
+  if (typeof ensurePromptOrder === 'function'){
+    step('ensurePromptOrder', arr => ensurePromptOrder(arr));
+  } else if (typeof ensurePromptOrderLocal === 'function'){
+    step('ensurePromptOrderLocal', arr => ensurePromptOrderLocal(arr));
+  }
+
+  if (typeof enforceHeadOrder === 'function'){
+    step('enforceHeadOrder', arr => enforceHeadOrder(arr));
+  }
+
+  // ★ ここでは背景プレースホルダの削除はしない
+  //    （必要なら呼び出し側で "background" リテラル除去を実施）
+
+  // 重複除去
+  if (typeof dedupeStable === 'function'){
+    step('dedupeStable', arr => dedupeStable(arr));
+  } else {
+    step('dedupe(fallback)', arr => {
+      const seen = new Set(); const out = [];
+      for (const t of (arr||[])){
+        const k = String(t||"").toLowerCase().replace(/_/g,' ').replace(/\s+/g,' ').trim();
+        if (!k || seen.has(k)) continue;
+        seen.add(k); out.push(t);
+      }
+      return out;
     });
   }
 
-  // ライトは最終1つ
-  if (typeof unifyLightingOnce === 'function')
-    p = unifyLightingOnce(p);
-
-  // 排他・順序
-  if (typeof dropBareColors === 'function')    p = dropBareColors(p);
-  if (typeof fixExclusives === 'function')     p = fixExclusives(p);
-  if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
-  else if (typeof ensurePromptOrderLocal === 'function') p = ensurePromptOrderLocal(p);
-  if (typeof enforceHeadOrder === 'function')  p = enforceHeadOrder(p);
-
-  // ★ リテラル "background" はプレースホルダ扱いなので除去（具体背景は残す）
-  p = p.filter(t => String(t||'').trim().toLowerCase() !== 'background');
-
-  // ※ enforceSingleBackground は呼ばない（UIをそのまま尊重）
-
-  // 最後に重複除去
-  if (typeof dedupeStable === 'function') return dedupeStable(p);
-
-  const seen = new Set(); const out = [];
-  for (const t of p){
-    const k = String(t||"").toLowerCase().replace(/_/g," ").replace(/\s+/g," ").trim();
-    if (!k || seen.has(k)) continue;
-    seen.add(k); out.push(t);
-  }
-  return out;
+  log('OUTPUT', snap(p));
+  return p;
 }
-
 
 /* ===================== COMMON PATCHES ===================== */
 // 汎用：{tag, ja}配列から <select> を構築
