@@ -587,7 +587,7 @@ function splitTags(v){
 
 
 
-// === 学習用ホワイトリスト（辞書準拠に修正） ==================
+// === 学習用ホワイトリスト（辞書準拠） ==================
 const SCOPE = {
   learning: {
     background: [
@@ -600,13 +600,18 @@ const SCOPE = {
     ],
     pose: [
       "standing",
-      "sitting",
-      "hands on hips",
-      "crossed arms",
-      "hand on chest",
-      "hands behind back",
-      "head tilt",
-      "waving"
+      "sitting_chair",
+      "sitting_floor_agura",
+      "sitting_floor_seiza",
+      "crouching",
+      "kneeling",
+      "one_knee_kneel",
+      "leaning_forward",
+      "leaning_back",
+      "tiptoe",
+      "stretching",
+      "bowing",
+      "arched_back"
     ],
     composition: [
       "full body",
@@ -618,23 +623,23 @@ const SCOPE = {
     ],
     view: [
       "front view",
-      "three-quarter view",     // ← three-quarters → three-quarter に修正（SFW辞書と一致）
+      "three-quarter view", // ← 修正：s抜き
       "side view",
       "profile view",
       "back view"
     ],
     expressions: [
-      "neutral_expression",     // ← snake_case に修正
+      "neutral_expression",
       "smiling",
-      "smiling_open_mouth",     // ← snake_case に修正
+      "smiling_open_mouth",
       "serious",
       "determined",
-      "slight_blush",           // ← snake_case に修正
-      "surprised",              // ← SFWに合わせ表記を統一（*_mild 等は使わない）
-      "pouting",                // ← “pouting (slight)” を辞書にある "pouting" へ
-      "teary_eyes",             // ← SFW辞書タグへ合わせる
+      "slight_blush",
+      "surprised_mild",
+      "pouting",
+      "teary_eyes",
       "laughing",
-      "embarrassed_face"        // ← SFW辞書タグへ合わせる
+      "embarrassed_face"
     ],
     lighting: [
       "normal lighting",
@@ -649,18 +654,18 @@ const SCOPE = {
   }
 };
 
-// === 顔安定版・配分ルール（辞書タグに完全一致するように修正） =====
+// === 顔安定版・配分ルール =======================
 const MIX_RULES = {
   view: {
-    group: ["front view","three-quarter view","side view","profile view","back view"], // ←修正
+    group: ["front view","three-quarter view","side view","profile view","back view"],
     targets: {
-      "three-quarter view":[0.55,0.65],   // ←キー名を修正
+      "three-quarter view":[0.55,0.65],
       "front view":[0.30,0.35],
       "side view":[0.02,0.04],
       "profile view":[0.01,0.03],
       "back view":[0.00,0.01]
     },
-    fallback: "three-quarter view"        // ←修正
+    fallback: "three-quarter view"
   },
 
   comp: {
@@ -679,24 +684,19 @@ const MIX_RULES = {
 
   expr: {
     group: [
-      "neutral_expression",     // ←修正
-      "smiling",
-      "smiling_open_mouth",     // ←修正
-      "slight_blush",           // ←修正
-      "serious",
-      "determined",
-      "pouting"                 // ←“pouting (slight)” を辞書タグに統一
+      "neutral_expression","smiling","smiling_open_mouth",
+      "slight_blush","serious","determined","pouting"
     ],
     targets: {
-      "neutral_expression":[0.55,0.65],   // ←キー名を修正
+      "neutral_expression":[0.55,0.65],
       "smiling":[0.20,0.25],
-      "smiling_open_mouth":[0.03,0.05],   // ←修正
-      "slight_blush":[0.03,0.05],         // ←修正
+      "smiling_open_mouth":[0.03,0.05],
+      "slight_blush":[0.03,0.05],
       "serious":[0.01,0.02],
       "determined":[0.01,0.02],
-      "pouting":[0.01,0.02]               // ←修正
+      "pouting":[0.01,0.02]
     },
-    fallback: "neutral_expression"         // ←修正
+    fallback: "neutral_expression"
   },
 
   bg: {
@@ -724,10 +724,8 @@ const MIX_RULES = {
     fallback: "even lighting"
   }
 };
-
 window.MIX_RULES = MIX_RULES;
 
-// そのまま使っているなら据え置き
 const EXPR_ALL = new Set([
   ...Object.keys(MIX_RULES.expr.targets),
   MIX_RULES.expr.fallback
