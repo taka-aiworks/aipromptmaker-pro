@@ -1595,24 +1595,20 @@ function finalizePromptArray(p){
 }
 
 
-// --- 最終ガード：UI 背景の強制保持（小文字リテラル一致のみ）---
-function ensureKeepUIBackground(arr, uiBg){
+// --- 最終ガード：UI背景を1つだけ確実に残し、プレースホルダ"background"は必ず捨てる ---
+function finalizeBackgroundOnce(arr, uiBg){
   const toK = s => String(s||'').trim().toLowerCase();
-  const bgk = toK(uiBg);
-  if (!bgk) {
-    console.log('[BGFIX][keep] uiBg empty → skip');
-    return arr;
-  }
-  const before = Array.isArray(arr) ? arr.slice() : [];
-  const has = before.some(t => toK(t) === bgk);
-  console.log('[BGFIX][keep] check', { uiBg, has, beforeLen: before.length });
-  if (has) return before;
+  const out = (Array.isArray(arr) ? arr : []).filter(t => toK(t) !== 'background'); // 1) プレースホルダ排除
 
-  const out = before.concat([uiBg]);
-  console.log('[BGFIX][keep] injected', { uiBg, afterLen: out.length });
-  // 並びは既存ポリシーに合わせて整える（存在すれば）
-  if (typeof ensurePromptOrder==='function') return ensurePromptOrder(out);
-  if (typeof ensurePromptOrderLocal==='function') return ensurePromptOrderLocal(out);
+  // 2) UI背景が指定されていれば、同一リテラルが無い時だけ追加
+  if (uiBg) {
+    const hasUi = out.some(t => toK(t) === toK(uiBg));
+    if (!hasUi) out.push(uiBg);
+  }
+
+  // 3) 並びは既存ポリシーで整える（あれば）
+  if (typeof ensurePromptOrder === 'function') return ensurePromptOrder(out);
+  if (typeof ensurePromptOrderLocal === 'function') return ensurePromptOrderLocal(out);
   return out;
 }
 
@@ -2247,15 +2243,16 @@ function pmBuildOne(){
     .map(x => AS_IS(x))
     .filter(x => x && x.toLowerCase()!=='none' && !_isRating(x));
 
-  // ★ 最終ガード：UI 背景を必ず残す（辞書・正規表現なし／小文字一致）
-  const _ensureKeepUIBackground = (arr, uiBg) => {
+  // ★最終ガード：プレースホルダ"background"を必ず捨て、UI背景を1つだけ確実に残す
+  const _finalizeBackgroundOnce = (arr, uiBg) => {
     const toK = s => String(s||'').trim().toLowerCase();
-    const bgk = toK(uiBg);
-    if (!bgk) return arr || [];
-    const before = Array.isArray(arr) ? arr.slice() : [];
-    const has = before.some(t => toK(t) === bgk);
-    if (has) return before;
-    const out = before.concat([uiBg]);
+    const out = (Array.isArray(arr) ? arr : []).filter(t => toK(t) !== 'background'); // プレースホルダ除去
+    const k = toK(uiBg);
+    if (k){
+      const has = out.some(t => toK(t) === k);
+      if (!has) out.push(uiBg); // UI背景を注入
+    }
+    // 並びは既存の順序制御に委ねる（あれば）
     if (typeof ensurePromptOrder === 'function') return ensurePromptOrder(out);
     if (typeof ensurePromptOrderLocal === 'function') return ensurePromptOrderLocal(out);
     return out;
@@ -2342,9 +2339,6 @@ function pmBuildOne(){
   if (typeof fixExclusives==='function')               p = fixExclusives(p);
   if (typeof enforceHeadOrder==='function')            p = enforceHeadOrder(p);
 
-  // 背景のプレースホルダ "background" は常に除去（具体背景だけ残す）
-  p = p.filter(t => AS_IS(t).toLowerCase() !== 'background');
-
   // ライト一本化（NSFW優先・フォールバック無し）
   if (typeof isLightingTag === 'function'){
     const desiredLight = nsfwOn ? (nsfwLightChosen || "") : (chosenLiteRaw || "");
@@ -2384,12 +2378,10 @@ function pmBuildOne(){
       if (i2>0){ p.splice(i2,1); p.unshift("solo"); }
       if (i2===-1) p.unshift("solo");
     }
-    // 念のためプレースホルダ再除去
-    p = p.filter(t => AS_IS(t).toLowerCase() !== 'background');
   }
 
-  // ★ 最終ガード：UI 背景が消えていたら必ず戻す
-  p = _ensureKeepUIBackground(p, bg);
+  // ★最終：背景プレースホルダ除去＋UI背景の強制保持（これが最終関門）
+  p = _finalizeBackgroundOnce(p, bg);
 
   // ネガ
   const useDefNeg = !!document.getElementById('pl_useDefaultNeg')?.checked;
