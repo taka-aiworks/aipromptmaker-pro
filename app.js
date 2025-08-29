@@ -6250,33 +6250,30 @@ function _labelToTag(el){
   return String(raw).trim().toLowerCase();
 }
 
-// === タグ正規化（snake_caseを保持）===
 function normalizeTag(t){
-  let s = String(t||"")
-    // アンダースコアは潰さずそのまま保持
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+  // 小文字化＋trimのみ（アンダースコアは触らない）
+  let s = String(t || "").toLowerCase().trim();
+  if (!s) return "";
 
-  // snake_caseで統一
-  const ANCHORS = new Set([
-    "plain_background","studio_background","solid_background",
-    "upper_body","full_body","bust","waist_up","portrait",
-    "centered_composition","center_composition",
-    "front_view","back_view","side_view","profile_view",
-    "three_quarters_view","three-quarter_view","three-quarters_view",
-    "eye_level","low_angle","high_angle",
-    "soft_lighting","even_lighting","normal_lighting",
-    "neutral_expression"
-  ]);
+  // ——— 必要最小限のエイリアス正規化（MIX_RULESのキーに合わせる）———
+  // view（スペース区切りのまま）
+  if (s === "three quarters view" || s === "three-quarters view") s = "three-quarter view";
 
-  // アンカーに一致したらその表記で返す
-  if (ANCHORS.has(s)) return s;
+  // background（snake_caseに統一）
+  const bgAliases = {
+    "plain background":  "plain_background",
+    "white background":  "white_background",
+    "studio background": "studio_background",
+    "solid background":  "solid_background",
+    "white seamless":    "white_seamless",
+    "gray seamless":     "gray_seamless"
+  };
+  if (bgAliases[s]) s = bgAliases[s];
 
-  return s;
-}
-  const k = s.toLowerCase();
-  if (ANCHORS.has(k)) s = k.replace(/ /g, "_");
+  // comp / expr / light はMIX_RULESにそのままある表記に揃えるだけ
+  // 例：余計な連続空白を詰める（スペースは保持）
+  s = s.replace(/\s+/g, " ");
+
   return s;
 }
 
