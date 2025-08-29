@@ -1926,7 +1926,7 @@ function buildOneLearning(extraSeed = 0){
 
 
 
-/* ====================== 学習モード：服モード対応・固定アクセ常時適用・NSFW(衣装/体型)固定適用 ====================== */
+/* ====================== 学習モード：服“完全なし”対応・固定アクセ常時適用・NSFW(衣装/体型)固定適用 ====================== */
 function buildBatchLearning(n){
   const rows = [];
   const wantCount = Math.max(1, Number(n)||1);
@@ -1942,7 +1942,7 @@ function buildBatchLearning(n){
   const accClr = _tag('tag_learnAcc'); // 例: "black"
   const fixedAccToken = accTag ? (accClr ? `${accClr} ${accTag}` : accTag) : "";
 
-  // 服モード（basic:通常 / generic:汎用タグ）
+  // 服モード（basic:通常 / generic:汎用だが“何も入れない”に変更）
   const wearMode = (document.querySelector('input[name="learnWearMode"]:checked')?.value || 'basic');
 
   // NSFW（学習モードは outfit/body を固定適用）
@@ -1983,18 +1983,19 @@ function buildBatchLearning(n){
       _tag('tagH'), _tag('tagE'), _tag('tagSkin')
     ].filter(Boolean).map(_norm));
 
-    // ---- 服（SFW） or 汎用服（NSFW時は後でSFW服を掃除）----
-    if (!nsfwOn){
-      if (wearMode === 'basic'){
-        if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns().map(asTag));
-        if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
-        if (typeof pairWearColors==='function')              p = pairWearColors(p);
-        if (typeof applyWearColorPipeline==='function'){
-          p = applyWearColorPipeline(p, getColorTagsFromUI?.() || {});
-        }
-      } else {
-        const neutral = (window.TRAINING_POLICY?.outfit?.neutral_tag || 'casual outfit');
-        p.push(asTag(neutral));
+    // ---- 服（SFW・basic のときだけ服を入れる）----
+    // ※ generic（汎用）では何も入れない＝服完全なし
+    if (!nsfwOn && wearMode === 'basic'){
+      let wearAdded = false;
+
+      if (typeof getOutfitNouns==='function'){
+        const nouns = getOutfitNouns().map(asTag).filter(Boolean);
+        if (nouns.length){ p.push(...nouns); wearAdded = true; }
+      }
+      if (wearAdded && typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
+      if (wearAdded && typeof pairWearColors==='function')              p = pairWearColors(p);
+      if (wearAdded && typeof applyWearColorPipeline==='function'){
+        p = applyWearColorPipeline(p, getColorTagsFromUI?.() || {});
       }
     }
 
@@ -2030,7 +2031,6 @@ function buildBatchLearning(n){
           useDefNeg,
           charName,
           seedOffset: (i+1),
-          // buildPromptCore 側で無視されても支障ないよう最終でヘッダ強制する
           singletonDefaults: false,
           singletonKeep: 'last'
         })
@@ -2052,7 +2052,7 @@ function buildBatchLearning(n){
       out.prompt = out.pos.join(", ");
       out.text = `${out.prompt}${out.neg?` --neg ${out.neg}`:""} seed:${out.seed}`;
     } else if (!nsfwOn && out && Array.isArray(out.pos)){
-      // NSFWでない場合は solo を先頭にしておく（保険）
+      // NSFWでない場合は solo を先頭に（保険）
       const body = out.pos.filter(t => String(t||"").trim() !== "solo");
       out.pos = ["solo", ...body];
       out.prompt = out.pos.join(", ");
