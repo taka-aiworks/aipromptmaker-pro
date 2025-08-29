@@ -6250,23 +6250,31 @@ function _labelToTag(el){
   return String(raw).trim().toLowerCase();
 }
 
+// === タグ正規化（snake_caseを保持）===
 function normalizeTag(t){
   let s = String(t||"")
-    .replace(/\s*_\s*/g, " ")
+    // アンダースコアは潰さずそのまま保持
     .replace(/\s+/g, " ")
-    .trim();
+    .trim()
+    .toLowerCase();
 
+  // snake_caseで統一
   const ANCHORS = new Set([
-    "plain background","studio background","solid background",
-    "upper body","full body","bust","waist up","portrait",
-    "centered composition","center composition",
-    "front view","back view","side view","profile view",
-    "three quarters view","three-quarter view","three-quarters view",
-    "eye level","low angle","high angle",
-    "soft lighting","even lighting","normal lighting",
-    "neutral expression"              // ← 追加
+    "plain_background","studio_background","solid_background",
+    "upper_body","full_body","bust","waist_up","portrait",
+    "centered_composition","center_composition",
+    "front_view","back_view","side_view","profile_view",
+    "three_quarters_view","three-quarter_view","three-quarters_view",
+    "eye_level","low_angle","high_angle",
+    "soft_lighting","even_lighting","normal_lighting",
+    "neutral_expression"
   ]);
 
+  // アンカーに一致したらその表記で返す
+  if (ANCHORS.has(s)) return s;
+
+  return s;
+}
   const k = s.toLowerCase();
   if (ANCHORS.has(k)) s = k.replace(/ /g, "_");
   return s;
