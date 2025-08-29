@@ -2299,24 +2299,71 @@ function buildBatchLearning(n){
 
 
 
-/* ===== 撮影モード：UI尊重（補完なし）/ NSFW→solo固定 / none & Rラベル掃除（asTag/normalize不使用） ===== */
+//* ===== 撮影モード：UI尊重（補完なし）/ NSFW→solo固定 / none & Rラベル掃除（asTag/normalize不使用） ===== */
 function pmBuildOne(){
   const AS_IS = t => String(t || "").trim();
-  const _isRating = t => /^R[\s-]?1[58](?:[\s-]?G)?$/i.test(String(t||""));
+  const _isRating = t => {
+    const s = String(t||"").trim().toUpperCase();
+    return s==="R15" || s==="R-15" || s==="R15G" || s==="R-15G" || s==="R18" || s==="R-18" || s==="R18G" || s==="R-18G";
+  };
   const _clean = arr => (arr||[])
     .map(x => AS_IS(x))
-    .filter(x => x && x.toLowerCase()!=='none' && !_isRating(x));
+    .filter(x => {
+      const k = x.toLowerCase();
+      return x && k!=='none' && x!=='指定なし' && !_isRating(x);
+    });
+
+  // --- window.SFW からカテゴリ辞書（tag集合 & label->tag）を作成（正規化・正規表現なし）---
+  const asList = (xs)=> Array.isArray(xs) ? xs : [];
+  const mkDict = (list)=>{
+    const tags = new Set();
+    const label2tag = new Map();
+    for (const it of asList(list)){
+      const tag   = AS_IS((it && (it.tag!=null ? it.tag : it.value)) || it);   // {tag,label} or "tag"
+      const label = AS_IS((it && it.label)!=null ? it.label : "");
+      if (tag) tags.add(tag);
+      if (label) label2tag.set(label, tag || "");
+    }
+    return {tags, label2tag};
+  };
+  const SFW = window.SFW || {};
+  const D = {
+    bg:   mkDict(SFW.background),
+    pose: mkDict(SFW.pose),
+    comp: mkDict(SFW.composition),
+    view: mkDict(SFW.view),
+    expr: mkDict(SFW.expressions),
+    lite: mkDict(SFW.lighting)
+  };
+
+  // --- UI文字列 → 純タグ解決（辞書ヒットのみ／フォールバックなし／正規表現なし）---
+  // 1) そのままタグ一致 2) ラベル一致→tag 3) 「ラベル + スペース + tag」の最後の語がタグ一致なら採用
+  const uiToTagStrictLocal = (raw, dict)=>{
+    const s = AS_IS(raw);
+    if (!s) return "";
+    const k = s.toLowerCase();
+    if (k==="none" || s==="指定なし") return "";
+
+    if (dict.tags.has(s)) return s;                 // そのままタグ
+    if (dict.label2tag.has(s)) return dict.label2tag.get(s) || ""; // ラベル→tag
+
+    // 「無地背景 plain_background」等の結合を最後の語で解決（正規表現なし）
+    const parts = s.split(' ').filter(Boolean);
+    const last  = AS_IS(parts.length ? parts[parts.length-1] : "");
+    if (last && dict.tags.has(last)) return last;
+
+    return "";
+  };
 
   // ★最終ガード：プレースホルダ"background"を必ず捨て、UI背景を1つだけ確実に残す
-  const _finalizeBackgroundOnce = (arr, uiBg) => {
+  const _finalizeBackgroundOnce = (arr, uiBgTag) => {
     const toK = s => String(s||'').trim().toLowerCase();
     const out = (Array.isArray(arr) ? arr : []).filter(t => toK(t) !== 'background'); // プレースホルダ除去
-    const k = toK(uiBg);
+    const k = toK(uiBgTag);
     if (k){
       const has = out.some(t => toK(t) === k);
-      if (!has) out.push(uiBg); // UI背景を注入
+      if (!has) out.push(uiBgTag); // まだ無ければ注入
     }
-    // 並びは既存の順序制御に委ねる（あれば）
     if (typeof ensurePromptOrder === 'function') return ensurePromptOrder(out);
     if (typeof ensurePromptOrderLocal === 'function') return ensurePromptOrderLocal(out);
     return out;
@@ -2355,24 +2402,24 @@ function pmBuildOne(){
   };
   if (typeof applyWearColorPipeline==='function') p = applyWearColorPipeline(p, pal);
 
-  // シーン（UIそのまま・プレースホルダ入れない／UI優先）
-  const bg   = AS_IS(pickTag('pl_bg'));   // ← UI選択をそのまま
-  const pose = AS_IS(pickTag('pl_pose'));
-  const comp = AS_IS(pickTag('pl_comp'));
-  const view = AS_IS(pickTag('pl_view'));
-  let expr   = AS_IS(pickTag('pl_expr')  || "neutral expression");
-  let lite   = AS_IS(pickTag('pl_light') || "soft lighting");
-  const chosenLiteRaw = lite;
+  // シーン（UIそのまま取らず、辞書で“純タグ”に解決）
+  const bgTag   = uiToTagStrictLocal(pickTag('pl_bg'),   D.bg);
+  const poseTag = uiToTagStrictLocal(pickTag('pl_pose'), D.pose);
+  const compTag = uiToTagStrictLocal(pickTag('pl_comp'), D.comp);
+  const viewTag = uiToTagStrictLocal(pickTag('pl_view'), D.view);
+  let exprTag   = uiToTagStrictLocal(pickTag('pl_expr') || "neutral expression", D.expr) || "neutral_expression";
+  let liteTag   = uiToTagStrictLocal(pickTag('pl_light')|| "soft lighting", D.lite)     || "soft_lighting";
+  const chosenLiteRaw = liteTag;
 
   // —— NSFW（UIだけ反映）——
   const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
   let nsfwAdd = [];
   let nsfwLightChosen = "";
   if (nsfwOn){
-    const ex2 = AS_IS((pickManySafe('pl_nsfw_expr').filter(Boolean).filter(t=>!_isRating(t))[0]) || "");
-    const li2 = AS_IS((pickManySafe('pl_nsfw_light').filter(Boolean).filter(t=>!_isRating(t))[0]) || "");
-    if (ex2) expr = ex2;
-    if (li2) { lite = li2; nsfwLightChosen = li2; }
+    const ex2 = uiToTagStrictLocal((pickManySafe('pl_nsfw_expr').filter(Boolean).find(x=>!_isRating(x))||""), D.expr);
+    const li2 = uiToTagStrictLocal((pickManySafe('pl_nsfw_light').filter(Boolean).find(x=>!_isRating(x))||""), D.lite);
+    if (ex2) exprTag = ex2;
+    if (li2) { liteTag = li2; nsfwLightChosen = li2; }
     nsfwAdd = [
       ...pickManySafe('pl_nsfw_expo'),
       ...pickManySafe('pl_nsfw_underwear'),
@@ -2384,13 +2431,16 @@ function pmBuildOne(){
       ...pickManySafe('pl_nsfw_nipple'),
     ]
     .map(AS_IS)
-    .filter(x => x && x.toLowerCase() !== 'none' && !_isRating(x));
+    .filter(x => {
+      const k = x.toLowerCase();
+      return x && k!=='none' && x!=='指定なし' && !_isRating(x);
+    });
     if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
     p.push(...nsfwAdd);
   }
 
-  // シーン確定（選択値を素直に入れる）
-  p.push(...[bg, pose, comp, view, expr, lite].filter(Boolean));
+  // シーン確定（辞書で解決できた“純タグ”だけ入れる）
+  p.push(...[bgTag, poseTag, compTag, viewTag, exprTag, liteTag].filter(Boolean));
 
   // 表情・ポーズ単一化（ライトは後で）
   if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
@@ -2430,10 +2480,9 @@ function pmBuildOne(){
   // 固定タグ（追加のみ・補完なし）
   const fixed = (document.getElementById('fixedPlanner')?.value || "").trim();
   if (fixed){
-    const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
+    const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(',').map(s=>s.trim());
     p = _clean([ ...p, ...f.map(AS_IS).filter(Boolean) ]);
     if (typeof enforceHeadOrder==='function') p = enforceHeadOrder(p);
-    // ヘッダ再固定
     if (nsfwOn){
       p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
       p = ["NSFW", "solo", ...p];
@@ -2444,8 +2493,8 @@ function pmBuildOne(){
     }
   }
 
-  // ★最終：背景プレースホルダ除去＋UI背景の強制保持（これが最終関門）
-  p = _finalizeBackgroundOnce(p, bg);
+  // ★最終：背景プレースホルダ除去＋UI背景（純タグ）の強制保持
+  p = _finalizeBackgroundOnce(p, bgTag);
 
   // ネガ
   const useDefNeg = !!document.getElementById('pl_useDefaultNeg')?.checked;
