@@ -2196,10 +2196,11 @@ function pmBuildOne(){
 
   // シーン確定
   p.push(...[bg, comp, view, expr, lite].filter(Boolean));
+  
+   
+   console.log('[DBG][PL] after push', p);
 
-   // 最終整形直後
-  // （_clean → unifyLightingOnce → ensurePromptOrderLocal → fixExclusives などの後）
-  console.log('[DBG][PL] final', p);
+   
 
   // ★ 表情・ポーズを NSFW 優先で単一化
     if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
@@ -2217,6 +2218,13 @@ function pmBuildOne(){
   if (typeof enforceHeadOrder==='function')           p = enforceHeadOrder(p);
   if (typeof enforceSingleBackground==='function')    p = enforceSingleBackground(p);
 
+
+
+   // 最終整形直後
+  // （_clean → unifyLightingOnce → ensurePromptOrderLocal → fixExclusives などの後）
+  console.log('[DBG][PL] final', p);
+
+   
   // ヘッダ固定（NSFW→solo）
   if (nsfwOn){
     p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
