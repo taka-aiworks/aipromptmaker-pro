@@ -14,7 +14,7 @@
  *   - ログ例: [DBG][PROMPT-LEARN] after applyWearColorPipeline {"added":[...], ...}
  * 置き場所: ファイルの一番上（他の関数より前）
  * 削除: このブロックをまるごと消す or DEBUG_PROMPT_LOG=false
- * ======================================================================= */
+ * ======================================================================= */ƒ
 (function(){
   // 全体トグル
   window.DEBUG_PROMPT_LOG = (typeof window.DEBUG_PROMPT_LOG === 'boolean') ? window.DEBUG_PROMPT_LOG : false;
@@ -2247,8 +2247,6 @@ function pmBuildOne(){
 
   // シーン（UIそのまま・プレースホルダ入れない／UI優先）
   const bg   = AS_IS(pickTag('pl_bg'));   // ← UI選択をそのまま
-  // pmBuildOne
-  const bg = pickTag('pl_bg');  // ← UI選択
   window.__PREF_BG = bg || "";  // ★追加：UI背景を優先指定
   const pose = AS_IS(pickTag('pl_pose'));
   const comp = AS_IS(pickTag('pl_comp'));
