@@ -6909,7 +6909,7 @@ window._getOutfitNouns = getOutfitNouns; */
  * 置き換え: ensurePromptOrder（構図/view を独立で1つずつ保持 + 正規化 + 安全化）
  * ========================================================================== */
 function ensurePromptOrder(parts) {
-  const norm = (t)=> (typeof normalizeTag==='function' ? normalizeTag(String(t||"")) : String(t||"").trim().toLowerCase());
+  const norm = (t)=> String(t||'').trim();
   const P = (Array.isArray(parts) ? parts : []).filter(Boolean).map(norm);
 
   const asSet = (arr) => new Set(
