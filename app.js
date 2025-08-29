@@ -2247,7 +2247,6 @@ function pmBuildOne(){
 
   // シーン（UIそのまま・プレースホルダ入れない／UI優先）
   const bg   = AS_IS(pickTag('pl_bg'));   // ← UI選択をそのまま
-  window.__PREF_BG = bg || "";  // ★追加：UI背景を優先指定
   const pose = AS_IS(pickTag('pl_pose'));
   const comp = AS_IS(pickTag('pl_comp'));
   const view = AS_IS(pickTag('pl_view'));
