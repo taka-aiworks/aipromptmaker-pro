@@ -1979,7 +1979,6 @@ function buildBatchLearning(n){
         if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
         if (typeof pairWearColors==='function')              p = pairWearColors(p);
         if (typeof applyWearColorPipeline==='function'){
-          // 色は app.js 側の UI 取得に統一
           p = applyWearColorPipeline(p, getColorTagsFromUI?.() || {});
         }
       } else {
@@ -2002,12 +2001,12 @@ function buildBatchLearning(n){
       if (nsfwBodySel.length)   p.push(...nsfwBodySel.map(_norm));
     }
 
-    // ---- シーン系（MIX_RULES優先 → UIフォールバック）----
-    const bg   = (typeof pickWithMixRules==='function' ? pickWithMixRules('bg')   : null) || pickTag('bg');
-    const comp = (typeof pickWithMixRules==='function' ? pickWithMixRules('comp') : null) || pickTag('comp');
-    const view = (typeof pickWithMixRules==='function' ? pickWithMixRules('view') : null) || pickTag('view');
-    const expr = (typeof pickWithMixRules==='function' ? pickWithMixRules('expr') : null) || pickTag('expr');
-    const lite = (typeof pickWithMixRules==='function' ? pickWithMixRules('light'): null) || pickTag('lightLearn');
+    // ---- シーン系（MIX_RULESのみ／フォールバック無し）----
+    const bg   = (typeof pickByMixRules==='function') ? pickByMixRules('bg',   'bg')         : "";
+    const comp = (typeof pickByMixRules==='function') ? pickByMixRules('comp', 'comp')       : "";
+    const view = (typeof pickByMixRules==='function') ? pickByMixRules('view', 'view')       : "";
+    const expr = (typeof pickByMixRules==='function') ? pickByMixRules('expr', 'expr')       : "";
+    const lite = (typeof pickByMixRules==='function') ? pickByMixRules('light','lightLearn') : "";
     p.push(...[bg, comp, view, expr, lite].filter(Boolean));
 
     // ---- 整形＆掃除 ----
@@ -2052,7 +2051,7 @@ function buildBatchLearning(n){
     if (typeof dedupeStable==='function') p = dedupeStable(p);
     else p = Array.from(new Set(p));
 
-    // ネガ（このファイルの buildNegative を使用）
+    // ネガ
     const useDefNeg = !!document.getElementById('useDefaultNeg')?.checked;
     const addNeg    = (document.getElementById('negLearn')?.value || "").trim();
     const neg = buildNegative(addNeg, useDefNeg);
