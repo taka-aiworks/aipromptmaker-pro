@@ -2290,7 +2290,7 @@ function pmBuildOne(){
   // ネガ
   const useDefNeg = !!document.getElementById('pl_useDefaultNeg')?.checked;
   const addNeg    = (document.getElementById('negPlanner')?.value || "").trim();
-  const neg = buildNeg({useDefault:useDefNeg, userNeg:addNeg});
+  const neg = buildNegative(addNeg, useDefNeg);
 
   const name  = (document.getElementById('charName')?.value || "");
   const seed  = (typeof seedFromName==='function') ? seedFromName(name,1) : 1;
