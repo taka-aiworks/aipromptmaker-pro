@@ -1994,6 +1994,25 @@ function buildOneLearning(extraSeed = 0){
   return { seed, pos:p, neg, text };
 }
 
+// === LoRA 共通 ===
+function getLoRATag(){
+  const raw = (document.getElementById('loraTag')?.value || '').trim();
+  if (!raw) return '';
+  // <lora:...> / <lyco:...> 形式だけを有効化（TEST 等は除外）
+  const m = raw.match(/<\s*(lora|lyco)\s*:[^>]+>/i);
+  return m ? m[0].replace(/\s+/g,' ').trim() : '';
+}
+
+function putLoraAtHead(arr){
+  const lora = getLoRATag();
+  if (!lora) return arr;
+  // 既存の重複（固定タグなど）を除去して最前列へ
+  const out = arr.filter(t => String(t).trim() !== lora);
+  out.unshift(lora);
+  return out;
+}
+
+     
 
 
 
@@ -2270,6 +2289,9 @@ function pmBuildOne(){
     if (i>0){ p.splice(i,1); p.unshift("solo"); }
     if (i===-1) p.unshift("solo");
   }
+
+   // ← ここで LoRA を最前列へ（必ず solo より前）
+   p = putLoraAtHead(p)
 
   // 固定タグ（追加のみ・補完なし）
   const fixed = (document.getElementById('fixedPlanner')?.value || "").trim();
