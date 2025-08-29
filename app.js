@@ -851,28 +851,22 @@ const NSFW_LEARN_SCOPE = {
 
 
 
-/* ===== asTag：UI表示(日本語/英語/ID) → 英語タグへ統一 ===== */
+// 置換後 asTag（フォールバック禁止版）
 function asTag(x){
   if (!x) return "";
   const s0 = String(x).trim();
   if (!s0 || s0.toLowerCase() === "none") return "";
 
-  // 1) 辞書（TAGMAP）があれば最優先でID/表示名→tagに解決
+  // 1) 辞書ヒットなら tag に解決
   if (window.TAGMAP){
-    // 完全一致ID
-    if (TAGMAP.id2tag && TAGMAP.id2tag.has(s0)) return TAGMAP.id2tag.get(s0);
-    // 英語ラベル（小文字）一致
+    if (TAGMAP.id2tag?.has(s0))   return TAGMAP.id2tag.get(s0);
     const low = s0.toLowerCase();
-    if (TAGMAP.en && TAGMAP.en.has(low)) return TAGMAP.en.get(low);
-    // 日本語ラベル一致
-    if (TAGMAP.ja2tag && TAGMAP.ja2tag.has(s0)) return TAGMAP.ja2tag.get(s0);
-    // 任意label→tag
-    if (TAGMAP.label2tag && TAGMAP.label2tag.has(s0)) return TAGMAP.label2tag.get(s0);
+    if (TAGMAP.en?.has(low))      return TAGMAP.en.get(low);
+    if (TAGMAP.ja2tag?.has(s0))   return TAGMAP.ja2tag.get(s0);
+    if (TAGMAP.label2tag?.has(s0))return TAGMAP.label2tag.get(s0);
   }
 
-  // 2) 辞書で拾えない場合は規則ベースで英語タグ化
-  if (typeof toEnTagStrict === 'function') return toEnTagStrict(s0);
-  if (typeof toTag === 'function')         return toTag(s0);
+  // 2) 辞書外は“そのまま”返す（toEnTagStrict/toTag は呼ばない）
   return s0;
 }
 
@@ -3192,7 +3186,7 @@ const LEARN_DEFAULTS = {
   // 構図・距離・視線
   pose: ["upper body", "bust", "waist up", "portrait"],
   expr: ["neutral expression"],
-  bg:   ["plain background", "studio background", "solid background"],
+  bg:   ["plain_background", "studio_background", "solid_background"],
   light:["soft lighting", "even lighting"],
   // 追加の安定化（過激にならず識別に効く）
   anchors: ["facing viewer", "centered composition", "clear focus"]
