@@ -1794,21 +1794,21 @@ function _collectNSFW(idsOrId){
 
 
 
-/* ===== 学習モード：1枚テスト（NSFW非対応・服モード/固定アクセ対応） ===== */
+/* ===== 学習モード：1枚テスト（服“完全なし”対応・固定アクセ常時適用） ===== */
 function buildOneLearning(extraSeed = 0){
   _dbg('enter buildOneLearning', {extraSeed});
 
-  const _norm = t => String(t||"").trim();  // ← normalizeTag は呼ばない
+  const AS_IS = t => String(t||"").trim();  // normalize/asTag 不使用
   const _text = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
-  const _tag  = id => asTag(_text(id));
+  const _tag  = id => AS_IS(_text(id));
 
   // 固定アクセ（常時）
   const accSel = (document.getElementById('learn_acc')?.value || "").trim();
-  const accTag = asTag(accSel);
+  const accTag = AS_IS(accSel);
   const accClr = _tag('tag_learnAcc'); // 例: "black"
   const fixedAccToken = accTag ? (accClr ? `${accClr} ${accTag}` : accTag) : "";
 
-  // 服モード（basic / generic）
+  // 服モード（basic / generic → generic は完全になし）
   const wearMode = (document.querySelector('input[name="learnWearMode"]:checked')?.value || 'basic');
 
   let p = ["solo"];
@@ -1817,7 +1817,7 @@ function buildOneLearning(extraSeed = 0){
   // 人数（1girl / 1boy）
   if (typeof getGenderCountTag === 'function'){
     const g = getGenderCountTag() || "";
-    if (g) p.push(asTag(g));
+    if (g) p.push(AS_IS(g));
   }
 
   // 基本情報
@@ -1825,20 +1825,20 @@ function buildOneLearning(extraSeed = 0){
     pickTag('bf_age'), pickTag('bf_gender'), pickTag('bf_body'), pickTag('bf_height'),
     pickTag('hairStyle'), pickTag('eyeShape'),
     _tag('tagH'), _tag('tagE'), _tag('tagSkin')
-  ].filter(Boolean).map(_norm));
+  ].filter(Boolean).map(AS_IS));
 
   // シーン系（UIにある分だけ）
   p.push(...[
     pickTag('bg'), pickTag('pose'), pickTag('comp'),
     pickTag('view'), pickTag('expr'), pickTag('lightLearn')
-  ].filter(Boolean).map(_norm));
+  ].filter(Boolean).map(AS_IS));
 
   // 固定アクセ（常時）
   if (fixedAccToken) p.push(fixedAccToken);
 
-  // 服（SFWのみ、NSFWはこの関数では扱わない）
+  // 服（SFWのみ）
   if (wearMode === 'basic'){
-    if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns().map(asTag));
+    if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns().map(AS_IS));
     if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
 
     // 色パイプライン
@@ -1849,19 +1849,12 @@ function buildOneLearning(extraSeed = 0){
     const pal = {
       top:   normColor(getWearColorTag?.('top')    || getProdWearColorTag?.('top')),
       bottom:normColor(getWearColorTag?.('bottom') || getProdWearColorTag?.('bottom')),
-      shoes: normColor(getWearColorTag?.('shoes')  || getProdWearColorTag?.('shoes')),
+      shoes:normColor(getWearColorTag?.('shoes')   || getProdWearColorTag?.('shoes')),
     };
     if (typeof pairWearColors==='function')           p = pairWearColors(p);
     if (typeof applyWearColorPipeline==='function')   p = applyWearColorPipeline(p, window.PC || pal || {});
-  } else {
-    // generic：具体服は出さずに汎用タグだけ
-    const neutral = (window.TRAINING_POLICY?.outfit?.neutral_tag || 'casual outfit');
-    p.push(asTag(neutral));
   }
-
-  // 仕上げ
-  if (typeof finalizePromptArray === 'function') p = finalizePromptArray(p);
-  if (typeof sanitizePromptArray === 'function') p = sanitizePromptArray(p);
+  // generic は何も入れない（完全なし）
 
   // solo を先頭に維持
   if (p[0] !== "solo"){
@@ -1873,7 +1866,7 @@ function buildOneLearning(extraSeed = 0){
   const fixed = (document.getElementById('fixedLearn')?.value || "").trim();
   if (fixed){
     const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
-    p = finalizePromptArray([...f.map(asTag).filter(Boolean), ...p]);
+    p = [...f.map(AS_IS).filter(Boolean), ...p];
     if (p[0] !== "solo"){
       const idx = p.indexOf("solo");
       if (idx > 0){ p.splice(idx,1); p.unshift("solo"); }
@@ -1889,20 +1882,6 @@ function buildOneLearning(extraSeed = 0){
   const seed = (typeof seedFromName === 'function')
     ? seedFromName((document.getElementById('charName')?.value || ''), extraSeed)
     : extraSeed;
-
-  // 念のため色適用を最後にもう一度
-  if (typeof applyWearColorPipeline==='function'){
-    const normColor = v => {
-      const s = String(v||'').trim().toLowerCase();
-      return (s && s!=='none') ? s : '';
-    };
-    const pal = {
-      top:   normColor(getWearColorTag?.('top')    || getProdWearColorTag?.('top')),
-      bottom:normColor(getWearColorTag?.('bottom') || getProdWearColorTag?.('bottom')),
-      shoes: normColor(getWearColorTag?.('shoes')  || getProdWearColorTag?.('shoes')),
-    };
-    p = applyWearColorPipeline(p, window.PC || pal || {});
-  }
 
   const prompt = p.join(", ");
   const text = `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}`;
