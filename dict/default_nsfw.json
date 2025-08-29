@@ -35,7 +35,29 @@
       { "tag": "agony",            "ja": "苦悶", "level": "L3" },
       { "tag": "crying_screaming", "ja": "泣き叫び", "level": "L3" },
       { "tag": "painful_pleasure", "ja": "苦痛混じりの快楽", "level": "L3" },
-      { "tag": "broken_expression","ja": "壊れた表情", "level": "L3" }
+      { "tag": "broken_expression","ja": "壊れた表情", "level": "L3" },
+    
+      { "tag": "shy_smile",        "ja": "恥じらい笑顔", "level": "L1" },
+      { "tag": "averted_gaze",     "ja": "目を逸らす", "level": "L1" },
+      { "tag": "wink",             "ja": "ウィンク", "level": "L1" },
+      { "tag": "smug_grin",        "ja": "ドヤ顔/勝ち誇り笑み", "level": "L1" },
+      { "tag": "upturned_eyes",    "ja": "上目遣い", "level": "L1" },
+      { "tag": "gasp",             "ja": "息を呑む/はっとする", "level": "L1" },
+      { "tag": "nosebleed",        "ja": "鼻血（興奮の定番演出）", "level": "L1" },
+      { "tag": "sweat_drop",       "ja": "冷や汗（焦り/動揺）", "level": "L1" },
+    
+      { "tag": "lustful",          "ja": "いやらしい表情", "level": "L2" },
+      { "tag": "horny_face",       "ja": "発情顔", "level": "L2" },
+      { "tag": "droopy_eyes",      "ja": "とろん目（脱力寄り）", "level": "L2" },
+      { "tag": "slack_jaw",        "ja": "口半開き", "level": "L2" },
+      { "tag": "licking_lips",     "ja": "舌なめずり", "level": "L2" },
+      { "tag": "biting_finger",    "ja": "指を噛む/咥える", "level": "L2" },
+      { "tag": "heart_eyes",       "ja": "ハート目", "level": "L2" },
+      { "tag": "glazed_eyes",      "ja": "うつろ目", "level": "L2" },
+      { "tag": "tongue_heart",     "ja": "ハート舌", "level": "L2" },
+    
+      { "tag": "biting_lip_pain",  "ja": "苦痛に唇を噛む", "level": "L3" },
+      { "tag": "forced_smile",     "ja": "無理やりの笑顔", "level": "L3" }
     ],
 
       "exposure": [
@@ -49,7 +71,7 @@
       { "tag": "see_through",   "ja": "シースルー", "level": "L2" },
       { "tag": "sideboob",      "ja": "サイド露出", "level": "L2" },
       { "tag": "underboob",     "ja": "アンダー露出", "level": "L2" },
-      { "tag": "cameltoe",      "ja": "キャメル", "level": "L2" },
+      { "tag": "cameltoe",      "ja": "股間の形が浮き出る(キャメルトゥ)", "level": "L2" },
       { "tag": "panty_peek",    "ja": "パンチラ", "level": "L2" },
       { "tag": "cleavage_window", "ja": "胸元カットアウト", "level": "L2" },
       { "tag": "topless",       "ja": "上半身裸", "level": "L2" },
@@ -60,7 +82,6 @@
       { "tag": "visible_pubic_hair", "ja": "陰毛が見えている", "level": "L2" },
       { "tag": "pubic_hair_peek",  "ja": "陰毛チラ見え", "level": "L1" },
       { "tag": "pubic_hair_out",   "ja": "下着からはみ毛", "level": "L2" },
-      { "tag": "spread_legs",   "ja": "脚開き", "level": "L3" },
       { "tag": "exposed_genitals", "ja": "性器露出", "level": "L3" },
       { "tag": "lewd_outfit",   "ja": "卑猥な衣装", "level": "L3" },
       { "tag": "bondage_exposure", "ja": "拘束露出", "level": "L3" }
@@ -73,9 +94,7 @@
       { "tag": "sauna_steam", "ja": "サウナ・湯気", "level": "L1" },
       { "tag": "sunbathing", "ja": "日光浴", "level": "L1" },
       { "tag": "in_bed_sheets", "ja": "シーツに包まれて", "level": "L2" },
-      { "tag": "undressing", "ja": "脱ぎかけ", "level": "L2" },
       { "tag": "zipper_down", "ja": "ジッパー下げ", "level": "L2" },
-      { "tag": "covered_nudity", "ja": "隠しヌード", "level": "L2" },
       { "tag": "censored_bars", "ja": "モザイク/黒帯", "level": "L2" },
       { "tag": "light_beam_censor", "ja": "光線検閲", "level": "L2" },
       { "tag": "sticker_censor", "ja": "スタンプ隠し", "level": "L1" },
@@ -153,6 +172,11 @@
         { "tag": "covering_chest",  "ja": "胸を隠す",          "level": "L1" },
         { "tag": "covering_crotch", "ja": "股間を隠す",        "level": "L1" },
         { "tag": "face_covering",   "ja": "顔を隠す",          "level": "L1" },
+
+        { "tag": "self_spread",      "ja": "セルフくぱぁ（自分で開く）", "level": "L2" },
+        { "tag": "labia_spread",     "ja": "小陰唇を広げる",             "level": "L2" },
+        { "tag": "pussy_spread",     "ja": "くぱぁ（性器開き）",          "level": "L2" },
+        { "tag": "gaping_vagina",    "ja": "拡張くぱぁ（大きく開く）",    "level": "L3" }
       
         { "tag": "on_all_fours",    "ja": "四つん這い",        "level": "L2" },
         { "tag": "against_wall",    "ja": "壁に寄りかかる",    "level": "L1" },
@@ -426,7 +450,6 @@
       { "tag": "leaking_nipples", "ja": "母乳にじむ乳首", "level": "L2" },
       { "tag": "pierced_nipples", "ja": "乳首ピアス", "level": "L2" },
       { "tag": "nipple_chains", "ja": "乳首チェーン", "level": "L2" },
-      { "tag": "nipple_clamps", "ja": "乳首クリップ", "level": "L2" },
       { "tag": "weighted_clamps", "ja": "重り付き乳首クリップ", "level": "L3" },
       { "tag": "injured_nipples", "ja": "傷ついた乳首", "level": "L3" },
       { "tag": "bleeding_nipples", "ja": "出血乳首", "level": "L3" },
