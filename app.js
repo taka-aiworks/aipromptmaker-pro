@@ -348,12 +348,19 @@ const NEG_TIGHT = [
 ];
 
 // ネガティブを組み立てる共通関数
-function buildNegative(baseText="") {
+function buildNegative(baseText = "", useDefault = true) {
+  // デフォルト（固定のネガティブリスト）を配列化
+  const base = useDefault ? [...NEG_TIGHT] : [];
+
+  // ユーザー入力を配列化
   const custom = baseText
-    ? baseText.split(",").map(s=>s.trim()).filter(Boolean)
+    ? baseText.split(",").map(s => s.trim()).filter(Boolean)
     : [];
-  return Array.from(new Set([...NEG_TIGHT, ...custom])).join(", ");
+
+  // デフォルト＋ユーザー入力を結合して重複排除
+  return Array.from(new Set([...base, ...custom])).join(", ");
 }
+
 
 
 
