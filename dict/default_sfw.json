@@ -468,61 +468,53 @@
       { "tag": "stumbling", "label": "つまずき" },
       { "tag": "falling", "label": "倒れる/転ぶ" },
       { "tag": "dogeza", "label": "土下座" }
-    ]
+    ],
     "composition": [
       { "tag": "full body", "label": "全身" },
       { "tag": "upper body", "label": "上半身" },
-      { "tag": "bust", "label": "バストアップ" },
       { "tag": "waist up", "label": "腰上" },
+      { "tag": "bust", "label": "バストアップ" },
       { "tag": "portrait", "label": "ポートレート" },
       { "tag": "close-up", "label": "顔寄り" },
       { "tag": "extreme close-up", "label": "極端な寄り" },
+    
+      { "tag": "wide shot", "label": "引き/ワイドショット" },
+      { "tag": "long shot", "label": "ロングショット" },
+    
       { "tag": "centered composition", "label": "中央構図" },
       { "tag": "rule of thirds", "label": "三分割構図" },
       { "tag": "over-the-shoulder", "label": "肩越し構図" },
       { "tag": "two-shot", "label": "2人構図" },
       { "tag": "group shot", "label": "複数キャラ構図" },
+      { "tag": "split screen composition", "label": "分割構図" },
+    
       { "tag": "foreshortening", "label": "パース強め" },
-      { "tag": "low angle", "label": "見上げ構図" },
-      { "tag": "high angle", "label": "見下ろし構図" },
-      { "tag": "dutch angle", "label": "斜め構図" },
-      { "tag": "dynamic angle", "label": "動きのあるアングル" },
-      { "tag": "silhouette composition", "label": "シルエット構図" },
       { "tag": "foreground emphasis", "label": "手前強調構図" },
       { "tag": "background emphasis", "label": "背景強調構図" },
-      { "tag": "wide shot", "label": "引き" },
-      { "tag": "split screen composition", "label": "分割構図" }
+      { "tag": "silhouette composition", "label": "シルエット構図" },
+    
+      { "tag": "close-up on eyes", "label": "目元寄り" },
+      { "tag": "focus on hands", "label": "手元寄り" }
     ],
     "view": [
       { "tag": "front view", "label": "正面" },
-      { "tag": "three-quarters view", "label": "斜め" },
-      { "tag": "back view", "label": "背面" },
-      { "tag": "profile view", "label": "横顔（顔メイン）" },
+      { "tag": "three-quarter view", "label": "斜め" },
       { "tag": "side view", "label": "横向き（全身）" },
+      { "tag": "profile view", "label": "横顔（顔メイン）" },
+      { "tag": "back view", "label": "背面" },
+    
       { "tag": "eye-level", "label": "アイレベル" },
       { "tag": "low angle", "label": "見上げ（ロー）" },
       { "tag": "high angle", "label": "見下ろし（ハイ）" },
       { "tag": "from below", "label": "煽り（下から）" },
       { "tag": "looking down", "label": "俯瞰（上から）" },
       { "tag": "overhead view", "label": "真上から" },
-      { "tag": "facing viewer", "label": "正面を見る" },
-      { "tag": "looking to the side", "label": "横を見る" },
-      { "tag": "looking up", "label": "見上げる" },
-      { "tag": "looking away", "label": "視線はずし" },
-      { "tag": "looking at viewer", "label": "視線こちら" },
-    
-      { "tag": "extreme close-up", "label": "極端な寄り" },
-      { "tag": "wide shot", "label": "遠景ショット" },
-      { "tag": "long shot", "label": "ロングショット" },
-      { "tag": "dutch angle", "label": "斜めアングル" },
       { "tag": "worm's-eye view", "label": "虫の目視点" },
       { "tag": "bird's-eye view", "label": "鳥瞰" },
+    
       { "tag": "point of view", "label": "主観視点" },
       { "tag": "over-the-shoulder view", "label": "肩越し視点" },
-      { "tag": "reaction shot", "label": "リアクション視点" },
-      { "tag": "silhouette view", "label": "シルエット視点" },
-      { "tag": "close-up on eyes", "label": "目元寄り" },
-      { "tag": "focus on hands", "label": "手元寄り" },
+      { "tag": "dutch angle", "label": "斜めアングル（ダッチ）" },
       { "tag": "dynamic angle", "label": "動きのあるアングル" }
     ],
     "expressions": [
@@ -700,11 +692,12 @@
     { "tag": "glowing_eyes", "label": "光る目" }
   ]
 
-  "gaze": [
+    "gaze": [
     { "tag": "at_viewer", "label": "視線こちら" },
     { "tag": "away", "label": "視線そらす" },
     { "tag": "down", "label": "下を見る" },
-    { "tag": "up", "label": "上を見る" }
+    { "tag": "up", "label": "上を見る" },
+    { "tag": "to_side", "label": "横を見る" }
   ],
 
   "pose_manga": [
