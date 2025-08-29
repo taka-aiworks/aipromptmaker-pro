@@ -1210,28 +1210,29 @@ function buildPromptCore(opts){
     addNeg = "",        // ネガティブ追加
     useDefNeg = false,  // デフォネガON/OFF
     charName = "",      // キャラ名（seed用）
-    seedOffset = 0      // シードオフセット
+    seedOffset = 0,     // シードオフセット
+    // ★ 追加: 学習モードでは false を指定してフォールバック抑止
+    singletonDefaults = true, // enforceSingletonByCategory の addDefaults
+    singletonKeep = 'last'    // 念のため外から上書きできるように
   } = opts || {};
 
   const _to   = t => (typeof toTag==='function' ? toTag(t) : String(t||"").trim());
   const _norm = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
 
-  let p = tags.map(_to).filter(Boolean);
+  let p = (tags||[]).map(_to).filter(Boolean);
 
   // --- NSFW処理 ---
   if (nsfwOn){
-    // SFW服掃除
     if (typeof stripSfwWearWhenNSFW==='function'){
       p = stripSfwWearWhenNSFW(p, new Set());
     }
-    // NSFWヘッダを先頭に
     p = p.filter(t => String(t).toUpperCase() !== "NSFW");
     p.unshift("NSFW");
   }
 
-  // --- カテゴリ単一化（不足は補完 / 後勝ちでNSFW優先）---
+  // --- カテゴリ単一化（不足補完の有無を切り替え可能）---
   if (typeof enforceSingletonByCategory==='function'){
-    p = enforceSingletonByCategory(p, { addDefaults:true, keep:'last' });
+    p = enforceSingletonByCategory(p, { addDefaults: !!singletonDefaults, keep: singletonKeep });
   }
 
   // --- 後処理 ---
@@ -1243,7 +1244,7 @@ function buildPromptCore(opts){
   if (typeof unifyLightingOnce==='function')        p = unifyLightingOnce(p);
 
   // --- 固定タグを先頭に ---
-  if (fixed.length){
+  if (fixed && fixed.length){
     const f = fixed.map(_to).filter(Boolean).map(_norm);
     p = [...f, ...p];
   }
@@ -1956,6 +1957,16 @@ function buildBatchLearning(n){
   const nsfwOutfitSel = keepIf(NSFW_OK_OUTFIT, nsfwOutfitSelRaw);
   const nsfwBodySel   = keepIf(NSFW_OK_BODY,   nsfwBodySelRaw);
 
+  // 固定タグ（テキストエリア）→ buildPromptCore に渡す
+  const fixedText = (document.getElementById('fixedLearn')?.value || "").trim();
+  const fixed = fixedText
+    ? ((typeof splitTags==='function') ? splitTags(fixedText) : fixedText.split(/\s*,\s*/)).map(asTag).filter(Boolean)
+    : [];
+
+  // ネガ
+  const useDefNeg = !!document.getElementById('useDefaultNeg')?.checked;
+  const addNeg    = (document.getElementById('negLearn')?.value || "").trim();
+
   for (let i=0;i<wantCount;i++){
     let p = ["solo"];
 
@@ -1972,7 +1983,7 @@ function buildBatchLearning(n){
       _tag('tagH'), _tag('tagE'), _tag('tagSkin')
     ].filter(Boolean).map(_norm));
 
-    // ---- 服（SFW） or 汎用服 ----
+    // ---- 服（SFW） or 汎用服（NSFW時は後でSFW服を掃除）----
     if (!nsfwOn){
       if (wearMode === 'basic'){
         if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns().map(asTag));
@@ -1982,21 +1993,17 @@ function buildBatchLearning(n){
           p = applyWearColorPipeline(p, getColorTagsFromUI?.() || {});
         }
       } else {
-        // generic：具体服は出さずに汎用タグだけ
         const neutral = (window.TRAINING_POLICY?.outfit?.neutral_tag || 'casual outfit');
         p.push(asTag(neutral));
       }
     }
 
-    // ---- 固定アクセ（全行出力）----
+    // ---- 固定アクセ（全行に入れる）----
     if (fixedAccToken) p.push(fixedAccToken);
 
-    // ---- NSFW（学習：outfit/body を“固定”で全行に適用）----
+    // ---- NSFW（学習：outfit/body を固定で入れる）----
     if (nsfwOn){
-      // SFW服は掃除（NSFW優先）
       if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
-
-      // 選択された NSFW outfit/body を全部入れる（後で重複除去）
       if (nsfwOutfitSel.length) p.push(...nsfwOutfitSel.map(_norm));
       if (nsfwBodySel.length)   p.push(...nsfwBodySel.map(_norm));
     }
@@ -2009,60 +2016,28 @@ function buildBatchLearning(n){
     const lite = (typeof pickByMixRules==='function') ? pickByMixRules('light','lightLearn') : "";
     p.push(...[bg, comp, view, expr, lite].filter(Boolean));
 
-    // ---- 整形＆掃除 ----
-    p = finalizePromptArray(p);
-    p = sanitizePromptArray(p);
+    // ---- ここからは buildPromptCore に一本化（デフォ補完を無効化）----
+    const charName = document.getElementById('charName')?.value || "";
+    const out = (typeof buildPromptCore==='function')
+      ? buildPromptCore({
+          tags: p,
+          nsfwOn,
+          fixed,
+          addNeg,
+          useDefNeg,
+          charName,
+          seedOffset: (i+1),
+          singletonDefaults: false, // ← 学習モードはデフォ補完なし
+          singletonKeep: 'last'
+        })
+      : (function fallback(){
+          const seed = (typeof seedFromName==='function') ? seedFromName(charName, (i+1)) : (i+1);
+          const neg  = (typeof buildNegative==='function') ? buildNegative(addNeg, useDefNeg) : addNeg;
+          const prompt = Array.from(new Set(p.filter(Boolean))).join(", ");
+          return { seed, pos:p, neg, prompt, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` };
+        })();
 
-    // NSFW優先の単一化（表情/ポーズ/ライティング）
-    if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
-    if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
-    if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p);
-
-    // ヘッダ固定（NSFW → solo）
-    if (nsfwOn){
-      p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
-      p = ["NSFW", "solo", ...p];
-    } else {
-      const iSolo = p.indexOf("solo");
-      if (iSolo>0){ p.splice(iSolo,1); p.unshift("solo"); }
-      if (iSolo===-1) p.unshift("solo");
-    }
-
-    // 固定タグ（学習タブ）
-    {
-      const fixed = (document.getElementById('fixedLearn')?.value || "").trim();
-      if (fixed){
-        const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
-        p = finalizePromptArray([...f.map(asTag).filter(Boolean), ...p]);
-        p = sanitizePromptArray(p);
-        // ヘッダ再固定
-        if (nsfwOn){
-          p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
-          p = ["NSFW", "solo", ...p];
-        } else {
-          const iSolo = p.indexOf("solo");
-          if (iSolo>0){ p.splice(iSolo,1); p.unshift("solo"); }
-          if (iSolo===-1) p.unshift("solo");
-        }
-      }
-    }
-
-    // 重複除去
-    if (typeof dedupeStable==='function') p = dedupeStable(p);
-    else p = Array.from(new Set(p));
-
-    // ネガ
-    const useDefNeg = !!document.getElementById('useDefaultNeg')?.checked;
-    const addNeg    = (document.getElementById('negLearn')?.value || "").trim();
-    const neg = buildNegative(addNeg, useDefNeg);
-
-    // seed
-    const seed = (typeof seedFromName==='function')
-      ? seedFromName(document.getElementById('charName')?.value || "", (i+1))
-      : (i+1);
-
-    const prompt = p.join(", ");
-    rows.push({ seed, pos:p, neg, prompt, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` });
+    rows.push(out);
   }
   return rows;
 }
