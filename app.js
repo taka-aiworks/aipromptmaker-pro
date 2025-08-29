@@ -14,7 +14,7 @@
  *   - ログ例: [DBG][PROMPT-LEARN] after applyWearColorPipeline {"added":[...], ...}
  * 置き場所: ファイルの一番上（他の関数より前）
  * 削除: このブロックをまるごと消す or DEBUG_PROMPT_LOG=false
- * ======================================================================= */ƒ
+ * ======================================================================= */
 (function(){
   // 全体トグル
   window.DEBUG_PROMPT_LOG = (typeof window.DEBUG_PROMPT_LOG === 'boolean') ? window.DEBUG_PROMPT_LOG : false;
