@@ -821,6 +821,11 @@ const EXPR_ALL = new Set([
 
 
 
+
+
+
+
+
 /* ===== asTag：UI表示(日本語/英語/ID) → 英語タグへ統一 ===== */
 function asTag(x){
   if (!x) return "";
@@ -2012,7 +2017,33 @@ function putLoraAtHead(arr){
   return out;
 }
 
-     
+// LoRA入力欄からタグ配列を読む（複数対応、空なら[]）
+function readLoraTagsFromBasic(){
+  const raw = (document.getElementById('loraTag')?.value || '').trim();
+  if (!raw) return [];
+  // <lora:...> 形式を優先抽出。見つからなければ raw そのものを1個扱い
+  const m = raw.match(/<\s*lora:[^>]+>/gi);
+  const arr = m && m.length ? m : [raw];
+  // 余分なスペースを詰めて正規化
+  return arr.map(s => s.replace(/\s+/g,' ').trim()).filter(Boolean);
+}
+
+// p から既存のLoRAタグを取り除いて“完全に先頭”へ並べ直す
+function putLoraAtAbsoluteHead(p, {nsfwOn=false} = {}){
+  const tags = readLoraTagsFromBasic();
+  if (!tags.length) return p;
+
+  const norm = s => String(s||'').replace(/\s+/g,' ').trim().toLowerCase();
+  const lorasNorm = new Set(tags.map(norm));
+
+  // 既に混入している同一LoRAを除去
+  let body = (p || []).filter(t => !lorasNorm.has(norm(t)));
+
+  // もしヘッダ順を守りたいなら、NSFW / solo は body 側で再整列する
+  // ここでは単純に "[LoRA群] + body" とし、後続の finalize で並び矯正しない前提
+  return [...tags, ...body];
+}
+
 
 
 
@@ -2290,14 +2321,18 @@ function pmBuildOne(){
     if (i===-1) p.unshift("solo");
   }
 
-   // ← ここで LoRA を最前列へ（必ず solo より前）
-   p = putLoraAtHead(p)
+  // ← ここで LoRA を最前列へ（必ず solo より前）
+  if (typeof putLoraAtHead === 'function') {
+    p = putLoraAtHead(p, { nsfwOn });
+  }
 
-  // 固定タグ（追加のみ・補完なし）
+  // 固定タグ（追加のみ・補完なし）→ 先頭に“入れない”で後ろに追加
   const fixed = (document.getElementById('fixedPlanner')?.value || "").trim();
   if (fixed){
     const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
-    p = _clean([ ...f.map(asTag).filter(Boolean), ...p ]);
+    // ここを「後ろに追加」に変える（先頭にするとLoRAより前に出てしまう）
+    p = _clean([ ...p, ...f.map(asTag).filter(Boolean) ]);
+    // 以降の並び矯正はヘッダだけ触るのでOK
     if (typeof enforceHeadOrder==='function') p = enforceHeadOrder(p);
     if (nsfwOn){
       p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
@@ -2319,6 +2354,7 @@ function pmBuildOne(){
   const prompt= p.join(", ");
   return [{ seed, pos:p, prompt, neg, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` }];
 }
+
 
 
 
