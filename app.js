@@ -851,25 +851,24 @@ const NSFW_LEARN_SCOPE = {
 
 
 
-// 置換後 asTag（フォールバック禁止版）
+// asTag（辞書専用・フォールバック禁止）
 function asTag(x){
   if (!x) return "";
   const s0 = String(x).trim();
-  if (!s0 || s0.toLowerCase() === "none") return "";
+  if (!s0) return "";
+  const low = s0.toLowerCase();
+  if (low === "none" || s0 === "指定なし") return ""; // UIの「指定なし」は落とす
 
-  // 1) 辞書ヒットなら tag に解決
-  if (window.TAGMAP){
-    if (TAGMAP.id2tag?.has(s0))   return TAGMAP.id2tag.get(s0);
-    const low = s0.toLowerCase();
-    if (TAGMAP.en?.has(low))      return TAGMAP.en.get(low);
-    if (TAGMAP.ja2tag?.has(s0))   return TAGMAP.ja2tag.get(s0);
-    if (TAGMAP.label2tag?.has(s0))return TAGMAP.label2tag.get(s0);
+  const TM = window.TAGMAP;
+  if (TM){
+    if (TM.id2tag?.has(s0))        return TM.id2tag.get(s0);     // "pl_bg:plain_background" など
+    if (TM.en?.has(low))           return TM.en.get(low);        // 英語タグ
+    if (TM.ja2tag?.has(s0))        return TM.ja2tag.get(s0);     // 日本語表示 → tag
+    if (TM.label2tag?.has(s0))     return TM.label2tag.get(s0);  // 任意ラベル → tag
   }
-
-  // 2) 辞書外は“そのまま”返す（toEnTagStrict/toTag は呼ばない）
+  // 推測はしない（toEnTagStrict / toTag / normalizeTag など呼ばない）
   return s0;
 }
-
 /* picker系も asTag に統一 */
 function pickTag(id){
   const v = (typeof pickOneFromScroller === 'function') ? pickOneFromScroller(id) : "";
@@ -877,7 +876,8 @@ function pickTag(id){
 }
 function textTag(id){
   const el = document.getElementById(id);
-  const v  = (el?.textContent || el?.value || "").trim();
+  const v =
+    (el?.dataset?.id || el?.dataset?.tag || el?.value || el?.textContent || "").trim();
   return asTag(v);
 }
 
