@@ -2066,24 +2066,21 @@ function buildBatchLearning(n){
 
 
 
-/* ===== 撮影モード：UI尊重（補完なし）/ NSFW→solo固定 / none & Rラベル掃除 / 正規化もasTagも使わない ===== */
+/* ===== 撮影モード：UI尊重（補完なし）/ NSFW→solo固定 / none & Rラベル掃除 ===== */
 function pmBuildOne(){
   const _isRating = t => /^R[\s-]?1[58](?:[\s-]?G)?$/i.test(String(t||""));
   const _clean = arr => (arr||[])
-    .map(x => String(x||"").trim())
+    .map(x => (x||"").trim())
     .filter(x => x && x.toLowerCase()!=='none' && !_isRating(x));
+  const norm = s => String(s||'').replace(/_/g,' ').trim().toLowerCase();
 
-  // asTag/normalizeTag は使わず、そのまま通す
-  const asIs = t => String(t||"").trim();
-
-  // 単一/複数どちらのUIにも対応する安全取得（asTagしない）
   const pickManySafe = (id) => {
     if (typeof getMany === 'function') {
       const arr = getMany(id) || [];
-      if (Array.isArray(arr) && arr.length) return arr.map(asIs);
+      if (Array.isArray(arr) && arr.length) return arr;
     }
     const one = (typeof pickOneFromScroller === 'function') ? pickOneFromScroller(id) : "";
-    return one ? [asIs(one)] : [];
+    return one ? [one] : [];
   };
 
   let p = ["solo"];
@@ -2093,47 +2090,42 @@ function pmBuildOne(){
     pickTag('bf_age'), pickTag('bf_gender'), pickTag('bf_body'), pickTag('bf_height'),
     pickTag('hairStyle'), pickTag('eyeShape'),
     textTag('tagH'), textTag('tagE'), textTag('tagSkin')
-  ].map(asIs).filter(Boolean);
+  ].filter(Boolean);
   p.push(...basics);
 
-  // SFW服（名詞→色ペアリング）※asTagしない
-  if (typeof getOutfitNouns==='function')              p.push(...(getOutfitNouns()||[]).map(asIs).filter(Boolean));
+  // SFW服（名詞→色ペアリング）
+  if (typeof getOutfitNouns==='function')              p.push(...getOutfitNouns().map(asTag));
   if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
   if (typeof pairWearColors==='function')              p = pairWearColors(p);
 
   // 色（ワンピ＝top色など）
   const pal = {
-    top:    asIs(getWearColorTag?.('top')    || getProdWearColorTag?.('top')    || ''),
-    bottom: asIs(getWearColorTag?.('bottom') || getProdWearColorTag?.('bottom') || ''),
-    shoes:  asIs(getWearColorTag?.('shoes')  || getProdWearColorTag?.('shoes')  || '')
+    top:   (getWearColorTag?.('top')    || getProdWearColorTag?.('top')    || ''),
+    bottom:(getWearColorTag?.('bottom') || getProdWearColorTag?.('bottom') || ''),
+    shoes: (getWearColorTag?.('shoes')  || getProdWearColorTag?.('shoes')  || '')
   };
   if (typeof applyWearColorPipeline==='function') p = applyWearColorPipeline(p, pal);
 
-  // シーン（UIそのまま）
-  const bg   = asIs(pickTag('pl_bg'));
-  const pose = asIs(pickTag('pl_pose'));
-  const comp = asIs(pickTag('pl_comp'));
-  const view = asIs(pickTag('pl_view'));
-  let expr   = asIs(pickTag('pl_expr')  || "neutral expression");
-  let lite   = asIs(pickTag('pl_light') || "soft lighting");
+  // シーン（UIそのまま・ここ重要：プレースホルダ入れない）
+  const bg   = pickTag('pl_bg');   // ← UI選択の文字列をそのまま
+  const pose = pickTag('pl_pose');
+  const comp = pickTag('pl_comp');
+  const view = pickTag('pl_view');
+  let expr   = pickTag('pl_expr')  || "neutral expression";
+  let lite   = pickTag('pl_light') || "soft lighting";
   const chosenLiteRaw = lite;
+  const chosenLite    = norm(lite);
 
   // —— NSFW（UIだけ反映）——
   const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
+  let nsfwAdd = [];
   let nsfwLightChosen = "";
   if (nsfwOn){
-    // 年齢安全ガード：未成年表現は除去して 18+ を強制
-    const idxAge = p.findIndex(t => /(^|\b)(teen|teens|under\s*18|\d{1,2}\s*yo|years\s*old)/i.test(t));
-    if (idxAge !== -1) p.splice(idxAge, 1);
-    if (!p.some(t => /18\+|adult|young adult/i.test(t))) p.push("young adult (18+)");
-
-    const ex2 = (pickManySafe('pl_nsfw_expr')[0])  || "";
-    const li2 = (pickManySafe('pl_nsfw_light')[0]) || "";
-    if (ex2) expr = asIs(ex2);
-    if (li2) { lite = asIs(li2); nsfwLightChosen = lite; }
-
-    // NSFWカテゴリ（asTagしない）
-    let nsfwAdd = [
+    const ex2 = (pickManySafe('pl_nsfw_expr').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
+    const li2 = (pickManySafe('pl_nsfw_light').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
+    if (ex2) expr = ex2;
+    if (li2) { lite = li2; nsfwLightChosen = li2; }
+    nsfwAdd = [
       ...pickManySafe('pl_nsfw_expo'),
       ...pickManySafe('pl_nsfw_underwear'),
       ...pickManySafe('pl_nsfw_outfit'),
@@ -2142,36 +2134,41 @@ function pmBuildOne(){
       ...pickManySafe('pl_nsfw_acc'),
       ...pickManySafe('pl_nsfw_body'),
       ...pickManySafe('pl_nsfw_nipple'),
-    ].map(asIs)
-     .filter(x => x && x.toLowerCase() !== 'none' && !_isRating(x));
-
+    ]
+    .map(asTag)
+    .map(x => String(x || '').trim())
+    .filter(x => x && x.toLowerCase() !== 'none' && !_isRating(x));
     if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
     p.push(...nsfwAdd);
   }
 
-  // シーン確定（※撮影モードのアクセは使わない）
+  // シーン確定（選択値を素直に入れる）
   p.push(...[bg, pose, comp, view, expr, lite].filter(Boolean));
 
-  // 表情・ポーズのみ単一化（ライトは後段で一本化）
+  // 表情・ポーズ単一化（ライトは後で）
   if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
   if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
 
   // —— 最終整形（UI尊重）——
   p = _clean(p);
-  if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
-  else if (typeof ensurePromptOrderLocal==='function')p = ensurePromptOrderLocal(p);
-  if (typeof fixExclusives==='function')              p = fixExclusives(p);
-  if (typeof enforceHeadOrder==='function')           p = enforceHeadOrder(p);
-  if (typeof enforceSingleBackground==='function')    p = enforceSingleBackground(p);
+  if (typeof ensurePromptOrder==='function')           p = ensurePromptOrder(p);
+  else if (typeof ensurePromptOrderLocal==='function') p = ensurePromptOrderLocal(p);
+  if (typeof fixExclusives==='function')               p = fixExclusives(p);
+  if (typeof enforceHeadOrder==='function')            p = enforceHeadOrder(p);
 
-  // ライト一本化（NSFW優先・フォールバック無し）
+  // ★ ここを変更：背景のプレースホルダは使わない
+  // （旧）if (typeof enforceSingleBackground==='function') p = enforceSingleBackground(p);
+  // （新）リテラル "background" は常に除去（UI選択の具体背景だけ残す）
+  p = p.filter(t => String(t).trim().toLowerCase() !== 'background');
+
+  // ★ ライト一本化（NSFW優先・フォールバック無し）
   {
     const desiredLight = nsfwOn ? (nsfwLightChosen || "") : (chosenLiteRaw || "");
     if (typeof isLightingTag === 'function') {
       p = p.filter(t => !isLightingTag(t));
       if (desiredLight) p.push(desiredLight);
-      if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
-      else if (typeof ensurePromptOrderLocal==='function')p = ensurePromptOrderLocal(p);
+      if (typeof ensurePromptOrder==='function')           p = ensurePromptOrder(p);
+      else if (typeof ensurePromptOrderLocal==='function') p = ensurePromptOrderLocal(p);
     }
   }
 
@@ -2185,15 +2182,17 @@ function pmBuildOne(){
     if (i===-1) p.unshift("solo");
   }
 
-  // LoRA を最前列へ（必ず solo より前）
-  if (typeof putLoraAtHead === 'function') p = putLoraAtHead(p, { nsfwOn });
+  if (typeof putLoraAtHead === 'function') {
+    p = putLoraAtHead(p, { nsfwOn });
+  }
 
-  // 固定タグ（追加のみ・補完なし）
+  // 固定タグ（追加のみ）
   const fixed = (document.getElementById('fixedPlanner')?.value || "").trim();
   if (fixed){
     const f = (typeof splitTags==='function') ? splitTags(fixed) : fixed.split(/\s*,\s*/);
-    p = _clean([ ...p, ...f.map(asIs).filter(Boolean) ]);
+    p = _clean([ ...p, ...f.map(asTag).filter(Boolean) ]);
     if (typeof enforceHeadOrder==='function') p = enforceHeadOrder(p);
+    // ヘッダ再固定
     if (nsfwOn){
       p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
       p = ["NSFW", "solo", ...p];
@@ -2202,16 +2201,18 @@ function pmBuildOne(){
       if (i2>0){ p.splice(i2,1); p.unshift("solo"); }
       if (i2===-1) p.unshift("solo");
     }
+    // 念のためプレースホルダ再除去
+    p = p.filter(t => String(t).trim().toLowerCase() !== 'background');
   }
 
-  // ネガ（そのまま）
+  // ネガ
   const useDefNeg = !!document.getElementById('pl_useDefaultNeg')?.checked;
   const addNeg    = (document.getElementById('negPlanner')?.value || "").trim();
   const neg = buildNegative(addNeg, useDefNeg);
 
-  const name   = (document.getElementById('charName')?.value || "");
-  const seed   = (typeof seedFromName==='function') ? seedFromName(name,1) : 1;
-  const prompt = p.join(", ");
+  const name  = (document.getElementById('charName')?.value || "");
+  const seed  = (typeof seedFromName==='function') ? seedFromName(name,1) : 1;
+  const prompt= p.join(", ");
   return [{ seed, pos:p, prompt, neg, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` }];
 }
 
