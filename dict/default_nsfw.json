@@ -12,6 +12,21 @@
       { "tag": "pouting",          "ja": "むくれ顔", "level": "L1" },
       { "tag": "bashful_smile",    "ja": "はにかみ笑顔", "level": "L1" },
       { "tag": "soft_moan",        "ja": "小さな喘ぎ声", "level": "L1" },
+      { "tag": "smirk",            "ja": "ニヤリ顔（片笑い）",      "level": "L1" },
+      { "tag": "sparkly_eyes",     "ja": "キラキラ目（ときめき）",  "level": "L1" },
+      { "tag": "bashful_side_glance", "ja": "照れ横目",             "level": "L1" },
+      { "tag": "teary_smile",      "ja": "涙ぐみ笑顔",              "level": "L2" },
+      { "tag": "sadistic_smile",   "ja": "Sっ気の笑み",             "level": "L2" },
+      { "tag": "masochistic_blush","ja": "Mっ気の上気顔",           "level": "L2" },
+      { "tag": "ecstatic_tongue",  "ja": "舌出し恍惚顔",            "level": "L2" },
+      { "tag": "dazed_smile",      "ja": "ぼんやり笑顔",            "level": "L1" },
+      { "tag": "angry_blush",      "ja": "怒り＋赤面",              "level": "L1" },
+      { "tag": "teasing_grin",     "ja": "からかい笑顔",            "level": "L1" },
+      { "tag": "pleading_eyes",    "ja": "お願い目（うるうる）",    "level": "L1" },
+      { "tag": "fearful_cry",      "ja": "怯え泣き顔",              "level": "L3" },
+      { "tag": "resigned_face",    "ja": "諦め顔",                  "level": "L2" },
+      { "tag": "overjoyed",        "ja": "歓喜の笑顔",              "level": "L1" },
+      { "tag": "dizzy_face",       "ja": "ぐるぐる目（くらくら）",  "level": "L1" }
     
       { "tag": "tongue_out",       "ja": "舌を出す", "level": "L2" },
       { "tag": "panting",          "ja": "息を荒くする", "level": "L2" },
@@ -173,10 +188,9 @@
         { "tag": "covering_crotch", "ja": "股間を隠す",        "level": "L1" },
         { "tag": "face_covering",   "ja": "顔を隠す",          "level": "L1" },
 
-        { "tag": "self_spread",      "ja": "セルフくぱぁ（自分で開く）", "level": "L2" },
         { "tag": "labia_spread",     "ja": "小陰唇を広げる",             "level": "L2" },
         { "tag": "pussy_spread",     "ja": "くぱぁ（性器開き）",          "level": "L2" },
-        { "tag": "gaping_vagina",    "ja": "拡張くぱぁ（大きく開く）",    "level": "L3" }
+        { "tag": "gaping_vagina",    "ja": "拡張くぱぁ（大きく開く）",    "level": "L3" },
       
         { "tag": "on_all_fours",    "ja": "四つん這い",        "level": "L2" },
         { "tag": "against_wall",    "ja": "壁に寄りかかる",    "level": "L1" },
@@ -537,6 +551,8 @@
       { "tag": "handjob",            "ja": "手コキ",              "level": "L3" },
       { "tag": "titjob",             "ja": "パイズリ",            "level": "L3" },
       { "tag": "footjob",            "ja": "足コキ",              "level": "L3" },
+      { "tag": "self_spread",      "ja": "セルフくぱぁ（自分で開く）", "level": "L2" },
+
     
       { "tag": "penetration_vaginal","ja": "膣挿入",              "level": "L3" },
       { "tag": "penetration_anal",   "ja": "アナル挿入",          "level": "L3" },
