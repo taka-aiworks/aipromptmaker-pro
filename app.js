@@ -2156,6 +2156,7 @@ function pmBuildOne(){
 
   // シーン（UIだけを採用）
   const bg   = pickTag('pl_bg');
+  const pose = pickTag('pl_pose');            // ← 追加（これが無いと standing 等が出ない）
   const comp = pickTag('pl_comp');
   const view = pickTag('pl_view');
   let expr   = pickTag('pl_expr')  || "neutral expression";
@@ -2165,13 +2166,11 @@ function pmBuildOne(){
   const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
   let nsfwAdd = [];
   if (nsfwOn){
-    // NSFW表情/照明は先に差し替え（撮影は1つ採用）
     const ex2 = (pickManySafe('pl_nsfw_expr').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     const li2 = (pickManySafe('pl_nsfw_light').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     if (ex2) expr = ex2;
     if (li2) lite = li2;
 
-    // 服・露出・状況など（複数可）
     nsfwAdd = [
       ...pickManySafe('pl_nsfw_expo'),
       ...pickManySafe('pl_nsfw_underwear'),
@@ -2186,31 +2185,24 @@ function pmBuildOne(){
     .map(x => String(x || '').trim())
     .filter(x => x && x.toLowerCase() !== 'none' && !_isRating(x));
 
-    // SFW服だけ掃除 → NSFW追加
     if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
     p.push(...nsfwAdd);
   }
 
-   
-  console.log('[DBG][PL] before push', {bg, comp, view, expr, lite});
+  console.log('[DBG][PL] before push', {bg, pose, comp, view, expr, lite});
 
-  // シーン確定
-  p.push(...[bg, comp, view, expr, lite].filter(Boolean));
-  
-   
-   console.log('[DBG][PL] after push', p);
+  // シーン確定（pose を含める）
+  p.push(...[bg, pose, comp, view, expr, lite].filter(Boolean));
 
-   
+  console.log('[DBG][PL] after push', p);
 
-  // ★ 表情・ポーズを NSFW 優先で単一化
-    if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
-    if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
-    if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p);
-
+  // ★ 表情・ポーズ・ライトを NSFW 優先で単一化
+  if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
+  if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
+  if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p);
 
   // —— 最終整形：UI尊重（補完もカテゴリ潰しもしない）——
   p = _clean(p);
-  // 並び・排他・単一背景/ライトのみ（非破壊系）
   if (typeof unifyLightingOnce==='function')          p = unifyLightingOnce(p);
   if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
   else if (typeof ensurePromptOrderLocal==='function')p = ensurePromptOrderLocal(p);
@@ -2218,13 +2210,14 @@ function pmBuildOne(){
   if (typeof enforceHeadOrder==='function')           p = enforceHeadOrder(p);
   if (typeof enforceSingleBackground==='function')    p = enforceSingleBackground(p);
 
+  // ライトがどこかで落ちた場合の安全弁（最後に必ず1個は入れる）
+  if (!p.some(t => /\blight(ing)?\b/i.test(String(t||"")))) {
+    p.push("soft lighting");
+    if (typeof ensurePromptOrderLocal==='function') p = ensurePromptOrderLocal(p);
+  }
 
-
-   // 最終整形直後
-  // （_clean → unifyLightingOnce → ensurePromptOrderLocal → fixExclusives などの後）
   console.log('[DBG][PL] final', p);
 
-   
   // ヘッダ固定（NSFW→solo）
   if (nsfwOn){
     p = p.filter(t => t.toUpperCase()!=='NSFW' && t!=='solo');
