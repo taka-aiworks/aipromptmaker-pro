@@ -576,54 +576,97 @@ function buildTagCatalogFromJSON() {
 }
 
 // 2) カテゴリ単一化（辞書で “後勝ち置き換え”）、不足はデフォ補完
-/* ===== 各カテゴリ 1 つだけを残す（JSONベース） ===== */
-function enforceSingletonByCategory(tags, { addDefaults=true }={}){
-  const out = [];
-  const seenCat = new Set();
-  const TAG2CAT = getTag2Cat();
+/* ===== enforceSingletonByCategory（UI背景最優先・無正規表現・無normalize） ===== */
+function enforceSingletonByCategory(arr, opt = { addDefaults:true, noDefaultsFor:[] }) {
+  console.log('[BGFIX] enter enforceSingletonByCategory', {len:(arr||[]).length, opt});
 
-  const _norm = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
-  const _catOf = (t) => {
-    const low = String(t||"").toLowerCase();
+  const toT = t => String(t||'').trim();
+  const tokens = (arr||[]).map(toT).filter(Boolean);
+
+  // タグ→カテゴリ辞書
+  const TAG2CAT = (typeof getTag2Cat === 'function') ? getTag2Cat() : new Map();
+  const catOf = (t) => {
+    const low = t.toLowerCase();
     return TAG2CAT.get(low) || TAG2CAT.get(low.replace(/\s+/g,'_')) || null;
   };
 
-  // 既存の並び順を尊重しつつ、同一カテゴリの2個目以降を捨てる
-  for (const t of (tags||[])){
-    const n = _norm(t);
-    if (!n) continue;
-    const cat = _catOf(n);
-    if (cat){
-      if (seenCat.has(cat)) continue; // 2個目以降は落とす
-      seenCat.add(cat);
-    }
-    out.push(n);
-  }
+  // デフォルト（背景は opt.noDefaultsFor に入ってたら挿さない）
+  const CAT_DEFAULTS = {
+    pose: 'standing',
+    composition: 'upper body',
+    view: 'front view',
+    expressions: 'neutral expression',
+    lighting: 'soft lighting',
+    background: 'plain_background'
+  };
+  const ORDERED_CATS = ['background','pose','composition','view','expressions','lighting'];
+  const noDef = new Set(opt.noDefaultsFor || []);
 
-  // 無かったカテゴリはデフォルトで補完
-  if (addDefaults){
-    for (const cat of SINGLETON_CATS){
-      if (!seenCat.has(cat)){
-        const defTag = CAT_DEFAULTS[cat];
-        if (defTag){
-          const n = _norm((typeof toTag==='function') ? toTag(defTag) : defTag);
-          out.push(n);
-          seenCat.add(cat);
-        }
+  // 出力用バッファ
+  const nonDictOut = [];        // 辞書外（UIそのまま）
+  const seenNonDict = new Set();
+
+  // 背景は UI 最優先（最初に見つかった1つだけキープ）
+  let firstBackground = null;
+
+  // そのほか単一カテゴリは“後勝ち”
+  const keepLast = {};          // cat -> token
+
+  for (const t of tokens) {
+    const c = catOf(t);
+    if (!c) {
+      // 辞書外はそのまま保持（重複は1回）
+      if (!seenNonDict.has(t)) { nonDictOut.push(t); seenNonDict.add(t); }
+      continue;
+    }
+
+    if (c === 'background') {
+      if (firstBackground === null) {
+        firstBackground = t; // 最初の1個だけ採用（UIが勝つ）
+      } else {
+        // 2個目以降の背景は捨てる（置換しない）
       }
+    } else {
+      // 背景以外は “後勝ち”
+      keepLast[c] = t;
     }
   }
 
-  // 追加の整備：composition に full body が居たら upper/bust/waist up/portrait を掃除
-  const hasFull = out.some(t => /\bfull[_\s]?body\b/i.test(t));
-  if (hasFull){
-    for (let i=out.length-1; i>=0; i--){
-      if (/\b(upper[_\s]?body|bust|waist[_\s]?up|portrait)\b/i.test(out[i])) out.splice(i,1);
+  // 再構成：辞書外（UI）→ 背景 → 他カテゴリ（固定順）
+  const out = [];
+  out.push(...nonDictOut);
+
+  if (firstBackground) {
+    out.push(firstBackground);
+  } else if (opt.addDefaults && !noDef.has('background') && CAT_DEFAULTS.background) {
+    // 背景が一切無く、かつデフォ許可ならのみ補完
+    out.push(toT(CAT_DEFAULTS.background));
+    console.log('[BGFIX] background default injected');
+  }
+
+  for (const cat of ORDERED_CATS) {
+    if (cat === 'background') continue; // 既に処理済み
+    const tk = keepLast[cat];
+    if (tk) {
+      out.push(tk);
+    } else if (opt.addDefaults && !noDef.has(cat) && CAT_DEFAULTS[cat]) {
+      out.push(toT(CAT_DEFAULTS[cat]));
     }
   }
 
-  // 最終重複除去（順序維持）
-  return Array.from(new Set(out));
+  // 「full body がいるなら upper/bust/waist up/portrait を掃除」（リテラル一致で）
+  const COMPO_FULL = new Set(['full body','full_body']);
+  const COMPO_DROP_IF_FULL = new Set(['upper body','upper_body','bust','waist up','waist_up','portrait']);
+  const hasFull = out.some(t => COMPO_FULL.has(t.toLowerCase()));
+  if (hasFull) {
+    for (let i = out.length - 1; i >= 0; i--) {
+      const k = out[i].toLowerCase();
+      if (COMPO_DROP_IF_FULL.has(k)) out.splice(i, 1);
+    }
+  }
+
+  console.log('[BGFIX] exit enforceSingletonByCategory', {outLen: out.length, out});
+  return out;
 }
 
 
