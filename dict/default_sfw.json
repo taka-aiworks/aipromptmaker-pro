@@ -58,7 +58,7 @@
       { "tag": "very tall", "label": "かなり高身長" },
       { "tag": "towering", "label": "頭ひとつ抜けた高身長" },
       { "tag": "petite stature", "label": "小柄な体躯" },
-      { "tag": "tail stature", "label": "長身の体躯" }
+      { "tag": "tall stature", "label": "長身の体躯" }
     ],
     "worldview": [
       { "tag": "modern day", "label": "現代" },
@@ -641,7 +641,7 @@
       { "tag": "calm", "label": "落ち着き" },
       { "tag": "embarrassment", "label": "照れ" },
       { "tag": "sleepiness", "label": "眠気" }
-    ]
+    ],
 
   "emotion_detail": [
     { "tag": "delighted", "label": "嬉しそう" },
@@ -690,7 +690,7 @@
     { "tag": "gloomy_hidden_eyes", "label": "陰鬱に隠れた目" },
     { "tag": "beastly_eyes", "label": "獣のような目" },
     { "tag": "glowing_eyes", "label": "光る目" }
-  ]
+  ],
 
     "gaze": [
     { "tag": "at_viewer", "label": "視線こちら" },
