@@ -1422,22 +1422,6 @@ function dropColorizedShoesUnlessUserSelected(p){
   return p.filter(s => !COLOR_SHOES_RE.test(String(s||"")));
 }
 
-/* ---------- 共通ヘルパ：仕上げの順序を強制（UI背景を刈らない版） ---------- */
-function finalizePromptArray(p){
-  p = p || [];
-
-  // 服の整合
-  if (typeof stripSeparatesWhenDressPresent === 'function')
-    p = stripSeparatesWhenDressPresent(p);
-
-  // 靴の色はユーザー未指定なら外す
-  if (typeof dropColorizedShoesUnlessUserSelected === 'function')
-    p = dropColorizedShoesUnlessUserSelected(p);
-
-  // JSONカテゴリ単一化（背景のデフォ補完は抑制：UI優先）
-  if (typeof enforceSingletonByCategory === 'function'){
-    p = enforceSingletonByCategory(p, {
-      addDefaults: true,
 /* ---------- 共通ヘルパ：仕上げの順序を強制（UI背景を刈らない版＋デバッグログ） ---------- */
 function finalizePromptArray(p){
   // ====== デバッグトグル ======
@@ -1527,6 +1511,8 @@ function finalizePromptArray(p){
   log('OUTPUT', snap(p));
   return p;
 }
+
+
 
 /* ===================== COMMON PATCHES ===================== */
 // 汎用：{tag, ja}配列から <select> を構築
