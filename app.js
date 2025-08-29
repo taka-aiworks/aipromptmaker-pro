@@ -1881,7 +1881,7 @@ function finalizePromptArray(p){
   else if (typeof ensurePromptOrderLocal==='function') p = ensurePromptOrderLocal(p);
   if (typeof fixExclusives==='function') p = fixExclusives(p);
   if (typeof enforceHeadOrder==='function') p = enforceHeadOrder(p);
-  // if (typeof enforceSingleBackground==='function') p = enforceSingleBackground(p);
+  if (typeof enforceSingleBackground==='function') p = enforceSingleBackground(p);
 
   // プレースホルダ掃除＆重複排除
   p = dropPlaceholders(p);
