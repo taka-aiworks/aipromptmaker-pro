@@ -2461,8 +2461,6 @@ function pmBuildOne(){
   const name  = (document.getElementById('charName')?.value || "");
   const seed  = (typeof seedFromName==='function') ? seedFromName(name,1) : 1;
   const prompt= p.join(", ");
-  // ★ 最終ガード：UIの背景だけを必ず残す（辞書ベース）
-  p = keepOnlyUIBackground(p, bg);
   return [{ seed, pos:p, prompt, neg, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` }];
 }
 
