@@ -1798,7 +1798,7 @@ function _collectNSFW(idsOrId){
 function buildOneLearning(extraSeed = 0){
   _dbg('enter buildOneLearning', {extraSeed});
 
-  const _norm = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
+  const _norm = t => String(t||"").trim();  // ← normalizeTag は呼ばない
   const _text = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
   const _tag  = id => asTag(_text(id));
 
@@ -1931,7 +1931,7 @@ function buildBatchLearning(n){
   const rows = [];
   const wantCount = Math.max(1, Number(n)||1);
 
-  const _norm = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
+  const _norm = t => String(t||"").trim();  // ← normalizeTag は呼ばない
   const _text = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
   const _tag  = id => asTag(_text(id));
   const _many = id => (typeof getMany==='function' ? (getMany(id)||[]) : []).map(asTag).filter(Boolean);
@@ -2241,7 +2241,7 @@ function buildBatchProduction(n){
 
   // 共通化: UI -> 英語tag
   const _to   = t => asTag(t);
-  const _norm = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
+  const _norm = t => String(t||"").trim();  // ← normalizeTag は呼ばない
   const _pick = arr => (Array.isArray(arr) && arr.length ? arr[Math.floor(Math.random()*arr.length)] : "");
 
   const fixedArr = (typeof getFixedProd === 'function') ? (getFixedProd() || []) : [];
