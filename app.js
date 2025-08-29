@@ -1595,6 +1595,35 @@ function finalizePromptArray(p){
 }
 
 
+// --- 最終ガード：UI 背景の強制保持（小文字リテラル一致のみ）---
+function ensureKeepUIBackground(arr, uiBg){
+  const toK = s => String(s||'').trim().toLowerCase();
+  const bgk = toK(uiBg);
+  if (!bgk) {
+    console.log('[BGFIX][keep] uiBg empty → skip');
+    return arr;
+  }
+  const before = Array.isArray(arr) ? arr.slice() : [];
+  const has = before.some(t => toK(t) === bgk);
+  console.log('[BGFIX][keep] check', { uiBg, has, beforeLen: before.length });
+  if (has) return before;
+
+  const out = before.concat([uiBg]);
+  console.log('[BGFIX][keep] injected', { uiBg, afterLen: out.length });
+  // 並びは既存ポリシーに合わせて整える（存在すれば）
+  if (typeof ensurePromptOrder==='function') return ensurePromptOrder(out);
+  if (typeof ensurePromptOrderLocal==='function') return ensurePromptOrderLocal(out);
+  return out;
+}
+
+
+
+
+
+
+
+
+
 
 /* ===================== COMMON PATCHES ===================== */
 // 汎用：{tag, ja}配列から <select> を構築
@@ -2218,6 +2247,20 @@ function pmBuildOne(){
     .map(x => AS_IS(x))
     .filter(x => x && x.toLowerCase()!=='none' && !_isRating(x));
 
+  // ★ 最終ガード：UI 背景を必ず残す（辞書・正規表現なし／小文字一致）
+  const _ensureKeepUIBackground = (arr, uiBg) => {
+    const toK = s => String(s||'').trim().toLowerCase();
+    const bgk = toK(uiBg);
+    if (!bgk) return arr || [];
+    const before = Array.isArray(arr) ? arr.slice() : [];
+    const has = before.some(t => toK(t) === bgk);
+    if (has) return before;
+    const out = before.concat([uiBg]);
+    if (typeof ensurePromptOrder === 'function') return ensurePromptOrder(out);
+    if (typeof ensurePromptOrderLocal === 'function') return ensurePromptOrderLocal(out);
+    return out;
+  };
+
   // 単一/複数どちらのUIにも対応する安全取得
   const pickManySafe = (id) => {
     if (typeof getMany === 'function') {
@@ -2344,6 +2387,9 @@ function pmBuildOne(){
     // 念のためプレースホルダ再除去
     p = p.filter(t => AS_IS(t).toLowerCase() !== 'background');
   }
+
+  // ★ 最終ガード：UI 背景が消えていたら必ず戻す
+  p = _ensureKeepUIBackground(p, bg);
 
   // ネガ
   const useDefNeg = !!document.getElementById('pl_useDefaultNeg')?.checked;
