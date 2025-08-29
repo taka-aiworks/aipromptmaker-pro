@@ -2191,8 +2191,15 @@ function pmBuildOne(){
     p.push(...nsfwAdd);
   }
 
+   
+  console.log('[DBG][PL] before push', {bg, comp, view, expr, lite});
+
   // シーン確定
   p.push(...[bg, comp, view, expr, lite].filter(Boolean));
+
+   // 最終整形直後
+  // （_clean → unifyLightingOnce → ensurePromptOrderLocal → fixExclusives などの後）
+  console.log('[DBG][PL] final', p);
 
   // ★ 表情・ポーズを NSFW 優先で単一化
     if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
