@@ -132,7 +132,7 @@
       { "tag": "alley", "ja": "路地裏", "level": "L2" },
       { "tag": "cage", "ja": "檻の中", "level": "L3" },
       { "tag": "dungeon", "ja": "地下牢", "level": "L3" },
-      { "tag": "stage_performance", "ja": "ステージ演出", "level": "L2" },
+      { "tag": "stage_performance", "ja": "ステージ演出", "level": "L2" }
     ],
 
       "lighting": [
@@ -552,7 +552,6 @@
       { "tag": "titjob",             "ja": "パイズリ",            "level": "L3" },
       { "tag": "footjob",            "ja": "足コキ",              "level": "L3" },
       { "tag": "self_spread",      "ja": "セルフくぱぁ（自分で開く）", "level": "L2" },
-
     
       { "tag": "penetration_vaginal","ja": "膣挿入",              "level": "L3" },
       { "tag": "penetration_anal",   "ja": "アナル挿入",          "level": "L3" },
@@ -578,4 +577,4 @@
       { "tag": "coprophagia",        "ja": "スカトロ食",          "level": "L3" }
     ]
   }
-  }
+}
