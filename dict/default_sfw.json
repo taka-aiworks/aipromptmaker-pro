@@ -707,37 +707,6 @@
     { "tag": "up", "label": "上を見る" }
   ],
 
-  "body_orientation": [
-    { "tag": "front_view", "label": "正面" },
-    { "tag": "three_quarter_view", "label": "やや斜め" },
-    { "tag": "side_view", "label": "横向き" },
-    { "tag": "back_view", "label": "背面" },
-    { "tag": "over_shoulder", "label": "振り向き（肩越し）" }
-  ],
-
-  "camera_angle": [
-    { "tag": "eye_level", "label": "アイレベル" },
-    { "tag": "high_angle", "label": "俯瞰（やや上）" },
-    { "tag": "low_angle", "label": "ローアングル（やや下）" },
-    { "tag": "top_down", "label": "真上" },
-    { "tag": "worm_view", "label": "超ロー/虫の目" }
-  ],
-
-  "framing": [
-    { "tag": "full_body", "label": "全身" },
-    { "tag": "knees_up", "label": "膝上" },
-    { "tag": "waist_up", "label": "腰上" },
-    { "tag": "bust", "label": "バストアップ" },
-    { "tag": "close_up_face", "label": "顔のアップ" }
-  ],
-
-  "composition": [
-    { "tag": "centered", "label": "中央配置" },
-    { "tag": "rule_of_thirds", "label": "三分割構図" },
-    { "tag": "leading_lines", "label": "リーディングライン" },
-    { "tag": "dutch_angle", "label": "水平傾き（ダッチ）" }
-  ],
-
   "pose_manga": [
     { "tag": "standing",              "label": "立ち" },
     { "tag": "sitting",               "label": "座り" },
