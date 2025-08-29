@@ -2188,23 +2188,37 @@ function pmBuildOne(){
   };
   if (typeof applyWearColorPipeline==='function') p = applyWearColorPipeline(p, pal);
 
-  // シーン（UIだけを採用）
+  // シーン（UIそのまま）
   const bg   = pickTag('pl_bg');
-  const pose = pickTag('pl_pose');            // ← 追加（これが無いと standing 等が出ない）
+  const pose = pickTag('pl_pose');
   const comp = pickTag('pl_comp');
   const view = pickTag('pl_view');
   let expr   = pickTag('pl_expr')  || "neutral expression";
   let lite   = pickTag('pl_light') || "soft lighting";
 
+  // —— アクセ（1種＋色）——
+  // UI: <select id="pl_accSel"> と カラーホイール群 (plAcc)
+  // app.js 内の pmGetAccColor() が定義済みなので優先利用し、なければ getWearColorTag('plAcc') を使う
+  const accSelEl = document.getElementById('pl_accSel');
+  const accBase  = (accSelEl && accSelEl.value ? String(accSelEl.value).trim() : "");
+  let   accColor = "";
+  if (typeof pmGetAccColor === 'function') accColor = pmGetAccColor() || "";
+  else if (typeof getWearColorTag === 'function') accColor = getWearColorTag('plAcc') || "";
+  // アクセは「色＋名詞」で1個だけ採用（色が無ければ名詞のみ）
+  let accTag = "";
+  if (accBase) accTag = (accColor ? `${accColor} ${accBase}` : accBase);
+
   // —— NSFW（UIの選択だけ反映：単一/複数どちらでも吸う）——
   const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
   let nsfwAdd = [];
   if (nsfwOn){
+    // NSFW表情/照明はUIでの単一選択を優先採用
     const ex2 = (pickManySafe('pl_nsfw_expr').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     const li2 = (pickManySafe('pl_nsfw_light').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     if (ex2) expr = ex2;
     if (li2) lite = li2;
 
+    // 服・露出・状況など（複数可）
     nsfwAdd = [
       ...pickManySafe('pl_nsfw_expo'),
       ...pickManySafe('pl_nsfw_underwear'),
@@ -2223,42 +2237,28 @@ function pmBuildOne(){
     p.push(...nsfwAdd);
   }
 
-  console.log('[DBG][PL] before push', {bg, pose, comp, view, expr, lite});
+  console.log('[DBG][PL] before push', {bg, pose, comp, view, expr, lite, accTag});
 
-  // シーン確定（pose を含める）
-  p.push(...[bg, pose, comp, view, expr, lite].filter(Boolean));
+  // シーン確定（pose/acc を含める）
+  p.push(...[bg, pose, comp, view, expr, lite, accTag].filter(Boolean));
 
-    // ★ 撮影モードは「照明＝UIの選択1個」に固定（正規表現は使わない）
-  const lightingSet = getLightingCandidatesFromUI();
-  const norm = s => String(s||'').replace(/_/g,' ').trim().toLowerCase();
-  const chosenLite = norm(lite);
-  p = p.filter(t => {
-    const isLightingCandidate = lightingSet.has(norm(t));
-    // 候補に該当するものは「選んだ1個」以外すべて除去
-    return !isLightingCandidate || norm(t) === chosenLite;
-  });
-   
   console.log('[DBG][PL] after push', p);
 
-  // ★ 表情・ポーズ・ライトを NSFW 優先で単一化
+  // ★ 表情・ポーズのみ単一化（照明はUIの選択1個を尊重し、触らない）
   if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
   if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
-  if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p);
+  // if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p); // ← 撮影モードでは呼ばない
 
   // —— 最終整形：UI尊重（補完もカテゴリ潰しもしない）——
   p = _clean(p);
-  if (typeof unifyLightingOnce==='function')          p = unifyLightingOnce(p);
+  // if (typeof unifyLightingOnce==='function') p = unifyLightingOnce(p); // ← 撮影モードでは呼ばない
   if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
   else if (typeof ensurePromptOrderLocal==='function')p = ensurePromptOrderLocal(p);
   if (typeof fixExclusives==='function')              p = fixExclusives(p);
   if (typeof enforceHeadOrder==='function')           p = enforceHeadOrder(p);
   if (typeof enforceSingleBackground==='function')    p = enforceSingleBackground(p);
 
-  // ライトがどこかで落ちた場合の安全弁（最後に必ず1個は入れる）
-  if (!p.some(t => /\blight(ing)?\b/i.test(String(t||"")))) {
-    p.push("soft lighting");
-    if (typeof ensurePromptOrderLocal==='function') p = ensurePromptOrderLocal(p);
-  }
+  // ※ 照明の“安全弁”も今回は使わない（UIが真実）。必要ならここで固定タグ追加の後に入れる。
 
   console.log('[DBG][PL] final', p);
 
