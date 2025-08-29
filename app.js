@@ -1600,6 +1600,87 @@ function finalizeBackgroundOnce(arr, uiBg){
   if (typeof ensurePromptOrderLocal === 'function') return ensurePromptOrderLocal(out);
   return out;
 }
+/* --- 辞書ベース：UI背景だけを1つ残す（正規化/正規表現なし） --- */
+function keepOnlyUIBackground(arr, uiBg) {
+  const toT = t => String(t||'').trim();
+  const ui = toT(uiBg);
+  if (!ui) return Array.isArray(arr) ? arr.slice() : [];
+
+  const TAG2CAT = (typeof getTag2Cat === 'function') ? getTag2Cat() : new Map();
+  const catOf = (t) => {
+    const low = t.toLowerCase();
+    return TAG2CAT.get(low) || TAG2CAT.get(low.replace(/\s+/g,'_')) || null;
+  };
+
+  const before = Array.isArray(arr) ? arr.slice() : [];
+  const out = [];
+  let kept = false;
+
+  for (const t0 of before) {
+    const t = toT(t0);
+    const c = catOf(t);
+    if (c === 'background') {
+      if (!kept && t === ui) { out.push(t); kept = true; }
+      // UI以外の背景は落とす
+    } else {
+      out.push(t);
+    }
+  }
+
+  // どこかで消された場合は最後に必ず戻す
+  if (!kept) out.push(ui);
+  return out;
+}
+/* --- 背景ドロップ検知ロガー（辞書ベース・小文字一致のみ） --- */
+(function BGTRACE_INSTALL(){
+  const TAG = '[BGTRACE]';
+  const TAG2CAT = (typeof getTag2Cat === 'function') ? getTag2Cat() : new Map();
+  const catOf = (t) => {
+    const s = String(t||'').trim().toLowerCase();
+    return TAG2CAT.get(s) || TAG2CAT.get(s.replace(/\s+/g,'_')) || null;
+  };
+  const countBg = (arr)=> {
+    let catBg = 0, litBg = 0;
+    (arr||[]).forEach(t => {
+      const s = String(t||'').trim().toLowerCase();
+      if (s === 'background') litBg++;
+      if (catOf(s) === 'background') catBg++;
+    });
+    return {catBg, litBg};
+  };
+  const wrap = (name)=>{
+    const orig = window[name];
+    if (typeof orig !== 'function') return;
+    window[name] = function(...args){
+      const before = Array.isArray(args[0]) ? args[0] : null;
+      const c0 = countBg(before||[]);
+      const out = orig.apply(this, args);
+      const c1 = countBg(out||[]);
+      if (c0.catBg !== c1.catBg || c0.litBg !== c1.litBg) {
+        console.log(TAG, 'DROP?', name, {beforeLen: before?.length, afterLen: out?.length, before:c0, after:c1});
+      } else {
+        console.log(TAG, 'ok', name, {bg:c1});
+      }
+      return out;
+    };
+  };
+  [
+    'finalizePromptArray',
+    'enforceSingletonByCategory',
+    'ensurePromptOrder',
+    'ensurePromptOrderLocal',
+    'enforceHeadOrder',
+    'fixExclusives',
+    'unifyLightingOnce',
+    'dedupeStable'
+  ].forEach(wrap);
+})();
+
+
+
+
+
+
 
 
 
@@ -2380,6 +2461,8 @@ function pmBuildOne(){
   const name  = (document.getElementById('charName')?.value || "");
   const seed  = (typeof seedFromName==='function') ? seedFromName(name,1) : 1;
   const prompt= p.join(", ");
+  // ★ 最終ガード：UIの背景だけを必ず残す（辞書ベース）
+  p = keepOnlyUIBackground(p, bg);
   return [{ seed, pos:p, prompt, neg, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` }];
 }
 
