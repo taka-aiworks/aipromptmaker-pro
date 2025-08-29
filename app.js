@@ -587,7 +587,7 @@ function splitTags(v){
 
 
 
-// === 学習用ホワイトリスト（辞書準拠） ==================
+// === 学習用ホワイトリスト（辞書準拠に修正） ==================
 const SCOPE = {
   learning: {
     background: [
@@ -607,7 +607,6 @@ const SCOPE = {
       "hands behind back",
       "head tilt",
       "waving"
-      // ※ "arms crossed behind head" は辞書外なので除外
     ],
     composition: [
       "full body",
@@ -619,23 +618,23 @@ const SCOPE = {
     ],
     view: [
       "front view",
-      "three-quarters view",
+      "three-quarter view",     // ← three-quarters → three-quarter に修正（SFW辞書と一致）
       "side view",
-      "profile view", // 追加：配分ルールに合わせる
+      "profile view",
       "back view"
     ],
     expressions: [
-      "neutral expression",
+      "neutral_expression",     // ← snake_case に修正
       "smiling",
-      "smiling open mouth",
+      "smiling_open_mouth",     // ← snake_case に修正
       "serious",
       "determined",
-      "slight blush",
-      "surprised (mild)",
-      "pouting (slight)",
-      "teary eyes",
+      "slight_blush",           // ← snake_case に修正
+      "surprised",              // ← SFWに合わせ表記を統一（*_mild 等は使わない）
+      "pouting",                // ← “pouting (slight)” を辞書にある "pouting" へ
+      "teary_eyes",             // ← SFW辞書タグへ合わせる
       "laughing",
-      "embarrassed"
+      "embarrassed_face"        // ← SFW辞書タグへ合わせる
     ],
     lighting: [
       "normal lighting",
@@ -643,12 +642,96 @@ const SCOPE = {
       "soft lighting",
       "window light",
       "overcast",
-      "flat studio lighting", // 辞書準拠
+      "flat studio lighting",
       "backlighting",
-      "rim light"             // 辞書準拠
+      "rim light"
     ]
   }
 };
+
+// === 顔安定版・配分ルール（辞書タグに完全一致するように修正） =====
+const MIX_RULES = {
+  view: {
+    group: ["front view","three-quarter view","side view","profile view","back view"], // ←修正
+    targets: {
+      "three-quarter view":[0.55,0.65],   // ←キー名を修正
+      "front view":[0.30,0.35],
+      "side view":[0.02,0.04],
+      "profile view":[0.01,0.03],
+      "back view":[0.00,0.01]
+    },
+    fallback: "three-quarter view"        // ←修正
+  },
+
+  comp: {
+    group: ["bust","waist up","portrait","upper body","close-up","full body","wide shot"],
+    targets: {
+      "bust":[0.35,0.45],
+      "waist up":[0.30,0.35],
+      "portrait":[0.10,0.15],
+      "upper body":[0.05,0.08],
+      "close-up":[0.03,0.05],
+      "full body":[0.00,0.02],
+      "wide shot":[0.00,0.01]
+    },
+    fallback: "bust"
+  },
+
+  expr: {
+    group: [
+      "neutral_expression",     // ←修正
+      "smiling",
+      "smiling_open_mouth",     // ←修正
+      "slight_blush",           // ←修正
+      "serious",
+      "determined",
+      "pouting"                 // ←“pouting (slight)” を辞書タグに統一
+    ],
+    targets: {
+      "neutral_expression":[0.55,0.65],   // ←キー名を修正
+      "smiling":[0.20,0.25],
+      "smiling_open_mouth":[0.03,0.05],   // ←修正
+      "slight_blush":[0.03,0.05],         // ←修正
+      "serious":[0.01,0.02],
+      "determined":[0.01,0.02],
+      "pouting":[0.01,0.02]               // ←修正
+    },
+    fallback: "neutral_expression"         // ←修正
+  },
+
+  bg: {
+    group: ["plain_background","white_background","studio_background","solid_background","white_seamless","gray_seamless"],
+    targets: {
+      "plain_background":[0.55,0.62],
+      "white_background":[0.15,0.22],
+      "studio_background":[0.08,0.12],
+      "solid_background":[0.04,0.07],
+      "white_seamless":[0.01,0.02],
+      "gray_seamless":[0.01,0.02]
+    },
+    fallback: "plain_background"
+  },
+
+  light: {
+    group: ["even lighting","soft lighting","normal lighting","window light","overcast"],
+    targets: {
+      "even lighting":[0.35,0.45],
+      "soft lighting":[0.30,0.35],
+      "normal lighting":[0.15,0.20],
+      "window light":[0.05,0.08],
+      "overcast":[0.00,0.02]
+    },
+    fallback: "even lighting"
+  }
+};
+
+window.MIX_RULES = MIX_RULES;
+
+// そのまま使っているなら据え置き
+const EXPR_ALL = new Set([
+  ...Object.keys(MIX_RULES.expr.targets),
+  MIX_RULES.expr.fallback
+]);
 
 
 // === 学習用 NSFW ホワイトリスト（軽度中心・ブレにくい範囲で拡張） ===
@@ -728,84 +811,6 @@ const NSFW_LEARN_SCOPE = {
 };
 
 
-
-// === 顔安定版・配分ルール =======================
-const MIX_RULES = {
-  view: {
-    group: ["front view","three-quarters view","side view","profile view","back view"],
-    targets: {
-      "three-quarters view":[0.55,0.65],
-      "front view":[0.30,0.35],
-      "side view":[0.02,0.04],
-      "profile view":[0.01,0.03],
-      "back view":[0.00,0.01]
-    },
-    fallback: "three-quarters view"
-  },
-
-  comp: {
-    group: ["bust","waist up","portrait","upper body","close-up","full body","wide shot"],
-    targets: {
-      "bust":[0.35,0.45],
-      "waist up":[0.30,0.35],
-      "portrait":[0.10,0.15],
-      "upper body":[0.05,0.08],
-      "close-up":[0.03,0.05],
-      "full body":[0.00,0.02],
-      "wide shot":[0.00,0.01]
-    },
-    fallback: "bust"
-  },
-
-  expr: {
-    group: [
-      "neutral expression","smiling","smiling open mouth",
-      "slight blush","serious","determined","pouting (slight)"
-    ],
-    targets: {
-      "neutral expression":[0.55,0.65],
-      "smiling":[0.20,0.25],
-      "smiling open mouth":[0.03,0.05],
-      "slight blush":[0.03,0.05],
-      "serious":[0.01,0.02],
-      "determined":[0.01,0.02],
-      "pouting (slight)":[0.01,0.02]
-    },
-    fallback: "neutral expression"
-  },
-
-  bg: {
-    group: ["plain_background","white_background","studio_background","solid_background","white_seamless","gray_seamless"],
-    targets: {
-      "plain_background":[0.55,0.62],   // 主軸（下げすぎない）
-      "white_background":[0.15,0.22],
-      "studio_background":[0.08,0.12],
-      "solid_background":[0.04,0.07],
-      "white_seamless":[0.01,0.02],
-      "gray_seamless":[0.01,0.02]
-    },
-    fallback: "plain_background"
-  },
-
-  light: {
-    group: ["even lighting","soft lighting","normal lighting","window light","overcast"],
-    targets: {
-      "even lighting":[0.35,0.45],
-      "soft lighting":[0.30,0.35],
-      "normal lighting":[0.15,0.20],
-      "window light":[0.05,0.08],
-      "overcast":[0.00,0.02]
-    },
-    fallback: "even lighting"
-  }
-};
-window.MIX_RULES = MIX_RULES;
-
-// 使っているならそのまま
-const EXPR_ALL = new Set([
-  ...Object.keys(MIX_RULES.expr.targets),
-  MIX_RULES.expr.fallback
-]);
 
 
 
