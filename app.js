@@ -2473,6 +2473,11 @@ function buildBatchProduction(n){
     // —— 最終整形：単一化→順序→重複→プレースホルダ掃除→NSFW/soloの位置 ——
     p = finalizePromptArray(p);
 
+    // LoRA タグを常に先頭に挿入（重複排除）
+   if (typeof putLoraAtHead === 'function') {
+   p = putLoraAtHead(p);
+   }
+     
     const prompt = p.join(", ");
     if (seen.has(prompt)) continue;
     seen.add(prompt);
