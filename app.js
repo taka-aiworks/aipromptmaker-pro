@@ -82,35 +82,6 @@
   const hasBgLike = arr => (arr||[]).some(t => /\b(background|studio|lab|classroom|beach|forest|street|sky|room|office|cafe|park|city|town|mountain|sea|ocean|lake|river|desert|temple)\b/i.test(String(t||"")));
   const hasLiteralBackground = arr => (arr||[]).some(t => String(t||"").trim().toLowerCase()==='background');
 
-  // --- ラップ処理（before/afterを丸ごと出す） ---
-  function wrapFn(obj, name){
-    if (!obj || typeof obj[name] !== 'function') return;
-    if (obj[name].__wrapped) return; // 二重ラップ防止
-    const orig = obj[name];
-    obj[name] = function(...args){
-      const before = clone(args[0]);
-      const out = orig.apply(this, args);
-      const after = clone(out);
-      const info = {
-        fn: name,
-        before_len: (before||[]).length,
-        after_len: (after||[]).length,
-        before_bgLike: hasBgLike(before),
-        after_bgLike: hasBgLike(after),
-        before_hasLiteralBackground: hasLiteralBackground(before),
-        after_hasLiteralBackground: hasLiteralBackground(after),
-      };
-      // 背景が消えた/増えた/リテラルbackgroundが混入 などの兆候を強調
-      if (info.before_bgLike && !info.after_bgLike) log('⚠️ BG DROPPED', info, {before, after});
-      else if (!info.before_bgLike && info.after_bgLike) log('🆙 BG ADDED', info, {before, after});
-      else if (info.after_hasLiteralBackground) log('⚠️ LITERAL "background" FOUND', info, {after});
-      else log('pass', info);
-      return out;
-    };
-    obj[name].__wrapped = true;
-    log('wrap:', name);
-  }
-
   // グローバル関数を順に監視ラップ
   wrapFn(window, 'finalizePromptArray');
   wrapFn(window, 'enforceSingletonByCategory');
