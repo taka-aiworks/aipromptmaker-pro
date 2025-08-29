@@ -2009,7 +2009,7 @@ function putLoraAtAbsoluteHead(p, {nsfwOn=false} = {}){
 
 
 
-/* ====================== 学習モード：MIX_RULES対応・NSFW先頭/solo2番目・none/R掃除 ====================== */
+/* ====================== 学習モード：服モード対応・固定アクセ常時適用・NSFW(衣装/体型)固定適用 ====================== */
 function buildBatchLearning(n){
   const rows = [];
   const wantCount = Math.max(1, Number(n)||1);
@@ -2017,6 +2017,21 @@ function buildBatchLearning(n){
   const _norm = t => (typeof normalizeTag==='function') ? normalizeTag(String(t||"")) : String(t||"").trim();
   const _text = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
   const _tag  = id => asTag(_text(id));
+  const _many = id => (typeof getMany==='function' ? (getMany(id)||[]) : []).map(asTag).filter(Boolean);
+
+  // 固定アクセ（全行共通で使うため、先に解決）
+  const accSel = (document.getElementById('learn_acc')?.value || "").trim();
+  const accTag = asTag(accSel);
+  const accClr = _tag('tag_learnAcc'); // 例: "black"
+  const fixedAccToken = accTag ? (accClr ? `${accClr} ${accTag}` : accTag) : "";
+
+  // 服モード（basic / generic）
+  const wearMode = (document.querySelector('input[name="learnWearMode"]:checked')?.value || 'basic');
+
+  // NSFW（学習モードは outfit/body のみ、複数選択は全部固定で使用）
+  const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
+  const nsfwBodySel   = nsfwOn ? _many('nsfwL_body')   : [];
+  const nsfwOutfitSel = nsfwOn ? _many('nsfwL_outfit') : [];
 
   for (let i=0;i<wantCount;i++){
     let p = ["solo"];
@@ -2034,68 +2049,56 @@ function buildBatchLearning(n){
       _tag('tagH'), _tag('tagE'), _tag('tagSkin')
     ].filter(Boolean).map(_norm));
 
-    // 学習モード：シーン部だけMIX_RULES優先で差し替え
-      // 置換対象：buildBatchLearning 内の「// シーン」ブロック
-      
-      // —— ここから置換 —— 
-      // シーン（MIX_RULES優先 → 未選択はUIの単一選択をフォールバック）
-      const bg   = (typeof pickWithMixRules==='function' ? pickWithMixRules('bg')   : null) || pickTag('bg');
-      const comp = (typeof pickWithMixRules==='function' ? pickWithMixRules('comp') : null) || pickTag('comp');
-      const view = (typeof pickWithMixRules==='function' ? pickWithMixRules('view') : null) || pickTag('view');
-      const expr = (typeof pickWithMixRules==='function' ? pickWithMixRules('expr') : null) || pickTag('expr');
-      const lite = (typeof pickWithMixRules==='function' ? pickWithMixRules('light'): null) || pickTag('lightLearn');
-      
-      p.push(...[bg, comp, view, expr, lite].filter(Boolean));
-      // —— ここまで置換 ——
-
-    // 固定アクセ
-    {
-      const accSel = (document.getElementById('learn_acc')?.value || "").trim();
-      const accTag = asTag(accSel);
-      const accClr = _tag('tag_learnAcc');
-      if (accTag) p.push(accClr ? `${accClr} ${accTag}` : accTag);
+    // ---- 服（SFW） or 汎用服 ----
+    if (!nsfwOn){ // ※NSFWがONなら後でSFW服を丸ごと掃除するのでここは通常処理
+      if (wearMode === 'basic'){
+        if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns().map(asTag));
+        if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
+        if (typeof pairWearColors==='function')              p = pairWearColors(p);
+        if (typeof applyWearColorPipeline==='function'){
+          p = applyWearColorPipeline(p, {
+            top:   (getWearColorTag?.('top')    || getProdWearColorTag?.('top')    || ''),
+            bottom:(getWearColorTag?.('bottom') || getProdWearColorTag?.('bottom') || ''),
+            shoes: (getWearColorTag?.('shoes')  || getProdWearColorTag?.('shoes')  || '')
+          });
+        }
+      } else {
+        // generic：具体服は出さずに汎用タグだけ
+        const neutral = (window.TRAINING_POLICY?.outfit?.neutral_tag || 'casual outfit');
+        p.push(asTag(neutral));
+      }
     }
 
-    // 服（SFW）
-    if (typeof getOutfitNouns==='function')             p.push(...getOutfitNouns().map(asTag));
-    if (typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
-    if (typeof pairWearColors==='function')              p = pairWearColors(p);
-    if (typeof applyWearColorPipeline==='function'){
-      p = applyWearColorPipeline(p, {
-        top:   (getWearColorTag?.('top')    || getProdWearColorTag?.('top')    || ''),
-        bottom:(getWearColorTag?.('bottom') || getProdWearColorTag?.('bottom') || ''),
-        shoes: (getWearColorTag?.('shoes')  || getProdWearColorTag?.('shoes')  || '')
-      });
-    }
+    // ---- 固定アクセ（全行に出す）----
+    if (fixedAccToken) p.push(fixedAccToken);
 
-    // NSFW（UI側の各カテゴリから取得）
-    const nsfwOn = !!document.getElementById('nsfwLearn')?.checked;
+    // ---- NSFW（学習モードは outfit / body を“固定”で全行に適用）----
     if (nsfwOn){
-      const add = [
-        pickOneFromUI('nsfwL_expo')      || pickTag('nsfwL_expo'),
-        pickOneFromUI('nsfwL_underwear') || pickTag('nsfwL_underwear'),
-        pickOneFromUI('nsfwL_outfit')    || pickTag('nsfwL_outfit'),
-        pickOneFromUI('nsfwL_expr')      || pickTag('nsfwL_expr'),
-        pickOneFromUI('nsfwL_situ')      || pickTag('nsfwL_situ'),
-        pickOneFromUI('nsfwL_light')     || pickTag('nsfwL_light'),
-        pickOneFromUI('nsfwL_pose')      || pickTag('nsfwL_pose'),
-        pickOneFromUI('nsfwL_acc')       || pickTag('nsfwL_acc'),
-        pickOneFromUI('nsfwL_body')      || pickTag('nsfwL_body'),
-        pickOneFromUI('nsfwL_nipple')    || pickTag('nsfwL_nipple')
-      ].filter(Boolean).map(_norm);
-
+      // SFW服は掃除（NSFW優先）
       if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
-      p.push(...add);
+
+      // 選択された NSFW outfit/body を全部入れる（重複は後段で除去）
+      if (nsfwOutfitSel.length) p.push(...nsfwOutfitSel.map(_norm));
+      if (nsfwBodySel.length)   p.push(...nsfwBodySel.map(_norm));
     }
 
-    // 整形＆掃除
+    // ---- シーン系（MIX_RULESに依存する軽い揺らぎ：UIが無ければフォールバック）----
+    // ※背景やポーズUIを削っていても、ここは辞書のデフォルトで最小限を補完
+    const bg   = (typeof pickWithMixRules==='function' ? pickWithMixRules('bg')   : null) || pickTag('bg');
+    const comp = (typeof pickWithMixRules==='function' ? pickWithMixRules('comp') : null) || pickTag('comp');
+    const view = (typeof pickWithMixRules==='function' ? pickWithMixRules('view') : null) || pickTag('view');
+    const expr = (typeof pickWithMixRules==='function' ? pickWithMixRules('expr') : null) || pickTag('expr');
+    const lite = (typeof pickWithMixRules==='function' ? pickWithMixRules('light'): null) || pickTag('lightLearn');
+    p.push(...[bg, comp, view, expr, lite].filter(Boolean));
+
+    // ---- 整形＆掃除 ----
     p = finalizePromptArray(p);
     p = sanitizePromptArray(p);
 
+    // NSFW優先の単一化（表情/ポーズ/ライティング）
     if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
     if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
     if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p);
-
 
     // ヘッダ固定（NSFW → solo）
     if (nsfwOn){
