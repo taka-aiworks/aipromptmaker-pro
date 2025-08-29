@@ -2195,18 +2195,9 @@ function pmBuildOne(){
   const comp = pickTag('pl_comp');
   const view = pickTag('pl_view');
   let expr   = pickTag('pl_expr')  || "neutral expression";
-  let lite   = pickTag('pl_light') || "soft lighting";       // UIで選んだ照明をそのまま使う
-  const chosenLiteRaw = lite;                                 // 最終固定用に保持
+  let lite   = pickTag('pl_light') || "soft lighting";   // UIの照明をそのまま使う
+  const chosenLiteRaw = lite;                             // 最終固定用に保持
   const chosenLite    = norm(lite);
-
-  // —— アクセ（1種＋色）——
-  const accSelEl = document.getElementById('pl_accSel');
-  const accBase  = (accSelEl && accSelEl.value ? String(accSelEl.value).trim() : "");
-  let   accColor = "";
-  if (typeof pmGetAccColor === 'function') accColor = pmGetAccColor() || "";
-  else if (typeof getWearColorTag === 'function') accColor = getWearColorTag('plAcc') || "";
-  let accTag = "";
-  if (accBase) accTag = (accColor ? `${accColor} ${accBase}` : accBase);
 
   // —— NSFW（UIだけ反映）——
   const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
@@ -2215,7 +2206,7 @@ function pmBuildOne(){
     const ex2 = (pickManySafe('pl_nsfw_expr').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     const li2 = (pickManySafe('pl_nsfw_light').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     if (ex2) expr = ex2;
-    if (li2) { lite = li2; } // NSFWのライト選択を優先
+    if (li2) lite = li2; // NSFWのライト選択を優先
     nsfwAdd = [
       ...pickManySafe('pl_nsfw_expo'),
       ...pickManySafe('pl_nsfw_underwear'),
@@ -2233,10 +2224,10 @@ function pmBuildOne(){
     p.push(...nsfwAdd);
   }
 
-  console.log('[DBG][PL] before push', {bg, pose, comp, view, expr, lite, accTag});
+  console.log('[DBG][PL] before push', {bg, pose, comp, view, expr, lite});
 
-  // シーン確定（pose/acc を含める）
-  p.push(...[bg, pose, comp, view, expr, lite, accTag].filter(Boolean));
+  // シーン確定（※撮影モードのアクセは使わない）
+  p.push(...[bg, pose, comp, view, expr, lite].filter(Boolean));
 
   console.log('[DBG][PL] after push', p);
 
@@ -2254,9 +2245,9 @@ function pmBuildOne(){
   if (typeof enforceHeadOrder==='function')           p = enforceHeadOrder(p);
   if (typeof enforceSingleBackground==='function')    p = enforceSingleBackground(p);
 
-  // ★ 最後に“UIで選んだライト”が残っているかだけ確認（正規表現は使わない）
+  // ★ 最後に“UIで選んだライト”が残っているかだけ確認（UI値の一致のみ）
   if (chosenLite && !p.some(t => norm(t) === chosenLite)) {
-    p.push(chosenLiteRaw); // UIのまま足し戻す
+    p.push(chosenLiteRaw);
     if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
     else if (typeof ensurePromptOrderLocal==='function')p = ensurePromptOrderLocal(p);
   }
@@ -2299,6 +2290,7 @@ function pmBuildOne(){
   const prompt= p.join(", ");
   return [{ seed, pos:p, prompt, neg, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` }];
 }
+
 
 
 
