@@ -1926,19 +1926,20 @@ function buildOneLearning(extraSeed = 0){
 
 
 
-/* ====================== 学習モード：服“完全なし”対応・固定アクセ常時適用・NSFW(衣装/体型)固定適用 ====================== */
+/* ====================== 学習モード：服“完全なし”対応・固定アクセ常時適用・NSFW(衣装/体型)固定適用（asTag/normalize不使用） ====================== */
 function buildBatchLearning(n){
   const rows = [];
   const wantCount = Math.max(1, Number(n)||1);
 
-  const _norm = t => String(t||"").trim();  // ← normalizeTag は呼ばない
+  // ← normalizeTag/asTag を使わず素通し（trim のみ）
+  const AS_IS = t => String(t||"").trim();
   const _text = id => (document.getElementById(id)?.textContent || document.getElementById(id)?.value || "").trim();
-  const _tag  = id => asTag(_text(id));
-  const _many = id => (typeof getMany==='function' ? (getMany(id)||[]) : []).map(asTag).filter(Boolean);
+  const _tag  = id => AS_IS(_text(id));
+  const _many = id => (typeof getMany==='function' ? (getMany(id)||[]) : []).map(AS_IS).filter(Boolean);
 
   // 固定アクセ（全行共通）
   const accSel = (document.getElementById('learn_acc')?.value || "").trim();
-  const accTag = asTag(accSel);
+  const accTag = AS_IS(accSel);
   const accClr = _tag('tag_learnAcc'); // 例: "black"
   const fixedAccToken = accTag ? (accClr ? `${accClr} ${accTag}` : accTag) : "";
 
@@ -1950,46 +1951,61 @@ function buildBatchLearning(n){
   const nsfwBodySelRaw   = nsfwOn ? _many('nsfwL_body')   : [];
   const nsfwOutfitSelRaw = nsfwOn ? _many('nsfwL_outfit') : [];
 
-  // NSFWホワイトリストでフィルタ（保守安全）
-  const NSFW_OK_OUTFIT = new Set((window.NSFW_LEARN_SCOPE?.outfit)||[]);
-  const NSFW_OK_BODY   = new Set((window.NSFW_LEARN_SCOPE?.body)||[]);
+  // NSFWホワイトリスト（小文字で保持）＆フィルタ
+  const NSFW_OK_OUTFIT = new Set(((window.NSFW_LEARN_SCOPE?.outfit)||[]).map(s=>String(s).toLowerCase()));
+  const NSFW_OK_BODY   = new Set(((window.NSFW_LEARN_SCOPE?.body)||[]).map(s=>String(s).toLowerCase()));
   const keepIf = (set, xs)=> xs.filter(t => set.size ? set.has(String(t).toLowerCase()) : true);
   const nsfwOutfitSel = keepIf(NSFW_OK_OUTFIT, nsfwOutfitSelRaw);
   const nsfwBodySel   = keepIf(NSFW_OK_BODY,   nsfwBodySelRaw);
 
-  // 固定タグ（テキストエリア）→ buildPromptCore に渡す
+  // 固定タグ（テキストエリア）→ buildPromptCore に渡す（asTag使わない）
   const fixedText = (document.getElementById('fixedLearn')?.value || "").trim();
   const fixed = fixedText
-    ? ((typeof splitTags==='function') ? splitTags(fixedText) : fixedText.split(/\s*,\s*/)).map(asTag).filter(Boolean)
+    ? ((typeof splitTags==='function') ? splitTags(fixedText) : fixedText.split(/\s*,\s*/)).map(AS_IS).filter(Boolean)
     : [];
 
   // ネガ
   const useDefNeg = !!document.getElementById('useDefaultNeg')?.checked;
   const addNeg    = (document.getElementById('negLearn')?.value || "").trim();
 
+  // === NSFW時の年齢セーフガード ===
+  const MINOR_AGE_TAGS = new Set(["newborn","toddler","child","preteen","early_teen","teen"]);
+  const ADULT_FALLBACK = "young adult (18+)";
+  const filterAgeForNSFW = (tags)=>{
+    const out = [];
+    for (const t of tags){
+      const s = AS_IS(t);
+      if (!s) continue;
+      if (MINOR_AGE_TAGS.has(s.toLowerCase())) continue; // 未成年は落とす
+      out.push(s);
+    }
+    // 一つも成年タグが残らなければ 18+ を補う
+    if (!out.some(t => /adult|20s|30s|40s|50s|60s/i.test(t))) out.push(ADULT_FALLBACK);
+    return out;
+  };
+
   for (let i=0;i<wantCount;i++){
     let p = ["solo"];
 
-    // 1girl/1boy
+    // 1girl/1boy（asTag 不使用）
     if (typeof getGenderCountTag === 'function'){
       const g = getGenderCountTag() || "";
-      if (g) p.push(_norm(asTag(g)));
+      if (g) p.push(AS_IS(g));
     }
 
-    // 基本情報
+    // 基本情報（asTag/normalize 不使用）
     p.push(...[
       pickTag('bf_age'), pickTag('bf_gender'), pickTag('bf_body'), pickTag('bf_height'),
       pickTag('hairStyle'), pickTag('eyeShape'),
       _tag('tagH'), _tag('tagE'), _tag('tagSkin')
-    ].filter(Boolean).map(_norm));
+    ].filter(Boolean).map(AS_IS));
 
     // ---- 服（SFW・basic のときだけ服を入れる）----
     // ※ generic（汎用）では何も入れない＝服完全なし
     if (!nsfwOn && wearMode === 'basic'){
       let wearAdded = false;
-
       if (typeof getOutfitNouns==='function'){
-        const nouns = getOutfitNouns().map(asTag).filter(Boolean);
+        const nouns = getOutfitNouns().map(AS_IS).filter(Boolean);
         if (nouns.length){ p.push(...nouns); wearAdded = true; }
       }
       if (wearAdded && typeof injectWearColorPlaceholders==='function') injectWearColorPlaceholders(p);
@@ -2004,12 +2020,12 @@ function buildBatchLearning(n){
 
     // ---- NSFW（学習：outfit/body を固定で入れる）----
     if (nsfwOn){
-      // SFW服を掃除
       if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
-      // 念のため "nsfw" 文字列は混入させない
-      const notNS = t => String(t).trim().toUpperCase() !== "NSFW";
-      if (nsfwOutfitSel.length) p.push(...nsfwOutfitSel.map(_norm).filter(notNS));
-      if (nsfwBodySel.length)   p.push(...nsfwBodySel.map(_norm).filter(notNS));
+      const notNS = t => AS_IS(t).toUpperCase() !== "NSFW";
+      if (nsfwOutfitSel.length) p.push(...nsfwOutfitSel.map(AS_IS).filter(notNS));
+      if (nsfwBodySel.length)   p.push(...nsfwBodySel.map(AS_IS).filter(notNS));
+      // 年齢セーフガード
+      p = filterAgeForNSFW(p);
     }
 
     // ---- シーン系（MIX_RULESのみ／フォールバック無し）----
@@ -2044,7 +2060,7 @@ function buildBatchLearning(n){
     // === ヘッダ最終固定（NSFW → solo）===
     if (nsfwOn && out && Array.isArray(out.pos)){
       const body = out.pos.filter(t => {
-        const s = String(t||"").trim();
+        const s = AS_IS(t);
         const u = s.toUpperCase();
         return u !== "NSFW" && s !== "solo";
       });
@@ -2052,8 +2068,7 @@ function buildBatchLearning(n){
       out.prompt = out.pos.join(", ");
       out.text = `${out.prompt}${out.neg?` --neg ${out.neg}`:""} seed:${out.seed}`;
     } else if (!nsfwOn && out && Array.isArray(out.pos)){
-      // NSFWでない場合は solo を先頭に（保険）
-      const body = out.pos.filter(t => String(t||"").trim() !== "solo");
+      const body = out.pos.filter(t => AS_IS(t) !== "solo");
       out.pos = ["solo", ...body];
       out.prompt = out.pos.join(", ");
       out.text = `${out.prompt}${out.neg?` --neg ${out.neg}`:""} seed:${out.seed}`;
