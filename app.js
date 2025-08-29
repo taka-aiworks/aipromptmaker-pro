@@ -576,18 +576,25 @@ function buildTagCatalogFromJSON() {
 }
 
 // 2) カテゴリ単一化（辞書で “後勝ち置き換え”）、不足はデフォ補完
-/* ===== enforceSingletonByCategory（UI背景最優先・無正規表現・無normalize） ===== */
+/* ===== enforceSingletonByCategory（UI背景最優先・非正規表現・非normalize） ===== */
 function enforceSingletonByCategory(arr, opt = { addDefaults:true, noDefaultsFor:[] }) {
-  console.log('[BGFIX] enter enforceSingletonByCategory', {len:(arr||[]).length, opt});
+  console.log('[BGFIX] enter enforceSingletonByCategory', { len:(arr||[]).length, opt });
 
   const toT = t => String(t||'').trim();
   const tokens = (arr||[]).map(toT).filter(Boolean);
 
   // タグ→カテゴリ辞書
   const TAG2CAT = (typeof getTag2Cat === 'function') ? getTag2Cat() : new Map();
+
+  // 正規表現を使わずに、lower と lower_underscored の両方で辞書を引く
+  const toUnderscore = (s) => {
+    const parts = String(s||'').trim().toLowerCase().split(' ').filter(Boolean);
+    return parts.join('_');
+  };
   const catOf = (t) => {
-    const low = t.toLowerCase();
-    return TAG2CAT.get(low) || TAG2CAT.get(low.replace(/\s+/g,'_')) || null;
+    const low  = String(t||'').trim().toLowerCase();
+    const lowU = toUnderscore(t);
+    return TAG2CAT.get(low) || TAG2CAT.get(lowU) || null;
   };
 
   // デフォルト（背景は opt.noDefaultsFor に入ってたら挿さない）
@@ -603,32 +610,25 @@ function enforceSingletonByCategory(arr, opt = { addDefaults:true, noDefaultsFor
   const noDef = new Set(opt.noDefaultsFor || []);
 
   // 出力用バッファ
-  const nonDictOut = [];        // 辞書外（UIそのまま）
+  const nonDictOut = [];            // 辞書外（= UI そのまま）
   const seenNonDict = new Set();
 
-  // 背景は UI 最優先（最初に見つかった1つだけキープ）
+  // 背景は UI 最優先（最初の1つだけ採用）
   let firstBackground = null;
 
-  // そのほか単一カテゴリは“後勝ち”
-  const keepLast = {};          // cat -> token
+  // 背景以外の単一カテゴリは“後勝ち”
+  const keepLast = {};              // cat -> token
 
   for (const t of tokens) {
     const c = catOf(t);
     if (!c) {
-      // 辞書外はそのまま保持（重複は1回）
       if (!seenNonDict.has(t)) { nonDictOut.push(t); seenNonDict.add(t); }
       continue;
     }
-
     if (c === 'background') {
-      if (firstBackground === null) {
-        firstBackground = t; // 最初の1個だけ採用（UIが勝つ）
-      } else {
-        // 2個目以降の背景は捨てる（置換しない）
-      }
+      if (firstBackground === null) firstBackground = t;  // 2個目以降は無視（置換しない）
     } else {
-      // 背景以外は “後勝ち”
-      keepLast[c] = t;
+      keepLast[c] = t;                                     // 後勝ち
     }
   }
 
@@ -639,33 +639,29 @@ function enforceSingletonByCategory(arr, opt = { addDefaults:true, noDefaultsFor
   if (firstBackground) {
     out.push(firstBackground);
   } else if (opt.addDefaults && !noDef.has('background') && CAT_DEFAULTS.background) {
-    // 背景が一切無く、かつデフォ許可ならのみ補完
-    out.push(toT(CAT_DEFAULTS.background));
+    out.push(toT(CAT_DEFAULTS.background));               // 背景が無い時だけデフォ補完
     console.log('[BGFIX] background default injected');
   }
 
   for (const cat of ORDERED_CATS) {
-    if (cat === 'background') continue; // 既に処理済み
+    if (cat === 'background') continue;                   // 既に処理済み
     const tk = keepLast[cat];
-    if (tk) {
-      out.push(tk);
-    } else if (opt.addDefaults && !noDef.has(cat) && CAT_DEFAULTS[cat]) {
-      out.push(toT(CAT_DEFAULTS[cat]));
-    }
+    if (tk) out.push(tk);
+    else if (opt.addDefaults && !noDef.has(cat) && CAT_DEFAULTS[cat]) out.push(toT(CAT_DEFAULTS[cat]));
   }
 
-  // 「full body がいるなら upper/bust/waist up/portrait を掃除」（リテラル一致で）
+  // 「full body」があれば、upper/bust/waist up/portrait を掃除（リテラル一致・非正規表現）
   const COMPO_FULL = new Set(['full body','full_body']);
   const COMPO_DROP_IF_FULL = new Set(['upper body','upper_body','bust','waist up','waist_up','portrait']);
-  const hasFull = out.some(t => COMPO_FULL.has(t.toLowerCase()));
+  const hasFull = out.some(t => COMPO_FULL.has(String(t||'').toLowerCase()));
   if (hasFull) {
     for (let i = out.length - 1; i >= 0; i--) {
-      const k = out[i].toLowerCase();
+      const k = String(out[i]||'').toLowerCase();
       if (COMPO_DROP_IF_FULL.has(k)) out.splice(i, 1);
     }
   }
 
-  console.log('[BGFIX] exit enforceSingletonByCategory', {outLen: out.length, out});
+  console.log('[BGFIX] exit enforceSingletonByCategory', { outLen: out.length, out });
   return out;
 }
 
@@ -1498,15 +1494,15 @@ function dropColorizedShoesUnlessUserSelected(p){
   return p.filter(s => !COLOR_SHOES_RE.test(String(s||"")));
 }
 
-/* ---------- 共通ヘルパ：仕上げの順序を強制（UI背景を刈らない版＋デバッグログ） ---------- */
+/* ---------- 共通ヘルパ：仕上げの順序を強制（UI背景を刈らない版＋デバッグログ／非正規表現） ---------- */
 function finalizePromptArray(p){
   // ====== デバッグトグル ======
   // 有効化: window.DEBUG_FINALIZE = true;
   const TAG = '[DBG][FINALIZE]';
   const on  = !!window.DEBUG_FINALIZE;
   const snap = (arr)=> Array.isArray(arr) ? arr.slice() : [];
-
   const log = (...args)=> { if (on) console.log(TAG, ...args); };
+
   const step = (name, fn)=>{
     const before = snap(p);
     try{
@@ -1537,13 +1533,15 @@ function finalizePromptArray(p){
     step('enforceSingletonByCategory', arr =>
       enforceSingletonByCategory(arr, {
         addDefaults: true,
-        keep: 'last',                 // 互換用（未使用実装なら無視される）
-        noDefaultsFor: ['background'] // ★ plain_background 等を勝手に入れない
+        // keep は旧実装互換用（未使用実装なら無視される）
+        keep: 'last',
+        // ★ plain_background 等を勝手に入れない
+        noDefaultsFor: ['background']
       })
     );
   }
 
-  // ライトは最終1つ（※後段でNSFWライトを優先する処理が別にあるならそれを尊重）
+  // ライトは最終1つ（※後段でNSFWライト優先があればそれを尊重）
   if (typeof unifyLightingOnce === 'function'){
     step('unifyLightingOnce', arr => unifyLightingOnce(arr));
   }
@@ -1569,16 +1567,24 @@ function finalizePromptArray(p){
   // ★ ここでは背景プレースホルダの削除はしない
   //    （必要なら呼び出し側で "background" リテラル除去を実施）
 
-  // 重複除去
+  // 重複除去（非正規表現版のフォールバック）
   if (typeof dedupeStable === 'function'){
     step('dedupeStable', arr => dedupeStable(arr));
   } else {
     step('dedupe(fallback)', arr => {
-      const seen = new Set(); const out = [];
+      const seen = new Set();
+      const out = [];
       for (const t of (arr||[])){
-        const k = String(t||"").toLowerCase().replace(/_/g,' ').replace(/\s+/g,' ').trim();
+        // 非正規表現ノーマライズ： '_'→' '、連続空白を1つに
+        let k = String(t||'');
+        k = k.split('_').join(' ');
+        k = k.trim();
+        // 連続空白つぶし（正規表現なし）
+        k = k.split(' ').filter(Boolean).join(' ');
+        k = k.toLowerCase();
         if (!k || seen.has(k)) continue;
-        seen.add(k); out.push(t);
+        seen.add(k);
+        out.push(t);
       }
       return out;
     });
