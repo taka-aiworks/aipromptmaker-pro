@@ -479,9 +479,19 @@ function buildTagCatalogFromJSON() {
 }
 
 // 2) カテゴリ単一化（辞書で “後勝ち置き換え”）、不足はデフォ補完
-function enforceSingletonByCategory(arr, opt={ addDefaults:true }) {
-  const toT = t => (typeof toTag==='function') ? toTag(t) : String(t||"").trim();
+function enforceSingletonByCategory(arr, opt={ addDefaults:true, noDefaultsFor:[] }) {
+  const toT = t => String(t||"").trim(); // ← asTag/toTag使わない
   const catMap = (window.__TAG_CAT__ ||= buildTagCatalogFromJSON());
+
+  // 先に toTag 化
+  const tokens = (arr||[]).map(toT).filter(Boolean);
+
+  // --- UIっぽい“具体背景”の検出（辞書外でも拾う）---
+  // 例: "lab", "city skyline", "classroom", "beach", など
+  const BACKGROUND_LIKE_RE = /\b(background|studio|outdoor|indoor|beach|forest|street|sky|room|lab|classroom|office|cafe|park|city|town|mountain|sea|ocean|lake|river|desert|temple)\b/i;
+  const uiBgCandidate = tokens.find(t =>
+    !catMap[t] /*辞書外*/ && BACKGROUND_LIKE_RE.test(t)
+  );
 
   // この順で補完用のデフォルト
   const defaults = {
@@ -490,38 +500,43 @@ function enforceSingletonByCategory(arr, opt={ addDefaults:true }) {
     view:         'front view',
     expressions:  'neutral expression',
     lighting:     'soft lighting',
-    background:   'plain_background', // ← snake_caseで保持
+    background:   'plain_background'
   };
 
-  // 先に toTag 化
-  const tokens = (arr||[]).map(toT).filter(Boolean);
+  // “このカテゴリはデフォ禁止”の指定をセット化
+  const noDef = new Set(opt.noDefaultsFor || []);
 
-  // 1カテゴリ=1つに “最後に出たもの” を採用
-  const keepLast = {};         // cat -> token
-  const order    = [];         // 出現順を保持
+  // 1カテゴリ=1つ “最後に出たもの” を採用（辞書ヒットのみ）
+  const keepLast = {};  // cat -> token
   for (const t of tokens){
     const c = catMap[t];
-    if (!c) { // 辞書外はそのまま通す（上書きなし）
-      order.push(t);
-      continue;
-    }
-    keepLast[c] = t; // 後勝ち
+    if (!c) continue;       // 辞書外はここでは触らない（後でそのまま残す）
+    keepLast[c] = t;        // 後勝ち
   }
 
-  // 元の非辞書トークン + カテゴリ代表だけを再構成
+  // UI由来の具体背景があれば background の代表に採用（辞書外でもOK）
+  if (uiBgCandidate && !keepLast.background) {
+    keepLast.background = uiBgCandidate;
+  }
+
+  // 出力再構成：まず辞書外（UIそのまま）を順序保持で残す
   const seenNonDict = new Set();
   const out = [];
   for (const t of tokens){
-    if (!catMap[t]){
-      const key = t;
-      if (!seenNonDict.has(key)){ out.push(t); seenNonDict.add(key); }
+    if (!catMap[t]) {
+      if (!seenNonDict.has(t)) { out.push(t); seenNonDict.add(t); }
     }
   }
-  // 指定カテゴリは 1 つだけ差し込む（出現順はざっくり固定順）
+
+  // 指定カテゴリを 1 つだけ差し込む（不足時のデフォはカテゴリごとに抑制可能）
   const ORDERED_CATS = ['background','pose','composition','view','expressions','lighting'];
   for (const c of ORDERED_CATS){
-    if (keepLast[c]) out.push(keepLast[c]);
-    else if (opt.addDefaults && defaults[c]) out.push(toT(defaults[c]));
+    if (keepLast[c]) {
+      out.push(keepLast[c]);
+    } else if (opt.addDefaults && !noDef.has(c) && defaults[c]) {
+      // ★ 背景は noDefaultsFor に入っていれば注入しない
+      out.push(toT(defaults[c]));
+    }
   }
   return out;
 }
@@ -1407,35 +1422,49 @@ function dropColorizedShoesUnlessUserSelected(p){
   return p.filter(s => !COLOR_SHOES_RE.test(String(s||"")));
 }
 
-/* ---------- 共通ヘルパ：仕上げの順序を強制 ---------- */
+/* ---------- 共通ヘルパ：仕上げの順序を強制（UI背景を刈らない版） ---------- */
 function finalizePromptArray(p){
-  // 服の整合（ワンピ時は上下とその色プレースを落とす）
-  p = stripSeparatesWhenDressPresent(p);
+  p = p || [];
+
+  // 服の整合
+  if (typeof stripSeparatesWhenDressPresent === 'function')
+    p = stripSeparatesWhenDressPresent(p);
 
   // 靴の色はユーザー未指定なら外す
-  p = dropColorizedShoesUnlessUserSelected(p);
+  if (typeof dropColorizedShoesUnlessUserSelected === 'function')
+    p = dropColorizedShoesUnlessUserSelected(p);
 
-  // JSONカテゴリ単一化（不足は補完 / 後勝ち=NSFW優先）
-  if (typeof enforceSingletonByCategory==='function'){
-    p = enforceSingletonByCategory(p, { addDefaults: true, keep: 'last' });
+  // JSONカテゴリ単一化（背景のデフォ補完は抑制：UI優先）
+  if (typeof enforceSingletonByCategory === 'function'){
+    p = enforceSingletonByCategory(p, {
+      addDefaults: true,
+      keep: 'last',                 // 互換のため残す（未使用なら無視される）
+      noDefaultsFor: ['background'] // ★ plain_background 等を勝手に入れない
+    });
   }
 
   // ライトは最終1つ
-  p = (typeof unifyLightingOnce==='function') ? unifyLightingOnce(p) : p;
+  if (typeof unifyLightingOnce === 'function')
+    p = unifyLightingOnce(p);
 
   // 排他・順序
-  if (typeof dropBareColors==='function')          p = dropBareColors(p);
-  if (typeof fixExclusives==='function')           p = fixExclusives(p);
-  if (typeof ensurePromptOrder==='function')       p = ensurePromptOrder(p);
-  if (typeof enforceHeadOrder==='function')        p = enforceHeadOrder(p);
-  if (typeof enforceSingleBackground==='function') p = enforceSingleBackground(p);
+  if (typeof dropBareColors === 'function')    p = dropBareColors(p);
+  if (typeof fixExclusives === 'function')     p = fixExclusives(p);
+  if (typeof ensurePromptOrder === 'function') p = ensurePromptOrder(p);
+  else if (typeof ensurePromptOrderLocal === 'function') p = ensurePromptOrderLocal(p);
+  if (typeof enforceHeadOrder === 'function')  p = enforceHeadOrder(p);
+
+  // ★ リテラル "background" はプレースホルダ扱いなので除去（具体背景は残す）
+  p = p.filter(t => String(t||'').trim().toLowerCase() !== 'background');
+
+  // ※ enforceSingleBackground は呼ばない（UIをそのまま尊重）
 
   // 最後に重複除去
-  if (typeof dedupeStable==='function') return dedupeStable(p);
+  if (typeof dedupeStable === 'function') return dedupeStable(p);
 
   const seen = new Set(); const out = [];
-  for (const t of (p||[])){
-    const k = String(t||"").toLowerCase().replace(/_/g,' ').replace(/\s+/g,' ').trim();
+  for (const t of p){
+    const k = String(t||"").toLowerCase().replace(/_/g," ").replace(/\s+/g," ").trim();
     if (!k || seen.has(k)) continue;
     seen.add(k); out.push(t);
   }
