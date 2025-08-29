@@ -666,6 +666,18 @@ function enforceSingletonByCategory(arr, opt = { addDefaults:true, noDefaultsFor
 }
 
 
+// ===== [HOTFIX] background 破壊置換を完全停止 =====
+(function(){
+  const TAG = '[BG-HOTFIX]';
+  const safe = function(arr){ return Array.isArray(arr) ? arr : []; };
+  // 既存に優先して上書き（後から読み込まれても最後に残るよう window にピンする）
+  window.enforceSingleBackground = function(p){
+    console.log(TAG, 'noop enforceSingleBackground');
+    return safe(p);
+  };
+})();
+
+
 
 // 文字列→配列共通
 function splitTags(v){
