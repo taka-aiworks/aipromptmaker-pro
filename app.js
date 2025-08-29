@@ -2490,7 +2490,6 @@ function buildBatchProduction(n){
       if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
       p.push(...addNS);
 
-      // ←ここに追加
       if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
       if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
       if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p);
@@ -2500,20 +2499,20 @@ function buildBatchProduction(n){
       p.unshift("NSFW");
     }
 
-    // 固定タグ（量産タブ）を**先頭**に付与（後で順序矯正される）
+    // 固定タグ（量産タブ）は**先頭にしない**：ヘッダの後ろに追加
     if (fixedArr.length){
       const f = fixedArr.map(_to).map(_norm).filter(Boolean);
-      if (f.length) p = [...f, ...p];
+      if (f.length) p = [...p, ...f];
     }
 
     // —— 最終整形：単一化→順序→重複→プレースホルダ掃除→NSFW/soloの位置 ——
     p = finalizePromptArray(p);
 
-    // LoRA タグを常に先頭に挿入（重複排除）
-   if (typeof putLoraAtHead === 'function') {
-   p = putLoraAtHead(p);
-   }
-     
+    // LoRA タグを常に最前列へ（NSFWやsoloより前）※重複排除・位置調整を内部で実施
+    if (typeof putLoraAtHead === 'function') {
+      p = putLoraAtHead(p, { nsfwOn });
+    }
+
     const prompt = p.join(", ");
     if (seen.has(prompt)) continue;
     seen.add(prompt);
@@ -2526,10 +2525,9 @@ function buildBatchProduction(n){
           ? seedFromName(charName || "", idx)
           : (baseSeed + idx));
 
-    // ネガ：UIが空ならデフォを自動補完
-    const neg = negUI && String(negUI).trim()
-      ? String(negUI).trim()
-      : buildNeg({useDefault:true, userNeg:""});
+    // ネガ：UIが空ならデフォを自動補完（buildNegative を使用）
+    const hasUI = !!String(negUI).trim();
+    const neg = buildNegative(hasUI ? negUI : "", /*useDefault*/ !hasUI);
 
     out.push({
       seed,
