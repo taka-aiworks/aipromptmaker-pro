@@ -2154,6 +2154,7 @@ function pmBuildOne(){
   const _clean = arr => (arr||[])
     .map(x => (x||"").trim())
     .filter(x => x && x.toLowerCase()!=='none' && !_isRating(x));
+  const norm = s => String(s||'').replace(/_/g,' ').trim().toLowerCase();
 
   // 単一/複数どちらのUIにも対応する安全取得
   const pickManySafe = (id) => {
@@ -2194,31 +2195,27 @@ function pmBuildOne(){
   const comp = pickTag('pl_comp');
   const view = pickTag('pl_view');
   let expr   = pickTag('pl_expr')  || "neutral expression";
-  let lite   = pickTag('pl_light') || "soft lighting";
+  let lite   = pickTag('pl_light') || "soft lighting";       // UIで選んだ照明をそのまま使う
+  const chosenLiteRaw = lite;                                 // 最終固定用に保持
+  const chosenLite    = norm(lite);
 
   // —— アクセ（1種＋色）——
-  // UI: <select id="pl_accSel"> と カラーホイール群 (plAcc)
-  // app.js 内の pmGetAccColor() が定義済みなので優先利用し、なければ getWearColorTag('plAcc') を使う
   const accSelEl = document.getElementById('pl_accSel');
   const accBase  = (accSelEl && accSelEl.value ? String(accSelEl.value).trim() : "");
   let   accColor = "";
   if (typeof pmGetAccColor === 'function') accColor = pmGetAccColor() || "";
   else if (typeof getWearColorTag === 'function') accColor = getWearColorTag('plAcc') || "";
-  // アクセは「色＋名詞」で1個だけ採用（色が無ければ名詞のみ）
   let accTag = "";
   if (accBase) accTag = (accColor ? `${accColor} ${accBase}` : accBase);
 
-  // —— NSFW（UIの選択だけ反映：単一/複数どちらでも吸う）——
+  // —— NSFW（UIだけ反映）——
   const nsfwOn = !!document.getElementById('pl_nsfw')?.checked;
   let nsfwAdd = [];
   if (nsfwOn){
-    // NSFW表情/照明はUIでの単一選択を優先採用
     const ex2 = (pickManySafe('pl_nsfw_expr').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     const li2 = (pickManySafe('pl_nsfw_light').map(asTag).filter(Boolean).filter(t=>!_isRating(t))[0]) || "";
     if (ex2) expr = ex2;
-    if (li2) lite = li2;
-
-    // 服・露出・状況など（複数可）
+    if (li2) { lite = li2; } // NSFWのライト選択を優先
     nsfwAdd = [
       ...pickManySafe('pl_nsfw_expo'),
       ...pickManySafe('pl_nsfw_underwear'),
@@ -2232,7 +2229,6 @@ function pmBuildOne(){
     .map(asTag)
     .map(x => String(x || '').trim())
     .filter(x => x && x.toLowerCase() !== 'none' && !_isRating(x));
-
     if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
     p.push(...nsfwAdd);
   }
@@ -2244,21 +2240,26 @@ function pmBuildOne(){
 
   console.log('[DBG][PL] after push', p);
 
-  // ★ 表情・ポーズのみ単一化（照明はUIの選択1個を尊重し、触らない）
+  // ★ 表情・ポーズのみ単一化（照明はUIの選択1個を尊重して触らない）
   if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
   if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
-  // if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p); // ← 撮影モードでは呼ばない
+  // if (typeof unifyLightOnce === 'function') p = unifyLightOnce(p); // 撮影モードでは呼ばない
 
-  // —— 最終整形：UI尊重（補完もカテゴリ潰しもしない）——
+  // —— 最終整形（UI尊重）——
   p = _clean(p);
-  // if (typeof unifyLightingOnce==='function') p = unifyLightingOnce(p); // ← 撮影モードでは呼ばない
+  // if (typeof unifyLightingOnce==='function') p = unifyLightingOnce(p); // 撮影モードでは呼ばない
   if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
   else if (typeof ensurePromptOrderLocal==='function')p = ensurePromptOrderLocal(p);
   if (typeof fixExclusives==='function')              p = fixExclusives(p);
   if (typeof enforceHeadOrder==='function')           p = enforceHeadOrder(p);
   if (typeof enforceSingleBackground==='function')    p = enforceSingleBackground(p);
 
-  // ※ 照明の“安全弁”も今回は使わない（UIが真実）。必要ならここで固定タグ追加の後に入れる。
+  // ★ 最後に“UIで選んだライト”が残っているかだけ確認（正規表現は使わない）
+  if (chosenLite && !p.some(t => norm(t) === chosenLite)) {
+    p.push(chosenLiteRaw); // UIのまま足し戻す
+    if (typeof ensurePromptOrder==='function')          p = ensurePromptOrder(p);
+    else if (typeof ensurePromptOrderLocal==='function')p = ensurePromptOrderLocal(p);
+  }
 
   console.log('[DBG][PL] final', p);
 
@@ -2298,6 +2299,8 @@ function pmBuildOne(){
   const prompt= p.join(", ");
   return [{ seed, pos:p, prompt, neg, text: `${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` }];
 }
+
+
 
 
 
