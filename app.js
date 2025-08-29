@@ -70,65 +70,6 @@
 
 
 
-/* ======================= DBG: pipeline tap (背景刈り取り追跡) ======================= */
-(function(){
-  const TAG = '[DBG][BGTRACE]';
-  window.DEBUG_BGTRACE = true;   // ← オン/オフ
-
-  const log = (...a)=> { if (window.DEBUG_BGTRACE) console.log(TAG, ...a); };
-
-  // --- ユーティリティ ---
-  const clone = a => Array.isArray(a) ? a.slice() : a;
-  const hasBgLike = arr => (arr||[]).some(t => /\b(background|studio|lab|classroom|beach|forest|street|sky|room|office|cafe|park|city|town|mountain|sea|ocean|lake|river|desert|temple)\b/i.test(String(t||"")));
-  const hasLiteralBackground = arr => (arr||[]).some(t => String(t||"").trim().toLowerCase()==='background');
-
-  // グローバル関数を順に監視ラップ
-  wrapFn(window, 'finalizePromptArray');
-  wrapFn(window, 'enforceSingletonByCategory');
-  wrapFn(window, 'ensurePromptOrder');
-  wrapFn(window, 'ensurePromptOrderLocal');
-  wrapFn(window, 'enforceHeadOrder');
-  wrapFn(window, 'fixExclusives');
-  wrapFn(window, 'unifyLightingOnce');
-  wrapFn(window, 'stripSeparatesWhenDressPresent');
-  wrapFn(window, 'dropColorizedShoesUnlessUserSelected');
-  wrapFn(window, 'dedupeStable');
-
-  // 呼び出し点でもログ（撮影/学習ビルダー）
-  const tapBuilder = (name, fnName) => {
-    if (typeof window[fnName] !== 'function' || window[fnName].__tapped) return;
-    const orig = window[fnName];
-    window[fnName] = function(...args){
-      log(`>>> ENTER ${name}`);
-      const out = orig.apply(this, args);
-      try {
-        const arrs = Array.isArray(out) ? out : [];
-        const first = arrs[0] || {};
-        log(`<<< EXIT  ${name}`, {
-          seed:first.seed, hasBgLike: hasBgLike(first.pos), pos:first.pos
-        });
-      } catch(e){ /* no-op */ }
-      return out;
-    };
-    window[fnName].__tapped = true;
-    log('tap builder:', fnName);
-  };
-
-  tapBuilder('pmBuildOne', 'pmBuildOne');
-  tapBuilder('buildBatchLearning', 'buildBatchLearning');
-  tapBuilder('buildBatchProduction', 'buildBatchProduction');
-
-  // もし finalizer が読み込まれていない場合の警告
-  if (typeof window.finalizePromptArray !== 'function'){
-    log('⚠️ finalizePromptArray not found at load time');
-  } else {
-    log('shim ready');
-  }
-})();
-
-
-
-
 
 
 
