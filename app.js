@@ -1937,7 +1937,7 @@ function buildBatchLearning(n){
   const nsfwOutfitSel = keepIf(NSFW_OK_OUTFIT, nsfwOutfitSelRaw);
   const nsfwBodySel   = keepIf(NSFW_OK_BODY,   nsfwBodySelRaw);
 
-  // 固定タグ（テキストエリア）→ buildPromptCore に渡す（asTag使わない）
+  // 固定タグ（テキストエリア）
   const fixedText = (document.getElementById('fixedLearn')?.value || "").trim();
   const fixed = fixedText
     ? ((typeof splitTags==='function') ? splitTags(fixedText) : fixedText.split(/\s*,\s*/)).map(AS_IS).filter(Boolean)
@@ -1966,13 +1966,13 @@ function buildBatchLearning(n){
   for (let i=0;i<wantCount;i++){
     let p = ["solo"];
 
-    // 1girl/1boy（asTag 不使用）
+    // 1girl/1boy
     if (typeof getGenderCountTag === 'function'){
       const g = getGenderCountTag() || "";
       if (g) p.push(AS_IS(g));
     }
 
-    // 基本情報（asTag/normalize 不使用）
+    // 基本情報
     p.push(...[
       pickTag('bf_age'), pickTag('bf_gender'), pickTag('bf_body'), pickTag('bf_height'),
       pickTag('hairStyle'), pickTag('eyeShape'),
@@ -2014,6 +2014,9 @@ function buildBatchLearning(n){
     const expr = (typeof pickByMixRules==='function') ? pickByMixRules('expr', 'expr')       : "";
     const lite = (typeof pickByMixRules==='function') ? pickByMixRules('light','lightLearn') : "";
     p.push(...[bg, comp, view, expr, lite].filter(Boolean));
+
+    // ★ ここでリテラル "background" を除去（具体背景はそのまま）
+    p = p.filter(t => AS_IS(t).toLowerCase() !== 'background');
 
     // ---- buildPromptCore でまとめる（※最後にNSFW/soloヘッダを強制）----
     const charName = document.getElementById('charName')?.value || "";
