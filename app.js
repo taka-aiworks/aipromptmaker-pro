@@ -2139,7 +2139,7 @@ function buildOneLearning(extraSeed = 0){
 
 
 
-/* ====================== 学習モード：服“完全なし”対応・固定アクセ常時適用・NSFW(衣装/体型)固定適用（asTag/normalize不使用, 背景UI優先） ====================== */
+/* ====================== 学習モード一括生成（完全版・照明/ポーズ対応） ====================== */
 function buildBatchLearning(n){
   const rows = [];
   const wantCount = Math.max(1, Number(n)||1);
@@ -2194,6 +2194,33 @@ function buildBatchLearning(n){
     return out;
   };
 
+  // ★ シーン系の候補リスト（フォールバック用）
+  const FALLBACK_OPTIONS = {
+    bg: ["plain_background", "white_background", "studio_background"],
+    comp: ["waist up", "bust", "upper body", "portrait"],
+    view: ["front view", "three-quarter view", "profile view"],
+    expr: ["neutral_expression", "smiling", "slight_blush"],
+    light: ["soft lighting", "even lighting", "normal lighting"], // ★ 追加
+    pose: ["standing", "sitting", "hands on hips", "crossed arms"] // ★ 追加
+  };
+
+  // ★ 安全な選択取得（UI選択 → MIX_RULES → フォールバック の順）
+  const safePickScene = (category, uiId) => {
+    // 1) UIから取得
+    const uiVal = pickTag(uiId);
+    if (uiVal) return uiVal;
+
+    // 2) MIX_RULESから重み抽選
+    if (typeof pickByMixRules === 'function') {
+      const mixVal = pickByMixRules(category, uiId);
+      if (mixVal) return mixVal;
+    }
+
+    // 3) フォールバック
+    const options = FALLBACK_OPTIONS[category] || [];
+    return options.length ? options[Math.floor(Math.random() * options.length)] : "";
+  };
+
   for (let i=0;i<wantCount;i++){
     let p = ["solo"];
 
@@ -2236,17 +2263,16 @@ function buildBatchLearning(n){
       p = filterAgeForNSFW(p);
     }
 
-    // シーン系 → ★ UI優先
-    const bgUI  = pickTag('bg');
-    const bgMix = (typeof pickByMixRules==='function') ? pickByMixRules('bg','bg') : "";
-    const bg    = bgUI || bgMix;
+    // ★ シーン系を安全取得（必ず何かしらの値を確保）
+    const bg   = safePickScene('bg', 'bg');
+    const comp = safePickScene('comp', 'comp');  
+    const view = safePickScene('view', 'view');
+    const expr = safePickScene('expr', 'expr');
+    const lite = safePickScene('light', 'lightLearn'); // ★ 照明を確実に取得
+    const pose = safePickScene('pose', 'pose');         // ★ ポーズを確実に取得
 
-    const comp = pickTag('comp') || ((typeof pickByMixRules==='function') ? pickByMixRules('comp','comp') : "");
-    const view = pickTag('view') || ((typeof pickByMixRules==='function') ? pickByMixRules('view','view') : "");
-    const expr = pickTag('expr') || ((typeof pickByMixRules==='function') ? pickByMixRules('expr','expr') : "");
-    const lite = pickTag('lightLearn') || ((typeof pickByMixRules==='function') ? pickByMixRules('light','lightLearn') : "");
-
-    p.push(...[bg, comp, view, expr, lite].filter(Boolean));
+    // ★ シーン系をすべて追加
+    p.push(...[bg, comp, view, expr, lite, pose].filter(Boolean));
 
     // background ダミーを削除
     p = p.filter(t => AS_IS(t).toLowerCase() !== 'background');
@@ -2254,7 +2280,17 @@ function buildBatchLearning(n){
     // buildPromptCore
     const charName = document.getElementById('charName')?.value || "";
     let out = (typeof buildPromptCore==='function')
-      ? buildPromptCore({ tags:p, nsfwOn, fixed, addNeg, useDefNeg, charName, seedOffset:(i+1), singletonDefaults:false, singletonKeep:'last' })
+      ? buildPromptCore({ 
+          tags:p, 
+          nsfwOn, 
+          fixed, 
+          addNeg, 
+          useDefNeg, 
+          charName, 
+          seedOffset:(i+1), 
+          singletonDefaults:false, 
+          singletonKeep:'last' 
+        })
       : (function fallback(){
           const seed = (typeof seedFromName==='function') ? seedFromName(charName,(i+1)) : (i+1);
           const neg  = (typeof buildNegative==='function') ? buildNegative(addNeg,useDefNeg) : addNeg;
@@ -2278,11 +2314,15 @@ function buildBatchLearning(n){
       out.text   = `${out.prompt}${out.neg?` --neg ${out.neg}`:""} seed:${out.seed}`;
     }
 
+    // デバッグログ（必要に応じて）
+    if (i < 3) { // 最初の3件だけログ出力
+      console.log(`🔍 学習モード #${i+1}:`, { bg, comp, view, expr, lite, pose });
+    }
+
     rows.push(out);
   }
   return rows;
 }
-
 
 
 
