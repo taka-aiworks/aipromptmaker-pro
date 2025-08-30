@@ -66,7 +66,16 @@
   // 起動Ping
   try { console.log('[DBG] shim ready'); } catch(_){}
 })();
+// デバッグモードON
+window.DEBUG_PROMPT_LOG = true;
 
+// 撮影実行前に手動チェック
+console.log('=== 撮影モード デバッグ ===');
+console.log('Hair tag:', document.getElementById('tagH')?.textContent);
+console.log('Eye tag:', document.getElementById('tagE')?.textContent);
+console.log('Skin tag:', document.getElementById('tagSkin')?.textContent);
+console.log('BG selection:', pickTag('pl_bg'));
+console.log('Pose selection:', pickTag('pl_pose'));
 
 
 
