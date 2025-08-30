@@ -2257,13 +2257,13 @@ function pmBuildOne(){
   };
   if (typeof applyWearColorPipeline==='function') p = applyWearColorPipeline(p, pal);
 
-  // シーン（UIそのまま）
-  const bg   = pickTag('pl_bg');
-  const pose = pickTag('pl_pose');
-  const comp = pickTag('pl_comp');
-  const view = pickTag('pl_view');
-  let expr   = pickTag('pl_expr')  || "neutral expression";
-  let lite   = pickTag('pl_light') || "soft lighting";   // UIの照明をそのまま使う
+     // シーン（UIそのまま → asTag で辞書タグ抽出）
+   const bg   = asTag(pickTag('pl_bg'));
+   const pose = asTag(pickTag('pl_pose'));
+   const comp = asTag(pickTag('pl_comp'));
+   const view = asTag(pickTag('pl_view'));
+   let expr   = asTag(pickTag('pl_expr'))  || "neutral expression";
+   let lite   = asTag(pickTag('pl_light')) || "soft lighting";
   const chosenLiteRaw = lite;                             // SFWで選んだライトの生値
   const chosenLite    = norm(lite);
 
