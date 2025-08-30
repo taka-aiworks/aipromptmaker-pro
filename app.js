@@ -2139,7 +2139,7 @@ function buildOneLearning(extraSeed = 0){
 
 
 
-/* ====================== 学習モード一括生成（完全版・照明/ポーズ対応） ====================== */
+/* ====================== 学習モード一括生成（完全版・照明強制対応） ====================== */
 function buildBatchLearning(n){
   const rows = [];
   const wantCount = Math.max(1, Number(n)||1);
@@ -2200,14 +2200,17 @@ function buildBatchLearning(n){
     comp: ["waist up", "bust", "upper body", "portrait"],
     view: ["front view", "three-quarter view", "profile view"],
     expr: ["neutral_expression", "smiling", "slight_blush"],
-    light: ["soft lighting", "even lighting", "normal lighting"], // ★ 追加
-    pose: ["standing", "sitting", "hands on hips", "crossed arms"] // ★ 追加
+    light: ["soft lighting", "even lighting", "normal lighting"],
+    pose: ["standing", "sitting", "hands on hips", "crossed arms"]
   };
 
   // ★ 安全な選択取得（UI選択 → MIX_RULES → フォールバック の順）
   const safePickScene = (category, uiId) => {
     // 1) UIから取得
-    const uiVal = pickTag(uiId);
+    let uiVal = "";
+    if (typeof pickTag === 'function') {
+      uiVal = pickTag(uiId);
+    }
     if (uiVal) return uiVal;
 
     // 2) MIX_RULESから重み抽選
@@ -2263,16 +2266,51 @@ function buildBatchLearning(n){
       p = filterAgeForNSFW(p);
     }
 
-    // ★ シーン系を安全取得（必ず何かしらの値を確保）
+    // ★ シーン系を安全取得
     const bg   = safePickScene('bg', 'bg');
     const comp = safePickScene('comp', 'comp');  
     const view = safePickScene('view', 'view');
     const expr = safePickScene('expr', 'expr');
-    const lite = safePickScene('light', 'lightLearn'); // ★ 照明を確実に取得
-    const pose = safePickScene('pose', 'pose');         // ★ ポーズを確実に取得
+    const pose = safePickScene('pose', 'pose');
 
-    // ★ シーン系をすべて追加
-    p.push(...[bg, comp, view, expr, lite, pose].filter(Boolean));
+    // ★ 照明を特別処理（確実に取得）
+    let lite = "";
+    
+    // 1) UIから取得を試行
+    if (typeof pickTag === 'function') {
+      const lightUI = pickTag('lightLearn');
+      if (lightUI && lightUI.trim()) lite = lightUI.trim();
+    }
+    
+    // 2) MIX_RULESから取得を試行  
+    if (!lite && typeof pickByMixRules === 'function') {
+      const mixLight = pickByMixRules('light', 'lightLearn');
+      if (mixLight && mixLight.trim()) lite = mixLight.trim();
+    }
+    
+    // 3) それでも取得できない場合は強制フォールバック
+    if (!lite) {
+      const lightOptions = ["soft lighting", "even lighting", "normal lighting"];
+      lite = lightOptions[Math.floor(Math.random() * lightOptions.length)];
+    }
+
+    // デバッグログ（最初の3件のみ）
+    if (i < 3) {
+      console.log(`🔍 学習モード #${i+1}:`, { 
+        bg, comp, view, expr, pose, lite,
+        lightUI: (typeof pickTag === 'function') ? pickTag('lightLearn') : 'N/A'
+      });
+    }
+
+    // ★ シーン系をすべて追加（liteが確実に含まれる）
+    p.push(...[bg, comp, view, expr, pose, lite].filter(Boolean));
+
+    // ★ 照明の最終確認（念のため二重チェック）
+    if (!p.some(tag => /lighting/i.test(String(tag)))) {
+      const emergencyLight = "soft lighting";
+      p.push(emergencyLight);
+      console.warn(`⚠️ 緊急照明追加 #${i+1}: ${emergencyLight}`);
+    }
 
     // background ダミーを削除
     p = p.filter(t => AS_IS(t).toLowerCase() !== 'background');
@@ -2314,16 +2352,29 @@ function buildBatchLearning(n){
       out.text   = `${out.prompt}${out.neg?` --neg ${out.neg}`:""} seed:${out.seed}`;
     }
 
-    // デバッグログ（必要に応じて）
-    if (i < 3) { // 最初の3件だけログ出力
-      console.log(`🔍 学習モード #${i+1}:`, { bg, comp, view, expr, lite, pose });
-    }
-
     rows.push(out);
   }
+  
+  // ★ 最終チェック：全ての行に照明が含まれているか確認
+  let lightingMissing = 0;
+  rows.forEach((row, idx) => {
+    if (row && Array.isArray(row.pos)) {
+      const hasLighting = row.pos.some(tag => /lighting/i.test(String(tag)));
+      if (!hasLighting) {
+        lightingMissing++;
+        console.warn(`⚠️ 照明欠落 #${idx+1}:`, row.pos);
+      }
+    }
+  });
+  
+  if (lightingMissing > 0) {
+    console.error(`❌ ${lightingMissing}/${rows.length} 行で照明が欠落しています`);
+  } else {
+    console.log(`✅ 全 ${rows.length} 行に照明が含まれています`);
+  }
+
   return rows;
 }
-
 
 
 
