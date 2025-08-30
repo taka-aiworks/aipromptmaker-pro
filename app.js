@@ -2642,7 +2642,7 @@ function pmBuildOne(){
 
 
 
-/* ====================== 量産モード（最終版・置換用 / asTag・normalizeTag不使用） ====================== */
+/* ====================== 量産モード（最終版・カテゴリ単一化対応） ====================== */
 function buildBatchProduction(n){
   const want = Math.max(1, Number(n) || 1);
   const seedMode = (document.querySelector('input[name="seedMode"]:checked') || {}).value || "fixed";
@@ -2713,6 +2713,95 @@ function buildBatchProduction(n){
   const seen = new Set();
   let guard  = 0;
 
+  // ★ カテゴリ単一化ヘルパー関数
+  const enforceSingleCategory = (tags) => {
+    const categories = {
+      background: new Set(),
+      composition: new Set(),
+      view: new Set(),
+      expression: new Set(),
+      lighting: new Set(),
+      pose: new Set(),
+      other: []
+    };
+
+    // SFW辞書からカテゴリセットを構築
+    const buildCategorySet = (dictKey) => {
+      const dict = window.SFW?.[dictKey] || [];
+      return new Set(dict.map(item => {
+        const tag = item?.tag || item;
+        return String(tag || '').trim().toLowerCase();
+      }));
+    };
+
+    const bgSet = buildCategorySet('background');
+    const compSet = buildCategorySet('composition');
+    const viewSet = buildCategorySet('view');
+    const exprSet = buildCategorySet('expressions');
+    const lightSet = buildCategorySet('lighting');
+    const poseSet = buildCategorySet('pose');
+
+    // タグを分類
+    for (const tag of tags) {
+      const t = String(tag || '').trim();
+      const tLower = t.toLowerCase();
+      
+      if (bgSet.has(tLower)) {
+        categories.background.add(t);
+      } else if (compSet.has(tLower)) {
+        categories.composition.add(t);
+      } else if (viewSet.has(tLower)) {
+        categories.view.add(t);
+      } else if (exprSet.has(tLower)) {
+        categories.expression.add(t);
+      } else if (lightSet.has(tLower)) {
+        categories.lighting.add(t);
+      } else if (poseSet.has(tLower)) {
+        categories.pose.add(t);
+      } else {
+        categories.other.push(t);
+      }
+    }
+
+    // 各カテゴリから1つずつ選択
+    const result = [];
+    
+    // 背景: 1つだけ
+    if (categories.background.size > 0) {
+      result.push(Array.from(categories.background)[0]);
+    }
+    
+    // 構図: 1つだけ
+    if (categories.composition.size > 0) {
+      result.push(Array.from(categories.composition)[0]);
+    }
+    
+    // 視点: 1つだけ
+    if (categories.view.size > 0) {
+      result.push(Array.from(categories.view)[0]);
+    }
+    
+    // 表情: 1つだけ
+    if (categories.expression.size > 0) {
+      result.push(Array.from(categories.expression)[0]);
+    }
+    
+    // 照明: 1つだけ
+    if (categories.lighting.size > 0) {
+      result.push(Array.from(categories.lighting)[0]);
+    }
+    
+    // ポーズ: 1つだけ
+    if (categories.pose.size > 0) {
+      result.push(Array.from(categories.pose)[0]);
+    }
+    
+    // その他は全て追加
+    result.push(...categories.other);
+
+    return result;
+  };
+
   while (out.length < want && guard++ < want*20){
     let p = ["solo"];
     let sfwLightChosen = "";   // SFWで選ばれたライト（後で1個だけ残す）
@@ -2759,8 +2848,18 @@ function buildBatchProduction(n){
 
     // 差分（背景/ポーズ/構図/視点/表情/光） + アクセ
     const pickedLight = _pick(lights);
-    [ _pick(bgs), _pick(poses), _pick(comps), _pick(views), _pick(exprs) ]
-      .filter(Boolean).forEach(x=> p.push(asIs(x)));
+    
+    // ★ シーン要素を個別に追加（後で単一化）
+    const sceneElements = [
+      _pick(bgs),
+      _pick(poses), 
+      _pick(comps), 
+      _pick(views), 
+      _pick(exprs)
+    ].filter(Boolean);
+    
+    p.push(...sceneElements);
+    
     if (pickedLight){
       sfwLightChosen = asIs(pickedLight);
       p.push(sfwLightChosen);
@@ -2784,10 +2883,6 @@ function buildBatchProduction(n){
       if (typeof stripSfwWearWhenNSFW==='function') p = stripSfwWearWhenNSFW(p);
       p.push(...addNS);
 
-      // 表情/ポーズは単一化、ライトは後段の一本化で処理
-      if (typeof unifyExprOnce  === 'function') p = unifyExprOnce(p);
-      if (typeof unifyPoseOnce  === 'function') p = unifyPoseOnce(p);
-
       // 年齢安全ガード：未成年表現は除去して 18+ を強制
       const idxAge = p.findIndex(t => /(^|\b)(teen|teens|under\s*18|\b\d{1,2}\s*yo\b|years\s*old)/i.test(String(t)));
       if (idxAge !== -1) p.splice(idxAge, 1);
@@ -2798,28 +2893,23 @@ function buildBatchProduction(n){
       p.unshift("NSFW");
     }
 
+    // ★ カテゴリ単一化を適用
+    p = enforceSingleCategory(p);
+
     // 固定タグ（量産タブ）は**先頭にしない**：ヘッダの後ろに追加
     if (fixedArr.length){
       const f = _clean(fixedArr.map(asIs));
       if (f.length) p = [...p, ...f];
     }
 
-    // —— 最終整形：単一化→順序→重複→プレースホルダ掃除 ——
+    // —— 最終整形：重複→プレースホルダ掃除 ——
     if (typeof finalizePromptArray === 'function') p = finalizePromptArray(p);
-    if (typeof ensurePromptOrder  === 'function')  p = ensurePromptOrder(p);
+    else if (typeof ensurePromptOrder  === 'function')  p = ensurePromptOrder(p);
     else if (typeof ensurePromptOrderLocal === 'function') p = ensurePromptOrderLocal(p);
+    
     if (typeof fixExclusives     === 'function')   p = fixExclusives(p);
     if (typeof enforceHeadOrder  === 'function')   p = enforceHeadOrder(p);
     if (typeof enforceSingleBackground === 'function') p = enforceSingleBackground(p);
-
-    // ★ ライト一本化（NSFW優先・フォールバック無し）
-    if (typeof isLightingTag === 'function'){
-      p = p.filter(t => !isLightingTag(t)); // 全ライト除去
-      const desiredLight = nsfwOn ? (nsfwLightChosen || "") : (sfwLightChosen || "");
-      if (desiredLight) p.push(desiredLight);
-      if (typeof ensurePromptOrder  === 'function')  p = ensurePromptOrder(p);
-      else if (typeof ensurePromptOrderLocal === 'function') p = ensurePromptOrderLocal(p);
-    }
 
     // ヘッダ：solo 位置の保険（NSFWなら NSFW→solo、それ以外は solo先頭）
     if (nsfwOn){
@@ -2853,7 +2943,7 @@ function buildBatchProduction(n){
 
     // ネガ：UIが空ならデフォを自動補完（buildNegative を使用）
     const hasUI = !!asIs(negUI);
-    const neg = buildNegative(hasUI ? negUI : "", /*useDefault*/ !hasUI);
+    const neg = (typeof buildNegative === 'function') ? buildNegative(hasUI ? negUI : "", /*useDefault*/ !hasUI) : negUI;
 
     out.push({
       seed,
