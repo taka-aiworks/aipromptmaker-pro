@@ -2215,9 +2215,14 @@ function buildBatchLearning(n){
 function pmBuildOne(){
   const _isRating = t => /^R[\s-]?1[58](?:[\s-]?G)?$/i.test(String(t||""));
   const _clean = arr => (arr||[])
-    .map(x => (x||"").trim())
-    .filter(x => x && x.toLowerCase()!=='none' && !_isRating(x));
-  const norm = s => String(s||'').replace(/_/g,' ').trim().toLowerCase();
+     .map(x => (x||"").trim())
+     .filter(x => {
+       const k = x.toLowerCase();
+       return x
+         && !/^(none|指定なし)$/i.test(k)         // 完全一致
+         && !/(^|\\s)(none|指定なし)(\\s|$)/i.test(k) // 連結ラベル対策
+         && !_isRating(x);
+     });
 
   // 単一/複数どちらのUIにも対応する安全取得
   const pickManySafe = (id) => {
@@ -2306,6 +2311,7 @@ function pmBuildOne(){
   if (typeof fixExclusives==='function')              p = fixExclusives(p);
   if (typeof enforceHeadOrder==='function')           p = enforceHeadOrder(p);
   if (typeof enforceSingleBackground==='function')    p = enforceSingleBackground(p);
+   
 
   // ★ ライト一本化（NSFW優先・フォールバック無し）
   {
@@ -2322,7 +2328,6 @@ function pmBuildOne(){
     // isLightingTag がなければ何もしない（フォールバック無し）
   }
 
-  console.log('[DBG][PL] final', p);
 
   // ヘッダ固定（NSFW→solo）
   if (nsfwOn){
