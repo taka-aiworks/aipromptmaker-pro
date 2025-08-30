@@ -763,22 +763,39 @@ const NSFW_LEARN_SCOPE = {
 
 
 
-// asTag（辞書専用・フォールバック禁止）
+// asTag（辞書専用・フォールバック禁止 / 連結形は末尾tagを採用）
 function asTag(x){
   if (!x) return "";
   const s0 = String(x).trim();
   if (!s0) return "";
   const low = s0.toLowerCase();
-  if (low === "none" || s0 === "指定なし") return ""; // UIの「指定なし」は落とす
+  if (low === "none" || s0 === "指定なし") return ""; // UI「指定なし」は落とす
 
-  const TM = window.TAGMAP;
-  if (TM){
-    if (TM.id2tag?.has(s0))        return TM.id2tag.get(s0);     // "pl_bg:plain_background" など
-    if (TM.en?.has(low))           return TM.en.get(low);        // 英語タグ
-    if (TM.ja2tag?.has(s0))        return TM.ja2tag.get(s0);     // 日本語表示 → tag
-    if (TM.label2tag?.has(s0))     return TM.label2tag.get(s0);  // 任意ラベル → tag
+  const TM = window.TAGMAP || {};
+  const get = (k)=>{
+    if (!k) return "";
+    const l = String(k).toLowerCase();
+    return (TM.id2tag?.get?.(k))
+        || (TM.en?.get?.(l))
+        || (TM.ja2tag?.get?.(k))
+        || (TM.label2tag?.get?.(k))
+        || "";
+  };
+
+  // 1) そのまま命中
+  let v = get(s0);
+  if (v) return v;
+
+  // 2) 連結形「ラベル tag」の場合 → 最後のスペース以降を採用
+  const i = s0.lastIndexOf(" ");
+  if (i > 0){
+    const tail = s0.slice(i+1).trim(); // 末尾の英単語だけ
+    v = get(tail);
+    if (v) return v;
+    return tail; // 英単語そのものを返す
   }
-  // 推測はしない（toEnTagStrict / toTag / normalizeTag など呼ばない）
+
+  // 3) 辞書に無い → そのまま返す
   return s0;
 }
 /* picker系も asTag に統一 */
