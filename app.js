@@ -612,60 +612,64 @@ const SCOPE = {
   }
 };
 
-// === 顔安定版・配分ルール =======================
+// === 顔安定版・配分ルール（希少枠を底上げ＆実用レンジに調整） =======================
 const MIX_RULES = {
   view: {
-    group: ["front view","three-quarter view","side view","profile view","back view"], // ← 修正
+    group: ["front view","three-quarter view","side view","profile view","back view"],
     targets: {
-      "three-quarter view":[0.55,0.65], // ← 修正
+      "three-quarter view":[0.50,0.58], // 顔が崩れにくい主軸
       "front view":[0.30,0.35],
-      "side view":[0.02,0.04],
-      "profile view":[0.01,0.03],
-      "back view":[0.00,0.01]
+      "side view":[0.04,0.06],          // ←底上げ
+      "profile view":[0.03,0.05],       // ←底上げ
+      "back view":[0.01,0.02]           // ←極少だけ残す
     },
-    fallback: "three-quarter view" // ← 修正
+    fallback: "three-quarter view"
   },
+
   comp: {
     group: ["bust","waist up","portrait","upper body","close-up","full body","wide shot"],
     targets: {
-      "bust":[0.35,0.45],
-      "waist up":[0.30,0.35],
-      "portrait":[0.10,0.15],
-      "upper body":[0.05,0.08],
+      "bust":[0.32,0.38],
+      "waist up":[0.26,0.32],
+      "portrait":[0.08,0.12],
+      "upper body":[0.06,0.10],
       "close-up":[0.03,0.05],
-      "full body":[0.00,0.02],
-      "wide shot":[0.00,0.01]
+      "full body":[0.10,0.15], // ←しっかり混ざる
+      "wide shot":[0.02,0.04]  // ←底上げ
     },
     fallback: "bust"
   },
+
   expr: {
     group: [
       "neutral expression","smiling","smiling open mouth",
       "slight blush","serious","determined","pouting (slight)"
     ],
     targets: {
-      "neutral expression":[0.55,0.65],
-      "smiling":[0.20,0.25],
-      "smiling open mouth":[0.03,0.05],
+      "neutral expression":[0.50,0.60],  // ちょい緩めに
+      "smiling":[0.22,0.28],
+      "smiling open mouth":[0.04,0.06],  // ←底上げ
       "slight blush":[0.03,0.05],
-      "serious":[0.01,0.02],
+      "serious":[0.02,0.03],             // ←底上げ
       "determined":[0.01,0.02],
       "pouting (slight)":[0.01,0.02]
     },
     fallback: "neutral expression"
   },
+
   bg: {
     group: ["plain_background","white_background","studio_background","solid_background","white_seamless","gray_seamless"],
     targets: {
-      "plain_background":[0.55,0.62],
-      "white_background":[0.15,0.22],
+      "plain_background":[0.48,0.55],   // 主体
+      "white_background":[0.18,0.24],
       "studio_background":[0.08,0.12],
-      "solid_background":[0.04,0.07],
-      "white_seamless":[0.01,0.02],
-      "gray_seamless":[0.01,0.02]
+      "solid_background":[0.05,0.08],
+      "white_seamless":[0.02,0.03],     // ←底上げ
+      "gray_seamless":[0.02,0.03]       // ←底上げ
     },
     fallback: "plain_background"
   },
+
   light: {
     group: ["even lighting","soft lighting","normal lighting","window light","overcast"],
     targets: {
@@ -673,13 +677,12 @@ const MIX_RULES = {
       "soft lighting":[0.30,0.35],
       "normal lighting":[0.15,0.20],
       "window light":[0.05,0.08],
-      "overcast":[0.00,0.02]
+      "overcast":[0.01,0.03] // ←わずかに増
     },
     fallback: "even lighting"
   }
 };
 window.MIX_RULES = MIX_RULES;
-
 const EXPR_ALL = new Set([...Object.keys(MIX_RULES.expr.targets), MIX_RULES.expr.fallback]);
 
 // === outfitの取り込み方針 =======================
