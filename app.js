@@ -2220,7 +2220,7 @@ function pmBuildOne(){
        const k = x.toLowerCase();
        return x
          && !/^(none|指定なし)$/i.test(k)         // 完全一致
-         && !/(^|\\s)(none|指定なし)(\\s|$)/i.test(k) // 連結ラベル対策
+         && !/(^|\\s)(none|指定なし)(\s|$)/i.test(k) // 連結ラベル対策
          && !_isRating(x);
      });
 
