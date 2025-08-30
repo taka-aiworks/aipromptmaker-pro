@@ -763,22 +763,22 @@ const NSFW_LEARN_SCOPE = {
 
 
 
-// asTag（辞書専用・フォールバック禁止 / 連結形は末尾tagを採用）
+// asTag（辞書専用・フォールバック禁止 / 連結形「ラベル tag」に対応）
 function asTag(x){
   if (!x) return "";
   const s0 = String(x).trim();
   if (!s0) return "";
   const low = s0.toLowerCase();
-  if (low === "none" || s0 === "指定なし") return ""; // UI「指定なし」は落とす
+  if (low === "none" || s0 === "指定なし") return ""; // UI「指定なし」は捨てる
 
   const TM = window.TAGMAP || {};
   const get = (k)=>{
     if (!k) return "";
     const l = String(k).toLowerCase();
-    return (TM.id2tag?.get?.(k))
-        || (TM.en?.get?.(l))
-        || (TM.ja2tag?.get?.(k))
-        || (TM.label2tag?.get?.(k))
+    return (TM.id2tag && TM.id2tag.get && TM.id2tag.get(k))
+        || (TM.en && TM.en.get && TM.en.get(l))
+        || (TM.ja2tag && TM.ja2tag.get && TM.ja2tag.get(k))
+        || (TM.label2tag && TM.label2tag.get && TM.label2tag.get(k))
         || "";
   };
 
@@ -786,16 +786,23 @@ function asTag(x){
   let v = get(s0);
   if (v) return v;
 
-  // 2) 連結形「ラベル tag」の場合 → 最後のスペース以降を採用
-  const i = s0.lastIndexOf(" ");
+  // 2) 連結形「ラベル tag」対策（最後のスペースで二分）
+  const i = s0.lastIndexOf(' ');
   if (i > 0){
-    const tail = s0.slice(i+1).trim(); // 末尾の英単語だけ
-    v = get(tail);
+    const head = s0.slice(0, i).trim();     // ラベル側
+    const tail = s0.slice(i + 1).trim();    // tag 候補
+    v = get(tail) || get(head);
     if (v) return v;
-    return tail; // 英単語そのものを返す
+    // 2-3) tail が a-z/_/- のみならタグとみなして採用（正規表現不使用）
+    let ascii = true;
+    for (const c of tail){
+      const code = c.charCodeAt(0);
+      if (!((code>=97 && code<=122) || c==='_' || c==='-')) { ascii = false; break; }
+    }
+    if (ascii) return tail;
   }
 
-  // 3) 辞書に無い → そのまま返す
+  // 推測はしない
   return s0;
 }
 /* picker系も asTag に統一 */
