@@ -2336,6 +2336,21 @@ function buildBatchLearning(n){
           return { seed, pos:p.slice(), neg, prompt, text:`${prompt}${neg?` --neg ${neg}`:""} seed:${seed}` };
         })();
 
+    // ★ buildPromptCore後の照明強制確保
+    if (out && Array.isArray(out.pos)) {
+      const hasLighting = out.pos.some(tag => /lighting/i.test(String(tag)));
+      if (!hasLighting) {
+        const emergencyLights = ["soft lighting", "even lighting", "normal lighting"];
+        const selectedLight = emergencyLights[Math.floor(Math.random() * emergencyLights.length)];
+        out.pos.push(selectedLight);
+        console.log(`🚨 buildPromptCore後に照明追加 #${i+1}: ${selectedLight}`);
+        
+        // プロンプト文字列も更新
+        out.prompt = out.pos.join(", ");
+        out.text = `${out.prompt}${out.neg?` --neg ${out.neg}`:""} seed:${out.seed}`;
+      }
+    }
+
     // ヘッダ固定
     if (nsfwOn && out && Array.isArray(out.pos)){
       const body = out.pos.filter(t => {
