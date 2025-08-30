@@ -805,48 +805,53 @@ function initTagMapFromDict(dict) {
 
 
 
-// asTag（辞書専用・フォールバック禁止 / 連結形「ラベル tag」に対応）
+// asTag（辞書専用・フォールバック禁止 / 連結形にも対応 / _⇄スペース互換）
 function asTag(x){
   if (!x) return "";
   const s0 = String(x).trim();
   if (!s0) return "";
   const low = s0.toLowerCase();
-  if (low === "none" || s0 === "指定なし") return ""; // UI「指定なし」は捨てる
+  if (low === "none" || s0 === "指定なし") return "";
 
   const TM = window.TAGMAP || {};
-  const get = (k)=>{
+  const hit = (k)=>{
     if (!k) return "";
     const l = String(k).toLowerCase();
-    return (TM.id2tag && TM.id2tag.get && TM.id2tag.get(k))
-        || (TM.en && TM.en.get && TM.en.get(l))
-        || (TM.ja2tag && TM.ja2tag.get && TM.ja2tag.get(k))
-        || (TM.label2tag && TM.label2tag.get && TM.label2tag.get(k))
+    return (TM.id2tag?.get?.(k))
+        || (TM.en?.get?.(l))
+        || (TM.ja2tag?.get?.(k))
+        || (TM.label2tag?.get?.(k))
         || "";
   };
 
-  // 1) そのまま命中
-  let v = get(s0);
+  // 1) そのまま
+  let v = hit(s0);
   if (v) return v;
 
-  // 2) 連結形「ラベル tag」対策（最後のスペースで二分）
-  const i = s0.lastIndexOf(' ');
-  if (i > 0){
-    const head = s0.slice(0, i).trim();     // ラベル側
-    const tail = s0.slice(i + 1).trim();    // tag 候補
-    v = get(tail) || get(head);
+  // 2) _ ⇄ スペース相互を試す（辞書が片側表記でも拾えるように）
+  const toggles = [];
+  if (s0.includes("_")) toggles.push(s0.replace(/_/g," "));
+  if (s0.includes(" ")) toggles.push(s0.replace(/\s+/g,"_"));
+  for (const t of toggles){
+    v = hit(t);
     if (v) return v;
-    // 2-3) tail が a-z/_/- のみならタグとみなして採用（正規表現不使用）
-    let ascii = true;
-    for (const c of tail){
-      const code = c.charCodeAt(0);
-      if (!((code>=97 && code<=122) || c==='_' || c==='-')) { ascii = false; break; }
-    }
-    if (ascii) return tail;
   }
 
-  // 推測はしない
+  // 3) 連結形「ラベル tag」→ head/tail のどちらかが辞書にいれば採用
+  const i = s0.lastIndexOf(" ");
+  if (i > 0){
+    const head = s0.slice(0,i).trim();
+    const tail = s0.slice(i+1).trim();
+    v = hit(tail) || hit(head)
+      || hit(tail.replace(/_/g," ")) || hit(tail.replace(/\s+/g,"_"))
+      || hit(head.replace(/_/g," ")) || hit(head.replace(/\s+/g,"_"));
+    if (v) return v;
+  }
+
+  // ★ 推測はしない：末尾語だけ採用する挙動を廃止
   return s0;
 }
+
 /* picker系も asTag に統一 */
 function pickTag(id){
   const v = (typeof pickOneFromScroller === 'function') ? pickOneFromScroller(id) : "";
