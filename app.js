@@ -753,7 +753,49 @@ const NSFW_LEARN_SCOPE = {
 
 
 
+// 一度だけ呼ぶ初期化
+function initTagMapFromDict(dict) {
+  const TM = {
+    id2tag:   new Map(), // UIの内部ID→tag（使うなら）
+    en:       new Map(), // 英語表示やtag風の英語文字列→tag
+    ja2tag:   new Map(), // 日本語ラベル→tag
+    label2tag:new Map(), // 任意の表示（混合/別名など）→tag
+  };
 
+  const add = (tag, label, idPrefix) => {
+    const t = String(tag||"").trim();
+    const j = String(label||"").trim();
+    if (!t) return;                 // 空tagはスキップ（例: skin_body の "なし"）
+    if (j) TM.ja2tag.set(j, t);     // 例: "無地背景" → "plain_background"
+    TM.en.set(t.toLowerCase(), t);  // 例: "plain_background" → "plain_background"
+    TM.label2tag.set(j, t);         // 例: "無地背景" → "plain_background"
+    TM.label2tag.set(`${j} ${t}`, t); // 例: "無地背景 plain_background" → "plain_background"
+    // 必要なら UI の id と紐づけ（例: pl_bg）
+    if (idPrefix) TM.id2tag.set(`${idPrefix}:${t}`, t);
+  };
+
+  const S = dict?.SFW || {};
+  // カテゴリごとに流す（背景だけ idPrefix 付ける例）
+  (S.age||[]).forEach(i => add(i.tag, i.label));
+  (S.gender||[]).forEach(i => add(i.tag, i.label));
+  (S.body_type||[]).forEach(i => add(i.tag, i.label));
+  (S.height||[]).forEach(i => add(i.tag, i.label));
+  (S.hair_style||[]).forEach(i => add(i.tag, i.label));
+  (S.eyes||[]).forEach(i => add(i.tag, i.label));
+  (S.face||[]).forEach(i => add(i.tag, i.label));
+  (S.skin_body||[]).forEach(i => add(i.tag, i.label));
+  (S.outfit||[]).forEach(i => add(i.tag, i.label));
+  (S.accessories||[]).forEach(i => add(i.tag, i.label));
+  (S.background||[]).forEach(i => add(i.tag, i.label, 'pl_bg'));
+  (S.composition||[]).forEach(i => add(i.tag, i.label));
+  (S.view||[]).forEach(i => add(i.tag, i.label));
+  (S.expressions||[]).forEach(i => add(i.tag, i.label));
+  (S.colors||[]).forEach(i => add(i.tag, i.label));
+  (S.lighting||[]).forEach(i => add(i.tag, i.label));
+  // 必要な他カテゴリがあれば同様に…
+
+  window.TAGMAP = TM; // asTag が使う
+}
 
 
 
