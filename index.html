@@ -30,6 +30,7 @@
     <div class="inner">
       <div class="tabbar">
         <div class="tab active" data-mode="basic">👤 基本情報</div>
+        <div class="tab" data-mode="manga">🎨 漫画モード</div>
         <div class="tab" data-mode="word">📖 単語モード</div>
         <div class="tab" data-mode="planner">📷 撮影モード</div>
         <div class="tab" data-mode="learning">🧠 LoRA学習モード</div>
@@ -295,7 +296,516 @@
       <!-- ▲ 基本情報：1枚テスト -->
     </section>
 
+<!-- 漫画モードパネル（修正版） -->
+<section id="panelManga" class="card" hidden>
+  <div class="manga-mode-header">
+    <h2>🎨 漫画モード</h2>
+    <div class="manga-priority-note">
+      ※ 上から選ぶほど意味が強くなります。競合する場合はNSFW設定が優先されます。
+    </div>
+  </div>
 
+  <!-- 1) キャラ基礎使用方式（1人目用・簡略化） -->
+  <div class="manga-params-section">
+    <h3>1. キャラ基礎使用方式（1人目）</h3>
+    <div class="char-base-options">
+      <label class="inline">
+        <input type="radio" name="mangaCharBase" value="C" checked>
+        C: 使わない（完全自由）
+      </label>
+      <label class="inline">
+        <input type="radio" name="mangaCharBase" value="B">
+        B: コア＋服を使う（推奨）
+      </label>
+    </div>
+    
+    <div class="char-base-note">
+      💡 「B: コア＋服を使う」を選択すると、基本情報タブで設定した内容（性別・年齢・髪型・髪色・瞳色・肌色・服装・服の色）が自動適用されます。<br>
+      ここでの個別設定は不要です。
+    </div>
+  </div>
+
+  <div class="manga-section-divider"></div>
+
+  <!-- 2) LoRA設定 -->
+  <div class="lora-section">
+    <div class="lora-toggle" onclick="toggleLoraSection()">
+      <span class="caret">▶</span>
+      <span>2. LoRA設定（任意）</span>
+    </div>
+    <div id="loraContent" class="lora-content">
+      <label class="inline">
+        <input type="checkbox" id="mangaUseLoRA">
+        LoRAを使う
+      </label>
+      
+      <div style="margin-top: 12px;">
+        <label>LoRAタグ</label>
+        <input type="text" id="mangaLoRATag" placeholder="<lora:__________:0.8>">
+        
+        <div class="lora-weight-control">
+          <span class="mini">重み:</span>
+          <input type="range" id="mangaLoRAWeight" min="0.4" max="1.2" step="0.1" value="0.8">
+          <span class="weight-value" id="mangaLoRAWeightValue">0.8</span>
+        </div>
+        
+        <div class="note mini" style="margin-top: 8px;">
+          うまく効かない時は重み↓ or 基礎タグ弱め（例：(orange hair:0.7)）
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="manga-section-divider"></div>
+
+  <!-- 3) 漫画パラメータ（SFW） -->
+  <div class="manga-params-section">
+    <h3>3. 漫画パラメータ（SFW）</h3>
+    
+    <!-- 感情（必須に近い） -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">感情（必須に近い）- ラジオ（単一）</h4>
+      <div id="mangaEmotionPrimary" class="scroller"></div>
+      
+      <h5 class="mini" style="margin-top: 8px;">サブ感情 - ラジオ（単一推奨）</h5>
+      <div id="mangaEmotionDetail" class="scroller"></div>
+    </div>
+    
+    <!-- 表情（顔の基本） -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">表情（顔の基本）- ラジオ（単一）</h4>
+      <div id="mangaExpressions" class="scroller"></div>
+    </div>
+    
+    <!-- 補助表情（顔の効果） -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">補助表情（顔の効果）- チェック（複数・推奨上限2〜3）</h4>
+      <div id="mangaEffectManga" class="scroller"></div>
+    </div>
+    
+    <!-- 目（Eye detail） -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">目（Eye detail）- ラジオ（単一）</h4>
+      <div class="grid g2">
+        <div>
+          <label class="mini">目の状態</label>
+          <div id="mangaEyeState" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">視線方向</label>
+          <div id="mangaGaze" class="scroller"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 口（Mouth detail） -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">口（Mouth detail）- ラジオ（単一）</h4>
+      <div id="mangaMouthState" class="scroller"></div>
+    </div>
+    
+    <!-- ポーズ -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">ポーズ（Pose）- ラジオ（単一）</h4>
+      <div id="mangaPose" class="scroller"></div>
+    </div>
+    
+    <!-- アクション -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">アクション（Action）- チェック（複数・推奨1〜2）</h4>
+      <div class="grid g2">
+        <div>
+          <label class="mini">手のジェスチャー</label>
+          <div id="mangaHandGesture" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">動作</label>
+          <div id="mangaMovementAction" class="scroller"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 構図 -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">構図（Framing / 体の入れ方）- ラジオ（単一）</h4>
+      <div id="mangaComposition" class="scroller"></div>
+    </div>
+    
+    <!-- 体の向き -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">体の向き（Orientation）- ラジオ（単一）</h4>
+      <div id="mangaView" class="scroller"></div>
+    </div>
+    
+    <!-- カメラワーク -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">カメラワーク（View / Angle）- ラジオ（単一）</h4>
+      <div id="mangaCameraView" class="scroller"></div>
+    </div>
+    
+    <!-- 小物（軽） -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">小物（軽）- チェック（複数・0〜2推奨）</h4>
+      <div id="mangaPropsLight" class="scroller"></div>
+    </div>
+    
+    <!-- 効果演出 -->
+    <div style="margin-bottom: 16px;">
+      <h4 class="mini">効果演出（Comic FX）- チェック（複数・0〜2推奨）</h4>
+      <div id="mangaEffectMangaFX" class="scroller"></div>
+    </div>
+    
+    <!-- 任意項目（折りたたみ） -->
+    <details>
+      <summary class="mini"><span class="caret">▶</span> 任意項目（背景・ライティング・画風）</summary>
+      <div style="margin-top: 12px;">
+        <div class="grid g3">
+          <div>
+            <label class="mini">背景 - ラジオ（単一）</label>
+            <div id="mangaBackground" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">ライティング - ラジオ（単一）</label>
+            <div id="mangaLighting" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">画風 - ラジオ（単一）</label>
+            <div id="mangaArtStyle" class="scroller"></div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="manga-section-divider"></div>
+
+  <!-- 4) NSFW -->
+  <div id="mangaNSFWSection" class="manga-params-section">
+    <div class="row" style="align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0;">4. NSFW（任意・初期閉／デフォOFF）</h3>
+      <label class="inline" style="margin-left: 16px;">
+        <input type="checkbox" id="mangaNSFWEnable">
+        NSFWを有効化
+      </label>
+    </div>
+    
+    <div id="mangaNSFWPanel" style="display: none;">
+      <div class="note mini" style="margin-bottom: 12px;">
+        NSFWカテゴリ（ON時のみ表示、合成時はNSFW優先）
+      </div>
+      
+      <div class="grid g3">
+        <div>
+          <label class="mini">NSFW表情 - ラジオ（単一）</label>
+          <div id="mangaNSFWExpr" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">露出度 - ラジオ（単一）</label>
+          <div id="mangaNSFWExpo" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">シチュ - ラジオ（単一）</label>
+          <div id="mangaNSFWSitu" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">照明/ムード - ラジオ（単一）</label>
+          <div id="mangaNSFWLight" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">NSFWポーズ - ラジオ（単一）</label>
+          <div id="mangaNSFWPose" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">NSFWアクション - チェック（複数・上限2推奨）</label>
+          <div id="mangaNSFWAction" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">小物/アクセ - チェック（複数）</label>
+          <div id="mangaNSFWAcc" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">衣装系 - ラジオ（単一）</label>
+          <div id="mangaNSFWOutfit" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">体表/体勢のNSFW属性 - チェック（複数）</label>
+          <div id="mangaNSFWBody" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">乳首表現 - ラジオ（単一）</label>
+          <div id="mangaNSFWNipples" class="scroller"></div>
+        </div>
+        <div>
+          <label class="mini">下着状態 - ラジオ（単一）</label>
+          <div id="mangaNSFWUnderwear" class="scroller"></div>
+        </div>
+      </div>
+      
+      <div class="note mini" style="margin-top: 12px;">
+        <strong>NSFW優先ロジック：</strong><br>
+        pose vs n_pose、action vs n_action、expressions vs n_expr など対立はNSFWを採用。<br>
+        露出・衣装は n_outfit/n_expo をSFWの服より優先。
+      </div>
+    </div>
+  </div>
+
+  <div class="manga-section-divider"></div>
+
+  <!-- 5) 2人目キャラ（修正版・デフォルトで閉じる） -->
+  <div class="second-char-section">
+    <div class="second-char-toggle" onclick="toggleSecondChar()">
+      <span class="caret">▶</span>
+      <span>5. 2人目キャラ（任意・折りたたみ：初期閉）</span>
+    </div>
+    <div id="secondCharContent" class="second-char-content">
+      <label class="inline">
+        <input type="checkbox" id="mangaSecondCharEnable">
+        2人目を追加する
+      </label>
+      
+      <div id="secondCharSettings" class="second-char-details">
+        <!-- LoRA設定 -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">LoRA（任意）</h4>
+          <label class="inline">
+            <input type="checkbox" id="secondCharUseLoRA">
+            LoRAを使う
+          </label>
+          <input type="text" id="secondCharLoRATag" placeholder="<lora:__________:0.8>" style="margin-top: 8px;">
+          <div class="lora-weight-control">
+            <span class="mini">重み:</span>
+            <input type="range" id="secondCharLoRAWeight" min="0.4" max="1.2" step="0.1" value="0.8">
+            <span class="weight-value" id="secondCharLoRAWeightValue">0.8</span>
+          </div>
+        </div>
+        
+        <!-- キャラ基礎使用方式（2人目用） -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">キャラ基礎使用方式</h4>
+          <div class="char-base-options">
+            <label class="inline">
+              <input type="radio" name="secondCharBase" value="C" checked>
+              C: 使わない（完全自由）
+            </label>
+            <label class="inline">
+              <input type="radio" name="secondCharBase" value="B">
+              B: コア＋服を使う
+            </label>
+          </div>
+        </div>
+        
+        <!-- コア設定（B選択時・2人目用） -->
+        <div id="secondCharCorePanel" class="second-char-details">
+          <h4 style="margin: 0 0 12px 0;">コア固定設定（2人目専用）</h4>
+          
+          <div class="second-char-grid">
+            <div>
+              <label class="mini">性別</label>
+              <div id="secondCharGender" class="scroller"></div>
+            </div>
+            <div>
+              <label class="mini">年齢</label>
+              <div id="secondCharAge" class="scroller"></div>
+            </div>
+            <div>
+              <label class="mini">髪型</label>
+              <div id="secondCharHairstyle" class="scroller"></div>
+            </div>
+            <div>
+              <label class="mini">髪色</label>
+              <div id="secondCharHairColor" class="scroller"></div>
+            </div>
+            <div>
+              <label class="mini">瞳色</label>
+              <div id="secondCharEyeColor" class="scroller"></div>
+            </div>
+            <div>
+              <label class="mini">肌色</label>
+              <div id="secondCharSkinTone" class="scroller"></div>
+            </div>
+          </div>
+          
+          <h4 style="margin: 16px 0 8px 0;">服固定設定（2人目専用）</h4>
+          
+          <div class="second-char-grid">
+            <div>
+              <label class="mini">トップス</label>
+              <div id="secondCharTop" class="scroller"></div>
+            </div>
+            <div>
+              <label class="mini">ボトムス</label>
+              <div id="secondCharBottom" class="scroller"></div>
+            </div>
+            <div>
+              <label class="mini">ドレス</label>
+              <div id="secondCharDress" class="scroller"></div>
+            </div>
+            <div>
+              <label class="mini">靴</label>
+              <div id="secondCharShoes" class="scroller"></div>
+            </div>
+          </div>
+          
+          <h4 style="margin: 16px 0 8px 0;">色固定設定（2人目専用）</h4>
+          <div class="second-char-colors">
+            <div class="color-picker-item">
+              <label>トップス色</label>
+              <div class="wheel-box">
+                <div id="wheel_secondTop" class="wheel"></div>
+                <div id="thumb_secondTop" class="thumb"></div>
+              </div>
+              <div class="row mini">
+                S: <input id="sat_secondTop" type="range" min="0" max="100" value="80">
+                L: <input id="lit_secondTop" type="range" min="0" max="100" value="55">
+              </div>
+              <div class="row mini">
+                <div id="sw_secondTop" class="swatch"></div>
+                <span>色: <code id="tag_secondTop" class="tag">orange</code></span>
+              </div>
+            </div>
+            
+            <div class="color-picker-item">
+              <label>ボトムス色</label>
+              <div class="wheel-box">
+                <div id="wheel_secondBottom" class="wheel"></div>
+                <div id="thumb_secondBottom" class="thumb"></div>
+              </div>
+              <div class="row mini">
+                S: <input id="sat_secondBottom" type="range" min="0" max="100" value="70">
+                L: <input id="lit_secondBottom" type="range" min="0" max="100" value="50">
+              </div>
+              <div class="row mini">
+                <div id="sw_secondBottom" class="swatch"></div>
+                <span>色: <code id="tag_secondBottom" class="tag">blue</code></span>
+              </div>
+            </div>
+            
+            <div class="color-picker-item">
+              <label>靴色</label>
+              <div class="wheel-box">
+                <div id="wheel_secondShoes" class="wheel"></div>
+                <div id="thumb_secondShoes" class="thumb"></div>
+              </div>
+              <div class="row mini">
+                S: <input id="sat_secondShoes" type="range" min="0" max="100" value="0">
+                L: <input id="lit_secondShoes" type="range" min="0" max="100" value="30">
+              </div>
+              <div class="row mini">
+                <div id="sw_secondShoes" class="swatch"></div>
+                <span>色: <code id="tag_secondShoes" class="tag">black</code></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 2人目のパラメータ設定 -->
+        <div class="grid g2" style="margin-top: 16px;">
+          <div>
+            <label class="mini">感情</label>
+            <div id="secondCharEmotion" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">表情</label>
+            <div id="secondCharExpressions" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">目</label>
+            <div id="secondCharEyeState" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">口</label>
+            <div id="secondCharMouthState" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">ポーズ</label>
+            <div id="secondCharPose" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">アクション</label>
+            <div id="secondCharAction" class="scroller"></div>
+          </div>
+        </div>
+        
+        <!-- インタラクション -->
+        <div class="interaction-section">
+          <h4 class="mini">インタラクション（何をするか）- ラジオ（単一）</h4>
+          <div id="secondCharInteraction" class="scroller"></div>
+          <div class="note mini" style="margin-top: 8px;">
+            <strong>SFW候補：</strong>常時表示（例：手をつなぐ/抱きしめる/支える/握手/ハイタッチ 等）<br>
+            <strong>NSFW候補：</strong>NSFWトグルON時のみ表示（例：キス/密着抱き合い/服を脱がす/押し倒す/性的行為 等）<br>
+            <strong>合成：</strong>二人の位置/ポーズ/アクションに矛盾が出ないよう片方を優先・補正する（優先順位＝interaction > n_pose/pose > n_action/action）
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="manga-section-divider"></div>
+
+  <!-- 6) ネガティブプロンプト -->
+  <div class="manga-params-section">
+    <h3>6. ネガティブプロンプト</h3>
+    
+    <div style="margin-bottom: 12px;">
+      <h4 class="mini">プリセット（チェック・複数可）</h4>
+      <div id="mangaNegativePreset" class="scroller"></div>
+    </div>
+    
+    <div>
+      <label>カスタム追記（自由入力）</label>
+      <textarea id="mangaNegativeCustom" rows="3" placeholder="追加のネガティブプロンプトを入力"></textarea>
+      <div class="note mini">出力順（推奨）：プリセット → カスタム</div>
+    </div>
+  </div>
+
+  <!-- 7) 出力エリア（画面下固定） -->
+  <div class="manga-output">
+    <div id="conflictWarning" class="conflict-warning" style="display: none;">
+      ⚠️ 設定に競合があります：NSFWが優先されます
+    </div>
+    
+    <div class="output-grid">
+      <div class="output-section">
+        <h4>Prompt（自動生成・読み取り専用）</h4>
+        <div id="mangaPromptOutput" class="output-text">
+          <!-- 自動生成されたプロンプトがここに表示 -->
+        </div>
+      </div>
+      
+      <div class="output-section">
+        <h4>Negative（自動生成・読み取り専用）</h4>
+        <div id="mangaNegativeOutput" class="output-text">
+          <!-- 自動生成されたネガティブプロンプトがここに表示 -->
+        </div>
+      </div>
+    </div>
+    
+    <div class="copy-buttons">
+      <button class="btn small" onclick="copyMangaOutput('all')">全部をコピー</button>
+      <button class="btn ghost small" onclick="copyMangaOutput('prompt')">Promptだけ</button>
+      <button class="btn ghost small" onclick="copyMangaOutput('negative')">Negativeだけ</button>
+    </div>
+    
+    <div class="output-controls">
+      <div>
+        <label class="inline">
+          <input type="checkbox" id="mangaFixedSeed">
+          seed固定
+        </label>
+      </div>
+      <div>
+        <label class="inline">
+          <input type="checkbox" id="mangaMicroDiff">
+          微差スイッチ
+        </label>
+      </div>
+      <div class="seed-display">
+        seed: <span id="mangaSeedValue">1234567890</span>
+      </div>
+    </div>
+  </div>
+</section>
+          
 <!-- ======================= 単語モード：パネル本体 ======================= -->
 <section id="panelWordMode" class="card" hidden>
   <header class="wm-header">
