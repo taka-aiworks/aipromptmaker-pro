@@ -1,0 +1,555 @@
+/* 漫画モード用JavaScript（修正版） */
+
+// グローバル変数
+let mangaInitialized = false;
+let secondCharColorWheels = {};
+
+// 漫画モードの初期化
+function initMangaMode() {
+  if (mangaInitialized) return;
+  mangaInitialized = true;
+  
+  console.log('漫画モード初期化中...');
+  
+  // イベントリスナーの設定
+  setupMangaEventListeners();
+  
+  // 2人目用色ホイールの初期化
+  initSecondCharColorWheels();
+  
+  // 辞書データがある場合は項目を設定
+  if (window.SFW && window.NSFW) {
+    populateMangaOptions();
+  }
+  
+  console.log('漫画モード初期化完了');
+}
+
+// イベントリスナーの設定
+function setupMangaEventListeners() {
+  // NSFW有効化切り替え
+  const nsfwToggle = document.getElementById('mangaNSFWEnable');
+  if (nsfwToggle) {
+    nsfwToggle.addEventListener('change', toggleMangaNSFWPanel);
+  }
+  
+  // 2人目キャラ有効化切り替え
+  const secondCharToggle = document.getElementById('mangaSecondCharEnable');
+  if (secondCharToggle) {
+    secondCharToggle.addEventListener('change', toggleSecondCharSettings);
+  }
+  
+  // 2人目のキャラ基礎使用方式切り替え
+  document.querySelectorAll('input[name="secondCharBase"]').forEach(radio => {
+    radio.addEventListener('change', toggleSecondCharCorePanel);
+  });
+  
+  // LoRA重みスライダー
+  const loraWeight = document.getElementById('mangaLoRAWeight');
+  if (loraWeight) {
+    loraWeight.addEventListener('input', updateLoRAWeightDisplay);
+  }
+  
+  const secondLoraWeight = document.getElementById('secondCharLoRAWeight');
+  if (secondLoraWeight) {
+    secondLoraWeight.addEventListener('input', updateSecondLoRAWeightDisplay);
+  }
+  
+  // リアルタイム更新
+  document.addEventListener('change', (e) => {
+    if (e.target.closest('#panelManga')) {
+      updateMangaOutput();
+    }
+  });
+}
+
+// NSFWパネルの切り替え
+function toggleMangaNSFWPanel() {
+  const enabled = document.getElementById('mangaNSFWEnable')?.checked;
+  const panel = document.getElementById('mangaNSFWPanel');
+  if (panel) {
+    panel.style.display = enabled ? 'block' : 'none';
+  }
+  
+  // インタラクション選択肢の更新（NSFW項目の表示/非表示）
+  populateInteractionOptions();
+  updateMangaOutput();
+}
+
+// 2人目キャラ設定の切り替え
+function toggleSecondCharSettings() {
+  const enabled = document.getElementById('mangaSecondCharEnable')?.checked;
+  const settings = document.getElementById('secondCharSettings');
+  if (settings) {
+    settings.classList.toggle('active', enabled);
+  }
+  updateMangaOutput();
+}
+
+// 2人目キャラのコアパネル切り替え
+function toggleSecondCharCorePanel() {
+  const useCore = document.querySelector('input[name="secondCharBase"]:checked')?.value === 'B';
+  const panel = document.getElementById('secondCharCorePanel');
+  if (panel) {
+    panel.classList.toggle('active', useCore);
+  }
+}
+
+// LoRA重み表示の更新
+function updateLoRAWeightDisplay() {
+  const slider = document.getElementById('mangaLoRAWeight');
+  const display = document.getElementById('mangaLoRAWeightValue');
+  if (slider && display) {
+    display.textContent = slider.value;
+  }
+}
+
+function updateSecondLoRAWeightDisplay() {
+  const slider = document.getElementById('secondCharLoRAWeight');
+  const display = document.getElementById('secondCharLoRAWeightValue');
+  if (slider && display) {
+    display.textContent = slider.value;
+  }
+}
+
+// LoRA折りたたみの切り替え
+function toggleLoraSection() {
+  const content = document.getElementById('loraContent');
+  const caret = document.querySelector('.lora-toggle .caret');
+  if (content && caret) {
+    const isOpen = content.classList.contains('active');
+    content.classList.toggle('active', !isOpen);
+    caret.textContent = isOpen ? '▶' : '▼';
+  }
+}
+
+// 2人目キャラ折りたたみの切り替え
+function toggleSecondChar() {
+  const content = document.getElementById('secondCharContent');
+  const caret = document.querySelector('.second-char-toggle .caret');
+  if (content && caret) {
+    const isOpen = content.classList.contains('active');
+    content.classList.toggle('active', !isOpen);
+    caret.textContent = isOpen ? '▶' : '▼';
+  }
+}
+
+// グローバルNSFW切り替え
+function toggleNSFWGlobal() {
+  const state = document.getElementById('nsfwState');
+  if (state) {
+    const isOn = state.textContent === 'ON';
+    state.textContent = isOn ? 'OFF' : 'ON';
+    state.style.color = isOn ? '#ff6b6b' : '#4ade80';
+    
+    // 漫画モードのNSFWパネルにも反映
+    const mangaNSFW = document.getElementById('mangaNSFWEnable');
+    if (mangaNSFW && !isOn) {
+      mangaNSFW.checked = false;
+      toggleMangaNSFWPanel();
+    }
+  }
+}
+
+// 2人目用色ホイールの初期化
+function initSecondCharColorWheels() {
+  if (typeof initColorWheel === 'function') {
+    secondCharColorWheels.top = initColorWheel("secondTop", 120, 80, 55);    // 緑系
+    secondCharColorWheels.bottom = initColorWheel("secondBottom", 280, 70, 50); // 紫系
+    secondCharColorWheels.shoes = initColorWheel("secondShoes", 30, 60, 30);    // 茶系
+  }
+}
+
+// 辞書データから選択肢を設定
+function populateMangaOptions() {
+  if (!window.SFW || !window.NSFW) return;
+  
+  console.log('漫画モード選択肢を設定中...');
+  
+  // SFWオプションの設定
+  populateRadioOptions('mangaEmotionPrimary', window.SFW.emotion_primary || []);
+  populateRadioOptions('mangaEmotionDetail', window.SFW.emotion_detail || []);
+  populateRadioOptions('mangaExpressions', window.SFW.expressions || []);
+  populateCheckboxOptions('mangaEffectManga', window.SFW.effect_manga || []);
+  populateRadioOptions('mangaEyeState', window.SFW.eye_state || []);
+  populateRadioOptions('mangaGaze', window.SFW.gaze || []);
+  populateRadioOptions('mangaMouthState', window.SFW.mouth_state || []);
+  populateRadioOptions('mangaPose', window.SFW.pose || []);
+  populateCheckboxOptions('mangaHandGesture', window.SFW.hand_gesture || []);
+  populateCheckboxOptions('mangaMovementAction', window.SFW.movement_action || []);
+  populateRadioOptions('mangaComposition', window.SFW.composition || []);
+  populateRadioOptions('mangaView', window.SFW.view || []);
+  populateRadioOptions('mangaCameraView', window.SFW.view || []);
+  populateCheckboxOptions('mangaPropsLight', window.SFW.props_light || []);
+  populateCheckboxOptions('mangaEffectMangaFX', window.SFW.effect_manga || []);
+  populateRadioOptions('mangaBackground', window.SFW.background || []);
+  populateRadioOptions('mangaLighting', window.SFW.lighting || []);
+  populateRadioOptions('mangaArtStyle', window.SFW.art_style || []);
+  
+  // NSFWオプションの設定
+  populateRadioOptions('mangaNSFWExpr', window.NSFW.expression || []);
+  populateRadioOptions('mangaNSFWExpo', window.NSFW.exposure || []);
+  populateRadioOptions('mangaNSFWSitu', window.NSFW.situation || []);
+  populateRadioOptions('mangaNSFWLight', window.NSFW.lighting || []);
+  populateRadioOptions('mangaNSFWPose', window.NSFW.pose || []);
+  populateCheckboxOptions('mangaNSFWAction', window.NSFW.action || []);
+  populateCheckboxOptions('mangaNSFWAcc', window.NSFW.accessories || []);
+  populateRadioOptions('mangaNSFWOutfit', window.NSFW.outfit || []);
+  populateCheckboxOptions('mangaNSFWBody', window.NSFW.body || []);
+  populateRadioOptions('mangaNSFWNipples', window.NSFW.nipples || []);
+  populateRadioOptions('mangaNSFWUnderwear', window.NSFW.underwear || []);
+  
+  // 2人目キャラ用（詳細設定）
+  populateRadioOptions('secondCharGender', window.SFW.gender || []);
+  populateRadioOptions('secondCharAge', window.SFW.age || []);
+  populateRadioOptions('secondCharHairstyle', window.SFW.hair_style || []);
+  populateRadioOptions('secondCharHairColor', generateColorOptions());
+  populateRadioOptions('secondCharEyeColor', generateColorOptions());
+  populateRadioOptions('secondCharSkinTone', generateSkinToneOptions());
+  populateRadioOptions('secondCharTop', getCategoryItems('top'));
+  populateRadioOptions('secondCharBottom', getCategoryItems('pants').concat(getCategoryItems('skirt')));
+  populateRadioOptions('secondCharDress', getCategoryItems('dress'));
+  populateRadioOptions('secondCharShoes', getCategoryItems('shoes'));
+  populateRadioOptions('secondCharEmotion', window.SFW.emotion_primary || []);
+  populateRadioOptions('secondCharExpressions', window.SFW.expressions || []);
+  populateRadioOptions('secondCharEyeState', window.SFW.eye_state || []);
+  populateRadioOptions('secondCharMouthState', window.SFW.mouth_state || []);
+  populateRadioOptions('secondCharPose', window.SFW.pose || []);
+  populateCheckboxOptions('secondCharAction', window.SFW.hand_gesture || []);
+  
+  // インタラクション
+  populateInteractionOptions();
+  
+  // ネガティブプリセット
+  populateCheckboxOptions('mangaNegativePreset', generateNegativePresets());
+}
+
+// インタラクション選択肢の設定
+function populateInteractionOptions() {
+  const interactions = generateInteractionOptions();
+  populateRadioOptions('secondCharInteraction', interactions);
+}
+
+// ヘルパー関数群
+function populateRadioOptions(containerId, items) {
+  const container = document.getElementById(containerId);
+  if (!container || !Array.isArray(items)) return;
+  
+  container.innerHTML = '';
+  items.forEach((item, index) => {
+    const label = document.createElement('label');
+    label.className = 'chip';
+    
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = containerId;
+    input.value = item.tag || item;
+    input.id = `${containerId}_${index}`;
+    
+    const span = document.createElement('span');
+    span.textContent = item.label || item.ja || item.tag || item;
+    
+    if (item.tag && item.tag !== (item.label || item.ja)) {
+      const miniSpan = document.createElement('span');
+      miniSpan.className = 'mini';
+      miniSpan.textContent = ` ${item.tag}`;
+      span.appendChild(miniSpan);
+    }
+    
+    label.appendChild(input);
+    label.appendChild(span);
+    container.appendChild(label);
+  });
+}
+
+function populateCheckboxOptions(containerId, items) {
+  const container = document.getElementById(containerId);
+  if (!container || !Array.isArray(items)) return;
+  
+  container.innerHTML = '';
+  items.forEach((item, index) => {
+    const label = document.createElement('label');
+    label.className = 'chip';
+    
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.name = containerId;
+    input.value = item.tag || item;
+    input.id = `${containerId}_${index}`;
+    
+    const span = document.createElement('span');
+    span.textContent = item.label || item.ja || item.tag || item;
+    
+    if (item.tag && item.tag !== (item.label || item.ja)) {
+      const miniSpan = document.createElement('span');
+      miniSpan.className = 'mini';
+      miniSpan.textContent = ` ${item.tag}`;
+      span.appendChild(miniSpan);
+    }
+    
+    label.appendChild(input);
+    label.appendChild(span);
+    container.appendChild(label);
+  });
+}
+
+function generateColorOptions() {
+  return [
+    { tag: "black hair", label: "黒" },
+    { tag: "brown hair", label: "茶" },
+    { tag: "blonde hair", label: "金髪" },
+    { tag: "red hair", label: "赤" },
+    { tag: "blue hair", label: "青" },
+    { tag: "green hair", label: "緑" },
+    { tag: "purple hair", label: "紫" },
+    { tag: "pink hair", label: "ピンク" },
+    { tag: "white hair", label: "白" },
+    { tag: "silver hair", label: "銀" }
+  ];
+}
+
+function generateSkinToneOptions() {
+  return [
+    { tag: "fair skin", label: "白い肌" },
+    { tag: "light skin", label: "明るい肌" },
+    { tag: "medium skin", label: "普通の肌" },
+    { tag: "tan skin", label: "日焼け肌" },
+    { tag: "dark skin", label: "暗い肌" }
+  ];
+}
+
+function getCategoryItems(category) {
+  if (!window.SFW?.outfit) return [];
+  return window.SFW.outfit.filter(item => item.cat === category);
+}
+
+function generateInteractionOptions() {
+  const sfw = [
+    { tag: "handholding", label: "手をつなぐ" },
+    { tag: "hugging", label: "抱きしめる" },
+    { tag: "supporting", label: "支える" },
+    { tag: "handshake", label: "握手" },
+    { tag: "high_five", label: "ハイタッチ" }
+  ];
+  
+  const nsfw = [
+    { tag: "kissing", label: "キス" },
+    { tag: "intimate_embrace", label: "密着抱き合い" },
+    { tag: "undressing", label: "服を脱がす" },
+    { tag: "pushing_down", label: "押し倒す" },
+    { tag: "sexual_act", label: "性的行為" }
+  ];
+  
+  const nsfwEnabled = document.getElementById('mangaNSFWEnable')?.checked;
+  return nsfwEnabled ? [...sfw, ...nsfw] : sfw;
+}
+
+function generateNegativePresets() {
+  return [
+    { tag: "bad hands", label: "手の崩れ" },
+    { tag: "bad anatomy", label: "解剖学的不正" },
+    { tag: "extra fingers", label: "指の数異常" },
+    { tag: "deformed", label: "変形" },
+    { tag: "blurry", label: "ぼやけ" },
+    { tag: "low quality", label: "低品質" },
+    { tag: "worst quality", label: "最低品質" },
+    { tag: "jpeg artifacts", label: "JPEG劣化" },
+    { tag: "text", label: "テキスト除去" },
+    { tag: "watermark", label: "透かし除去" }
+  ];
+}
+
+// プロンプト生成と出力更新
+function updateMangaOutput() {
+  const prompt = generateMangaPrompt();
+  const negative = generateMangaNegative();
+  
+  document.getElementById('mangaPromptOutput').textContent = prompt;
+  document.getElementById('mangaNegativeOutput').textContent = negative;
+  
+  // seed更新
+  const charName = document.getElementById('charName')?.value || 'manga_char';
+  const seed = seedFromName(charName, 0);
+  document.getElementById('mangaSeedValue').textContent = seed;
+  
+  // 競合チェック
+  checkMangaConflicts();
+}
+
+function generateMangaPrompt() {
+  const tags = [];
+  
+  // LoRAタグ（最優先）
+  if (document.getElementById('mangaUseLoRA')?.checked) {
+    const loraTag = document.getElementById('mangaLoRATag')?.value?.trim();
+    if (loraTag) {
+      const weight = document.getElementById('mangaLoRAWeight')?.value || '0.8';
+      tags.push(loraTag.replace(':0.8>', `:${weight}>`));
+    }
+  }
+  
+  // NSFW
+  if (document.getElementById('mangaNSFWEnable')?.checked) {
+    tags.push('NSFW');
+  }
+  
+  // キャラ基礎設定（1人目）
+  const useCharBase = document.querySelector('input[name="mangaCharBase"]:checked')?.value === 'B';
+  if (useCharBase) {
+    // 基本情報タブの値を参照（実装時は基本情報タブから値を取得）
+    tags.push('solo'); // 2人目がいる場合は後で修正
+    const genderCountTag = getGenderCountTag(); // 既存関数を利用
+    if (genderCountTag) tags.push(genderCountTag);
+    
+    // 基本情報タブから取得する想定のタグ
+    addBasicInfoTags(tags);
+  }
+  
+  // 2人目キャラ
+  if (document.getElementById('mangaSecondCharEnable')?.checked) {
+    // soloを削除して2peopleに変更
+    const soloIndex = tags.indexOf('solo');
+    if (soloIndex !== -1) {
+      tags.splice(soloIndex, 1);
+    }
+    tags.push('2people');
+    
+    // 2人目の設定を追加
+    addSecondCharTags(tags);
+  }
+  
+  // 漫画パラメータ（優先順位順）
+  addSelectedValues(tags, 'mangaEmotionPrimary');
+  addSelectedValues(tags, 'mangaEmotionDetail');
+  
+  // NSFW vs SFW の競合解決
+  if (document.getElementById('mangaNSFWEnable')?.checked) {
+    addSelectedValues(tags, 'mangaNSFWExpr') || addSelectedValues(tags, 'mangaExpressions');
+  } else {
+    addSelectedValues(tags, 'mangaExpressions');
+  }
+  
+  addSelectedValues(tags, 'mangaEffectManga');
+  addSelectedValues(tags, 'mangaEyeState');
+  addSelectedValues(tags, 'mangaGaze');
+  addSelectedValues(tags, 'mangaMouthState');
+  
+  // ポーズ（NSFW優先）
+  if (document.getElementById('mangaNSFWEnable')?.checked) {
+    addSelectedValues(tags, 'mangaNSFWPose') || addSelectedValues(tags, 'mangaPose');
+  } else {
+    addSelectedValues(tags, 'mangaPose');
+  }
+  
+  addSelectedValues(tags, 'mangaHandGesture');
+  addSelectedValues(tags, 'mangaMovementAction');
+  addSelectedValues(tags, 'mangaComposition');
+  addSelectedValues(tags, 'mangaView');
+  addSelectedValues(tags, 'mangaCameraView');
+  addSelectedValues(tags, 'mangaPropsLight');
+  addSelectedValues(tags, 'mangaEffectMangaFX');
+  addSelectedValues(tags, 'mangaBackground');
+  addSelectedValues(tags, 'mangaLighting');
+  addSelectedValues(tags, 'mangaArtStyle');
+  
+  // NSFW専用項目
+  if (document.getElementById('mangaNSFWEnable')?.checked) {
+    addSelectedValues(tags, 'mangaNSFWExpo');
+    addSelectedValues(tags, 'mangaNSFWSitu');
+    addSelectedValues(tags, 'mangaNSFWLight');
+    addSelectedValues(tags, 'mangaNSFWAction');
+    addSelectedValues(tags, 'mangaNSFWAcc');
+    addSelectedValues(tags, 'mangaNSFWOutfit');
+    addSelectedValues(tags, 'mangaNSFWBody');
+    addSelectedValues(tags, 'mangaNSFWNipples');
+    addSelectedValues(tags, 'mangaNSFWUnderwear');
+  }
+  
+  return tags.filter(Boolean).join(', ');
+}
+
+// 基本情報タブから値を取得してタグに追加
+function addBasicInfoTags(tags) {
+  // 既存の基本情報取得関数を利用
+  if (typeof getBFValue === 'function') {
+    const age = getBFValue('age');
+    const gender = getBFValue('gender');
+    const body = getBFValue('body');
+    const height = getBFValue('height');
+    if (age) tags.push(age);
+    if (gender) tags.push(gender);
+    if (body) tags.push(body);
+    if (height) tags.push(height);
+  }
+  
+  // 髪型・目の形
+  if (typeof getOne === 'function') {
+    const hairStyle = getOne('hairStyle');
+    const eyeShape = getOne('eyeShape');
+    if (hairStyle) tags.push(hairStyle);
+    if (eyeShape) tags.push(eyeShape);
+  }
+  
+  // 色タグ（基本情報タブの色ピッカーから）
+  const textOf = id => (document.getElementById(id)?.textContent || "").trim();
+  const hairColor = textOf('tagH');
+  const eyeColor = textOf('tagE');
+  const skinColor = textOf('tagSkin');
+  if (hairColor) tags.push(hairColor);
+  if (eyeColor) tags.push(eyeColor);
+  if (skinColor) tags.push(skinColor);
+  
+  // 服装（基本情報タブの設定から）
+  addBasicOutfitTags(tags);
+}
+
+// 基本情報の服装タグを追加
+function addBasicOutfitTags(tags) {
+  if (typeof getIsOnepiece === 'function' && typeof getOne === 'function') {
+    const isOnepiece = getIsOnepiece();
+    const textOf = id => (document.getElementById(id)?.textContent || "").trim();
+    
+    if (isOnepiece) {
+      const dress = getOne('outfit_dress');
+      if (dress) {
+        const topColor = textOf('tag_top').replace(/^—$/, "");
+        if (topColor) {
+          tags.push(`${topColor} ${dress}`);
+        } else {
+          tags.push(dress);
+        }
+      }
+    } else {
+      const top = getOne('outfit_top');
+      const bottomCat = getOne('bottomCat') || 'pants';
+      const pants = getOne('outfit_pants');
+      const skirt = getOne('outfit_skirt');
+      const shoes = getOne('outfit_shoes');
+      
+      if (top) {
+        const topColor = textOf('tag_top').replace(/^—$/, "");
+        if (topColor) {
+          tags.push(`${topColor} ${top}`);
+        } else {
+          tags.push(top);
+        }
+      }
+      
+      if (bottomCat === 'pants' && pants) {
+        const bottomColor = textOf('tag_bottom').replace(/^—$/, "");
+        if (bottomColor) {
+          tags.push(`${bottomColor} ${pants}`);
+        } else {
+          tags.push(pants);
+        }
+      } else if (bottomCat === 'skirt' && skirt) {
+        const bottomColor = textOf('tag_bottom').replace(/^—$/, "");
+        if (bottomColor) {
+          tags.push(`${bottomColor} ${skirt}`);
+        } else {
+          tags.push(skirt);
+        }
+      }
+      
+      if (shoes) {
+        const shoeColor = textOf('tag_shoes').replace(/^—$/, "");
