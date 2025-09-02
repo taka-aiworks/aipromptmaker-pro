@@ -356,125 +356,129 @@
 
   <div class="manga-section-divider"></div>
 
-  <!-- 3) 漫画パラメータ（SFW）- 既存のまま -->
+<!-- 3) 漫画パラメータ（SFW） - 開閉可能に変更 -->
   <div class="manga-params-section">
-    <h3>3. 漫画パラメータ（SFW）</h3>
-    
-    <!-- 感情（必須に近い） -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">感情（必須に近い）- ラジオ（単一）</h4>
-      <div id="mangaEmotionPrimary" class="scroller"></div>
-      
-      <h5 class="mini" style="margin-top: 8px;">サブ感情 - ラジオ（単一推奨）</h5>
-      <div id="mangaEmotionDetail" class="scroller"></div>
-    </div>
-    
-    <!-- 表情（顔の基本） -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">表情（顔の基本）- ラジオ（単一）</h4>
-      <div id="mangaExpressions" class="scroller"></div>
-    </div>
-    
-    <!-- 補助表情（顔の効果） -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">補助表情（顔の効果）- チェック（複数・推奨上限2〜3）</h4>
-      <div id="mangaEffectManga" class="scroller"></div>
-    </div>
-    
-    <!-- 目（Eye detail） -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">目（Eye detail）- ラジオ（単一）</h4>
-      <div class="grid g2">
-        <div>
-          <label class="mini">目の状態</label>
-          <div id="mangaEyeState" class="scroller"></div>
-        </div>
-        <div>
-          <label class="mini">視線方向</label>
-          <div id="mangaGaze" class="scroller"></div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 口（Mouth detail） -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">口（Mouth detail）- ラジオ（単一）</h4>
-      <div id="mangaMouthState" class="scroller"></div>
-    </div>
-    
-    <!-- ポーズ -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">ポーズ（Pose）- ラジオ（単一）</h4>
-      <div id="mangaPose" class="scroller"></div>
-    </div>
-    
-    <!-- アクション -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">アクション（Action）- チェック（複数・推奨1〜2）</h4>
-      <div class="grid g2">
-        <div>
-          <label class="mini">手のジェスチャー</label>
-          <div id="mangaHandGesture" class="scroller"></div>
-        </div>
-        <div>
-          <label class="mini">動作</label>
-          <div id="mangaMovementAction" class="scroller"></div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 構図 -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">構図（Framing / 体の入れ方）- ラジオ（単一）</h4>
-      <div id="mangaComposition" class="scroller"></div>
-    </div>
-    
-    <!-- 体の向き -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">体の向き（Orientation）- ラジオ（単一）</h4>
-      <div id="mangaView" class="scroller"></div>
-    </div>
-    
-    <!-- カメラワーク -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">カメラワーク（View / Angle）- ラジオ（単一）</h4>
-      <div id="mangaCameraView" class="scroller"></div>
-    </div>
-    
-    <!-- 小物（軽） -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">小物（軽）- チェック（複数・0〜2推奨）</h4>
-      <div id="mangaPropsLight" class="scroller"></div>
-    </div>
-    
-    <!-- 効果演出 -->
-    <div style="margin-bottom: 16px;">
-      <h4 class="mini">効果演出（Comic FX）- チェック（複数・0〜2推奨）</h4>
-      <div id="mangaEffectMangaFX" class="scroller"></div>
-    </div>
-    
-    <!-- 任意項目（折りたたみ） -->
-    <details>
-      <summary class="mini"><span class="caret">▶</span> 任意項目（背景・ライティング・画風）</summary>
+    <details open>
+      <summary class="mini"><span class="caret">▼</span> 3. 漫画パラメータ（SFW）</summary>
       <div style="margin-top: 12px;">
-        <div class="grid g3">
-          <div>
-            <label class="mini">背景 - ラジオ（単一）</label>
-            <div id="mangaBackground" class="scroller"></div>
-          </div>
-          <div>
-            <label class="mini">ライティング - ラジオ（単一）</label>
-            <div id="mangaLighting" class="scroller"></div>
-          </div>
-          <div>
-            <label class="mini">画風 - ラジオ（単一）</label>
-            <div id="mangaArtStyle" class="scroller"></div>
+        
+        <!-- 感情（必須に近い） -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">感情（必須に近い）- ラジオ（単一）</h4>
+          <div id="mangaEmotionPrimary" class="scroller"></div>
+          
+          <h5 class="mini" style="margin-top: 8px;">サブ感情 - ラジオ（単一推奨）</h5>
+          <div id="mangaEmotionDetail" class="scroller"></div>
+        </div>
+        
+        <!-- 表情（顔の基本） -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">表情（顔の基本）- ラジオ（単一）</h4>
+          <div id="mangaExpressions" class="scroller"></div>
+        </div>
+        
+        <!-- 補助表情（顔の効果） -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">補助表情（顔の効果）- チェック（複数・推奨上限2〜3）</h4>
+          <div id="mangaEffectManga" class="scroller"></div>
+        </div>
+        
+        <!-- 目（Eye detail） -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">目（Eye detail）- ラジオ（単一）</h4>
+          <div class="grid g2">
+            <div>
+              <label class="mini">目の状態</label>
+              <div id="mangaEyeState" class="scroller"></div>
+            </div>
+            <div>
+              <label class="mini">視線方向</label>
+              <div id="mangaGaze" class="scroller"></div>
+            </div>
           </div>
         </div>
+        
+        <!-- 口（Mouth detail） -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">口（Mouth detail）- ラジオ（単一）</h4>
+          <div id="mangaMouthState" class="scroller"></div>
+        </div>
+        
+        <!-- ポーズ -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">ポーズ（Pose）- ラジオ（単一）</h4>
+          <div id="mangaPose" class="scroller"></div>
+        </div>
+        
+        <!-- アクション -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">アクション（Action）- チェック（複数・推奨1〜2）</h4>
+          <div class="grid g2">
+            <div>
+              <label class="mini">手のジェスチャー</label>
+              <div id="mangaHandGesture" class="scroller"></div>
+            </div>
+            <div>
+              <label class="mini">動作</label>
+              <div id="mangaMovementAction" class="scroller"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 構図 -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">構図（Framing / 体の入れ方）- ラジオ（単一）</h4>
+          <div id="mangaComposition" class="scroller"></div>
+        </div>
+        
+        <!-- 体の向き -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">体の向き（Orientation）- ラジオ（単一）</h4>
+          <div id="mangaView" class="scroller"></div>
+        </div>
+        
+        <!-- カメラワーク -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">カメラワーク（View / Angle）- ラジオ（単一）</h4>
+          <div id="mangaCameraView" class="scroller"></div>
+        </div>
+        
+        <!-- 小物（軽） -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">小物（軽）- チェック（複数・0〜2推奨）</h4>
+          <div id="mangaPropsLight" class="scroller"></div>
+        </div>
+        
+        <!-- 効果演出 -->
+        <div style="margin-bottom: 16px;">
+          <h4 class="mini">効果演出（Comic FX）- チェック（複数・0〜2推奨）</h4>
+          <div id="mangaEffectMangaFX" class="scroller"></div>
+        </div>
+        
+        <!-- 任意項目（折りたたみ） -->
+        <details>
+          <summary class="mini"><span class="caret">▶</span> 任意項目（背景・ライティング・画風）</summary>
+          <div style="margin-top: 12px;">
+            <div class="grid g3">
+              <div>
+                <label class="mini">背景 - ラジオ（単一）</label>
+                <div id="mangaBackground" class="scroller"></div>
+              </div>
+              <div>
+                <label class="mini">ライティング - ラジオ（単一）</label>
+                <div id="mangaLighting" class="scroller"></div>
+              </div>
+              <div>
+                <label class="mini">画風 - ラジオ（単一）</label>
+                <div id="mangaArtStyle" class="scroller"></div>
+              </div>
+            </div>
+          </div>
+        </details>
       </div>
     </details>
   </div>
-
+  
   <div class="manga-section-divider"></div>
 
   <!-- 4) NSFW -->
