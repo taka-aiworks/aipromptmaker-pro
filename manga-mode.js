@@ -280,24 +280,24 @@ function populateMangaOptions() {
     console.error('NSFW選択肢設定エラー:', error);
   }
   
-  // 2人目キャラ用（詳細設定）
+  // 2人目キャラ用（詳細設定）- 存在する要素のみ設定
   try {
-    populateRadioOptions('secondCharGender', SFW.gender || []);
-    populateRadioOptions('secondCharAge', SFW.age || []);
-    populateRadioOptions('secondCharHairstyle', SFW.hair_style || []);
-    populateRadioOptions('secondCharHairColor', generateColorOptions());
-    populateRadioOptions('secondCharEyeColor', generateColorOptions());
-    populateRadioOptions('secondCharSkinTone', generateSkinToneOptions());
-    populateRadioOptions('secondCharTop', getCategoryItems('top', SFW));
-    populateRadioOptions('secondCharBottom', getCategoryItems('pants', SFW).concat(getCategoryItems('skirt', SFW)));
-    populateRadioOptions('secondCharDress', getCategoryItems('dress', SFW));
-    populateRadioOptions('secondCharShoes', getCategoryItems('shoes', SFW));
-    populateRadioOptions('secondCharEmotion', SFW.emotion_primary || []);
-    populateRadioOptions('secondCharExpressions', SFW.expressions || []);
-    populateRadioOptions('secondCharEyeState', SFW.eye_state || []);
-    populateRadioOptions('secondCharMouthState', SFW.mouth_state || []);
-    populateRadioOptions('secondCharPose', SFW.pose || []);
-    populateCheckboxOptions('secondCharAction', SFW.hand_gesture || []);
+    populateRadioOptionsIfExists('secondCharGender', SFW.gender || []);
+    populateRadioOptionsIfExists('secondCharAge', SFW.age || []);
+    populateRadioOptionsIfExists('secondCharHairstyle', SFW.hair_style || []);
+    populateRadioOptionsIfExists('secondCharHairColor', generateColorOptions());
+    populateRadioOptionsIfExists('secondCharEyeColor', generateColorOptions());
+    populateRadioOptionsIfExists('secondCharSkinTone', generateSkinToneOptions());
+    populateRadioOptionsIfExists('secondCharTop', getCategoryItems('top', SFW));
+    populateRadioOptionsIfExists('secondCharBottom', getCategoryItems('pants', SFW).concat(getCategoryItems('skirt', SFW)));
+    populateRadioOptionsIfExists('secondCharDress', getCategoryItems('dress', SFW));
+    populateRadioOptionsIfExists('secondCharShoes', getCategoryItems('shoes', SFW));
+    populateRadioOptionsIfExists('secondCharEmotion', SFW.emotion_primary || []);
+    populateRadioOptionsIfExists('secondCharExpressions', SFW.expressions || []);
+    populateRadioOptionsIfExists('secondCharEyeState', SFW.eye_state || []);
+    populateRadioOptionsIfExists('secondCharMouthState', SFW.mouth_state || []);
+    populateRadioOptionsIfExists('secondCharPose', SFW.pose || []);
+    populateCheckboxOptionsIfExists('secondCharAction', SFW.hand_gesture || []);
     
     console.log('2人目キャラ選択肢設定完了');
   } catch (error) {
