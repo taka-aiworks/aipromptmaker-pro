@@ -71,6 +71,12 @@ function setupMangaEventListeners() {
     loraToggle.addEventListener('change', toggleLoRASettings);
   }
   
+  // SFW有効化切り替え
+  const sfwToggle = document.getElementById('mangaSFWEnable');
+  if (sfwToggle) {
+    sfwToggle.addEventListener('change', toggleMangaSFWPanel);
+  }
+  
   // NSFW有効化切り替え
   const nsfwToggle = document.getElementById('mangaNSFWEnable');
   if (nsfwToggle) {
@@ -156,6 +162,16 @@ function toggleLoRASettings() {
   const content = document.getElementById('loraContent');
   if (content) {
     content.style.display = enabled ? 'block' : 'none';
+  }
+  updateMangaOutput();
+}
+
+// SFWパネルの切り替え
+function toggleMangaSFWPanel() {
+  const enabled = document.getElementById('mangaSFWEnable')?.checked;
+  const panel = document.getElementById('mangaSFWPanel');
+  if (panel) {
+    panel.style.display = enabled ? 'block' : 'none';
   }
   updateMangaOutput();
 }
@@ -781,38 +797,42 @@ function generateMangaPrompt() {
   }
   
   // 漫画パラメータ（優先順位順）
-  addSelectedValues(tags, 'mangaEmotionPrimary');
-  addSelectedValues(tags, 'mangaEmotionDetail');
-  
-  // NSFW vs SFW の競合解決
-  if (document.getElementById('mangaNSFWEnable')?.checked) {
-    addSelectedValues(tags, 'mangaNSFWExpr') || addSelectedValues(tags, 'mangaExpressions');
-  } else {
-    addSelectedValues(tags, 'mangaExpressions');
+  // SFWパラメータは有効化時のみ適用
+  const sfwEnabled = document.getElementById('mangaSFWEnable')?.checked;
+  if (sfwEnabled) {
+    addSelectedValues(tags, 'mangaEmotionPrimary');
+    addSelectedValues(tags, 'mangaEmotionDetail');
+    
+    // NSFW vs SFW の競合解決
+    if (document.getElementById('mangaNSFWEnable')?.checked) {
+      addSelectedValues(tags, 'mangaNSFWExpr') || addSelectedValues(tags, 'mangaExpressions');
+    } else {
+      addSelectedValues(tags, 'mangaExpressions');
+    }
+    
+    addSelectedValues(tags, 'mangaEffectManga');
+    addSelectedValues(tags, 'mangaEyeState');
+    addSelectedValues(tags, 'mangaGaze');
+    addSelectedValues(tags, 'mangaMouthState');
+    
+    // ポーズ（NSFW優先）
+    if (document.getElementById('mangaNSFWEnable')?.checked) {
+      addSelectedValues(tags, 'mangaNSFWPose') || addSelectedValues(tags, 'mangaPose');
+    } else {
+      addSelectedValues(tags, 'mangaPose');
+    }
+    
+    addSelectedValues(tags, 'mangaHandGesture');
+    addSelectedValues(tags, 'mangaMovementAction');
+    addSelectedValues(tags, 'mangaComposition');
+    addSelectedValues(tags, 'mangaView');
+    addSelectedValues(tags, 'mangaCameraView');
+    addSelectedValues(tags, 'mangaPropsLight');
+    addSelectedValues(tags, 'mangaEffectMangaFX');
+    addSelectedValues(tags, 'mangaBackground');
+    addSelectedValues(tags, 'mangaLighting');
+    addSelectedValues(tags, 'mangaArtStyle');
   }
-  
-  addSelectedValues(tags, 'mangaEffectManga');
-  addSelectedValues(tags, 'mangaEyeState');
-  addSelectedValues(tags, 'mangaGaze');
-  addSelectedValues(tags, 'mangaMouthState');
-  
-  // ポーズ（NSFW優先）
-  if (document.getElementById('mangaNSFWEnable')?.checked) {
-    addSelectedValues(tags, 'mangaNSFWPose') || addSelectedValues(tags, 'mangaPose');
-  } else {
-    addSelectedValues(tags, 'mangaPose');
-  }
-  
-  addSelectedValues(tags, 'mangaHandGesture');
-  addSelectedValues(tags, 'mangaMovementAction');
-  addSelectedValues(tags, 'mangaComposition');
-  addSelectedValues(tags, 'mangaView');
-  addSelectedValues(tags, 'mangaCameraView');
-  addSelectedValues(tags, 'mangaPropsLight');
-  addSelectedValues(tags, 'mangaEffectMangaFX');
-  addSelectedValues(tags, 'mangaBackground');
-  addSelectedValues(tags, 'mangaLighting');
-  addSelectedValues(tags, 'mangaArtStyle');
   
   // NSFW専用項目
   if (document.getElementById('mangaNSFWEnable')?.checked) {
@@ -1218,6 +1238,7 @@ if (typeof window !== 'undefined') {
   window.copyMangaOutput = copyMangaOutput;
   window.updateMangaOutput = updateMangaOutput;
   window.toggleLoRASettings = toggleLoRASettings;
+  window.toggleMangaSFWPanel = toggleMangaSFWPanel;
   window.toggleSecondCharSettings = toggleSecondCharSettings;
   window.toggleInteractionMode = toggleInteractionMode;
 }
