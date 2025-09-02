@@ -167,60 +167,75 @@ function initSecondCharColorWheels() {
 
 // 辞書データから選択肢を設定
 function populateMangaOptions() {
-  if (!window.SFW || !window.NSFW) return;
+  // 既存の辞書データ形式に合わせて参照を修正
+  const SFW = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
+  const NSFW = window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW;
   
-  console.log('漫画モード選択肢を設定中...');
+  if (!SFW || !NSFW) {
+    console.log('辞書データが見つかりません:', {
+      DEFAULT_SFW_DICT: !!window.DEFAULT_SFW_DICT,
+      DEFAULT_NSFW_DICT: !!window.DEFAULT_NSFW_DICT,
+      SFW: !!window.SFW,
+      NSFW: !!window.NSFW
+    });
+    return;
+  }
+  
+  console.log('漫画モード選択肢を設定中...', {
+    SFW_keys: Object.keys(SFW),
+    NSFW_keys: Object.keys(NSFW)
+  });
   
   // SFWオプションの設定
-  populateRadioOptions('mangaEmotionPrimary', window.SFW.emotion_primary || []);
-  populateRadioOptions('mangaEmotionDetail', window.SFW.emotion_detail || []);
-  populateRadioOptions('mangaExpressions', window.SFW.expressions || []);
-  populateCheckboxOptions('mangaEffectManga', window.SFW.effect_manga || []);
-  populateRadioOptions('mangaEyeState', window.SFW.eye_state || []);
-  populateRadioOptions('mangaGaze', window.SFW.gaze || []);
-  populateRadioOptions('mangaMouthState', window.SFW.mouth_state || []);
-  populateRadioOptions('mangaPose', window.SFW.pose || []);
-  populateCheckboxOptions('mangaHandGesture', window.SFW.hand_gesture || []);
-  populateCheckboxOptions('mangaMovementAction', window.SFW.movement_action || []);
-  populateRadioOptions('mangaComposition', window.SFW.composition || []);
-  populateRadioOptions('mangaView', window.SFW.view || []);
-  populateRadioOptions('mangaCameraView', window.SFW.view || []);
-  populateCheckboxOptions('mangaPropsLight', window.SFW.props_light || []);
-  populateCheckboxOptions('mangaEffectMangaFX', window.SFW.effect_manga || []);
-  populateRadioOptions('mangaBackground', window.SFW.background || []);
-  populateRadioOptions('mangaLighting', window.SFW.lighting || []);
-  populateRadioOptions('mangaArtStyle', window.SFW.art_style || []);
+  populateRadioOptions('mangaEmotionPrimary', SFW.emotion_primary || []);
+  populateRadioOptions('mangaEmotionDetail', SFW.emotion_detail || []);
+  populateRadioOptions('mangaExpressions', SFW.expressions || []);
+  populateCheckboxOptions('mangaEffectManga', SFW.effect_manga || []);
+  populateRadioOptions('mangaEyeState', SFW.eye_state || []);
+  populateRadioOptions('mangaGaze', SFW.gaze || []);
+  populateRadioOptions('mangaMouthState', SFW.mouth_state || []);
+  populateRadioOptions('mangaPose', SFW.pose || []);
+  populateCheckboxOptions('mangaHandGesture', SFW.hand_gesture || []);
+  populateCheckboxOptions('mangaMovementAction', SFW.movement_action || []);
+  populateRadioOptions('mangaComposition', SFW.composition || []);
+  populateRadioOptions('mangaView', SFW.view || []);
+  populateRadioOptions('mangaCameraView', SFW.view || []);
+  populateCheckboxOptions('mangaPropsLight', SFW.props_light || []);
+  populateCheckboxOptions('mangaEffectMangaFX', SFW.effect_manga || []);
+  populateRadioOptions('mangaBackground', SFW.background || []);
+  populateRadioOptions('mangaLighting', SFW.lighting || []);
+  populateRadioOptions('mangaArtStyle', SFW.art_style || []);
   
   // NSFWオプションの設定
-  populateRadioOptions('mangaNSFWExpr', window.NSFW.expression || []);
-  populateRadioOptions('mangaNSFWExpo', window.NSFW.exposure || []);
-  populateRadioOptions('mangaNSFWSitu', window.NSFW.situation || []);
-  populateRadioOptions('mangaNSFWLight', window.NSFW.lighting || []);
-  populateRadioOptions('mangaNSFWPose', window.NSFW.pose || []);
-  populateCheckboxOptions('mangaNSFWAction', window.NSFW.action || []);
-  populateCheckboxOptions('mangaNSFWAcc', window.NSFW.accessories || []);
-  populateRadioOptions('mangaNSFWOutfit', window.NSFW.outfit || []);
-  populateCheckboxOptions('mangaNSFWBody', window.NSFW.body || []);
-  populateRadioOptions('mangaNSFWNipples', window.NSFW.nipples || []);
-  populateRadioOptions('mangaNSFWUnderwear', window.NSFW.underwear || []);
+  populateRadioOptions('mangaNSFWExpr', NSFW.expression || []);
+  populateRadioOptions('mangaNSFWExpo', NSFW.exposure || []);
+  populateRadioOptions('mangaNSFWSitu', NSFW.situation || []);
+  populateRadioOptions('mangaNSFWLight', NSFW.lighting || []);
+  populateRadioOptions('mangaNSFWPose', NSFW.pose || []);
+  populateCheckboxOptions('mangaNSFWAction', NSFW.action || []);
+  populateCheckboxOptions('mangaNSFWAcc', NSFW.accessories || []);
+  populateRadioOptions('mangaNSFWOutfit', NSFW.outfit || []);
+  populateCheckboxOptions('mangaNSFWBody', NSFW.body || []);
+  populateRadioOptions('mangaNSFWNipples', NSFW.nipples || []);
+  populateRadioOptions('mangaNSFWUnderwear', NSFW.underwear || []);
   
   // 2人目キャラ用（詳細設定）
-  populateRadioOptions('secondCharGender', window.SFW.gender || []);
-  populateRadioOptions('secondCharAge', window.SFW.age || []);
-  populateRadioOptions('secondCharHairstyle', window.SFW.hair_style || []);
+  populateRadioOptions('secondCharGender', SFW.gender || []);
+  populateRadioOptions('secondCharAge', SFW.age || []);
+  populateRadioOptions('secondCharHairstyle', SFW.hair_style || []);
   populateRadioOptions('secondCharHairColor', generateColorOptions());
   populateRadioOptions('secondCharEyeColor', generateColorOptions());
   populateRadioOptions('secondCharSkinTone', generateSkinToneOptions());
-  populateRadioOptions('secondCharTop', getCategoryItems('top'));
-  populateRadioOptions('secondCharBottom', getCategoryItems('pants').concat(getCategoryItems('skirt')));
-  populateRadioOptions('secondCharDress', getCategoryItems('dress'));
-  populateRadioOptions('secondCharShoes', getCategoryItems('shoes'));
-  populateRadioOptions('secondCharEmotion', window.SFW.emotion_primary || []);
-  populateRadioOptions('secondCharExpressions', window.SFW.expressions || []);
-  populateRadioOptions('secondCharEyeState', window.SFW.eye_state || []);
-  populateRadioOptions('secondCharMouthState', window.SFW.mouth_state || []);
-  populateRadioOptions('secondCharPose', window.SFW.pose || []);
-  populateCheckboxOptions('secondCharAction', window.SFW.hand_gesture || []);
+  populateRadioOptions('secondCharTop', getCategoryItems('top', SFW));
+  populateRadioOptions('secondCharBottom', getCategoryItems('pants', SFW).concat(getCategoryItems('skirt', SFW)));
+  populateRadioOptions('secondCharDress', getCategoryItems('dress', SFW));
+  populateRadioOptions('secondCharShoes', getCategoryItems('shoes', SFW));
+  populateRadioOptions('secondCharEmotion', SFW.emotion_primary || []);
+  populateRadioOptions('secondCharExpressions', SFW.expressions || []);
+  populateRadioOptions('secondCharEyeState', SFW.eye_state || []);
+  populateRadioOptions('secondCharMouthState', SFW.mouth_state || []);
+  populateRadioOptions('secondCharPose', SFW.pose || []);
+  populateCheckboxOptions('secondCharAction', SFW.hand_gesture || []);
   
   // インタラクション
   populateInteractionOptions();
@@ -323,9 +338,10 @@ function generateSkinToneOptions() {
   ];
 }
 
-function getCategoryItems(category) {
-  if (!window.SFW?.outfit) return [];
-  return window.SFW.outfit.filter(item => item.cat === category);
+function getCategoryItems(category, SFW_dict = null) {
+  const SFW = SFW_dict || window.DEFAULT_SFW_DICT?.SFW || window.SFW;
+  if (!SFW?.outfit) return [];
+  return SFW.outfit.filter(item => item.cat === category);
 }
 
 function generateInteractionOptions() {
@@ -768,9 +784,24 @@ function showToast(message, type = 'success') {
 document.addEventListener('DOMContentLoaded', () => {
   // 辞書ファイルの読み込み完了を待つ
   const checkDictionaries = () => {
-    if (window.SFW && window.NSFW) {
+    const hasSFW = !!(window.DEFAULT_SFW_DICT?.SFW || window.SFW);
+    const hasNSFW = !!(window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW);
+    
+    if (hasSFW && hasNSFW) {
+      console.log('辞書データ確認:', {
+        DEFAULT_SFW_DICT: !!window.DEFAULT_SFW_DICT,
+        DEFAULT_NSFW_DICT: !!window.DEFAULT_NSFW_DICT,
+        SFW: !!window.SFW,
+        NSFW: !!window.NSFW
+      });
       initMangaMode();
     } else {
+      console.log('辞書データ待機中...', {
+        DEFAULT_SFW_DICT: !!window.DEFAULT_SFW_DICT,
+        DEFAULT_NSFW_DICT: !!window.DEFAULT_NSFW_DICT,
+        SFW: !!window.SFW,
+        NSFW: !!window.NSFW
+      });
       setTimeout(checkDictionaries, 100);
     }
   };
@@ -782,18 +813,28 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('click', (e) => {
   if (e.target.matches('.tab[data-mode="manga"]')) {
     setTimeout(() => {
-      if (!mangaInitialized) {
+      const hasSFW = !!(window.DEFAULT_SFW_DICT?.SFW || window.SFW);
+      const hasNSFW = !!(window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW);
+      
+      if (!mangaInitialized && hasSFW && hasNSFW) {
+        console.log('タブクリック時の初期化実行');
         initMangaMode();
       }
     }, 100);
   }
 });
 
-// ウィンドウリサイズ時の色ホイール調整
-window.addEventListener('resize', () => {
-  if (mangaInitialized && typeof initSecondCharColorWheels === 'function') {
-    setTimeout(initSecondCharColorWheels, 100);
-  }
+// より確実な初期化のための追加チェック
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const hasSFW = !!(window.DEFAULT_SFW_DICT?.SFW || window.SFW);
+    const hasNSFW = !!(window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW);
+    
+    if (!mangaInitialized && hasSFW && hasNSFW) {
+      console.log('window.load時の初期化実行');
+      initMangaMode();
+    }
+  }, 1000);
 });
 
 // エクスポート（他のスクリプトから使用可能にする）
