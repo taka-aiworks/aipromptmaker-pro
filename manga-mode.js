@@ -11,6 +11,38 @@ function initMangaMode() {
   
   console.log('漫画モード初期化中...');
   
+  // HTMLの漫画モード要素が存在するかチェック
+  const mangaPanel = document.getElementById('panelManga');
+  if (!mangaPanel) {
+    console.error('❌ #panelManga要素が見つかりません');
+    return;
+  }
+  console.log('✅ #panelManga要素確認OK');
+  
+  // 主要な要素の存在チェック
+  const requiredElements = [
+    'mangaEmotionPrimary',
+    'mangaExpressions', 
+    'mangaNSFWExpr',
+    'mangaNSFWExpo'
+  ];
+  
+  const missingElements = [];
+  requiredElements.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      console.log(`✅ #${id} 要素確認OK`);
+    } else {
+      console.error(`❌ #${id} 要素が見つかりません`);
+      missingElements.push(id);
+    }
+  });
+  
+  if (missingElements.length > 0) {
+    console.error('❌ 必要なHTML要素が不足しています:', missingElements);
+    console.log('💡 HTMLファイルの漫画モード部分を確認してください');
+  }
+  
   // イベントリスナーの設定
   setupMangaEventListeners();
   
@@ -18,8 +50,14 @@ function initMangaMode() {
   initSecondCharColorWheels();
   
   // 辞書データがある場合は項目を設定
-  if (window.SFW && window.NSFW) {
+  const SFW = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
+  const NSFW = window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW;
+  
+  if (SFW && NSFW) {
+    console.log('✅ 辞書データ確認OK - populateMangaOptions()を実行');
     populateMangaOptions();
+  } else {
+    console.error('❌ 辞書データが取得できません');
   }
   
   console.log('漫画モード初期化完了');
@@ -289,10 +327,26 @@ function populateInteractionOptions() {
   populateRadioOptions('secondCharInteraction', interactions);
 }
 
-// ヘルパー関数群
+// ヘルパー関数群（デバッグ強化版）
 function populateRadioOptions(containerId, items) {
   const container = document.getElementById(containerId);
-  if (!container || !Array.isArray(items)) return;
+  
+  if (!container) {
+    console.error(`❌ HTML要素が見つかりません: #${containerId}`);
+    return;
+  }
+  
+  if (!Array.isArray(items)) {
+    console.error(`❌ データが配列ではありません: ${containerId}`, items);
+    return;
+  }
+  
+  if (items.length === 0) {
+    console.warn(`⚠️ 空の配列です: ${containerId}`);
+    return;
+  }
+  
+  console.log(`✅ ${containerId}: ${items.length}個のアイテムを設定中...`);
   
   container.innerHTML = '';
   items.forEach((item, index) => {
@@ -319,11 +373,29 @@ function populateRadioOptions(containerId, items) {
     label.appendChild(span);
     container.appendChild(label);
   });
+  
+  console.log(`✅ ${containerId}: 設定完了 (${container.children.length}個の要素)`);
 }
 
 function populateCheckboxOptions(containerId, items) {
   const container = document.getElementById(containerId);
-  if (!container || !Array.isArray(items)) return;
+  
+  if (!container) {
+    console.error(`❌ HTML要素が見つかりません: #${containerId}`);
+    return;
+  }
+  
+  if (!Array.isArray(items)) {
+    console.error(`❌ データが配列ではありません: ${containerId}`, items);
+    return;
+  }
+  
+  if (items.length === 0) {
+    console.warn(`⚠️ 空の配列です: ${containerId}`);
+    return;
+  }
+  
+  console.log(`✅ ${containerId}: ${items.length}個のアイテム（チェックボックス）を設定中...`);
   
   container.innerHTML = '';
   items.forEach((item, index) => {
@@ -350,6 +422,8 @@ function populateCheckboxOptions(containerId, items) {
     label.appendChild(span);
     container.appendChild(label);
   });
+  
+  console.log(`✅ ${containerId}: 設定完了 (${container.children.length}個の要素)`);
 }
 
 function generateColorOptions() {
