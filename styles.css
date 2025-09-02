@@ -933,7 +933,18 @@ legend { display: none; }
   color: var(--brand);
 }
 
-/* ========= NSFW設定 ========= */
+/* ========= SFW/NSFW設定 =========*/
+#mangaSFWSection {
+  border: 1px solid rgba(95, 211, 154, 0.3);
+  border-radius: 10px;
+  padding: 16px;
+  background: rgba(95, 211, 154, 0.05);
+}
+
+#mangaSFWPanel {
+  transition: all 0.3s ease;
+}
+
 #mangaNSFWSection {
   border: 1px solid rgba(255, 107, 107, 0.3);
   border-radius: 10px;
@@ -1258,4 +1269,3 @@ legend { display: none; }
     display: none !important;
   }
 }
-
