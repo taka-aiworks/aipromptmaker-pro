@@ -171,77 +171,116 @@ function populateMangaOptions() {
   const SFW = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
   const NSFW = window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW;
   
+  console.log('辞書データの詳細確認:', {
+    'window.DEFAULT_SFW_DICT': window.DEFAULT_SFW_DICT,
+    'window.DEFAULT_NSFW_DICT': window.DEFAULT_NSFW_DICT,
+    'SFW取得結果': SFW,
+    'NSFW取得結果': NSFW,
+    'SFW存在': !!SFW,
+    'NSFW存在': !!NSFW
+  });
+  
   if (!SFW || !NSFW) {
-    console.log('辞書データが見つかりません:', {
-      DEFAULT_SFW_DICT: !!window.DEFAULT_SFW_DICT,
-      DEFAULT_NSFW_DICT: !!window.DEFAULT_NSFW_DICT,
-      SFW: !!window.SFW,
-      NSFW: !!window.NSFW
+    console.error('辞書データが取得できません:', {
+      'DEFAULT_SFW_DICT構造': window.DEFAULT_SFW_DICT,
+      'DEFAULT_NSFW_DICT構造': window.DEFAULT_NSFW_DICT,
+      'SFW_keys': SFW ? Object.keys(SFW) : 'null',
+      'NSFW_keys': NSFW ? Object.keys(NSFW) : 'null'
     });
     return;
   }
   
   console.log('漫画モード選択肢を設定中...', {
     SFW_keys: Object.keys(SFW),
-    NSFW_keys: Object.keys(NSFW)
+    NSFW_keys: Object.keys(NSFW),
+    'emotion_primary_sample': SFW.emotion_primary?.slice(0, 3),
+    'expression_sample': NSFW.expression?.slice(0, 3)
   });
   
-  // SFWオプションの設定
-  populateRadioOptions('mangaEmotionPrimary', SFW.emotion_primary || []);
-  populateRadioOptions('mangaEmotionDetail', SFW.emotion_detail || []);
-  populateRadioOptions('mangaExpressions', SFW.expressions || []);
-  populateCheckboxOptions('mangaEffectManga', SFW.effect_manga || []);
-  populateRadioOptions('mangaEyeState', SFW.eye_state || []);
-  populateRadioOptions('mangaGaze', SFW.gaze || []);
-  populateRadioOptions('mangaMouthState', SFW.mouth_state || []);
-  populateRadioOptions('mangaPose', SFW.pose || []);
-  populateCheckboxOptions('mangaHandGesture', SFW.hand_gesture || []);
-  populateCheckboxOptions('mangaMovementAction', SFW.movement_action || []);
-  populateRadioOptions('mangaComposition', SFW.composition || []);
-  populateRadioOptions('mangaView', SFW.view || []);
-  populateRadioOptions('mangaCameraView', SFW.view || []);
-  populateCheckboxOptions('mangaPropsLight', SFW.props_light || []);
-  populateCheckboxOptions('mangaEffectMangaFX', SFW.effect_manga || []);
-  populateRadioOptions('mangaBackground', SFW.background || []);
-  populateRadioOptions('mangaLighting', SFW.lighting || []);
-  populateRadioOptions('mangaArtStyle', SFW.art_style || []);
+  // SFWオプションの設定（エラーハンドリング付き）
+  try {
+    populateRadioOptions('mangaEmotionPrimary', SFW.emotion_primary || []);
+    populateRadioOptions('mangaEmotionDetail', SFW.emotion_detail || []);
+    populateRadioOptions('mangaExpressions', SFW.expressions || []);
+    populateCheckboxOptions('mangaEffectManga', SFW.effect_manga || []);
+    populateRadioOptions('mangaEyeState', SFW.eye_state || []);
+    populateRadioOptions('mangaGaze', SFW.gaze || []);
+    populateRadioOptions('mangaMouthState', SFW.mouth_state || []);
+    populateRadioOptions('mangaPose', SFW.pose || []);
+    populateCheckboxOptions('mangaHandGesture', SFW.hand_gesture || []);
+    populateCheckboxOptions('mangaMovementAction', SFW.movement_action || []);
+    populateRadioOptions('mangaComposition', SFW.composition || []);
+    populateRadioOptions('mangaView', SFW.view || []);
+    populateRadioOptions('mangaCameraView', SFW.view || []);
+    populateCheckboxOptions('mangaPropsLight', SFW.props_light || []);
+    populateCheckboxOptions('mangaEffectMangaFX', SFW.effect_manga || []);
+    populateRadioOptions('mangaBackground', SFW.background || []);
+    populateRadioOptions('mangaLighting', SFW.lighting || []);
+    populateRadioOptions('mangaArtStyle', SFW.art_style || []);
+    
+    console.log('SFW選択肢設定完了');
+  } catch (error) {
+    console.error('SFW選択肢設定エラー:', error);
+  }
   
-  // NSFWオプションの設定
-  populateRadioOptions('mangaNSFWExpr', NSFW.expression || []);
-  populateRadioOptions('mangaNSFWExpo', NSFW.exposure || []);
-  populateRadioOptions('mangaNSFWSitu', NSFW.situation || []);
-  populateRadioOptions('mangaNSFWLight', NSFW.lighting || []);
-  populateRadioOptions('mangaNSFWPose', NSFW.pose || []);
-  populateCheckboxOptions('mangaNSFWAction', NSFW.action || []);
-  populateCheckboxOptions('mangaNSFWAcc', NSFW.accessories || []);
-  populateRadioOptions('mangaNSFWOutfit', NSFW.outfit || []);
-  populateCheckboxOptions('mangaNSFWBody', NSFW.body || []);
-  populateRadioOptions('mangaNSFWNipples', NSFW.nipples || []);
-  populateRadioOptions('mangaNSFWUnderwear', NSFW.underwear || []);
+  // NSFWオプションの設定（エラーハンドリング付き）
+  try {
+    populateRadioOptions('mangaNSFWExpr', NSFW.expression || []);
+    populateRadioOptions('mangaNSFWExpo', NSFW.exposure || []);
+    populateRadioOptions('mangaNSFWSitu', NSFW.situation || []);
+    populateRadioOptions('mangaNSFWLight', NSFW.lighting || []);
+    populateRadioOptions('mangaNSFWPose', NSFW.pose || []);
+    populateCheckboxOptions('mangaNSFWAction', NSFW.action || []);
+    populateCheckboxOptions('mangaNSFWAcc', NSFW.accessories || []);
+    populateRadioOptions('mangaNSFWOutfit', NSFW.outfit || []);
+    populateCheckboxOptions('mangaNSFWBody', NSFW.body || []);
+    populateRadioOptions('mangaNSFWNipples', NSFW.nipples || []);
+    populateRadioOptions('mangaNSFWUnderwear', NSFW.underwear || []);
+    
+    console.log('NSFW選択肢設定完了');
+  } catch (error) {
+    console.error('NSFW選択肢設定エラー:', error);
+  }
   
   // 2人目キャラ用（詳細設定）
-  populateRadioOptions('secondCharGender', SFW.gender || []);
-  populateRadioOptions('secondCharAge', SFW.age || []);
-  populateRadioOptions('secondCharHairstyle', SFW.hair_style || []);
-  populateRadioOptions('secondCharHairColor', generateColorOptions());
-  populateRadioOptions('secondCharEyeColor', generateColorOptions());
-  populateRadioOptions('secondCharSkinTone', generateSkinToneOptions());
-  populateRadioOptions('secondCharTop', getCategoryItems('top', SFW));
-  populateRadioOptions('secondCharBottom', getCategoryItems('pants', SFW).concat(getCategoryItems('skirt', SFW)));
-  populateRadioOptions('secondCharDress', getCategoryItems('dress', SFW));
-  populateRadioOptions('secondCharShoes', getCategoryItems('shoes', SFW));
-  populateRadioOptions('secondCharEmotion', SFW.emotion_primary || []);
-  populateRadioOptions('secondCharExpressions', SFW.expressions || []);
-  populateRadioOptions('secondCharEyeState', SFW.eye_state || []);
-  populateRadioOptions('secondCharMouthState', SFW.mouth_state || []);
-  populateRadioOptions('secondCharPose', SFW.pose || []);
-  populateCheckboxOptions('secondCharAction', SFW.hand_gesture || []);
+  try {
+    populateRadioOptions('secondCharGender', SFW.gender || []);
+    populateRadioOptions('secondCharAge', SFW.age || []);
+    populateRadioOptions('secondCharHairstyle', SFW.hair_style || []);
+    populateRadioOptions('secondCharHairColor', generateColorOptions());
+    populateRadioOptions('secondCharEyeColor', generateColorOptions());
+    populateRadioOptions('secondCharSkinTone', generateSkinToneOptions());
+    populateRadioOptions('secondCharTop', getCategoryItems('top', SFW));
+    populateRadioOptions('secondCharBottom', getCategoryItems('pants', SFW).concat(getCategoryItems('skirt', SFW)));
+    populateRadioOptions('secondCharDress', getCategoryItems('dress', SFW));
+    populateRadioOptions('secondCharShoes', getCategoryItems('shoes', SFW));
+    populateRadioOptions('secondCharEmotion', SFW.emotion_primary || []);
+    populateRadioOptions('secondCharExpressions', SFW.expressions || []);
+    populateRadioOptions('secondCharEyeState', SFW.eye_state || []);
+    populateRadioOptions('secondCharMouthState', SFW.mouth_state || []);
+    populateRadioOptions('secondCharPose', SFW.pose || []);
+    populateCheckboxOptions('secondCharAction', SFW.hand_gesture || []);
+    
+    console.log('2人目キャラ選択肢設定完了');
+  } catch (error) {
+    console.error('2人目キャラ選択肢設定エラー:', error);
+  }
   
   // インタラクション
-  populateInteractionOptions();
+  try {
+    populateInteractionOptions();
+    console.log('インタラクション選択肢設定完了');
+  } catch (error) {
+    console.error('インタラクション選択肢設定エラー:', error);
+  }
   
   // ネガティブプリセット
-  populateCheckboxOptions('mangaNegativePreset', generateNegativePresets());
+  try {
+    populateCheckboxOptions('mangaNegativePreset', generateNegativePresets());
+    console.log('ネガティブプリセット設定完了');
+  } catch (error) {
+    console.error('ネガティブプリセット設定エラー:', error);
+  }
 }
 
 // インタラクション選択肢の設定
