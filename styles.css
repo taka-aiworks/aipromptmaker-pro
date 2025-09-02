@@ -836,3 +836,426 @@ legend { display: none; }
 @media (max-width: 1024px){
   :root{ --outfit-scroll-h: 180px; }
 }
+
+/* 漫画モード用CSS追加スタイル - styles.cssの末尾に追加してください */
+
+/* ========= 漫画モード全体のレイアウト ========= */
+#panelManga {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.manga-mode-header {
+  margin-bottom: 20px;
+}
+
+.manga-mode-header h2 {
+  margin: 0 0 8px 0;
+  color: var(--ink);
+}
+
+.manga-priority-note {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+.manga-section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+  margin: 24px 0;
+}
+
+.manga-params-section {
+  margin-bottom: 20px;
+}
+
+.manga-params-section h3 {
+  margin: 0 0 12px 0;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.manga-params-section h4 {
+  margin: 0 0 8px 0;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+/* ========= キャラ基礎設定 ========= */
+.char-base-options {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0;
+}
+
+.char-base-note {
+  background: rgba(106, 161, 255, 0.1);
+  border: 1px solid rgba(106, 161, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+/* ========= LoRA設定 ========= */
+.lora-section {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.lora-content {
+  transition: all 0.3s ease;
+}
+
+.lora-weight-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.lora-weight-control input[type="range"] {
+  flex: 1;
+  max-width: 200px;
+}
+
+.weight-value {
+  min-width: 32px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+/* ========= NSFW設定 ========= */
+#mangaNSFWSection {
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 10px;
+  padding: 16px;
+  background: rgba(255, 107, 107, 0.05);
+}
+
+#mangaNSFWPanel {
+  transition: all 0.3s ease;
+}
+
+/* ========= 2人目キャラ設定 ========= */
+.second-char-section {
+  border: 1px solid rgba(95, 211, 154, 0.3);
+  border-radius: 10px;
+  padding: 16px;
+  background: rgba(95, 211, 154, 0.05);
+}
+
+.second-char-content {
+  transition: all 0.3s ease;
+}
+
+.second-char-io {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.second-char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.second-char-colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.color-picker-item {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.color-picker-item label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ========= インタラクション設定 ========= */
+.interaction-section {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+#sfwInteractionPanel,
+#nsfwInteractionPanel {
+  transition: all 0.3s ease;
+}
+
+/* ========= 出力エリア ========= */
+.manga-output {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.conflict-warning {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  color: #ff6b6b;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+/* ========= スクローラーの統一 ========= */
+#panelManga .scroller {
+  max-height: 140px;
+  min-height: 60px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* ========= チップスタイルの調整 ========= */
+#panelManga .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: 2px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#panelManga .chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(106, 161, 255, 0.4);
+}
+
+#panelManga .chip input[type="radio"]:checked + span,
+#panelManga .chip input[type="checkbox"]:checked + span {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+#panelManga .chip input[type="radio"]:checked,
+#panelManga .chip input[type="checkbox"]:checked {
+  accent-color: var(--brand);
+}
+
+/* ========= レスポンシブ対応 ========= */
+@media (max-width: 1024px) {
+  .second-char-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .second-char-colors {
+    grid-template-columns: 1fr;
+  }
+  
+  .char-base-options {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .lora-weight-control {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  #panelManga .grid.g3 {
+    grid-template-columns: 1fr;
+  }
+  
+  #panelManga .grid.g2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .second-char-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .manga-output .row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .manga-output .row .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+/* ========= 詳細項目の折りたたみ ========= */
+#panelManga details {
+  margin: 12px 0;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+#panelManga details summary {
+  padding: 10px 12px;
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+#panelManga details[open] summary {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 12px;
+}
+
+#panelManga details .grid {
+  padding: 0 12px 12px;
+}
+
+/* ========= カスタムスクロールバー ========= */
+#panelManga .scroller::-webkit-scrollbar {
+  width: 6px;
+}
+
+#panelManga .scroller::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+#panelManga .scroller::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+#panelManga .scroller::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ========= アニメーション効果 ========= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lora-content,
+.second-char-content,
+#mangaNSFWPanel,
+#secondCharLoRAPanel,
+#secondCharCorePanel {
+  animation: fadeIn 0.3s ease when showing;
+}
+
+/* ========= トーストスタイル ========= */
+.manga-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.manga-toast.success {
+  background: rgba(95, 211, 154, 0.9);
+  color: white;
+  border: 1px solid rgba(95, 211, 154, 0.3);
+}
+
+.manga-toast.error {
+  background: rgba(255, 107, 107, 0.9);
+  color: white;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+/* ========= フォーカス状態の改善 ========= */
+#panelManga input[type="text"]:focus,
+#panelManga textarea:focus,
+#panelManga select:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px rgba(106, 161, 255, 0.2);
+}
+
+#panelManga .btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(106, 161, 255, 0.3);
+}
+
+/* ========= 色ホイール（2人目キャラ用）のサイズ調整 ========= */
+.second-char-colors .wheel-box {
+  width: 160px;
+  height: 160px;
+  margin: 8px auto 12px;
+}
+
+/* ========= ダークテーマでの視認性向上 ========= */
+#panelManga .mini {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+#panelManga .note {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ========= 長いテキストの処理 ========= */
+#panelManga .out {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ========= 印刷時の調整 ========= */
+@media print {
+  #panelManga {
+    background: white !important;
+    color: black !important;
+  }
+  
+  #panelManga .card,
+  #panelManga .panel {
+    border: 1px solid #ccc !important;
+    background: white !important;
+  }
+  
+  #panelManga .btn,
+  #panelManga .wheel-box {
+    display: none !important;
+  }
+}
+
