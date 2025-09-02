@@ -63,12 +63,28 @@ function initMangaMode() {
   console.log('漫画モード初期化完了');
 }
 
-// イベントリスナーの設定
+// イベントリスナーの設定（修正版）
 function setupMangaEventListeners() {
   // LoRA使用切り替え
   const loraToggle = document.getElementById('mangaUseLoRA');
   if (loraToggle) {
     loraToggle.addEventListener('change', toggleLoRASettings);
+  }
+  
+  // SFWパラメータ表示切り替え（追加）
+  const sfwParamsToggle = document.getElementById('mangaSFWParamsToggle');
+  if (sfwParamsToggle) {
+    sfwParamsToggle.addEventListener('change', toggleMangaSFWParams);
+    // 初期状態を設定
+    toggleMangaSFWParams();
+  }
+  
+  // 任意項目表示切り替え（追加）
+  const optionalToggle = document.getElementById('mangaOptionalToggle');
+  if (optionalToggle) {
+    optionalToggle.addEventListener('change', toggleMangaOptionalContent);
+    // 初期状態を設定
+    toggleMangaOptionalContent();
   }
   
   // SFW有効化切り替え
@@ -154,6 +170,32 @@ function setupMangaEventListeners() {
   setTimeout(() => {
     updateMangaOutput();
   }, 500);
+}
+
+// SFWパラメータ表示切り替え（新規関数）
+function toggleMangaSFWParams() {
+  const toggle = document.getElementById('mangaSFWParamsToggle');
+  const content = document.getElementById('mangaSFWParamsContent');
+  
+  if (!toggle || !content) return;
+  
+  const isVisible = toggle.checked;
+  content.style.display = isVisible ? 'block' : 'none';
+  
+  console.log('SFWパラメータ表示:', isVisible ? '表示' : '非表示');
+}
+
+// 任意項目表示切り替え（新規関数）
+function toggleMangaOptionalContent() {
+  const toggle = document.getElementById('mangaOptionalToggle');
+  const content = document.getElementById('mangaOptionalContent');
+  
+  if (!toggle || !content) return;
+  
+  const isVisible = toggle.checked;
+  content.style.display = isVisible ? 'block' : 'none';
+  
+  console.log('任意項目表示:', isVisible ? '表示' : '非表示');
 }
 
 // LoRA設定の切り替え
@@ -526,7 +568,7 @@ function populateInteractionOptions() {
   populateRadioOptions('secondCharInteractionNSFW', nsfwInteractions);
 }
 
-// ヘルパー関数群（デバッグ強化版）
+// ヘルパー関数群（修正版 - 未選択ボタン付き）
 function populateRadioOptions(containerId, items) {
   const container = document.getElementById(containerId);
   
@@ -548,6 +590,29 @@ function populateRadioOptions(containerId, items) {
   console.log(`✅ ${containerId}: ${items.length}個のアイテムを設定中...`);
   
   container.innerHTML = '';
+  
+  // 「未選択」ボタンを先頭に追加
+  const clearLabel = document.createElement('label');
+  clearLabel.className = 'chip';
+  clearLabel.style.background = 'rgba(255, 100, 100, 0.1)';
+  clearLabel.style.borderColor = 'rgba(255, 100, 100, 0.3)';
+  clearLabel.style.color = 'rgba(255, 150, 150, 1)';
+  
+  const clearInput = document.createElement('input');
+  clearInput.type = 'radio';
+  clearInput.name = containerId;
+  clearInput.value = '';
+  clearInput.id = `${containerId}_clear`;
+  clearInput.checked = true; // デフォルトで未選択状態
+  
+  const clearSpan = document.createElement('span');
+  clearSpan.textContent = '未選択';
+  
+  clearLabel.appendChild(clearInput);
+  clearLabel.appendChild(clearSpan);
+  container.appendChild(clearLabel);
+  
+  // 通常の選択肢を追加
   items.forEach((item, index) => {
     const label = document.createElement('label');
     label.className = 'chip';
@@ -573,7 +638,7 @@ function populateRadioOptions(containerId, items) {
     container.appendChild(label);
   });
   
-  console.log(`✅ ${containerId}: 設定完了 (${container.children.length}個の要素)`);
+  console.log(`✅ ${containerId}: 設定完了 (${container.children.length}個の要素、未選択ボタン含む)`);
 }
 
 function populateCheckboxOptions(containerId, items) {
@@ -597,6 +662,34 @@ function populateCheckboxOptions(containerId, items) {
   console.log(`✅ ${containerId}: ${items.length}個のアイテム（チェックボックス）を設定中...`);
   
   container.innerHTML = '';
+  
+  // 「全解除」ボタンを先頭に追加
+  const clearButton = document.createElement('button');
+  clearButton.type = 'button';
+  clearButton.className = 'btn ghost small';
+  clearButton.textContent = '全解除';
+  clearButton.style.cssText = `
+    margin-right: 8px;
+    margin-bottom: 8px;
+    background: rgba(255, 100, 100, 0.1);
+    border-color: rgba(255, 100, 100, 0.3);
+    color: rgba(255, 150, 150, 1);
+    padding: 4px 8px;
+    font-size: 12px;
+  `;
+  
+  clearButton.addEventListener('click', () => {
+    container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.checked = false;
+    });
+    if (typeof updateMangaOutput === 'function') {
+      updateMangaOutput();
+    }
+  });
+  
+  container.appendChild(clearButton);
+  
+  // 通常の選択肢を追加
   items.forEach((item, index) => {
     const label = document.createElement('label');
     label.className = 'chip';
@@ -622,7 +715,7 @@ function populateCheckboxOptions(containerId, items) {
     container.appendChild(label);
   });
   
-  console.log(`✅ ${containerId}: 設定完了 (${container.children.length}個の要素)`);
+  console.log(`✅ ${containerId}: 設定完了 (${container.children.length}個の要素、全解除ボタン含む)`);
 }
 
 // 存在する要素にのみ設定するヘルパー関数
