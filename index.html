@@ -297,6 +297,8 @@
     </section>
 
 <!-- 漫画モードパネル（修正版） -->
+
+<!-- 漫画モードパネル（改善版・統一デザイン） -->
 <section id="panelManga" class="card" hidden>
   <div class="manga-mode-header">
     <h2>🎨 漫画モード</h2>
@@ -305,9 +307,12 @@
     </div>
   </div>
 
-   <!-- 1) キャラ基礎使用方式（1人目用・簡略化） -->
+  <!-- 1) キャラ基礎使用方式（1人目用・簡略化） -->
   <div class="manga-params-section">
-    <h3>1. キャラ基礎使用方式（1人目）</h3>
+    <div class="row" style="align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0;">1. キャラ基礎使用方式（1人目）</h3>
+    </div>
+    
     <div class="char-base-options">
       <label class="inline">
         <input type="radio" name="mangaCharBase" value="B" checked>
@@ -326,8 +331,8 @@
 
   <div class="manga-section-divider"></div>
 
-  <!-- 2) LoRA設定（修正版：チェックボックスで開閉） -->
-  <div class="lora-section">
+  <!-- 2) LoRA設定 -->
+  <div class="manga-params-section">
     <div class="row" style="align-items: center; margin-bottom: 12px;">
       <h3 style="margin: 0;">2. LoRA設定（任意）</h3>
       <label class="inline" style="margin-left: 16px;">
@@ -356,10 +361,17 @@
 
   <div class="manga-section-divider"></div>
 
-<!-- 3) 漫画パラメータ（SFW） - 開閉可能に変更 -->
+  <!-- 3) 漫画パラメータ（SFW）- 統一デザインで開閉可能 -->
   <div class="manga-params-section">
-    <details open>
-      <summary class="mini"><span class="caret">▼</span> 3. 漫画パラメータ（SFW）</summary>
+    <div class="row" style="align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0;">3. 漫画パラメータ（SFW）</h3>
+      <label class="inline" style="margin-left: 16px;">
+        <input type="checkbox" id="mangaSFWParamsToggle" checked>
+        パラメータを表示
+      </label>
+    </div>
+    
+    <div id="mangaSFWParamsContent" style="display: block;">
       <div style="margin-top: 12px;">
         
         <!-- 感情（必須に近い） -->
@@ -456,33 +468,42 @@
         </div>
         
         <!-- 任意項目（折りたたみ） -->
-        <details>
-          <summary class="mini"><span class="caret">▶</span> 任意項目（背景・ライティング・画風）</summary>
-          <div style="margin-top: 12px;">
-            <div class="grid g3">
-              <div>
-                <label class="mini">背景 - ラジオ（単一）</label>
-                <div id="mangaBackground" class="scroller"></div>
-              </div>
-              <div>
-                <label class="mini">ライティング - ラジオ（単一）</label>
-                <div id="mangaLighting" class="scroller"></div>
-              </div>
-              <div>
-                <label class="mini">画風 - ラジオ（単一）</label>
-                <div id="mangaArtStyle" class="scroller"></div>
+        <div class="manga-optional-section">
+          <div class="row" style="align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0;" class="mini">任意項目（背景・ライティング・画風）</h4>
+            <label class="inline" style="margin-left: 16px;">
+              <input type="checkbox" id="mangaOptionalToggle">
+              オプション項目を表示
+            </label>
+          </div>
+          
+          <div id="mangaOptionalContent" style="display: none;">
+            <div style="margin-top: 12px;">
+              <div class="grid g3">
+                <div>
+                  <label class="mini">背景 - ラジオ（単一）</label>
+                  <div id="mangaBackground" class="scroller"></div>
+                </div>
+                <div>
+                  <label class="mini">ライティング - ラジオ（単一）</label>
+                  <div id="mangaLighting" class="scroller"></div>
+                </div>
+                <div>
+                  <label class="mini">画風 - ラジオ（単一）</label>
+                  <div id="mangaArtStyle" class="scroller"></div>
+                </div>
               </div>
             </div>
           </div>
-        </details>
+        </div>
       </div>
-    </details>
+    </div>
   </div>
   
   <div class="manga-section-divider"></div>
 
   <!-- 4) NSFW -->
-  <div id="mangaNSFWSection" class="manga-params-section">
+  <div class="manga-params-section">
     <div class="row" style="align-items: center; margin-bottom: 12px;">
       <h3 style="margin: 0;">4. NSFW（任意・初期閉／デフォOFF）</h3>
       <label class="inline" style="margin-left: 16px;">
@@ -553,8 +574,8 @@
 
   <div class="manga-section-divider"></div>
 
-  <!-- 5) 2人目キャラ（修正版・チェックボックスで開閉） -->
-  <div class="second-char-section">
+  <!-- 5) 2人目キャラ -->
+  <div class="manga-params-section">
     <div class="row" style="align-items: center; margin-bottom: 12px;">
       <h3 style="margin: 0;">5. 2人目キャラ（任意）</h3>
       <label class="inline" style="margin-left: 16px;">
@@ -711,7 +732,7 @@
       </div>
       
       <!-- 2人目のパラメータ設定 -->
-      <!-- インタラクション（修正版：SFW/NSFW切り替え） -->
+      <!-- インタラクション -->
       <div class="interaction-section">
         <h4 class="mini">インタラクション（何をするか）</h4>
         
@@ -749,7 +770,9 @@
 
   <!-- 6) ネガティブプロンプト -->
   <div class="manga-params-section">
-    <h3>6. ネガティブプロンプト</h3>
+    <div class="row" style="align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0;">6. ネガティブプロンプト</h3>
+    </div>
     
     <div style="margin-bottom: 12px;">
       <h4 class="mini">プリセット（チェック・複数可）</h4>
@@ -767,13 +790,16 @@
 
   <!-- 7) 固定タグ -->
   <div class="manga-params-section">
-    <h3>7. 固定タグ</h3>
+    <div class="row" style="align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0;">7. 固定タグ</h3>
+    </div>
+    
     <label>固定タグ（先頭に付与）</label>
     <textarea id="fixedManga" rows="3" placeholder="※タグを追加したい場合はここに入力"></textarea>
     <div class="note mini">出力時に最初に配置されます</div>
   </div>
 
-  <!-- 8) 出力エリア（他モードと統一） -->
+  <!-- 8) 出力エリア -->
   <div class="manga-output">
     <div id="conflictWarning" class="conflict-warning" style="display: none;">
       ⚠️ 設定に競合があります：NSFWが優先されます
@@ -822,7 +848,6 @@
     </div>
   </div>
 </section>
-
           
 <!-- ======================= 単語モード：パネル本体 ======================= -->
 <section id="panelWordMode" class="card" hidden>
