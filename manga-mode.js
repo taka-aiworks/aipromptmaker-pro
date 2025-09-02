@@ -454,10 +454,11 @@ function populateMangaOptions() {
     populateRadioOptions('mangaNSFWLight', NSFW.lighting || []);
     populateRadioOptions('mangaNSFWPose', NSFW.pose || []);
     populateCheckboxOptions('mangaNSFWAction', NSFW.action || []);
-    populateCheckboxOptions('mangaNSFWAcc', NSFW.accessories || []);
+    populateCheckboxOptions('mangaNSFWAcc', NSFW.accessories || NSFW.accessory || []);
     populateRadioOptions('mangaNSFWOutfit', NSFW.outfit || []);
     populateCheckboxOptions('mangaNSFWBody', NSFW.body || []);
-    populateRadioOptions('mangaNSFWNipples', NSFW.nipples || []);  // nipple -> nipples
+    // 辞書のキー名を確認：nipples または nipple
+    populateRadioOptions('mangaNSFWNipples', NSFW.nipples || NSFW.nipple || []);
     populateRadioOptions('mangaNSFWUnderwear', NSFW.underwear || []);
     
     console.log('NSFW選択肢設定完了');
@@ -822,7 +823,7 @@ function generateMangaPrompt() {
     addSelectedValues(tags, 'mangaNSFWAcc');
     addSelectedValues(tags, 'mangaNSFWOutfit');
     addSelectedValues(tags, 'mangaNSFWBody');
-    addSelectedValues(tags, 'mangaNSFWNipples'); // nipple -> nipples
+    addSelectedValues(tags, 'mangaNSFWNipples'); // 辞書のキーに合わせて調整済み
     addSelectedValues(tags, 'mangaNSFWUnderwear');
   }
   
