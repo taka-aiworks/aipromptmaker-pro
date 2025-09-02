@@ -272,7 +272,7 @@ function populateMangaOptions() {
     populateCheckboxOptions('mangaNSFWAcc', NSFW.accessories || []);
     populateRadioOptions('mangaNSFWOutfit', NSFW.outfit || []);
     populateCheckboxOptions('mangaNSFWBody', NSFW.body || []);
-    populateRadioOptions('mangaNSFWNipples', NSFW.nipples || []);
+    populateRadioOptions('mangaNSFWNipple', NSFW.nipple || []);
     populateRadioOptions('mangaNSFWUnderwear', NSFW.underwear || []);
     
     console.log('NSFW選択肢設定完了');
@@ -604,7 +604,7 @@ function generateMangaPrompt() {
     addSelectedValues(tags, 'mangaNSFWAcc');
     addSelectedValues(tags, 'mangaNSFWOutfit');
     addSelectedValues(tags, 'mangaNSFWBody');
-    addSelectedValues(tags, 'mangaNSFWNipples');
+    addSelectedValues(tags, 'mangaNSFWNipple');
     addSelectedValues(tags, 'mangaNSFWUnderwear');
   }
   
