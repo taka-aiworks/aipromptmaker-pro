@@ -1,5 +1,4 @@
-
-{
+window.DEFAULT_NSFW_DICT = {
   "NSFW": {
     "expression": [
       { "tag": "aroused",          "ja": "上気した表情", "level": "L1" },
@@ -577,4 +576,4 @@
       { "tag": "coprophagia",        "ja": "スカトロ食",          "level": "L3" }
     ]
   }
-}
+};
