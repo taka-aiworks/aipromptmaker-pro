@@ -1067,40 +1067,45 @@ function initPlannerMode() {
 
   // renderPlannerNSFW関数を修正
   function renderPlannerNSFW() {
-    const level = document.querySelector('input[name="pl_nsfwLevel"]:checked')?.value || "L1";
-    const order = { L1: 1, L2: 2, L3: 3 };
-    const allowLevel = (lv) => (order[lv || "L1"] || 1) <= (order[level] || 1);
-    const levelLabel = (x) => ({ L1: "R-15", L2: "R-18", L3: "R-18G" }[x || "L1"] || "R-15");
-    
-    const filterByLevel = (arr) => normList(arr).filter(x => allowLevel(x.level));
-    
-    const createRadio = (item, name) => 
-      `<label class="chip">
-        <input type="radio" name="${name}" value="${item.tag}">
-        ${item.label}<span class="mini"> ${levelLabel(item.level)}</span>
+  const level = document.querySelector('input[name="pl_nsfwLevel"]:checked')?.value || "L1";
+  const order = { L1: 1, L2: 2, L3: 3 };
+  const allowLevel = (lv) => (order[lv || "L1"] || 1) <= (order[level] || 1);
+  const levelLabel = (x) => ({ L1: "R-15", L2: "R-18", L3: "R-18G" }[x || "L1"] || "R-15");
+  
+  const filterByLevel = (arr) => normList(arr).filter(x => allowLevel(x.level));
+  
+  const createRadio = (item, name) => 
+    `<label class="chip">
+      <input type="radio" name="${name}" value="${item.tag}">
+      ${item.label}<span class="mini"> ${levelLabel(item.level)}</span>
+    </label>`;
+
+  // 各NSFW要素を描画（ラジオボタン、未選択オプション付き）
+  const nsfwElements = [
+    ['pl_nsfw_expo', 'exposure', NSFW.exposure],
+    ['pl_nsfw_underwear', 'underwear', NSFW.underwear],
+    ['pl_nsfw_outfit', 'outfit', NSFW.outfit],
+    ['pl_nsfw_expr', 'expression', NSFW.expression],
+    ['pl_nsfw_situ', 'situation', NSFW.situation],
+    ['pl_nsfw_light', 'lighting', NSFW.lighting],
+    ['pl_nsfw_pose', 'pose', NSFW.pose],
+    ['pl_nsfw_acc', 'accessory', NSFW.accessory],
+    ['pl_nsfw_body', 'body', NSFW.body],
+    ['pl_nsfw_nipple', 'nipples', NSFW.nipples]
+  ];
+
+  nsfwElements.forEach(([elementId, category, items]) => {
+    const element = document.getElementById(elementId);
+    if (element && items) {
+      const radioList = filterByLevel(items).map(item => createRadio(item, elementId)).join('');
+      const noneOption = `<label class="chip">
+        <input type="radio" name="${elementId}" value="" checked>
+        <span>（未選択）</span>
       </label>`;
-
-    // 各NSFW要素を描画（ラジオボタン）
-    const nsfwElements = [
-      ['pl_nsfw_expo', 'exposure', NSFW.exposure],
-      ['pl_nsfw_underwear', 'underwear', NSFW.underwear],
-      ['pl_nsfw_outfit', 'outfit', NSFW.outfit],
-      ['pl_nsfw_expr', 'expression', NSFW.expression],
-      ['pl_nsfw_situ', 'situation', NSFW.situation],
-      ['pl_nsfw_light', 'lighting', NSFW.lighting],
-      ['pl_nsfw_pose', 'pose', NSFW.pose],
-      ['pl_nsfw_acc', 'accessory', NSFW.accessory],
-      ['pl_nsfw_body', 'body', NSFW.body],
-      ['pl_nsfw_nipple', 'nipples', NSFW.nipples]
-    ];
-
-    nsfwElements.forEach(([elementId, category, items]) => {
-      const element = document.getElementById(elementId);
-      if (element && items) {
-        element.innerHTML = filterByLevel(items).map(item => createRadio(item, elementId)).join('');
-      }
-    });
-  }
+      element.innerHTML = noneOption + radioList;
+    }
+  });
+}
   
   window.renderPlannerNSFW = renderPlannerNSFW;
 }
