@@ -1152,42 +1152,7 @@ function bindCopyTripletExplicit(pairs) {
   });
 }
 
-// getFmt関数（他のモードとの互換性のため）
-function getFmt(selId, fallback = "a1111") {
-  const FORMATTERS = {
-    a1111: { 
-      label: "Web UI（汎用）",
-      line: (p, n, seed) => `Prompt: ${p}\nNegative prompt: ${n}\nSeed: ${seed}`,
-    },
-    invoke: { 
-      label: "InvokeAI",
-      line: (p, n, seed) => `invoke --prompt "${p}" --negative_prompt "${n}" --seed ${seed}`,
-    },
-    comfy: { 
-      label: "ComfyUI（テキスト）",
-      line: (p, n, seed) => `positive="${p}"\nnegative="${n}"\nseed=${seed}`,
-    },
-    sdnext: { 
-      label: "SD.Next（dream.py）",
-      line: (p, n, seed) => `python dream.py -p "${p}" -n "${n}" -S ${seed}`,
-    },
-    nai: { 
-      label: "NovelAI",
-      line: (p, n, seed) => `Prompt: ${p}\nUndesired: ${n}\nSeed: ${seed}`,
-    }
-  };
-  
-  const sel = document.querySelector(selId);
-  const format = sel?.value || fallback;
-  return FORMATTERS[format] || FORMATTERS[fallback];
-}
-
-// nowStamp関数（他のモードとの互換性のため）
-function nowStamp() {
-  const d = new Date();
-  const z = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`;
-}
+// 既存のapp.jsの関数を使用するため、重複定義を削除
 
 // 漫画モードの初期化を自動実行
 document.addEventListener('DOMContentLoaded', () => {
