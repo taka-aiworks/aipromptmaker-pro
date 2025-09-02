@@ -1,4 +1,4 @@
-{
+window.DEFAULT_SFW_DICT = {
   "SFW": {
    "age": [
       { "tag": "newborn", "label": "新生児" },
@@ -831,4 +831,4 @@
     { "tag": "stretching", "label": "伸びをする" }
   ]
   }
-}
+};
