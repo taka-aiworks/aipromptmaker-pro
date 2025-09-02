@@ -297,6 +297,7 @@
     </section>
 
 <!-- 漫画モードパネル（修正版） -->
+<!-- 漫画モードパネル（修正版） -->
 <section id="panelManga" class="card" hidden>
   <div class="manga-mode-header">
     <h2>🎨 漫画モード</h2>
@@ -311,7 +312,7 @@
     <div class="char-base-options">
       <label class="inline">
         <input type="radio" name="mangaCharBase" value="C" checked>
-      　 使わない（完全自由）
+        使わない（完全自由）
       </label>
       <label class="inline">
         <input type="radio" name="mangaCharBase" value="B">
@@ -327,18 +328,17 @@
 
   <div class="manga-section-divider"></div>
 
-  <!-- 2) LoRA設定 -->
+  <!-- 2) LoRA設定（修正版：チェックボックスで開閉） -->
   <div class="lora-section">
-    <div class="lora-toggle" onclick="toggleLoraSection()">
-      <span class="caret">▶</span>
-      <span>2. LoRA設定（任意）</span>
-    </div>
-    <div id="loraContent" class="lora-content">
-      <label class="inline">
+    <div class="row" style="align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0;">2. LoRA設定（任意）</h3>
+      <label class="inline" style="margin-left: 16px;">
         <input type="checkbox" id="mangaUseLoRA">
         LoRAを使う
       </label>
-      
+    </div>
+    
+    <div id="loraContent" class="lora-content" style="display: none;">
       <div style="margin-top: 12px;">
         <label>LoRAタグ</label>
         <input type="text" id="mangaLoRATag" placeholder="<lora:__________:0.8>">
@@ -358,7 +358,7 @@
 
   <div class="manga-section-divider"></div>
 
-  <!-- 3) 漫画パラメータ（SFW） -->
+  <!-- 3) 漫画パラメータ（SFW）- 既存のまま -->
   <div class="manga-params-section">
     <h3>3. 漫画パラメータ（SFW）</h3>
     
@@ -551,163 +551,193 @@
 
   <div class="manga-section-divider"></div>
 
-  <!-- 5) 2人目キャラ（修正版・デフォルトで閉じる） -->
+  <!-- 5) 2人目キャラ（修正版・チェックボックスで開閉） -->
   <div class="second-char-section">
-    <div class="second-char-toggle" onclick="toggleSecondChar()">
-      <span class="caret">▶</span>
-      <span>5. 2人目キャラ（任意・折りたたみ：初期閉）</span>
-    </div>
-    <div id="secondCharContent" class="second-char-content">
-      <label class="inline">
+    <div class="row" style="align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0;">5. 2人目キャラ（任意）</h3>
+      <label class="inline" style="margin-left: 16px;">
         <input type="checkbox" id="mangaSecondCharEnable">
         2人目を追加する
       </label>
+    </div>
+    
+    <div id="secondCharContent" class="second-char-content" style="display: none;">
+      <!-- 2人目のインポート/エクスポートボタン -->
+      <div class="second-char-io" style="margin-bottom: 16px; padding: 12px; border: 1px dashed var(--line); border-radius: 8px;">
+        <div class="row" style="align-items: center; gap: 8px;">
+          <h4 style="margin: 0;">2人目キャラ設定</h4>
+          <input type="file" id="importSecondChar" accept="application/json" hidden>
+          <label for="importSecondChar" class="btn small">設定を読み込む</label>
+          <button id="btnExportSecondChar" class="btn ghost small">設定をエクスポート</button>
+        </div>
+      </div>
       
-      <div id="secondCharSettings" class="second-char-details">
-        <!-- LoRA設定 -->
-        <div style="margin-bottom: 16px;">
-          <h4 class="mini">LoRA（任意）</h4>
-          <label class="inline">
-            <input type="checkbox" id="secondCharUseLoRA">
-            LoRAを使う
-          </label>
-          <input type="text" id="secondCharLoRATag" placeholder="<lora:__________:0.8>" style="margin-top: 8px;">
+      <!-- LoRA設定 -->
+      <div style="margin-bottom: 16px;">
+        <h4 class="mini">LoRA（任意）</h4>
+        <label class="inline">
+          <input type="checkbox" id="secondCharUseLoRA">
+          LoRAを使う
+        </label>
+        <div id="secondCharLoRAPanel" style="display: none; margin-top: 8px;">
+          <input type="text" id="secondCharLoRATag" placeholder="<lora:__________:0.8>">
           <div class="lora-weight-control">
             <span class="mini">重み:</span>
             <input type="range" id="secondCharLoRAWeight" min="0.4" max="1.2" step="0.1" value="0.8">
             <span class="weight-value" id="secondCharLoRAWeightValue">0.8</span>
           </div>
         </div>
+      </div>
+      
+      <!-- キャラ基礎使用方式（2人目用） -->
+      <div style="margin-bottom: 16px;">
+        <h4 class="mini">キャラ基礎使用方式</h4>
+        <div class="char-base-options">
+          <label class="inline">
+            <input type="radio" name="secondCharBase" value="C" checked>
+            C: 使わない（完全自由）
+          </label>
+          <label class="inline">
+            <input type="radio" name="secondCharBase" value="B">
+            B: コア＋服を使う
+          </label>
+        </div>
+      </div>
+      
+      <!-- コア設定（B選択時・2人目用） -->
+      <div id="secondCharCorePanel" class="second-char-details" style="display: none;">
+        <h4 style="margin: 0 0 12px 0;">コア固定設定（2人目専用）</h4>
         
-        <!-- キャラ基礎使用方式（2人目用） -->
-        <div style="margin-bottom: 16px;">
-          <h4 class="mini">キャラ基礎使用方式</h4>
-          <div class="char-base-options">
-            <label class="inline">
-              <input type="radio" name="secondCharBase" value="C" checked>
-              C: 使わない（完全自由）
-            </label>
-            <label class="inline">
-              <input type="radio" name="secondCharBase" value="B">
-              B: コア＋服を使う
-            </label>
+        <div class="second-char-grid">
+          <div>
+            <label class="mini">性別</label>
+            <div id="secondCharGender" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">年齢</label>
+            <div id="secondCharAge" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">髪型</label>
+            <div id="secondCharHairstyle" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">髪色</label>
+            <div id="secondCharHairColor" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">瞳色</label>
+            <div id="secondCharEyeColor" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">肌色</label>
+            <div id="secondCharSkinTone" class="scroller"></div>
           </div>
         </div>
         
-        <!-- コア設定（B選択時・2人目用） -->
-        <div id="secondCharCorePanel" class="second-char-details">
-          <h4 style="margin: 0 0 12px 0;">コア固定設定（2人目専用）</h4>
-          
-          <div class="second-char-grid">
-            <div>
-              <label class="mini">性別</label>
-              <div id="secondCharGender" class="scroller"></div>
-            </div>
-            <div>
-              <label class="mini">年齢</label>
-              <div id="secondCharAge" class="scroller"></div>
-            </div>
-            <div>
-              <label class="mini">髪型</label>
-              <div id="secondCharHairstyle" class="scroller"></div>
-            </div>
-            <div>
-              <label class="mini">髪色</label>
-              <div id="secondCharHairColor" class="scroller"></div>
-            </div>
-            <div>
-              <label class="mini">瞳色</label>
-              <div id="secondCharEyeColor" class="scroller"></div>
-            </div>
-            <div>
-              <label class="mini">肌色</label>
-              <div id="secondCharSkinTone" class="scroller"></div>
-            </div>
+        <h4 style="margin: 16px 0 8px 0;">服固定設定（2人目専用）</h4>
+        
+        <div class="second-char-grid">
+          <div>
+            <label class="mini">トップス</label>
+            <div id="secondCharTop" class="scroller"></div>
           </div>
-          
-          <h4 style="margin: 16px 0 8px 0;">服固定設定（2人目専用）</h4>
-          
-          <div class="second-char-grid">
-            <div>
-              <label class="mini">トップス</label>
-              <div id="secondCharTop" class="scroller"></div>
-            </div>
-            <div>
-              <label class="mini">ボトムス</label>
-              <div id="secondCharBottom" class="scroller"></div>
-            </div>
-            <div>
-              <label class="mini">ドレス</label>
-              <div id="secondCharDress" class="scroller"></div>
-            </div>
-            <div>
-              <label class="mini">靴</label>
-              <div id="secondCharShoes" class="scroller"></div>
-            </div>
+          <div>
+            <label class="mini">ボトムス</label>
+            <div id="secondCharBottom" class="scroller"></div>
           </div>
-          
-          <h4 style="margin: 16px 0 8px 0;">色固定設定（2人目専用）</h4>
-          <div class="second-char-colors">
-            <div class="color-picker-item">
-              <label>トップス色</label>
-              <div class="wheel-box">
-                <div id="wheel_secondTop" class="wheel"></div>
-                <div id="thumb_secondTop" class="thumb"></div>
-              </div>
-              <div class="row mini">
-                S: <input id="sat_secondTop" type="range" min="0" max="100" value="80">
-                L: <input id="lit_secondTop" type="range" min="0" max="100" value="55">
-              </div>
-              <div class="row mini">
-                <div id="sw_secondTop" class="swatch"></div>
-                <span>色: <code id="tag_secondTop" class="tag">orange</code></span>
-              </div>
-            </div>
-            
-            <div class="color-picker-item">
-              <label>ボトムス色</label>
-              <div class="wheel-box">
-                <div id="wheel_secondBottom" class="wheel"></div>
-                <div id="thumb_secondBottom" class="thumb"></div>
-              </div>
-              <div class="row mini">
-                S: <input id="sat_secondBottom" type="range" min="0" max="100" value="70">
-                L: <input id="lit_secondBottom" type="range" min="0" max="100" value="50">
-              </div>
-              <div class="row mini">
-                <div id="sw_secondBottom" class="swatch"></div>
-                <span>色: <code id="tag_secondBottom" class="tag">blue</code></span>
-              </div>
-            </div>
-            
-            <div class="color-picker-item">
-              <label>靴色</label>
-              <div class="wheel-box">
-                <div id="wheel_secondShoes" class="wheel"></div>
-                <div id="thumb_secondShoes" class="thumb"></div>
-              </div>
-              <div class="row mini">
-                S: <input id="sat_secondShoes" type="range" min="0" max="100" value="0">
-                L: <input id="lit_secondShoes" type="range" min="0" max="100" value="30">
-              </div>
-              <div class="row mini">
-                <div id="sw_secondShoes" class="swatch"></div>
-                <span>色: <code id="tag_secondShoes" class="tag">black</code></span>
-              </div>
-            </div>
+          <div>
+            <label class="mini">ドレス</label>
+            <div id="secondCharDress" class="scroller"></div>
+          </div>
+          <div>
+            <label class="mini">靴</label>
+            <div id="secondCharShoes" class="scroller"></div>
           </div>
         </div>
         
-        <!-- 2人目のパラメータ設定 -->
-        <!-- インタラクション -->
-        <div class="interaction-section">
-          <h4 class="mini">インタラクション（何をするか）- ラジオ（単一）</h4>
-          <div id="secondCharInteraction" class="scroller"></div>
-          <div class="note mini" style="margin-top: 8px;">
-            <strong>SFW候補：</strong>常時表示（例：手をつなぐ/抱きしめる/支える/握手/ハイタッチ 等）<br>
-            <strong>NSFW候補：</strong>NSFWトグルON時のみ表示（例：キス/密着抱き合い/服を脱がす/押し倒す/性的行為 等）<br>
-            <strong>合成：</strong>二人の位置/ポーズ/アクションに矛盾が出ないよう片方を優先・補正する（優先順位＝interaction > n_pose/pose > n_action/action）
+        <h4 style="margin: 16px 0 8px 0;">色固定設定（2人目専用）</h4>
+        <div class="second-char-colors">
+          <div class="color-picker-item">
+            <label>トップス色</label>
+            <div class="wheel-box">
+              <div id="wheel_secondTop" class="wheel"></div>
+              <div id="thumb_secondTop" class="thumb"></div>
+            </div>
+            <div class="row mini">
+              S: <input id="sat_secondTop" type="range" min="0" max="100" value="0">
+              L: <input id="lit_secondTop" type="range" min="0" max="100" value="90">
+            </div>
+            <div class="row mini">
+              <div id="sw_secondTop" class="swatch"></div>
+              <span>色: <code id="tag_secondTop" class="tag">white</code></span>
+            </div>
           </div>
+          
+          <div class="color-picker-item">
+            <label>ボトムス色</label>
+            <div class="wheel-box">
+              <div id="wheel_secondBottom" class="wheel"></div>
+              <div id="thumb_secondBottom" class="thumb"></div>
+            </div>
+            <div class="row mini">
+              S: <input id="sat_secondBottom" type="range" min="0" max="100" value="80">
+              L: <input id="lit_secondBottom" type="range" min="0" max="100" value="50">
+            </div>
+            <div class="row mini">
+              <div id="sw_secondBottom" class="swatch"></div>
+              <span>色: <code id="tag_secondBottom" class="tag">blue</code></span>
+            </div>
+          </div>
+          
+          <div class="color-picker-item">
+            <label>靴色</label>
+            <div class="wheel-box">
+              <div id="wheel_secondShoes" class="wheel"></div>
+              <div id="thumb_secondShoes" class="thumb"></div>
+            </div>
+            <div class="row mini">
+              S: <input id="sat_secondShoes" type="range" min="0" max="100" value="0">
+              L: <input id="lit_secondShoes" type="range" min="0" max="100" value="50">
+            </div>
+            <div class="row mini">
+              <div id="sw_secondShoes" class="swatch"></div>
+              <span>色: <code id="tag_secondShoes" class="tag">gray</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 2人目のパラメータ設定 -->
+      <!-- インタラクション（修正版：SFW/NSFW切り替え） -->
+      <div class="interaction-section">
+        <h4 class="mini">インタラクション（何をするか）</h4>
+        
+        <!-- SFW/NSFW切り替えラジオボタン -->
+        <div class="row mini" style="gap: 12px; margin: 8px 0;">
+          <label class="inline">
+            <input type="radio" name="interactionMode" value="sfw" checked>
+            SFWインタラクション
+          </label>
+          <label class="inline">
+            <input type="radio" name="interactionMode" value="nsfw">
+            NSFWインタラクション
+          </label>
+        </div>
+        
+        <!-- SFWインタラクション -->
+        <div id="sfwInteractionPanel">
+          <div id="secondCharInteractionSFW" class="scroller"></div>
+        </div>
+        
+        <!-- NSFWインタラクション -->
+        <div id="nsfwInteractionPanel" style="display: none;">
+          <div id="secondCharInteractionNSFW" class="scroller"></div>
+        </div>
+        
+        <div class="note mini" style="margin-top: 8px;">
+          <strong>インタラクション優先順位：</strong>interaction > n_pose/pose > n_action/action<br>
+          二人の位置/ポーズ/アクションに矛盾が出ないよう調整されます
         </div>
       </div>
     </div>
@@ -731,53 +761,66 @@
     </div>
   </div>
 
-  <!-- 7) 出力エリア（画面下固定） -->
+  <div class="manga-section-divider"></div>
+
+  <!-- 7) 固定タグ -->
+  <div class="manga-params-section">
+    <h3>7. 固定タグ</h3>
+    <label>固定タグ（先頭に付与）</label>
+    <textarea id="fixedManga" rows="3" placeholder="※タグを追加したい場合はここに入力"></textarea>
+    <div class="note mini">出力時に最初に配置されます</div>
+  </div>
+
+  <!-- 8) 出力エリア（他モードと統一） -->
   <div class="manga-output">
     <div id="conflictWarning" class="conflict-warning" style="display: none;">
       ⚠️ 設定に競合があります：NSFWが優先されます
     </div>
     
-    <div class="output-grid">
-      <div class="output-section">
-        <h4>Prompt（自動生成・読み取り専用）</h4>
-        <div id="mangaPromptOutput" class="output-text">
-          <!-- 自動生成されたプロンプトがここに表示 -->
-        </div>
-      </div>
-      
-      <div class="output-section">
-        <h4>Negative（自動生成・読み取り専用）</h4>
-        <div id="mangaNegativeOutput" class="output-text">
-          <!-- 自動生成されたネガティブプロンプトがここに表示 -->
-        </div>
-      </div>
-    </div>
-    
-    <div class="copy-buttons">
-      <button class="btn small" onclick="copyMangaOutput('all')">全部をコピー</button>
-      <button class="btn ghost small" onclick="copyMangaOutput('prompt')">Promptだけ</button>
-      <button class="btn ghost small" onclick="copyMangaOutput('negative')">Negativeだけ</button>
-    </div>
-    
-    <div class="output-controls">
-      <div>
+    <div class="row" style="gap: 8px; margin-top: 10px;">
+      <button id="btnMangaGenerate" class="btn ok">プロンプト生成</button>
+      <label class="inline mini">出力フォーマット
+        <select id="fmtManga">
+          <option value="a1111" selected>Web UI（汎用）</option>
+          <option value="invoke">InvokeAI（CLI）</option>
+          <option value="comfy">ComfyUI（テキスト）</option>
+          <option value="sdnext">SD.Next（dream.py）</option>
+          <option value="nai">NovelAI</option>
+        </select>
+      </label>
+      <div class="row mini" style="margin-left: auto;">
         <label class="inline">
           <input type="checkbox" id="mangaFixedSeed">
           seed固定
         </label>
-      </div>
-      <div>
         <label class="inline">
           <input type="checkbox" id="mangaMicroDiff">
           微差スイッチ
         </label>
+        <span>seed: <span id="mangaSeedValue">1234567890</span></span>
       </div>
-      <div class="seed-display">
-        seed: <span id="mangaSeedValue">1234567890</span>
+    </div>
+    
+    <div class="grid g3" style="margin-top: 10px;">
+      <div>
+        <div class="mini" style="margin: 0 0 .35rem">全部</div>
+        <div class="out" id="outMangaAll"></div>
+        <button id="btnCopyMangaAll" class="btn ghost small" style="margin-top: 6px;">全部をコピー</button>
+      </div>
+      <div>
+        <div class="mini" style="margin: 0 0 .35rem">Promptのみ</div>
+        <div class="out" id="outMangaPrompt"></div>
+        <button id="btnCopyMangaPrompt" class="btn ghost small" style="margin-top: 6px;">Promptだけコピー</button>
+      </div>
+      <div>
+        <div class="mini" style="margin: 0 0 .35rem">Negativeのみ</div>
+        <div class="out" id="outMangaNeg"></div>
+        <button id="btnCopyMangaNeg" class="btn ghost small" style="margin-top: 6px;">Negativeだけコピー</button>
       </div>
     </div>
   </div>
 </section>
+
           
 <!-- ======================= 単語モード：パネル本体 ======================= -->
 <section id="panelWordMode" class="card" hidden>
