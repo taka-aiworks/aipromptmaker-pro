@@ -297,10 +297,30 @@ function toTag(txt){
 }
 
 /* ===== 辞書処理 ===== */
+// ===== app.js の修正箇所2: SFW初期値に新しい配列を追加 =====
 let SFW = {
-  hair_style:[], eyes:[], outfit:[], face:[], skin_body:[], art_style:[], background:[],
-  pose:[], composition:[], view:[], expressions:[], accessories:[], lighting:[],
-  age:[], gender:[], body_type:[], height:[], personality:[], colors:[]
+  hair_style:[], 
+  hair_length:[],     // ← 追加
+  bangs_style:[],     // ← 追加
+  eyes:[], 
+  skin_features:[],   // ← 追加
+  outfit:[], 
+  face:[], 
+  skin_body:[], 
+  art_style:[], 
+  background:[],
+  pose:[], 
+  composition:[], 
+  view:[], 
+  expressions:[], 
+  accessories:[], 
+  lighting:[],
+  age:[], 
+  gender:[], 
+  body_type:[], 
+  height:[], 
+  personality:[], 
+  colors:[]
 };
 
 let NSFW = {
@@ -330,13 +350,33 @@ function dedupeByTag(list) {
 function mergeIntoSFW(json) {
   const src  = json?.SFW || json || {};
   const next = { ...SFW };
-  const KEYMAP = {
-    "髪型":"hair_style", "目の形":"eyes", "服":"outfit", "顔の特徴":"face",
-    "体型":"skin_body", "視点":"view", "画風":"art_style", "背景":"background",
-    "ポーズ":"pose", "構図":"composition", "表情":"expressions",
-    "アクセサリー":"accessories", "ライティング":"lighting", "年齢":"age",
-    "性別":"gender", "体型(基本)":"body_type", "身長":"height", "性格":"personality",
-    "色":"colors"
+   const KEYMAP = {
+    "髪型":"hair_style", 
+    "髪の長さ":"hair_length",     // ← 追加
+    "前髪":"bangs_style",         // ← 追加
+    "目の形":"eyes", 
+    "肌の特徴":"skin_features",   // ← 追加
+    "服":"outfit", 
+    "顔の特徴":"face",
+    "体型":"skin_body", 
+    "視点":"view", 
+    "画風":"art_style", 
+    "背景":"background",
+    "ポーズ":"pose", 
+    "構図":"composition", 
+    "表情":"expressions",
+    "アクセサリー":"accessories", 
+    "ライティング":"lighting", 
+    "年齢":"age",
+    "性別":"gender", 
+    "体型(基本)":"body_type", 
+    "身長":"height", 
+    "性格":"personality",
+    "色":"colors",
+    // === 英語キーも対応 ===
+    "hair_length":"hair_length",   // ← 追加
+    "bangs_style":"bangs_style",   // ← 追加
+    "skin_features":"skin_features" // ← 追加
   };
 
   for (const [k, v] of Object.entries(src || {})) {
