@@ -3332,7 +3332,7 @@ window.updateSearchStats = function(visible, total) {
   }
 };
 
-// performSearch関数もグローバルスコープに移動して確実にアクセス可能にする
+// performSearch関数の検索結果エリア作成部分を以下で置き換え
 window.performSearch = function(searchTerm) {
   let searchResultsArea = document.getElementById('wm-search-results');
   
@@ -3358,8 +3358,26 @@ window.performSearch = function(searchTerm) {
       position: relative;
     `;
     
-    // 検索入力欄の直後に挿入
-    searchInput.parentNode.insertBefore(resultsDiv, searchInput.nextSibling);
+    // ★★★ 修正：検索入力欄の直後に配置（他の要素より前に） ★★★
+    const searchContainer = searchInput.closest('.wm-search-container') || searchInput.parentElement;
+    
+    // 検索入力欄の次の兄弟要素を探す
+    let insertPosition = searchInput.nextElementSibling;
+    
+    // 検索統計やクリアボタンなどがある場合はその後に配置
+    while (insertPosition && 
+           (insertPosition.classList.contains('wm-search-stats') ||
+            insertPosition.classList.contains('wm-search-clear') ||
+            insertPosition.tagName === 'BUTTON')) {
+      insertPosition = insertPosition.nextElementSibling;
+    }
+    
+    if (insertPosition) {
+      searchContainer.insertBefore(resultsDiv, insertPosition);
+    } else {
+      searchContainer.appendChild(resultsDiv);
+    }
+    
     searchResultsArea = resultsDiv;
   }
   
@@ -3395,7 +3413,7 @@ window.performSearch = function(searchTerm) {
     return;
   }
   
-  // 検索結果表示
+  // ★★★ 検索結果表示の改善 ★★★
   const resultsHTML = matchedItems.map(item => {
     return `<button type="button" class="wm-search-result-item" 
                     data-en="${item.en}" 
@@ -3425,7 +3443,7 @@ window.performSearch = function(searchTerm) {
   searchResultsArea.innerHTML = resultsHTML;
   searchResultsArea.style.display = 'block';
   
-  // クリックイベント（修正版）
+  // クリックイベント
   searchResultsArea.querySelectorAll('.wm-search-result-item').forEach(resultItem => {
     resultItem.addEventListener('click', (e) => {
       e.preventDefault();
@@ -3435,7 +3453,6 @@ window.performSearch = function(searchTerm) {
       const jp = resultItem.dataset.jp || '';
       
       if (en && jp) {
-        // グローバル関数を使用
         window.addToOutputTable(en, jp);
         
         const searchInput = document.getElementById('wm-search-input');
