@@ -2744,24 +2744,23 @@ function initWordMode() {
   window.performWordModeSearch = performSearch;
   window.clearWordModeSearch = clearSearch;
   
-  // clearSearch関数も修正（details状態をリセット）
+// clearSearch関数を修正
 function clearSearch() {
   const searchInput = document.getElementById('wm-search-input');
+  const resultsArea = document.getElementById('wm-search-results');
+  
   if (searchInput) {
     searchInput.value = '';
-    // すべてのアイテムを表示
-    const items = document.querySelectorAll('#panelWordMode .wm-item');
-    items.forEach(item => {
-      item.style.display = 'block';
-    });
-    // すべてのdetailsを閉じる
-    const details = document.querySelectorAll('#panelWordMode details');
-    details.forEach(detail => {
-      detail.removeAttribute('open');
-    });
-    // 統計を更新
-    updateSearchStats(items.length, items.length);
   }
+  
+  if (resultsArea) {
+    resultsArea.style.display = 'none';
+    resultsArea.innerHTML = '';
+  }
+  
+  // 統計を更新
+  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
+  updateSearchStats(allItems.length, allItems.length);
 }
 
   
@@ -3197,41 +3196,117 @@ async function loadDefaultDicts() {
   }
 }
 
-// performSearch関数を以下で置き換え（Details自動展開対応）
+// performSearch関数を完全に置き換え（検索結果エリア表示）
 function performSearch(searchTerm) {
-  const items = document.querySelectorAll('#panelWordMode .wm-item');
-  const details = document.querySelectorAll('#panelWordMode details');
-  let visibleCount = 0;
+  const searchResultsArea = document.getElementById('wm-search-results');
+  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
   
-  // 検索語がある場合はすべてのdetailsを開く
-  if (searchTerm.trim()) {
-    details.forEach(detail => {
-      detail.setAttribute('open', '');
-    });
+  // 検索結果エリアが存在しない場合は作成
+  if (!searchResultsArea) {
+    const searchContainer = document.getElementById('wm-search-input').closest('.wm-search-container') || 
+                           document.getElementById('wm-search-input').parentElement;
+    
+    const resultsDiv = document.createElement('div');
+    resultsDiv.id = 'wm-search-results';
+    resultsDiv.className = 'wm-search-results';
+    resultsDiv.style.cssText = `
+      display: none;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-top: 8px;
+      padding: 8px;
+      background: var(--bg-secondary, #f8f9fa);
+    `;
+    
+    searchContainer.appendChild(resultsDiv);
   }
   
-  items.forEach(item => {
+  const resultsArea = document.getElementById('wm-search-results');
+  
+  if (!searchTerm.trim()) {
+    // 検索語がない場合は結果エリアを非表示
+    resultsArea.style.display = 'none';
+    resultsArea.innerHTML = '';
+    updateSearchStats(allItems.length, allItems.length);
+    return;
+  }
+  
+  // 検索実行
+  const matchedItems = [];
+  allItems.forEach(item => {
     const jp = (item.dataset.jp || '').toLowerCase();
     const en = (item.dataset.en || '').toLowerCase();
     const search = searchTerm.toLowerCase();
-    const match = !search || jp.includes(search) || en.includes(search);
     
-    // アイテム自体の表示/非表示を切り替え
-    item.style.display = match ? 'block' : 'none';
-    if (match) visibleCount++;
+    if (jp.includes(search) || en.includes(search)) {
+      matchedItems.push({
+        en: item.dataset.en,
+        jp: item.dataset.jp,
+        cat: item.dataset.cat
+      });
+    }
   });
   
-  // 検索語がない場合は、マッチするアイテムがないdetailsを閉じる
-  if (!searchTerm.trim()) {
-    details.forEach(detail => {
-      const hasVisibleItems = detail.querySelectorAll('.wm-item[style=""], .wm-item:not([style*="none"])').length > 0;
-      if (!hasVisibleItems) {
-        detail.removeAttribute('open');
-      }
-    });
+  if (matchedItems.length === 0) {
+    resultsArea.innerHTML = '<div style="text-align: center; color: #666; padding: 16px;">検索結果がありません</div>';
+    resultsArea.style.display = 'block';
+    updateSearchStats(0, allItems.length);
+    return;
   }
   
-  updateSearchStats(visibleCount, items.length);
+  // 検索結果をHTMLとして生成
+  const resultsHTML = matchedItems.map(item => {
+    const showMini = item.tag && item.label && item.tag !== item.label;
+    return `<button type="button" class="wm-search-result-item" 
+                    data-en="${item.en}" 
+                    data-jp="${item.jp}" 
+                    data-cat="${item.cat}"
+                    style="
+                      display: block;
+                      width: 100%;
+                      text-align: left;
+                      padding: 8px 12px;
+                      margin: 2px 0;
+                      border: 1px solid #ddd;
+                      border-radius: 4px;
+                      background: white;
+                      cursor: pointer;
+                      transition: background-color 0.2s;
+                    "
+                    onmouseover="this.style.backgroundColor='#e9ecef'"
+                    onmouseout="this.style.backgroundColor='white'">
+      <span style="font-weight: 500;">${item.jp}</span>
+      ${item.en !== item.jp ? `<span style="color: #666; font-size: 0.9em; margin-left: 8px;">${item.en}</span>` : ''}
+    </button>`;
+  }).join('');
+  
+  resultsArea.innerHTML = resultsHTML;
+  resultsArea.style.display = 'block';
+  
+  // 検索結果アイテムのクリックイベントを追加
+  resultsArea.querySelectorAll('.wm-search-result-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const en = item.dataset.en;
+      const jp = item.dataset.jp;
+      const cat = item.dataset.cat;
+      
+      // 選択処理を実行
+      addToSelectedChips(en, jp, cat);
+      addToOutputTable(en, jp);
+      updateSelectedCount();
+      
+      // 検索をクリア
+      const searchInput = document.getElementById('wm-search-input');
+      if (searchInput) {
+        searchInput.value = '';
+        clearSearch();
+      }
+    });
+  });
+  
+  updateSearchStats(matchedItems.length, allItems.length);
 }
 
 
