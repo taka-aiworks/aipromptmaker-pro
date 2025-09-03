@@ -3257,69 +3257,221 @@ function initCollapsibleCategoriesFixed() {
     if (countEl) countEl.textContent = selectedCount;
   }
 
-  function addToOutputTable(en, jp) {
-    const tbody = document.getElementById('wm-table-body');
-    if (!tbody) {
-      console.warn('wm-table-body が見つかりません');
-      return;
-    }
+  // initWordMode関数の外（グローバルスコープ）に以下の関数を移動
+
+// addToOutputTable関数をグローバルスコープに移動
+window.addToOutputTable = function(en, jp) {
+  const tbody = document.getElementById('wm-table-body');
+  if (!tbody) {
+    console.warn('wm-table-body が見つかりません');
+    return;
+  }
+  
+  // 最大20件制限
+  if (tbody.children.length >= 20) {
+    console.warn('テーブルの最大件数に達しています');
+    return;
+  }
+  
+  // 重複チェック
+  if (tbody.querySelector(`tr[data-en="${en}"]`)) {
+    console.warn('重複するアイテムです:', en);
+    return;
+  }
+  
+  // 新しい行を作成
+  const row = document.createElement('tr');
+  row.dataset.en = en;
+  row.innerHTML = `
+    <td class="wm-row-jp">${jp}</td>
+    <td class="wm-row-en">${en}</td>
+    <td>
+      <button type="button" class="wm-row-copy-en" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">EN</button>
+      <button type="button" class="wm-row-copy-both" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">両方</button>
+      <button type="button" class="wm-row-remove" style="padding: 2px 6px; font-size: 12px; color: #f44336;">削除</button>
+    </td>
+  `;
+  
+  // イベントリスナーを追加
+  const copyEnBtn = row.querySelector('.wm-row-copy-en');
+  const copyBothBtn = row.querySelector('.wm-row-copy-both');
+  const removeBtn = row.querySelector('.wm-row-remove');
+  
+  if (copyEnBtn) {
+    copyEnBtn.addEventListener('click', () => {
+      navigator.clipboard?.writeText(en).then(() => toast('英語タグをコピーしました')).catch(() => {
+        console.log('英語タグをコピーしました:', en);
+      });
+    });
+  }
+  
+  if (copyBothBtn) {
+    copyBothBtn.addEventListener('click', () => {
+      const text = jp && en ? `${jp}(${en})` : (en || jp);
+      navigator.clipboard?.writeText(text).then(() => toast('日英タグをコピーしました')).catch(() => {
+        console.log('日英タグをコピーしました:', text);
+      });
+    });
+  }
+  
+  if (removeBtn) {
+    removeBtn.addEventListener('click', () => {
+      row.remove();
+    });
+  }
+  
+  tbody.appendChild(row);
+  console.log('テーブルに行を追加しました:', { en, jp });
+};
+
+// updateSearchStats関数もグローバルスコープに移動
+window.updateSearchStats = function(visible, total) {
+  const statsElement = document.getElementById('wm-search-stats');
+  if (statsElement) {
+    statsElement.textContent = `${visible}件 / ${total}件`;
+  }
+};
+
+// performSearch関数もグローバルスコープに移動して確実にアクセス可能にする
+window.performSearch = function(searchTerm) {
+  let searchResultsArea = document.getElementById('wm-search-results');
+  
+  // 検索結果エリアが存在しない場合は検索入力欄の直後に作成
+  if (!searchResultsArea) {
+    const searchInput = document.getElementById('wm-search-input');
+    if (!searchInput) return;
     
-    // 最大20件制限
-    if (tbody.children.length >= 20) {
-      console.warn('テーブルの最大件数に達しています');
-      return;
-    }
-    
-    // 重複チェック
-    if (tbody.querySelector(`tr[data-en="${en}"]`)) {
-      console.warn('重複するアイテムです:', en);
-      return;
-    }
-    
-    // 新しい行を作成
-    const row = document.createElement('tr');
-    row.dataset.en = en;
-    row.innerHTML = `
-      <td class="wm-row-jp">${jp}</td>
-      <td class="wm-row-en">${en}</td>
-      <td>
-        <button type="button" class="wm-row-copy-en" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">EN</button>
-        <button type="button" class="wm-row-copy-both" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">両方</button>
-        <button type="button" class="wm-row-remove" style="padding: 2px 6px; font-size: 12px; color: #f44336;">削除</button>
-      </td>
+    const resultsDiv = document.createElement('div');
+    resultsDiv.id = 'wm-search-results';
+    resultsDiv.className = 'wm-search-results';
+    resultsDiv.style.cssText = `
+      display: none;
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid #444;
+      border-radius: 6px;
+      margin: 8px 0;
+      padding: 8px;
+      background: var(--bg-card, #2a2f3a);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      z-index: 1000;
+      position: relative;
     `;
     
-    // イベントリスナーを追加
-    const copyEnBtn = row.querySelector('.wm-row-copy-en');
-    const copyBothBtn = row.querySelector('.wm-row-copy-both');
-    const removeBtn = row.querySelector('.wm-row-remove');
-    
-    if (copyEnBtn) {
-      copyEnBtn.addEventListener('click', () => {
-        navigator.clipboard?.writeText(en).then(() => toast('英語タグをコピーしました')).catch(() => {
-          console.log('英語タグをコピーしました:', en);
-        });
-      });
-    }
-    
-    if (copyBothBtn) {
-      copyBothBtn.addEventListener('click', () => {
-        const text = jp && en ? `${jp}(${en})` : (en || jp);
-        navigator.clipboard?.writeText(text).then(() => toast('日英タグをコピーしました')).catch(() => {
-          console.log('日英タグをコピーしました:', text);
-        });
-      });
-    }
-    
-    if (removeBtn) {
-      removeBtn.addEventListener('click', () => {
-        row.remove();
-      });
-    }
-    
-    tbody.appendChild(row);
-    console.log('テーブルに行を追加しました:', { en, jp });
+    // 検索入力欄の直後に挿入
+    searchInput.parentNode.insertBefore(resultsDiv, searchInput.nextSibling);
+    searchResultsArea = resultsDiv;
   }
+  
+  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
+  
+  if (!searchTerm.trim()) {
+    searchResultsArea.style.display = 'none';
+    searchResultsArea.innerHTML = '';
+    updateSearchStats(allItems.length, allItems.length);
+    return;
+  }
+  
+  // 検索実行
+  const matchedItems = [];
+  allItems.forEach(item => {
+    const jp = (item.dataset.jp || '').toLowerCase();
+    const en = (item.dataset.en || '').toLowerCase();
+    const search = searchTerm.toLowerCase();
+    
+    if (jp.includes(search) || en.includes(search)) {
+      matchedItems.push({
+        en: item.dataset.en,
+        jp: item.dataset.jp,
+        cat: item.dataset.cat
+      });
+    }
+  });
+  
+  if (matchedItems.length === 0) {
+    searchResultsArea.innerHTML = '<div style="text-align: center; color: #888; padding: 16px;">検索結果がありません</div>';
+    searchResultsArea.style.display = 'block';
+    updateSearchStats(0, allItems.length);
+    return;
+  }
+  
+  // 検索結果表示
+  const resultsHTML = matchedItems.map(item => {
+    return `<button type="button" class="wm-search-result-item" 
+                    data-en="${item.en}" 
+                    data-jp="${item.jp}" 
+                    data-cat="${item.cat}"
+                    style="
+                      display: block;
+                      width: 100%;
+                      text-align: left;
+                      padding: 10px 12px;
+                      margin: 3px 0;
+                      border: 1px solid #555;
+                      border-radius: 4px;
+                      background: var(--bg-secondary, #363c4a);
+                      color: var(--text-primary, #ffffff);
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                      font-size: 14px;
+                    "
+                    onmouseover="this.style.backgroundColor='var(--bg-hover, #404652)'; this.style.borderColor='#666';"
+                    onmouseout="this.style.backgroundColor='var(--bg-secondary, #363c4a)'; this.style.borderColor='#555';">
+      <span style="font-weight: 500; color: var(--text-primary, #ffffff);">${item.jp}</span>
+      ${item.en !== item.jp ? `<span style="color: #aaa; font-size: 12px; margin-left: 8px;">${item.en}</span>` : ''}
+    </button>`;
+  }).join('');
+  
+  searchResultsArea.innerHTML = resultsHTML;
+  searchResultsArea.style.display = 'block';
+  
+  // クリックイベント（修正版）
+  searchResultsArea.querySelectorAll('.wm-search-result-item').forEach(resultItem => {
+    resultItem.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const en = resultItem.dataset.en || '';
+      const jp = resultItem.dataset.jp || '';
+      
+      if (en && jp) {
+        // グローバル関数を使用
+        window.addToOutputTable(en, jp);
+        
+        const searchInput = document.getElementById('wm-search-input');
+        if (searchInput) {
+          searchInput.value = '';
+        }
+        clearSearch();
+      }
+    });
+  });
+  
+  updateSearchStats(matchedItems.length, allItems.length);
+};
+
+// clearSearch関数もグローバルスコープに移動
+window.clearSearch = function() {
+  const searchInput = document.getElementById('wm-search-input');
+  const resultsArea = document.getElementById('wm-search-results');
+  
+  if (searchInput) {
+    searchInput.value = '';
+  }
+  
+  if (resultsArea) {
+    resultsArea.style.display = 'none';
+    resultsArea.innerHTML = '';
+  }
+  
+  // 統計を更新
+  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
+  updateSearchStats(allItems.length, allItems.length);
+};
+
+
+
+   
 
   /* ===== 単語モードのイベントバインド（修正版） ===== */
   function bindWordModeEvents() {
