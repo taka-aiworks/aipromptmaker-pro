@@ -1765,8 +1765,12 @@
     <!-- app.js より前に置くこと！ -->
   <script src="dict/default_sfw.js" defer></script>
   <script src="dict/default_nsfw.js" defer></script>
-  <script src="manga-mode.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="js/core/manga-mode.js"></script>
+  <script src="js/presets/manga-sfw-presets.js"></script>
+  <script src="js/presets/manga-nsfw-presets.js"></script>
+  <script src="js/presets/manga-preset-system.js"></script>
+  <script src="js/presets/manga-preset-enhancement.js"></script>
+  <script src="js/core/app.js" defer></script>
   <script>
 (() => {
   // ===== スコープ：基本情報タブ (#panelBasic) 内だけ =====
