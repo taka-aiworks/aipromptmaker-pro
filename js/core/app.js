@@ -2975,7 +2975,7 @@ function createWordModeColorItem(item) {
     if (countEl) countEl.textContent = selectedCount;
   }
 
-  // addToOutputTable関数の確認・修正版
+// initWordMode関数内に以下の関数を追加
 function addToOutputTable(en, jp) {
   const tbody = document.getElementById('wm-table-body');
   if (!tbody) {
@@ -3016,14 +3016,7 @@ function addToOutputTable(en, jp) {
   if (copyEnBtn) {
     copyEnBtn.addEventListener('click', () => {
       navigator.clipboard?.writeText(en).then(() => toast('英語タグをコピーしました')).catch(() => {
-        // フォールバック
-        const textarea = document.createElement('textarea');
-        textarea.value = en;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        toast('英語タグをコピーしました');
+        console.log('英語タグをコピーしました:', en);
       });
     });
   }
@@ -3032,14 +3025,7 @@ function addToOutputTable(en, jp) {
     copyBothBtn.addEventListener('click', () => {
       const text = jp && en ? `${jp}(${en})` : (en || jp);
       navigator.clipboard?.writeText(text).then(() => toast('日英タグをコピーしました')).catch(() => {
-        // フォールバック
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        toast('日英タグをコピーしました');
+        console.log('日英タグをコピーしました:', text);
       });
     });
   }
@@ -3051,8 +3037,9 @@ function addToOutputTable(en, jp) {
   }
   
   tbody.appendChild(row);
-  console.log('テーブルに行を追加しました:', { en, jp }); // デバッグ用
+  console.log('テーブルに行を追加しました:', { en, jp });
 }
+   
 
   /* ===== 単語モードのイベントバインド（修正版） ===== */
   function bindWordModeEvents() {
