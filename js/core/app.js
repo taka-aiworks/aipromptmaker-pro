@@ -942,7 +942,6 @@ window.applyOutfitMode = function() {
   const mode = getOne('outfitMode');
   const isOnepiece = (mode === 'onepiece');
   
-  // console.log('applyOutfitMode called, mode:', mode, 'isOnepiece:', isOnepiece);
   
   // ワンピース関連の表示切り替え
   const onepieceSection = document.getElementById('onepieceSection');
@@ -951,15 +950,13 @@ window.applyOutfitMode = function() {
   
   if (onepieceSection) {
     onepieceSection.style.display = isOnepiece ? 'block' : 'none';
-  //  console.log('onepieceSection display:', onepieceSection.style.display);
   }
   if (separateSection) {
     separateSection.style.display = isOnepiece ? 'none' : 'block';
-  //  console.log('separateSection display:', separateSection.style.display);
+
   }
   if (bottomCatSection) {
     bottomCatSection.style.display = isOnepiece ? 'none' : 'block';
-  //  console.log('bottomCatSection display:', bottomCatSection.style.display);
   }
   
   // 色設定の表示切り替え
@@ -2521,10 +2518,6 @@ function makeFinalOutfitTags(selectedOutfits, colorTags) {
     shoes: (colorTags?.shoes || "").replace(/^—$/, "").trim()
   };
 
-//  console.log('makeFinalOutfitTags called with:', {
-//    selectedOutfits: sel,
-//    colorTags: colors
-//  });
 
   const catMap = new Map();
   try {
@@ -2578,7 +2571,6 @@ function makeFinalOutfitTags(selectedOutfits, colorTags) {
         // ★★★ 修正：色が空文字でない場合のみ色を前置 ★★★
         const tagged = startsWithColor(t) ? t : (colors.bottom && colors.bottom.length > 0 ? `${colors.bottom} ${t}` : t);
         out.push(tagged);
-       //  console.log('Added bottom item:', tagged, 'with color:', colors.bottom);
       } else if (cat === "shoes") {
         const tagged = startsWithColor(t) ? t : (colors.shoes && colors.shoes.length > 0 ? `${colors.shoes} ${t}` : t);
         out.push(tagged);
@@ -2591,7 +2583,6 @@ function makeFinalOutfitTags(selectedOutfits, colorTags) {
     }
   }
   
-  // console.log('Final outfit tags:', out);
   return out;
 }
 
@@ -3008,7 +2999,6 @@ function initCollapsibleCategories() {
 
 // initCollapsibleCategoriesFixed関数の修正版
 function initCollapsibleCategoriesFixed() {
-  console.log('折りたたみ機能初期化開始'); // デバッグ用
   
   const wordModePanel = document.getElementById('panelWordMode');
   if (!wordModePanel) {
@@ -3031,7 +3021,6 @@ function initCollapsibleCategoriesFixed() {
   for (const selector of selectors) {
     tableContainer = wordModePanel.querySelector(selector);
     if (tableContainer) {
-      console.log(`テーブルコンテナ発見 (${selector}):`, tableContainer);
       break;
     }
   }
@@ -3045,7 +3034,6 @@ function initCollapsibleCategoriesFixed() {
       for (let i = 0; i < 3 && parent; i++) {
         if (parent.id || parent.className) {
           tableContainer = parent;
-          console.log(`テーブル親要素発見 (階層${i+1}):`, tableContainer);
           break;
         }
         parent = parent.parentElement;
@@ -3054,7 +3042,6 @@ function initCollapsibleCategoriesFixed() {
       // 見つからない場合はtableの直接の親を使用
       if (!tableContainer) {
         tableContainer = table.parentElement;
-        console.log('テーブル直接親要素を使用:', tableContainer);
       }
     }
   }
@@ -3066,7 +3053,6 @@ function initCollapsibleCategoriesFixed() {
       if (heading.textContent && heading.textContent.includes('出力') || 
           heading.textContent && heading.textContent.includes('最大20件')) {
         tableContainer = heading.parentElement || heading;
-        console.log('テキスト検索でテーブルエリア発見:', tableContainer);
         break;
       }
     }
@@ -3075,10 +3061,8 @@ function initCollapsibleCategoriesFixed() {
   // 方法4: 最後の手段 - wordModePanel自体を使用
   if (!tableContainer) {
     tableContainer = wordModePanel;
-    console.log('最終手段: panelWordModeを使用');
   }
   
-  console.log('最終的なテーブルコンテナ:', tableContainer);
   
   // 既存のボタンとコンテナをクリア
   const existingToggle = document.getElementById('wm-categories-toggle');
@@ -3137,7 +3121,7 @@ function initCollapsibleCategoriesFixed() {
     }
   });
   
-  console.log('見つかったカテゴリ要素:', allCategoryElements.length);
+
   
   if (allCategoryElements.length === 0) {
     console.warn('カテゴリ要素が見つかりません - すべての子要素をカテゴリとして扱います');
@@ -3191,10 +3175,8 @@ function initCollapsibleCategoriesFixed() {
     const text = isVisible ? 'カテゴリ一覧を隠す' : 'カテゴリ一覧を表示';
     toggleButton.textContent = `${icon} ${text}`;
     
-    console.log('カテゴリ表示切り替え:', isVisible ? '表示' : '非表示');
   });
   
-  console.log('折りたたみ機能初期化完了');
 }   
 
   // createWordModeItem関数
@@ -3300,7 +3282,6 @@ window.addToOutputTable = function(en, jp) {
   if (copyEnBtn) {
     copyEnBtn.addEventListener('click', () => {
       navigator.clipboard?.writeText(en).then(() => toast('英語タグをコピーしました')).catch(() => {
-        console.log('英語タグをコピーしました:', en);
       });
     });
   }
@@ -3309,7 +3290,6 @@ window.addToOutputTable = function(en, jp) {
     copyBothBtn.addEventListener('click', () => {
       const text = jp && en ? `${jp}(${en})` : (en || jp);
       navigator.clipboard?.writeText(text).then(() => toast('日英タグをコピーしました')).catch(() => {
-        console.log('日英タグをコピーしました:', text);
       });
     });
   }
@@ -3321,7 +3301,6 @@ window.addToOutputTable = function(en, jp) {
   }
   
   tbody.appendChild(row);
-  console.log('テーブルに行を追加しました:', { en, jp });
 };
 
 // updateSearchStats関数もグローバルスコープに移動
@@ -3703,7 +3682,6 @@ function performSearch(searchTerm) {
     const jp = resultItem.dataset.jp || '';
     const cat = resultItem.dataset.cat || '';
     
-    console.log('Selected item:', { en, jp, cat }); // デバッグ用
     
     // テーブルに追加
     if (en && jp) {
@@ -3718,7 +3696,6 @@ function performSearch(searchTerm) {
       }
       clearSearch();
       
-      console.log('Item added to table'); // デバッグ用
     }
   });
 });
