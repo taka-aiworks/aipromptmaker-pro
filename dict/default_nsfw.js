@@ -573,7 +573,34 @@ window.DEFAULT_NSFW_DICT = {
     
       { "tag": "scat",               "ja": "排便/スカトロ",       "level": "L3" },
       { "tag": "scat_play",          "ja": "スカトロプレイ",      "level": "L3" },
-      { "tag": "coprophagia",        "ja": "スカトロ食",          "level": "L3" }
+      { "tag": "coprophagia",        "ja": "スカトロ食",          "level": "L3" },
+      { "tag": "xray_cross_section",         "ja": "断面図（X線透過）",             "level": "L2" },
+      { "tag": "xray_penetration_vaginal",   "ja": "断面図：膣挿入",                 "level": "L3" },
+      { "tag": "xray_penetration_anal",      "ja": "断面図：肛門挿入",               "level": "L3" },
+      { "tag": "xray_ejaculation_inside",    "ja": "断面図：膣内射精描写",           "level": "L3" },
+    
+      { "tag": "genital_join_closeup",       "ja": "結合部アップ",                   "level": "L3" },
+      { "tag": "insertion_closeup_start",    "ja": "挿入直前アップ",                 "level": "L2" },
+      { "tag": "insertion_closeup_mid",      "ja": "挿入中アップ",                   "level": "L3" },
+      { "tag": "withdrawal_closeup",         "ja": "抜き差しアップ",                 "level": "L3" },
+    
+      { "tag": "fluids_vaginal",             "ja": "愛液の描写（糸/滴）",            "level": "L2" },
+      { "tag": "fluids_cum_drip",            "ja": "精液が垂れる描写",               "level": "L2" },
+      { "tag": "fluids_mix_closeup",         "ja": "体液が混ざる結合部アップ",       "level": "L3" },
+    
+      { "tag": "condom_on",                  "ja": "コンドーム装着",                 "level": "L2" },
+      { "tag": "condom_full",                "ja": "コンドーム精液溜まり",           "level": "L2" },
+      { "tag": "condom_removal",             "ja": "コンドーム外し",                 "level": "L2" },
+      { "tag": "condom_break",               "ja": "コンドーム破損",                 "level": "L2" },
+    
+      { "tag": "censor_mosaic",              "ja": "モザイク処理",                   "level": "L1" },
+      { "tag": "censor_bar",                 "ja": "黒帯/白抜きによる検閲",          "level": "L1" },
+      { "tag": "soft_focus_censor",          "ja": "ソフトフォーカスでぼかす",       "level": "L1" },
+    
+      { "tag": "aftercare_cuddle",           "ja": "事後の抱擁（アフターケア）",     "level": "L1" },
+      { "tag": "cleaning_up_wipe",           "ja": "拭き取り/片付け描写",            "level": "L1" },
+      { "tag": "towel_cover",                "ja": "タオルで隠す",                   "level": "L1" },
+      { "tag": "sheets_stain_focus",         "ja": "シーツの染みを強調",             "level": "L2" }
     ]
   }
 };
