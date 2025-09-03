@@ -1,3 +1,525 @@
+// 漫画モードプリセット統合システム
+class MangaPresetSystem {
+  constructor() {
+    this.currentSFWPreset = null;
+    this.currentNSFWPreset = null;
+    this.initialized = false;
+  }
+
+  // プリセットシステム初期化
+  init() {
+    if (this.initialized) return;
+    
+    console.log('🎛️ 漫画プリセットシステム初期化中...');
+    
+    this.createPresetUI();
+    this.setupEventListeners();
+    this.initialized = true;
+    
+    console.log('✅ 漫画プリセットシステム初期化完了');
+  }
+
+  // プリセットUI作成
+  createPresetUI() {
+    const mangaPanel = document.getElementById('panelManga');
+    if (!mangaPanel) {
+      console.error('❌ #panelManga が見つかりません');
+      return;
+    }
+
+    // プリセットセクションを最上部に挿入
+    const presetSection = document.createElement('div');
+    presetSection.className = 'manga-presets-section';
+    presetSection.innerHTML = this.generatePresetHTML();
+    
+    // パネルの最初に挿入
+    mangaPanel.insertBefore(presetSection, mangaPanel.firstChild);
+    
+    console.log('✅ プリセットUI作成完了');
+  }
+
+  // プリセットHTML生成
+  generatePresetHTML() {
+    return `
+<div class="manga-presets-container">
+  <h3>🎭 漫画モードプリセット</h3>
+  
+  <div class="preset-tabs">
+    <button class="preset-tab active" data-tab="sfw">😊 SFW感情別</button>
+    <button class="preset-tab" data-tab="nsfw">🔞 NSFWシチュ別</button>
+    <button class="preset-clear-btn">🗑️ 全クリア</button>
+  </div>
+
+  <div id="preset-tab-sfw" class="preset-tab-content active">
+    ${this.generateSFWPresetHTML()}
+  </div>
+
+  <div id="preset-tab-nsfw" class="preset-tab-content">
+    ${this.generateNSFWPresetHTML()}
+  </div>
+  
+  <div class="preset-status">
+    <div id="currentPresetInfo">
+      <span class="preset-current">現在のプリセット: <strong id="currentPresetName">なし</strong></span>
+      <p class="preset-desc" id="currentPresetDesc">プリセットを選択してください</p>
+    </div>
+  </div>
+</div>
+
+<style>
+.manga-presets-container {
+  background: rgba(0,0,0,0.05);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.preset-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+.preset-tab {
+  padding: 8px 16px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  border-radius: 20px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.8);
+  transition: all 0.3s ease;
+}
+
+.preset-tab.active {
+  background: rgba(100,150,255,0.3);
+  border-color: rgba(100,150,255,0.5);
+  color: white;
+}
+
+.preset-tab:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.preset-clear-btn {
+  padding: 6px 12px;
+  background: rgba(255,100,100,0.2);
+  border: 1px solid rgba(255,100,100,0.4);
+  border-radius: 15px;
+  color: rgba(255,150,150,1);
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.preset-clear-btn:hover {
+  background: rgba(255,100,100,0.3);
+}
+
+.preset-tab-content {
+  display: none;
+}
+
+.preset-tab-content.active {
+  display: block;
+}
+
+.preset-section {
+  margin-bottom: 15px;
+}
+
+.preset-section h5 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: rgba(255,255,255,0.9);
+}
+
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preset-btn {
+  padding: 6px 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  border-radius: 15px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.8);
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.preset-btn:hover {
+  background: rgba(255,255,255,0.2);
+  transform: translateY(-1px);
+}
+
+.preset-btn.active {
+  background: rgba(100,200,100,0.3);
+  border-color: rgba(100,200,100,0.6);
+  color: white;
+  box-shadow: 0 2px 8px rgba(100,200,100,0.3);
+}
+
+.nsfw-l1 { border-left: 3px solid #ffeb3b; }
+.nsfw-l2 { border-left: 3px solid #ff9800; }
+.nsfw-l3 { border-left: 3px solid #f44336; }
+
+.preset-status {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.preset-current {
+  color: rgba(255,255,255,0.9);
+  font-size: 14px;
+}
+
+.preset-desc {
+  color: rgba(255,255,255,0.7);
+  font-size: 12px;
+  margin: 5px 0 0 0;
+}
+</style>
+    `;
+  }
+
+  // SFWプリセットHTML
+  generateSFWPresetHTML() {
+    return `
+<div class="preset-section">
+  <h5>😊 ポジティブ感情</h5>
+  <div class="preset-buttons">
+    <button class="preset-btn" data-preset="joy_happy" data-type="sfw">😊 喜び・幸せ</button>
+    <button class="preset-btn" data-preset="joy_cheerful" data-type="sfw">🌟 陽気・元気</button>
+    <button class="preset-btn" data-preset="calm_peaceful" data-type="sfw">😌 穏やか</button>
+  </div>
+</div>
+
+<div class="preset-section">
+  <h5>😢 ネガティブ感情</h5>
+  <div class="preset-buttons">
+    <button class="preset-btn" data-preset="sad_gentle" data-type="sfw">😢 悲しみ</button>
+    <button class="preset-btn" data-preset="sad_crying" data-type="sfw">😭 泣き顔</button>
+    <button class="preset-btn" data-preset="anger_mild" data-type="sfw">😤 むすっ</button>
+    <button class="preset-btn" data-preset="anger_fury" data-type="sfw">😡 激怒</button>
+  </div>
+</div>
+
+<div class="preset-section">
+  <h5>😳 特殊感情</h5>
+  <div class="preset-buttons">
+    <button class="preset-btn" data-preset="embarrassed_shy" data-type="sfw">😊 恥ずかしがり</button>
+    <button class="preset-btn" data-preset="embarrassed_blush" data-type="sfw">😳 赤面</button>
+    <button class="preset-btn" data-preset="surprised_shock" data-type="sfw">😲 驚き</button>
+    <button class="preset-btn" data-preset="sleepy_tired" data-type="sfw">😴 眠気</button>
+  </div>
+</div>
+    `;
+  }
+
+  // NSFWプリセットHTML  
+  generateNSFWPresetHTML() {
+    return `
+<div class="preset-section">
+  <h5>💕 ロマンス系</h5>
+  <div class="preset-buttons">
+    <button class="preset-btn nsfw-l1" data-preset="romantic_sweet" data-type="nsfw">💕 ロマンチック</button>
+    <button class="preset-btn nsfw-l2" data-preset="romantic_intimate" data-type="nsfw">💖 親密・密着</button>
+  </div>
+</div>
+
+<div class="preset-section">
+  <h5>🛁 お風呂・水着系</h5>
+  <div class="preset-buttons">
+    <button class="preset-btn nsfw-l1" data-preset="bath_shower" data-type="nsfw">🛁 バスタイム</button>
+    <button class="preset-btn nsfw-l1" data-preset="swimsuit_beach" data-type="nsfw">🏖️ 水着・ビーチ</button>
+  </div>
+</div>
+
+<div class="preset-section">
+  <h5>🌙 ナイト系</h5>
+  <div class="preset-buttons">
+    <button class="preset-btn nsfw-l2" data-preset="bedroom_night" data-type="nsfw">🌙 ベッドルーム</button>
+    <button class="preset-btn nsfw-l1" data-preset="sleepwear_night" data-type="nsfw">🌃 ナイトウェア</button>
+  </div>
+</div>
+
+<div class="preset-section">
+  <h5>💄 グラマラス系</h5>
+  <div class="preset-buttons">
+    <button class="preset-btn nsfw-l2" data-preset="glamorous_pose" data-type="nsfw">💄 グラマラス</button>
+    <button class="preset-btn nsfw-l2" data-preset="pinup_style" data-type="nsfw">📸 ピンナップ</button>
+  </div>
+</div>
+
+<div class="preset-section">
+  <h5>🎭 コスプレ・制服系</h5>
+  <div class="preset-buttons">
+    <button class="preset-btn nsfw-l1" data-preset="school_after" data-type="nsfw">🏫 放課後</button>
+    <button class="preset-btn nsfw-l2" data-preset="cosplay_maid" data-type="nsfw">🎀 メイドコス</button>
+  </div>
+</div>
+
+<div class="preset-section">
+  <h5>🌸 ソフト系</h5>
+  <div class="preset-buttons">
+    <button class="preset-btn nsfw-l1" data-preset="cute_innocent" data-type="nsfw">🌸 初心・純真</button>
+  </div>
+</div>
+    `;
+  }
+
+  // イベントリスナー設定
+  setupEventListeners() {
+    // タブ切り替え
+    document.querySelectorAll('.preset-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const tabType = e.target.dataset.tab;
+        this.switchTab(tabType);
+      });
+    });
+
+    // プリセット選択
+    document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const presetId = e.target.dataset.preset;
+        const presetType = e.target.dataset.type;
+        this.applyPreset(presetId, presetType);
+        
+        // ボタンアクティブ状態更新
+        this.updateActiveButton(e.target);
+      });
+    });
+
+    // 全クリアボタン
+    document.querySelector('.preset-clear-btn').addEventListener('click', () => {
+      this.clearAllPresets();
+    });
+  }
+
+  // タブ切り替え
+  switchTab(tabType) {
+    // タブボタンの状態更新
+    document.querySelectorAll('.preset-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabType}"]`).classList.add('active');
+
+    // コンテンツの表示切り替え
+    document.querySelectorAll('.preset-tab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    document.getElementById(`preset-tab-${tabType}`).classList.add('active');
+  }
+
+  // プリセット適用
+  applyPreset(presetId, type) {
+    console.log(`🎭 プリセット適用: ${presetId} (${type})`);
+    
+    if (type === 'sfw') {
+      this.applySFWPreset(presetId);
+    } else if (type === 'nsfw') {
+      this.applyNSFWPreset(presetId);
+    }
+  }
+
+  // SFWプリセット適用
+  applySFWPreset(presetId) {
+    const preset = MANGA_SFW_PRESETS[presetId];
+    if (!preset) {
+      console.error(`SFWプリセットが見つかりません: ${presetId}`);
+      return;
+    }
+
+    // 既存選択をクリア
+    this.clearAllSelections();
+    
+    // NSFWを無効化
+    const nsfwToggle = document.getElementById('mangaNSFWEnable');
+    if (nsfwToggle) {
+      nsfwToggle.checked = false;
+      if (typeof toggleMangaNSFWPanel === 'function') {
+        toggleMangaNSFWPanel();
+      }
+    }
+
+    // プリセット設定適用
+    Object.entries(preset.settings).forEach(([categoryId, value]) => {
+      this.setSelectionValue(categoryId, value);
+    });
+
+    // 状態更新
+    this.currentSFWPreset = presetId;
+    this.currentNSFWPreset = null;
+    this.updatePresetStatus(preset.name, preset.description);
+    
+    // プロンプト更新
+    if (typeof updateMangaOutput === 'function') {
+      updateMangaOutput();
+    }
+
+    if (typeof toast === 'function') {
+      toast(`SFWプリセット「${preset.name}」を適用`);
+    }
+  }
+
+  // NSFWプリセット適用
+  applyNSFWPreset(presetId) {
+    const preset = MANGA_NSFW_PRESETS[presetId];
+    if (!preset) {
+      console.error(`NSFWプリセットが見つかりません: ${presetId}`);
+      return;
+    }
+
+    // 既存選択をクリア
+    this.clearAllSelections();
+    
+    // NSFWを有効化
+    const nsfwToggle = document.getElementById('mangaNSFWEnable');
+    if (nsfwToggle) {
+      nsfwToggle.checked = true;
+      if (typeof toggleMangaNSFWPanel === 'function') {
+        toggleMangaNSFWPanel();
+      }
+    }
+
+    // プリセット設定適用
+    Object.entries(preset.settings).forEach(([categoryId, value]) => {
+      if (categoryId !== 'mangaNSFWEnable') {
+        this.setSelectionValue(categoryId, value);
+      }
+    });
+
+    // 状態更新
+    this.currentNSFWPreset = presetId;
+    this.currentSFWPreset = null;
+    this.updatePresetStatus(preset.name, `${preset.description} (${preset.level})`);
+    
+    // プロンプト更新
+    if (typeof updateMangaOutput === 'function') {
+      updateMangaOutput();
+    }
+
+    if (typeof toast === 'function') {
+      toast(`NSFWプリセット「${preset.name}」(${preset.level})を適用`);
+    }
+  }
+
+  // 選択値設定
+  setSelectionValue(categoryId, value) {
+    if (!value) return;
+    
+    const container = document.getElementById(categoryId);
+    if (!container) {
+      console.warn(`⚠️ カテゴリが見つかりません: ${categoryId}`);
+      return;
+    }
+
+    const input = container.querySelector(`input[value="${value}"]`);
+    if (input) {
+      input.checked = true;
+      console.log(`✅ ${categoryId}: ${value}`);
+    } else {
+      console.warn(`⚠️ 値が見つかりません: ${categoryId} = ${value}`);
+    }
+  }
+
+  // 全選択クリア
+  clearAllSelections() {
+    const categoryIds = [
+      'mangaEmotionPrimary', 'mangaEmotionDetail', 'mangaExpressions',
+      'mangaEyeState', 'mangaGaze', 'mangaMouthState', 'mangaPose',
+      'mangaHandGesture', 'mangaMovementAction', 'mangaComposition',
+      'mangaView', 'mangaCameraView', 'mangaPropsLight', 'mangaEffectManga',
+      'mangaBackground', 'mangaLighting', 'mangaArtStyle',
+      'mangaNSFWExpr', 'mangaNSFWExpo', 'mangaNSFWSitu', 'mangaNSFWLight',
+      'mangaNSFWPose', 'mangaNSFWAction', 'mangaNSFWAcc', 'mangaNSFWOutfit',
+      'mangaNSFWBody', 'mangaNSFWNipples', 'mangaNSFWUnderwear'
+    ];
+
+    categoryIds.forEach(categoryId => {
+      const container = document.getElementById(categoryId);
+      if (container) {
+        container.querySelectorAll('input').forEach(input => {
+          input.checked = false;
+        });
+      }
+    });
+  }
+
+  // 全プリセットクリア
+  clearAllPresets() {
+    this.clearAllSelections();
+    
+    // NSFWも無効化
+    const nsfwToggle = document.getElementById('mangaNSFWEnable');
+    if (nsfwToggle) {
+      nsfwToggle.checked = false;
+      if (typeof toggleMangaNSFWPanel === 'function') {
+        toggleMangaNSFWPanel();
+      }
+    }
+
+    // 状態リセット
+    this.currentSFWPreset = null;
+    this.currentNSFWPreset = null;
+    this.updatePresetStatus('なし', 'プリセットを選択してください');
+
+    // ボタン状態リセット
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+
+    // プロンプト更新
+    if (typeof updateMangaOutput === 'function') {
+      updateMangaOutput();
+    }
+
+    if (typeof toast === 'function') {
+      toast('全てのプリセットをクリアしました');
+    }
+  }
+
+  // アクティブボタン更新
+  updateActiveButton(activeBtn) {
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    activeBtn.classList.add('active');
+  }
+
+  // プリセット状態表示更新
+  updatePresetStatus(name, description) {
+    document.getElementById('currentPresetName').textContent = name;
+    document.getElementById('currentPresetDesc').textContent = description;
+  }
+}
+
+// プリセットシステムのグローバルインスタンス
+const mangaPresetSystem = new MangaPresetSystem();
+
+// 既存の初期化関数に統合
+const originalInitMangaMode = window.initMangaMode;
+window.initMangaMode = function() {
+  if (originalInitMangaMode) {
+    originalInitMangaMode();
+  }
+  
+  // プリセットシステム初期化
+  setTimeout(() => {
+    mangaPresetSystem.init();
+  }, 1000);
+};
+
+// エクスポート
+window.mangaPresetSystem = mangaPresetSystem;
+
+
 // プリセット微調整機能の強化
 class MangaPresetEnhancement {
   constructor() {
