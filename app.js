@@ -840,6 +840,11 @@ function categorizeOutfit(list){
 /* ===== レンダラ ===== */
 function renderSFW(){
   radioList($("#hairStyle"),   SFW.hair_style,      "hairStyle");
+  // ★★★ 以下3行を追加 ★★★
+  radioList($("#hairLength"),  SFW.hair_length,     "hairLength", {checkFirst:false});
+  radioList($("#bangsStyle"),  SFW.bangs_style,     "bangsStyle", {checkFirst:false});
+  radioList($("#skinFeatures"), SFW.skin_features,  "skinFeatures", {checkFirst:false});
+   
   radioList($("#eyeShape"),    SFW.eyes,            "eyeShape");
   radioList($("#face"),        SFW.face,            "face");
   radioList($("#skinBody"),    SFW.skin_body,       "skinBody");
@@ -1147,7 +1152,7 @@ function bindBasicInfo() {
         }
         
         // ラジオボタンの復元
-        ['bf_age', 'bf_gender', 'bf_body', 'bf_height', 'hairStyle', 'eyeShape'].forEach(name => {
+        ['bf_age', 'bf_gender', 'bf_body', 'bf_height', 'hairStyle', 'hairLength', 'bangsStyle', 'skinFeatures', 'eyeShape'].forEach(name => {
           if (data[name]) {
             const radio = document.querySelector(`input[name="${name}"][value="${data[name]}"]`);
             if (radio) radio.checked = true;
@@ -1256,6 +1261,10 @@ function bindBasicInfo() {
         bf_body: getOne('bf_body'),
         bf_height: getOne('bf_height'),
         hairStyle: getOne('hairStyle'),
+       // ★★★ 以下3行を追加 ★★★
+        hairLength: getOne('hairLength'),
+        bangsStyle: getOne('bangsStyle'),
+        skinFeatures: getOne('skinFeatures'),
         eyeShape: getOne('eyeShape'),
         face: getOne('face'),
         skinBody: getOne('skinBody'),
@@ -1391,6 +1400,11 @@ function buildCaptionPrompt() {
     getBFValue('body'),
     getBFValue('height'),
     getOne('hairStyle'),
+    // ★★★ 以下3行を追加 ★★★
+    getOne('hairLength'),
+    getOne('bangsStyle'),
+    getOne('skinFeatures'),
+     
     getOne('eyeShape'),
     textOf('tagH'),  // 髪色
     textOf('tagE'),  // 目色
@@ -1579,6 +1593,10 @@ function buildOneLearning(extraSeed = 0){
   p.push(...[
     getBFValue('age'), getBFValue('gender'), getBFValue('body'), getBFValue('height'),
     getOne('hairStyle'), getOne('eyeShape'),
+    // ★★★ 以下3行を追加 ★★★
+     getOne('hairLength'),
+     getOne('bangsStyle'), 
+     getOne('skinFeatures'),
     textOf('tagH'), textOf('tagE'), textOf('tagSkin')
   ].filter(Boolean));
 
@@ -1931,6 +1949,10 @@ function buildBatchProduction(n){
       document.getElementById('tagE')?.textContent,
       document.getElementById('tagSkin')?.textContent,
       getOne("bf_age"), getOne("bf_gender"), getOne("bf_body"), getOne("bf_height"),
+      // ★★★ 以下3行を追加 ★★★
+     getOne("hairLength"),
+     getOne("bangsStyle"),
+     getOne("skinFeatures"), 
       getOne("hairStyle"), getOne("eyeShape")
     ].filter(Boolean);
     p.push(...basics);
