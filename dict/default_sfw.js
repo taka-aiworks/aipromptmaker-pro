@@ -999,7 +999,7 @@ window.DEFAULT_SFW_DICT = {
     { "tag": "trembling",        "label": "震える" },
     { "tag": "shivering",        "label": "寒さで震える" },
     { "tag": "yawning_motion",   "label": "あくび動作" }
-  ]
+  ],
 "negative_presets": [
     { "tag": "bad hands", "label": "手の崩れ防止", "category": "quality" },
   { "tag": "bad anatomy", "label": "解剖学的不正防止", "category": "quality" },
