@@ -2744,14 +2744,26 @@ function initWordMode() {
   window.performWordModeSearch = performSearch;
   window.clearWordModeSearch = clearSearch;
   
-  // clearSearch関数を修正
+  // clearSearch関数も修正（details状態をリセット）
 function clearSearch() {
   const searchInput = document.getElementById('wm-search-input');
   if (searchInput) {
     searchInput.value = '';
-    performSearch('');
+    // すべてのアイテムを表示
+    const items = document.querySelectorAll('#panelWordMode .wm-item');
+    items.forEach(item => {
+      item.style.display = 'block';
+    });
+    // すべてのdetailsを閉じる
+    const details = document.querySelectorAll('#panelWordMode details');
+    details.forEach(detail => {
+      detail.removeAttribute('open');
+    });
+    // 統計を更新
+    updateSearchStats(items.length, items.length);
   }
 }
+
   
   // 検索イベントのバインド
   function bindSearchEvents() {
@@ -3185,10 +3197,18 @@ async function loadDefaultDicts() {
   }
 }
 
-// 検索機能の修正（未定義関数の追加）
+// performSearch関数を以下で置き換え（Details自動展開対応）
 function performSearch(searchTerm) {
   const items = document.querySelectorAll('#panelWordMode .wm-item');
+  const details = document.querySelectorAll('#panelWordMode details');
   let visibleCount = 0;
+  
+  // 検索語がある場合はすべてのdetailsを開く
+  if (searchTerm.trim()) {
+    details.forEach(detail => {
+      detail.setAttribute('open', '');
+    });
+  }
   
   items.forEach(item => {
     const jp = (item.dataset.jp || '').toLowerCase();
@@ -3201,8 +3221,19 @@ function performSearch(searchTerm) {
     if (match) visibleCount++;
   });
   
+  // 検索語がない場合は、マッチするアイテムがないdetailsを閉じる
+  if (!searchTerm.trim()) {
+    details.forEach(detail => {
+      const hasVisibleItems = detail.querySelectorAll('.wm-item[style=""], .wm-item:not([style*="none"])').length > 0;
+      if (!hasVisibleItems) {
+        detail.removeAttribute('open');
+      }
+    });
+  }
+  
   updateSearchStats(visibleCount, items.length);
 }
+
 
 function updateSearchStats(visible, total) {
   const statsElement = document.getElementById('wm-search-stats');
