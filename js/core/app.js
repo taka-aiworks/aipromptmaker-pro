@@ -3006,7 +3006,7 @@ function initCollapsibleCategories() {
   }, 300);
 };
 
-// 新しい折りたたみ初期化関数
+// initCollapsibleCategoriesFixed関数の修正版
 function initCollapsibleCategoriesFixed() {
   console.log('折りたたみ機能初期化開始'); // デバッグ用
   
@@ -3016,17 +3016,69 @@ function initCollapsibleCategoriesFixed() {
     return;
   }
   
-  // テーブルコンテナを取得
-  const tableContainer = document.getElementById('wm-table-container') || 
-                        document.querySelector('.wm-table-wrapper') ||
-                        wordModePanel.querySelector('table')?.closest('div');
+  // テーブル関連要素を複数の方法で検索
+  let tableContainer = null;
   
-  if (!tableContainer) {
-    console.warn('テーブルコンテナが見つかりません');
-    return;
+  // 方法1: 既知のID/クラスで検索
+  const selectors = [
+    '#wm-table-container',
+    '.wm-table-wrapper',
+    '.wm-table-section',
+    '#wm-output-table',
+    '.word-mode-table'
+  ];
+  
+  for (const selector of selectors) {
+    tableContainer = wordModePanel.querySelector(selector);
+    if (tableContainer) {
+      console.log(`テーブルコンテナ発見 (${selector}):`, tableContainer);
+      break;
+    }
   }
   
-  console.log('テーブルコンテナ発見:', tableContainer);
+  // 方法2: テーブル要素から親を探す
+  if (!tableContainer) {
+    const table = wordModePanel.querySelector('table');
+    if (table) {
+      // tableの親要素を検索（最大3階層上まで）
+      let parent = table.parentElement;
+      for (let i = 0; i < 3 && parent; i++) {
+        if (parent.id || parent.className) {
+          tableContainer = parent;
+          console.log(`テーブル親要素発見 (階層${i+1}):`, tableContainer);
+          break;
+        }
+        parent = parent.parentElement;
+      }
+      
+      // 見つからない場合はtableの直接の親を使用
+      if (!tableContainer) {
+        tableContainer = table.parentElement;
+        console.log('テーブル直接親要素を使用:', tableContainer);
+      }
+    }
+  }
+  
+  // 方法3: 「出力」「最大20件」などのテキストを含む要素を探す
+  if (!tableContainer) {
+    const headings = wordModePanel.querySelectorAll('h1, h2, h3, h4, div, section');
+    for (const heading of headings) {
+      if (heading.textContent && heading.textContent.includes('出力') || 
+          heading.textContent && heading.textContent.includes('最大20件')) {
+        tableContainer = heading.parentElement || heading;
+        console.log('テキスト検索でテーブルエリア発見:', tableContainer);
+        break;
+      }
+    }
+  }
+  
+  // 方法4: 最後の手段 - wordModePanel自体を使用
+  if (!tableContainer) {
+    tableContainer = wordModePanel;
+    console.log('最終手段: panelWordModeを使用');
+  }
+  
+  console.log('最終的なテーブルコンテナ:', tableContainer);
   
   // 既存のボタンとコンテナをクリア
   const existingToggle = document.getElementById('wm-categories-toggle');
@@ -3059,27 +3111,25 @@ function initCollapsibleCategoriesFixed() {
     toggleButton.style.backgroundColor = 'var(--bg-secondary, #363c4a)';
   });
   
-  // 既存のカテゴリ要素を取得（SFW、NSFW、Colorセクション）
-  const sfwSection = wordModePanel.querySelector('h3:contains("SFW")') || 
-                    Array.from(wordModePanel.querySelectorAll('h3, h2')).find(h => h.textContent.includes('SFW'));
-  const nsfwSection = wordModePanel.querySelector('h3:contains("NSFW")') || 
-                     Array.from(wordModePanel.querySelectorAll('h3, h2')).find(h => h.textContent.includes('NSFW'));
-  const colorSection = wordModePanel.querySelector('h3:contains("Color")') || 
-                      Array.from(wordModePanel.querySelectorAll('h3, h2')).find(h => h.textContent.includes('Color'));
-  
-  // すべてのdetails要素とカテゴリ関連要素を取得
+  // 既存のカテゴリ要素を取得
   const allCategoryElements = [];
   
   // detailsタグを探す
   const detailsElements = wordModePanel.querySelectorAll('details');
   detailsElements.forEach(el => allCategoryElements.push(el));
   
-  // SFW、NSFW、Colorセクション以下の要素を探す
-  [sfwSection, nsfwSection, colorSection].forEach(section => {
-    if (section) {
-      let nextElement = section.nextElementSibling;
-      while (nextElement && !nextElement.querySelector('h2, h3')) {
-        if (nextElement.tagName !== 'BUTTON' && nextElement.id !== 'wm-categories-toggle') {
+  // SFW、NSFW、Colorのセクションを探す
+  const sectionHeaders = wordModePanel.querySelectorAll('h1, h2, h3, h4, .section-header');
+  sectionHeaders.forEach(header => {
+    const text = header.textContent.toLowerCase();
+    if (text.includes('sfw') || text.includes('nsfw') || text.includes('color')) {
+      allCategoryElements.push(header);
+      
+      // ヘッダーの次の兄弟要素も追加
+      let nextElement = header.nextElementSibling;
+      while (nextElement && !nextElement.querySelector('h1, h2, h3, h4')) {
+        if (nextElement.id !== 'wm-categories-toggle' && 
+            nextElement.id !== 'wm-categories-container') {
           allCategoryElements.push(nextElement);
         }
         nextElement = nextElement.nextElementSibling;
@@ -3090,8 +3140,16 @@ function initCollapsibleCategoriesFixed() {
   console.log('見つかったカテゴリ要素:', allCategoryElements.length);
   
   if (allCategoryElements.length === 0) {
-    console.warn('カテゴリ要素が見つかりません');
-    return;
+    console.warn('カテゴリ要素が見つかりません - すべての子要素をカテゴリとして扱います');
+    // フォールバック: パネル内のすべての子要素（ただしテーブル関連を除く）
+    Array.from(wordModePanel.children).forEach(child => {
+      if (!child.querySelector('table') && 
+          child.id !== 'wm-categories-toggle' && 
+          child.id !== 'wm-categories-container' &&
+          !child.classList.contains('wm-search-container')) {
+        allCategoryElements.push(child);
+      }
+    });
   }
   
   // カテゴリコンテナを作成
@@ -3108,12 +3166,21 @@ function initCollapsibleCategoriesFixed() {
   
   // カテゴリ要素をコンテナに移動
   allCategoryElements.forEach(element => {
-    categoriesContainer.appendChild(element);
+    if (element && element.parentNode) {
+      categoriesContainer.appendChild(element);
+    }
   });
   
-  // テーブルの後に配置
-  tableContainer.parentNode.insertBefore(toggleButton, tableContainer.nextSibling);
-  tableContainer.parentNode.insertBefore(categoriesContainer, toggleButton.nextSibling);
+  // テーブルコンテナの後に配置
+  if (tableContainer === wordModePanel) {
+    // panelWordMode自体の場合は末尾に追加
+    wordModePanel.appendChild(toggleButton);
+    wordModePanel.appendChild(categoriesContainer);
+  } else {
+    // テーブルコンテナの後に配置
+    tableContainer.parentNode.insertBefore(toggleButton, tableContainer.nextSibling);
+    tableContainer.parentNode.insertBefore(categoriesContainer, toggleButton.nextSibling);
+  }
   
   // トグル機能の実装
   let isVisible = false;
@@ -3128,8 +3195,7 @@ function initCollapsibleCategoriesFixed() {
   });
   
   console.log('折りたたみ機能初期化完了');
-}
-   
+}   
 
   // createWordModeItem関数
   function createWordModeItem(item, category) {
