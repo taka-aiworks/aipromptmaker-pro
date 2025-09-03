@@ -1000,5 +1000,88 @@ window.DEFAULT_SFW_DICT = {
     { "tag": "shivering",        "label": "寒さで震える" },
     { "tag": "yawning_motion",   "label": "あくび動作" }
   ]
+"negative_presets": [
+    { "tag": "bad hands", "label": "手の崩れ防止", "category": "quality" },
+  { "tag": "bad anatomy", "label": "解剖学的不正防止", "category": "quality" },
+  { "tag": "extra fingers", "label": "指の数異常防止", "category": "quality" },
+  { "tag": "deformed", "label": "変形防止", "category": "quality" },
+  { "tag": "mutated", "label": "突然変異防止", "category": "quality" },
+  
+  { "tag": "blurry", "label": "ぼやけ防止", "category": "image_quality" },
+  { "tag": "low quality", "label": "低品質防止", "category": "image_quality" },
+  { "tag": "worst quality", "label": "最低品質防止", "category": "image_quality" },
+  { "tag": "jpeg artifacts", "label": "JPEG劣化防止", "category": "image_quality" },
+  { "tag": "pixelated", "label": "ピクセル化防止", "category": "image_quality" },
+  { "tag": "grainy", "label": "粒子感防止", "category": "image_quality" },
+  
+  { "tag": "text", "label": "テキスト除去", "category": "unwanted" },
+  { "tag": "watermark", "label": "透かし除去", "category": "unwanted" },
+  { "tag": "signature", "label": "署名除去", "category": "unwanted" },
+  { "tag": "logo", "label": "ロゴ除去", "category": "unwanted" },
+  { "tag": "username", "label": "ユーザー名除去", "category": "unwanted" },
+  { "tag": "artist name", "label": "作者名除去", "category": "unwanted" },
+  
+  { "tag": "bad face", "label": "顔の崩れ防止", "category": "face" },
+  { "tag": "bad eyes", "label": "目の崩れ防止", "category": "face" },
+  { "tag": "asymmetric eyes", "label": "左右非対称の目防止", "category": "face" },
+  { "tag": "cross-eyed", "label": "寄り目防止", "category": "face" },
+  { "tag": "missing eyes", "label": "目の欠損防止", "category": "face" },
+  
+  { "tag": "extra limbs", "label": "余分な四肢防止", "category": "body" },
+  { "tag": "missing limbs", "label": "四肢の欠損防止", "category": "body" },
+  { "tag": "fused fingers", "label": "指の癒合防止", "category": "body" },
+  { "tag": "too many fingers", "label": "指の過多防止", "category": "body" },
+  { "tag": "long neck", "label": "首の異常な長さ防止", "category": "body" },
+  { "tag": "cropped", "label": "切り取られた体防止", "category": "body" },
+  
+  { "tag": "3D", "label": "3D風防止（アニメ調維持）", "category": "style" },
+  { "tag": "realistic", "label": "リアル風防止（アニメ調維持）", "category": "style" },
+  { "tag": "photorealistic", "label": "写実的防止", "category": "style" },
+  { "tag": "ugly", "label": "醜い表現防止", "category": "style" },
+  { "tag": "horror", "label": "ホラー要素防止", "category": "style" },
+  
+  { "tag": "bad composition", "label": "構図の問題防止", "category": "composition" },
+  { "tag": "bad framing", "label": "フレーミング問題防止", "category": "composition" },
+  { "tag": "cut off", "label": "切り切れ防止", "category": "composition" },
+  { "tag": "out of frame", "label": "フレームアウト防止", "category": "composition" },
+  
+  { "tag": "bad clothing", "label": "服装の問題防止", "category": "clothing" },
+  { "tag": "torn clothes", "label": "破れた服防止（意図しない場合）", "category": "clothing" },
+  { "tag": "missing clothes", "label": "服の欠損防止", "category": "clothing" }
+],
+
+"negative_categories": [
+  { "id": "essential", "label": "必須（推奨）", "description": "基本的な品質とアナトミー" },
+  { "id": "quality", "label": "品質向上", "description": "画質と見た目の改善" },
+  { "id": "unwanted", "label": "不要素除去", "description": "テキストやロゴの除去" },
+  { "id": "face", "label": "顔・表情", "description": "顔の問題を防止" },
+  { "id": "body", "label": "身体・解剖", "description": "体の構造的問題を防止" },
+  { "id": "style", "label": "画風維持", "description": "アニメ・漫画調を維持" },
+  { "id": "composition", "label": "構図改善", "description": "構図の問題を防止" },
+  { "id": "clothing", "label": "服装", "description": "衣装の問題を防止" }
+],
+
+"negative_quick_presets": [
+  {
+    "name": "軽量セット",
+    "tags": ["bad hands", "bad anatomy", "blurry", "low quality", "text"],
+    "description": "最小限の基本セット"
+  },
+  {
+    "name": "標準セット", 
+    "tags": ["bad hands", "bad anatomy", "extra fingers", "deformed", "blurry", "low quality", "worst quality", "text", "watermark"],
+    "description": "バランスの取れた標準セット"
+  },
+  {
+    "name": "高品質セット",
+    "tags": ["bad hands", "bad anatomy", "extra fingers", "deformed", "mutated", "blurry", "low quality", "worst quality", "jpeg artifacts", "text", "watermark", "bad face", "bad eyes", "extra limbs"],
+    "description": "品質重視の包括的セット"
+  },
+  {
+    "name": "漫画特化セット",
+    "tags": ["bad hands", "bad anatomy", "blurry", "low quality", "text", "3D", "realistic", "photorealistic", "bad composition"],
+    "description": "漫画・アニメ調に特化したセット"
+  }
+]
   }
 };
