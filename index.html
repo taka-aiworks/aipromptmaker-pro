@@ -1340,26 +1340,16 @@
       出力例（基本服 ON）: <code>..., white t-shirt, sky blue shorts, ...</code><br>
       出力例（服を入れない）: <code>...（服タグなし）...</code>
     </div>
-  <!-- 固定アクセ -->
-  <div class="panel" style="margin-top:12px">
-    <div class="mini"><b>固定アクセ（常時着用1種のみ）</b></div>
-    <select id="learn_acc"></select>
-    <div class="wheel-box" style="margin-top:6px">
-      <div id="wheel_learnAcc" class="wheel"></div><div id="thumb_learnAcc" class="thumb"></div>
+    <!-- 学習モードでは参照表示に変更 -->
+    <div class="panel" style="margin-top:12px">
+      <div class="mini"><b>固定アクセ（基本情報から継承）</b></div>
+      <div class="note mini">
+        設定は「基本情報」タブで行ってください。ここでは現在の設定を表示します。
+      </div>
+      <div id="learnAccDisplay" class="mini">
+        現在の設定: <span id="currentAccDisplay">未設定</span>
+      </div>
     </div>
-    <div class="row mini">
-      S:<input id="sat_learnAcc" type="range" min="0" max="100" value="75">
-      L:<input id="lit_learnAcc" type="range" min="0" max="100" value="50">
-    </div>
-    <div class="row mini">
-      <div id="sw_learnAcc" class="swatch"></div>
-      <span>色タグ: <code class="tag" id="tag_learnAcc">black</code></span>
-    </div>
-    <div class="mini">※ メガネ等の恒常特徴のみ。未選択なら挿入しません</div>
-    <div class="note mini" style="margin-top:6px">
-      出力例: <code>... , red glasses ...</code>
-    </div>
-  </div>
 
   <!-- NSFW -->
   <div class="panel" style="margin-top:12px">
