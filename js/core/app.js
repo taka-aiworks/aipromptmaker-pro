@@ -840,6 +840,11 @@ function categorizeOutfit(list){
 /* ===== レンダラ ===== */
 function renderSFW(){
   radioList($("#hairStyle"),   SFW.hair_style,      "hairStyle");
+  // ★★★ 以下3行を追加 ★★★
+  radioList($("#hairLength"),  SFW.hair_length,     "hairLength", {checkFirst:false});
+  radioList($("#bangsStyle"),  SFW.bangs_style,     "bangsStyle", {checkFirst:false});
+  radioList($("#skinFeatures"), SFW.skin_features,  "skinFeatures", {checkFirst:false});
+   
   radioList($("#eyeShape"),    SFW.eyes,            "eyeShape");
   radioList($("#face"),        SFW.face,            "face");
   radioList($("#skinBody"),    SFW.skin_body,       "skinBody");
@@ -1147,7 +1152,7 @@ function bindBasicInfo() {
         }
         
         // ラジオボタンの復元
-        ['bf_age', 'bf_gender', 'bf_body', 'bf_height', 'hairStyle', 'eyeShape'].forEach(name => {
+        ['bf_age', 'bf_gender', 'bf_body', 'bf_height', 'hairStyle', 'hairLength', 'bangsStyle', 'skinFeatures', 'eyeShape'].forEach(name => {
           if (data[name]) {
             const radio = document.querySelector(`input[name="${name}"][value="${data[name]}"]`);
             if (radio) radio.checked = true;
@@ -1161,12 +1166,6 @@ function bindBasicInfo() {
             if (radio) radio.checked = true;
           }
         });
-        
-        // ★★★ 固定アクセサリーの復元 ★★★
-        if (data.characterAccessory) {
-          const charAccSel = document.getElementById("characterAccessory");
-          if (charAccSel) charAccSel.value = data.characterAccessory;
-        }
         
         // 色の復元（髪・目・肌）
         if (data.hairColor) {
@@ -1230,39 +1229,10 @@ function bindBasicInfo() {
           }
         });
         
-        // ★★★ 固定アクセサリー色の復元 ★★★
-        if (data.charAccColor) {
-          const satCharAcc = document.getElementById("sat_charAcc");
-          const litCharAcc = document.getElementById("lit_charAcc");
-          if (satCharAcc && data.charAccColor.s !== undefined) satCharAcc.value = data.charAccColor.s;
-          if (litCharAcc && data.charAccColor.l !== undefined) litCharAcc.value = data.charAccColor.l;
-          
-          if (data.charAccColor.h !== undefined && window.getCharAccColor) {
-            setTimeout(() => {
-              const wheel = document.getElementById("wheel_charAcc");
-              const thumb = document.getElementById("thumb_charAcc");
-              if (wheel && thumb) {
-                const rect = wheel.getBoundingClientRect();
-                const radius = rect.width / 2 - 7;
-                const radians = (data.charAccColor.h - 90) * Math.PI / 180;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                
-                thumb.style.left = (centerX + radius * Math.cos(radians) - 7) + "px";
-                thumb.style.top = (centerY + radius * Math.sin(radians) - 7) + "px";
-                
-                // 色相更新
-                if (window.getCharAccColor.onHue) window.getCharAccColor.onHue(data.charAccColor.h);
-              }
-            }, 150);
-          }
-        }
-        
         // UI更新
         setTimeout(() => {
           if (window.applyOutfitMode) window.applyOutfitMode();
           paintSkin();
-          updateLearnAccDisplay(); // ★★★ 学習モードの表示更新 ★★★
         }, 200);
         
         toast("キャラ設定を読み込みました");
@@ -1291,6 +1261,10 @@ function bindBasicInfo() {
         bf_body: getOne('bf_body'),
         bf_height: getOne('bf_height'),
         hairStyle: getOne('hairStyle'),
+       // ★★★ 以下3行を追加 ★★★
+        hairLength: getOne('hairLength'),
+        bangsStyle: getOne('bangsStyle'),
+        skinFeatures: getOne('skinFeatures'),
         eyeShape: getOne('eyeShape'),
         face: getOne('face'),
         skinBody: getOne('skinBody'),
@@ -1301,8 +1275,6 @@ function bindBasicInfo() {
         outfit_skirt: getOne('outfit_skirt'),
         outfit_dress: getOne('outfit_dress'),
         outfit_shoes: getOne('outfit_shoes'),
-        // ★★★ 固定アクセサリー ★★★
-        characterAccessory: document.getElementById("characterAccessory")?.value || "",
         // 色情報（髪・目・肌）
         hairColor: {
           h: window.getHairColorTag?.onHue?.__lastHue || 35,
@@ -1333,12 +1305,6 @@ function bindBasicInfo() {
           h: window.getShoesColor?.onHue?.__lastHue || 0,
           s: document.getElementById("sat_shoes")?.value || 0,
           l: document.getElementById("lit_shoes")?.value || 30
-        },
-        // ★★★ 固定アクセサリー色情報 ★★★
-        charAccColor: {
-          h: window.getCharAccColor?.onHue?.__lastHue || 0,
-          s: document.getElementById("sat_charAcc")?.value || 75,
-          l: document.getElementById("lit_charAcc")?.value || 50
         }
       };
       
@@ -1347,21 +1313,6 @@ function bindBasicInfo() {
       toast("キャラ設定をエクスポートしました");
     });
   }
-  
-  // ★★★ 固定アクセサリーの変更検知を追加 ★★★
-  const charAccSel = document.getElementById("characterAccessory");
-  if (charAccSel) {
-    charAccSel.addEventListener("change", updateLearnAccDisplay);
-  }
-  
-  // 色変更の検知も追加
-  const charAccInputs = ["sat_charAcc", "lit_charAcc"];
-  charAccInputs.forEach(id => {
-    const input = document.getElementById(id);
-    if (input) {
-      input.addEventListener("input", updateLearnAccDisplay);
-    }
-  });
   
   // 1枚テストボタン
   const btnOneLearn = document.getElementById("btnOneLearn");
@@ -1449,6 +1400,11 @@ function buildCaptionPrompt() {
     getBFValue('body'),
     getBFValue('height'),
     getOne('hairStyle'),
+    // ★★★ 以下3行を追加 ★★★
+    getOne('hairLength'),
+    getOne('bangsStyle'),
+    getOne('skinFeatures'),
+     
     getOne('eyeShape'),
     textOf('tagH'),  // 髪色
     textOf('tagE'),  // 目色
@@ -1637,6 +1593,10 @@ function buildOneLearning(extraSeed = 0){
   p.push(...[
     getBFValue('age'), getBFValue('gender'), getBFValue('body'), getBFValue('height'),
     getOne('hairStyle'), getOne('eyeShape'),
+    // ★★★ 以下3行を追加 ★★★
+     getOne('hairLength'),
+     getOne('bangsStyle'), 
+     getOne('skinFeatures'),
     textOf('tagH'), textOf('tagE'), textOf('tagSkin')
   ].filter(Boolean));
 
@@ -1693,15 +1653,13 @@ function buildOneLearning(extraSeed = 0){
     p.push(...finalOutfits);
   }
 
-  // ★★★ 固定アクセサリー（基本情報から取得） ★★★
-  const charAccSel = document.getElementById("characterAccessory");
-  const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
-  if (charAccSel && charAccSel.value) {
-    if (charAccColor && charAccColor !== "—") {
-      p.push(`${charAccColor} ${charAccSel.value}`);
-    } else {
-      p.push(charAccSel.value);
-    }
+  // 固定アクセサリー
+  const accSel = document.getElementById("learn_acc");
+  const accColor = window.getLearnAccColor ? window.getLearnAccColor() : "";
+  if (accSel && accSel.value && accColor) {
+    p.push(`${accColor} ${accSel.value}`);
+  } else if (accSel && accSel.value) {
+    p.push(accSel.value);
   }
 
   // NSFW体型（未選択対応）
@@ -1866,14 +1824,14 @@ function buildBatchLearning(n) {
       }
     }
     
-    // ★★★ 固定アクセサリー（基本情報から取得） ★★★
-    const charAccSel = document.getElementById("characterAccessory");
-    const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
-    if (charAccSel && charAccSel.value) {
-      if (charAccColor && charAccColor !== "—") {
-        p.push(`${charAccColor} ${charAccSel.value}`);
+    // 固定アクセサリー
+    const accSel = document.getElementById("learn_acc");
+    const accColor = window.getLearnAccColor ? window.getLearnAccColor() : "";
+    if (accSel && accSel.value) {
+      if (accColor && accColor !== "—") {
+        p.push(`${accColor} ${accSel.value}`);
       } else {
-        p.push(charAccSel.value);
+        p.push(accSel.value);
       }
     }
     
@@ -1946,6 +1904,7 @@ function buildBatchLearning(n) {
 }
 
 
+
 // ベースから微差を作る（+1ずつでもOK）
 function microJitterSeed(baseSeed, index) {
   // 32bit に収める
@@ -1990,6 +1949,10 @@ function buildBatchProduction(n){
       document.getElementById('tagE')?.textContent,
       document.getElementById('tagSkin')?.textContent,
       getOne("bf_age"), getOne("bf_gender"), getOne("bf_body"), getOne("bf_height"),
+      // ★★★ 以下3行を追加 ★★★
+     getOne("hairLength"),
+     getOne("bangsStyle"),
+     getOne("skinFeatures"), 
       getOne("hairStyle"), getOne("eyeShape")
     ].filter(Boolean);
     p.push(...basics);
@@ -2461,19 +2424,15 @@ function initHairEyeAndAccWheels(){
   window.getTopColor    = initColorWheel("top",    35,  80, 55);
   window.getBottomColor = initColorWheel("bottom", 210, 70, 50);
   window.getShoesColor  = initColorWheel("shoes",  0,   0,  30);
-  
-  // ★★★ 新規追加：基本情報の固定アクセ ★★★
-  window.getCharAccColor = initColorWheel("charAcc", 0, 75, 50);
 }
-
 
 // 学習モード専用の初期化関数を追加
 function initLearningColorWheels() {
   if (window.learningColorsInitialized) return;
   window.learningColorsInitialized = true;
   
-   // ★★★ 学習モードの固定アクセ色ピッカーは削除（基本情報から参照するため） ★★★
-  // window.getLearnAccColor = initColorWheel("learnAcc", 0, 75, 50); // ← 削除
+  // ★★★ 学習モードの固定アクセを赤（0度）に設定 ★★★
+  window.getLearnAccColor = initColorWheel("learnAcc", 0, 75, 50);
 }
 
 // 量産モード専用の初期化関数を追加  
@@ -2719,34 +2678,10 @@ function bindDictIO(){
 function fillAccessorySlots(){
   const accs = normList(SFW.accessories || []);
   const options = `<option value="">（未選択）</option>` + accs.map(a=>`<option value="${a.tag}">${a.label || a.tag}</option>`).join("");
-  
-  // ★★★ characterAccessory を追加 ★★★
-  ["characterAccessory", "p_accA","p_accB","p_accC","pl_accSel"].forEach(id=>{
+  ["p_accA","p_accB","p_accC","learn_acc","pl_accSel"].forEach(id=>{
     const sel = document.getElementById(id); if (sel) sel.innerHTML = options;
   });
-  
-  // ★★★ 学習モードの表示更新も追加 ★★★
-  updateLearnAccDisplay();
 }
-
-
-// ★★★ 新規関数：学習モードの固定アクセ表示を更新 ★★★
-function updateLearnAccDisplay() {
-  const charAccSel = document.getElementById("characterAccessory");
-  const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
-  const displayEl = document.getElementById("currentAccDisplay");
-  
-  if (displayEl) {
-    if (charAccSel && charAccSel.value && charAccColor && charAccColor !== "—") {
-      displayEl.textContent = `${charAccColor} ${charAccSel.value}`;
-    } else if (charAccSel && charAccSel.value) {
-      displayEl.textContent = charAccSel.value;
-    } else {
-      displayEl.textContent = "未設定";
-    }
-  }
-}
-
 
 /* ===== 単語モードの初期化 ===== */
 function initWordMode() {
