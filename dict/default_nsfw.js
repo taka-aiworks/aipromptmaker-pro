@@ -601,6 +601,51 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "cleaning_up_wipe",           "ja": "拭き取り/片付け描写",            "level": "L1" },
       { "tag": "towel_cover",                "ja": "タオルで隠す",                   "level": "L1" },
       { "tag": "sheets_stain_focus",         "ja": "シーツの染みを強調",             "level": "L2" }
+    ],
+        "participants": [
+      { "tag": "solo",              "ja": "1人（単独）", "level": "L1" },
+      { "tag": "1girl",             "ja": "女性1人", "level": "L1" },
+      { "tag": "1boy",              "ja": "男性1人", "level": "L1" },
+      
+      { "tag": "2people",           "ja": "2人", "level": "L1" },
+      { "tag": "1girl_1boy",        "ja": "男女ペア", "level": "L1" },
+      { "tag": "2girls",            "ja": "女性2人（百合）", "level": "L1" },
+      { "tag": "2boys",             "ja": "男性2人（BL）", "level": "L2" },
+      
+      { "tag": "3people",           "ja": "3人", "level": "L2" },
+      { "tag": "1girl_2boys",       "ja": "女性1人＋男性2人", "level": "L2" },
+      { "tag": "2girls_1boy",       "ja": "女性2人＋男性1人", "level": "L2" },
+      { "tag": "3girls",            "ja": "女性3人", "level": "L2" },
+      { "tag": "3boys",             "ja": "男性3人", "level": "L2" },
+      
+      { "tag": "4people",           "ja": "4人", "level": "L2" },
+      { "tag": "1girl_3boys",       "ja": "女性1人＋男性3人", "level": "L3" },
+      { "tag": "3girls_1boy",       "ja": "女性3人＋男性1人", "level": "L2" },
+      { "tag": "2girls_2boys",      "ja": "男女2人ずつ", "level": "L2" },
+      { "tag": "4girls",            "ja": "女性4人", "level": "L2" },
+      { "tag": "4boys",             "ja": "男性4人", "level": "L2" },
+      
+      { "tag": "5people",           "ja": "5人", "level": "L3" },
+      { "tag": "1girl_4boys",       "ja": "女性1人＋男性4人", "level": "L3" },
+      { "tag": "group_sex",         "ja": "グループセックス", "level": "L3" },
+      { "tag": "gangbang",          "ja": "輪姦", "level": "L3" },
+      { "tag": "reverse_gangbang",  "ja": "逆ハーレム", "level": "L3" },
+      { "tag": "orgy",              "ja": "乱交パーティー", "level": "L3" },
+      { "tag": "multiple_boys",     "ja": "複数男性", "level": "L2" },
+      { "tag": "multiple_girls",    "ja": "複数女性", "level": "L2" },
+      { "tag": "mixed_group",       "ja": "男女混合グループ", "level": "L2" },
+      
+      { "tag": "threesome_ffm",     "ja": "3Pスタイル：女女男", "level": "L2" },
+      { "tag": "threesome_mmf",     "ja": "3Pスタイル：男男女", "level": "L3" },
+      { "tag": "threesome_fff",     "ja": "3Pスタイル：女女女", "level": "L2" },
+      { "tag": "threesome_mmm",     "ja": "3Pスタイル：男男男", "level": "L2" },
+      
+      { "tag": "audience",          "ja": "観衆・見物人", "level": "L2" },
+      { "tag": "voyeur",            "ja": "のぞき見", "level": "L2" },
+      { "tag": "exhibitionism",     "ja": "露出プレイ", "level": "L2" },
+      { "tag": "public_sex",        "ja": "人前セックス", "level": "L3" },
+      { "tag": "filming",           "ja": "撮影・録画", "level": "L2" },
+      { "tag": "livestreaming",     "ja": "ライブ配信", "level": "L2" }
     ]
   }
 };
