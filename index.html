@@ -253,6 +253,26 @@
         </div>
       </div>
 
+     <!-- 基本情報タブの適切な位置に追加 -->
+      <div class="panel">
+        <h3>固定アクセ（キャラ特徴）</h3>
+        <div class="mini">メガネ等の恒常特徴のみ。未選択なら挿入しません</div>
+        <select id="characterAccessory"></select>
+        <div class="wheel-box" style="margin-top:6px">
+          <div id="wheel_charAcc" class="wheel"></div>
+          <div id="thumb_charAcc" class="thumb"></div>
+        </div>
+        <div class="row mini">
+          S:<input id="sat_charAcc" type="range" min="0" max="100" value="75">
+          L:<input id="lit_charAcc" type="range" min="0" max="100" value="50">
+        </div>
+        <div class="row mini">
+          <div id="sw_charAcc" class="swatch"></div>
+          <span>色タグ: <code class="tag" id="tag_charAcc">black</code></span>
+        </div>
+      </div>
+      
+      
       <div class="panel">
         <h3>キャラ識別</h3>
         <label>キャラ名（seed固定）</label>
