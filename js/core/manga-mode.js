@@ -476,6 +476,8 @@ function importSecondCharSettings(event) {
       // 各種設定項目
       const settingIds = [
         'secondCharGender', 'secondCharAge', 'secondCharHairstyle',
+          // ★★★ 以下3項目を追加 ★★★
+        'secondCharHairLength', 'secondCharBangsStyle', 'secondCharSkinFeatures',
         'secondCharHairColor', 'secondCharEyeColor', 'secondCharSkinTone',
         'secondCharTop', 'secondCharBottom', 'secondCharDress', 'secondCharShoes'
       ];
@@ -535,6 +537,11 @@ function exportSecondCharSettings() {
     secondCharGender: getSelectedValue('secondCharGender'),
     secondCharAge: getSelectedValue('secondCharAge'),
     secondCharHairstyle: getSelectedValue('secondCharHairstyle'),
+    // ★★★ 以下3行を追加 ★★★
+    secondCharHairLength: getSelectedValue('secondCharHairLength'),
+    secondCharBangsStyle: getSelectedValue('secondCharBangsStyle'),  
+    secondCharSkinFeatures: getSelectedValue('secondCharSkinFeatures'),
+    
     secondCharHairColor: getSelectedValue('secondCharHairColor'),
     secondCharEyeColor: getSelectedValue('secondCharEyeColor'),
     secondCharSkinTone: getSelectedValue('secondCharSkinTone'),
@@ -619,6 +626,12 @@ function populateMangaOptions() {
     populateRadioOptions('mangaEmotionPrimary', SFW.emotion_primary || []);
     populateRadioOptions('mangaEmotionDetail', SFW.emotion_detail || []);
     populateRadioOptions('mangaExpressions', SFW.expressions || []);
+
+  　// ★★★ 以下3行を追加 ★★★
+    populateRadioOptions('mangaHairLength', SFW.hair_length || []);
+    populateRadioOptions('mangaBangsStyle', SFW.bangs_style || []);
+    populateRadioOptions('mangaSkinFeatures', SFW.skin_features || []);
+    
     populateCheckboxOptions('mangaEffectManga', SFW.effect_manga || []);
     populateRadioOptions('mangaEyeState', SFW.eye_state || []);
     populateRadioOptions('mangaGaze', SFW.gaze || []);
@@ -668,6 +681,10 @@ function populateMangaOptions() {
     populateOptionsIfExists('secondCharGender', SFW.gender || [], 'radio');
     populateOptionsIfExists('secondCharAge', SFW.age || [], 'radio');
     populateOptionsIfExists('secondCharHairstyle', SFW.hair_style || [], 'radio');
+        // ★★★ 以下3行を追加 ★★★
+    populateOptionsIfExists('secondCharHairLength', SFW.hair_length || [], 'radio');
+    populateOptionsIfExists('secondCharBangsStyle', SFW.bangs_style || [], 'radio');
+    populateOptionsIfExists('secondCharSkinFeatures', SFW.skin_features || [], 'radio');
     populateOptionsIfExists('secondCharHairColor', generateColorOptions(), 'radio');
     populateOptionsIfExists('secondCharEyeColor', generateColorOptions(), 'radio');
     populateOptionsIfExists('secondCharSkinTone', generateSkinToneOptions(), 'radio');
@@ -1240,6 +1257,10 @@ function addBasicInfoTagsSafe(tags) {
     if (typeof getOne === 'function') {
       const hairStyle = getOne('hairStyle');
       const eyeShape = getOne('eyeShape');
+        // ★★★ 以下3行を追加 ★★★
+      const hairLength = getOne('hairLength');
+      const bangsStyle = getOne('bangsStyle');
+      const skinFeatures = getOne('skinFeatures');
       if (hairStyle) tags.push(hairStyle);
       if (eyeShape) tags.push(eyeShape);
       console.log('💄 スタイルタグ追加:', { hairStyle, eyeShape });
@@ -1469,6 +1490,10 @@ function addSecondCharTags(tags) {
     addSelectedValues(tags, 'secondCharGender');
     addSelectedValues(tags, 'secondCharAge');
     addSelectedValues(tags, 'secondCharHairstyle');
+    // ★★★ 以下3行を追加 ★★★
+    addSelectedValues(tags, 'secondCharHairLength');
+    addSelectedValues(tags, 'secondCharBangsStyle');
+    addSelectedValues(tags, 'secondCharSkinFeatures');
     addSelectedValues(tags, 'secondCharHairColor');
     addSelectedValues(tags, 'secondCharEyeColor');
     addSelectedValues(tags, 'secondCharSkinTone');
