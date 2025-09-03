@@ -2735,9 +2735,104 @@ function fillAccessorySlots(){
   });
 }
 
-/* ===== 単語モードの初期化 ===== */
+/* ===== 単語モードの初期化（検索機能付き完全版） ===== */
 function initWordMode() {
   let selectedCount = 0;
+  let searchTerm = ''; // 検索語を保持
+  
+  // 検索機能の実装
+  function performSearch(term) {
+    searchTerm = term.toLowerCase().trim();
+    let totalItems = 0;
+    let visibleItems = 0;
+    
+    // 全カテゴリを走査
+    document.querySelectorAll('#panelWordMode .wm-acc').forEach(accordion => {
+      const items = accordion.querySelectorAll('.wm-item');
+      let categoryVisibleCount = 0;
+      
+      items.forEach(item => {
+        totalItems++;
+        const jp = (item.dataset.jp || '').toLowerCase();
+        const en = (item.dataset.en || '').toLowerCase();
+        
+        // 部分一致検索（日本語・英語両対応）
+        const isMatch = !searchTerm || 
+                       jp.includes(searchTerm) || 
+                       en.includes(searchTerm);
+        
+        if (isMatch) {
+          item.classList.remove('wm-hidden');
+          categoryVisibleCount++;
+          visibleItems++;
+        } else {
+          item.classList.add('wm-hidden');
+        }
+      });
+      
+      // カテゴリ全体の表示制御
+      if (categoryVisibleCount === 0 && searchTerm) {
+        accordion.classList.add('wm-no-results');
+      } else {
+        accordion.classList.remove('wm-no-results');
+      }
+      
+      // カテゴリ内カウント更新
+      const countEl = accordion.querySelector('.wm-count');
+      if (countEl) {
+        countEl.textContent = searchTerm ? categoryVisibleCount : items.length;
+      }
+    });
+    
+    // 統計表示更新
+    updateSearchStats(visibleItems, totalItems);
+  }
+  
+  function updateSearchStats(visible, total) {
+    const statsEl = document.getElementById('wm-search-stats');
+    const totalCountEl = document.getElementById('wm-total-count');
+    
+    if (totalCountEl) totalCountEl.textContent = total;
+    
+    if (statsEl) {
+      if (searchTerm) {
+        statsEl.innerHTML = `検索結果: <span style="color: var(--accent-ok); font-weight: bold;">${visible}</span> / ${total} 件`;
+      } else {
+        statsEl.innerHTML = `全 <span id="wm-total-count">${total}</span> 件`;
+      }
+    }
+  }
+  
+  function clearSearch() {
+    const searchInput = document.getElementById('wm-search-input');
+    if (searchInput) searchInput.value = '';
+    performSearch('');
+  }
+  
+  // 検索イベントのバインド
+  function bindSearchEvents() {
+    const searchInput = document.getElementById('wm-search-input');
+    const clearBtn = document.getElementById('wm-search-clear');
+    
+    if (searchInput) {
+      // リアルタイム検索（入力時）
+      searchInput.addEventListener('input', (e) => {
+        performSearch(e.target.value);
+      });
+      
+      // Enterキーでも検索
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          performSearch(e.target.value);
+        }
+      });
+    }
+    
+    if (clearBtn) {
+      clearBtn.addEventListener('click', clearSearch);
+    }
+  }
   
   window.initWordModeItems = function() {
     // SFW項目の初期化
@@ -2805,6 +2900,9 @@ function initWordMode() {
       colorContainer.innerHTML = colors.map(item => createWordModeColorItem(item)).join('');
       if (colorCount) colorCount.textContent = colors.length;
     }
+    
+    // 検索機能のイベントバインド
+    bindSearchEvents();
     
     // イベントハンドラーを追加
     bindWordModeEvents();
@@ -3017,7 +3115,7 @@ function initWordMode() {
       });
     }
   }
-}
+
 
 async function loadDictionaries() {
   // ① まず埋め込みを優先
