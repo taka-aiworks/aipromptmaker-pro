@@ -1488,6 +1488,9 @@ function buildOnePlanner() {
     getBFValue('body'),
     getBFValue('height'),
     getOne('hairStyle'),
+    getOne('hairLength'),    // ← 追加
+    getOne('bangsStyle'),    // ← 追加
+    getOne('skinFeatures'),  // ← 追加
     getOne('eyeShape'),
     textOf('tagH'),
     textOf('tagE'),
@@ -1804,9 +1807,18 @@ function buildBatchLearning(n) {
     // 基本情報
     const textOf = id => (document.getElementById(id)?.textContent || "").trim();
     p.push(...[
-      getBFValue('age'), getBFValue('gender'), getBFValue('body'), getBFValue('height'),
-      getOne('hairStyle'), getOne('eyeShape'),
-      textOf('tagH'), textOf('tagE'), textOf('tagSkin')
+      getBFValue('age'), 
+      getBFValue('gender'), 
+      getBFValue('body'), 
+      getBFValue('height'),
+      getOne('hairStyle'), 
+      getOne('hairLength'),    // ← 追加
+      getOne('bangsStyle'),    // ← 追加
+      getOne('skinFeatures'),  // ← 追加
+      getOne('eyeShape'),
+      textOf('tagH'), 
+      textOf('tagE'), 
+      textOf('tagSkin')
     ].filter(Boolean));
     
     // 学習モード用のNSFW要素処理（衣装・下着・露出優先、未選択対応）
