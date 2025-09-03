@@ -469,7 +469,7 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "twisted_nipples",       "ja": "ひねられ乳首",       "level": "L2" },
       { "tag": "vacuum_pump_nipples",   "ja": "ポンプで膨らんだ乳首", "level": "L3" }
     ],
-     "action": [
+   "action": [
       { "tag": "handholding",        "ja": "手をつなぐ",          "level": "L1" },
       { "tag": "linking_arms",       "ja": "腕を組む",            "level": "L1" },
       { "tag": "hugging",            "ja": "抱きしめる",          "level": "L1" },
@@ -483,7 +483,7 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "nape_kiss",          "ja": "うなじにキス",        "level": "L2" },
       { "tag": "ear_bite",           "ja": "耳を噛む",            "level": "L2" },
       { "tag": "whispering_closely", "ja": "耳元でささやく",      "level": "L1" },
-    
+
       { "tag": "stroking_cheek",     "ja": "頬をなでる",          "level": "L1" },
       { "tag": "brushing_hair",      "ja": "髪をなでる",          "level": "L1" },
       { "tag": "lifting_chin",       "ja": "顎を持ち上げる",      "level": "L1" },
@@ -492,36 +492,35 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "arm_around_shoulder","ja": "肩を抱く",            "level": "L1" },
       { "tag": "arm_around_waist",   "ja": "腰に手を回す",        "level": "L1" },
       { "tag": "pressing_chest",     "ja": "胸を押し付ける",      "level": "L2" },
-    
+
       { "tag": "lap_pillow",         "ja": "膝枕",                "level": "L1" },
       { "tag": "bridal_carry",       "ja": "お姫様抱っこ",        "level": "L1" },
       { "tag": "dancing_close",      "ja": "密着して踊る",        "level": "L1" },
-    
+
       { "tag": "smelling_hair",      "ja": "髪の匂いを嗅ぐ",      "level": "L1" },
       { "tag": "smelling_body",      "ja": "体の匂いを嗅ぐ",      "level": "L2" },
       { "tag": "smelling_underwear", "ja": "下着の匂いを嗅ぐ",    "level": "L2" },
       { "tag": "smelling_armpit",    "ja": "脇の匂いを嗅ぐ",      "level": "L2" },
       { "tag": "smelling_feet",      "ja": "足の匂いを嗅ぐ",      "level": "L2" },
       { "tag": "smelling_genitals",  "ja": "性器の匂いを嗅ぐ",    "level": "L3" },
-    
+
       { "tag": "belly_kiss",         "ja": "お腹にキス",          "level": "L1" },
       { "tag": "navel_play",         "ja": "へそ責め",            "level": "L2" },
       { "tag": "thigh_kiss",         "ja": "太ももにキス",        "level": "L1" },
       { "tag": "inner_thigh_kiss",   "ja": "太ももの内側にキス",  "level": "L2" },
       { "tag": "leg_worship",        "ja": "脚フェチ（脚を愛でる）","level": "L2" },
-    
+
       { "tag": "finger_licking",     "ja": "指を舐める",          "level": "L1" },
-    
       { "tag": "licking",            "ja": "舐める（全般）",      "level": "L2" },
       { "tag": "sucking",            "ja": "吸う（指/耳/首/乳首）","level": "L2" },
       { "tag": "ear_teasing",        "ja": "耳を甘噛み/舐める",   "level": "L2" },
       { "tag": "neck_sucking",       "ja": "首筋を吸う（キスマーク）","level": "L2" },
       { "tag": "licking_sweat",      "ja": "汗を舐める",          "level": "L2" },
-    
+
       { "tag": "nipple_teasing",     "ja": "乳首いじり",          "level": "L2" },
       { "tag": "nipple_sucking",     "ja": "乳首を吸う",          "level": "L2" },
       { "tag": "nipple_biting",      "ja": "乳首を噛む",          "level": "L2" },
-    
+
       { "tag": "butt_squeezing",     "ja": "お尻を揉む",          "level": "L2" },
       { "tag": "thigh_fondling",     "ja": "太ももを触る",        "level": "L2" },
       { "tag": "crotch_rubbing",     "ja": "股間を触る/擦る",     "level": "L2" },
@@ -532,7 +531,7 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "panties_pull_aside", "ja": "下着をずらす",        "level": "L2" },
       { "tag": "undressing",         "ja": "脱ぎかけ",            "level": "L1" },
       { "tag": "covered_nudity",     "ja": "手や物で隠す",        "level": "L1" },
-    
+
       { "tag": "stroking_self",      "ja": "セルフ愛撫",          "level": "L2" },
       { "tag": "female_masturbation","ja": "女性オナニー",        "level": "L2" },
       { "tag": "male_masturbation",  "ja": "男性オナニー",        "level": "L2" },
@@ -542,7 +541,7 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "dildo_use",          "ja": "ディルド使用",        "level": "L3" },
       { "tag": "butt_plug_use",      "ja": "アナルプラグ使用",    "level": "L3" },
       { "tag": "public_masturbation","ja": "人前オナニー",        "level": "L3" },
-    
+
       { "tag": "fellatio",           "ja": "フェラチオ",          "level": "L3" },
       { "tag": "deepthroat",         "ja": "ディープスロート",    "level": "L3" },
       { "tag": "cunnilingus",        "ja": "クンニリングス",      "level": "L3" },
@@ -550,53 +549,74 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "handjob",            "ja": "手コキ",              "level": "L3" },
       { "tag": "titjob",             "ja": "パイズリ",            "level": "L3" },
       { "tag": "footjob",            "ja": "足コキ",              "level": "L3" },
-      { "tag": "self_spread",      "ja": "セルフくぱぁ（自分で開く）", "level": "L2" },
-    
+      { "tag": "self_spread",        "ja": "セルフくぱぁ（自分で開く）", "level": "L2" },
+
       { "tag": "penetration_vaginal","ja": "膣挿入",              "level": "L3" },
       { "tag": "penetration_anal",   "ja": "アナル挿入",          "level": "L3" },
       { "tag": "double_penetration", "ja": "二穴挿入",            "level": "L3" },
       { "tag": "pegging",            "ja": "ペニバン挿入",        "level": "L3" },
       { "tag": "fisting",            "ja": "フィスト",            "level": "L3" },
-    
-      { "tag": "creampie",           "ja": "中出し",              "level": "L3" },
-      { "tag": "creampie_mark",      "ja": "中出し痕",            "level": "L2" },
-      { "tag": "cum_inside",         "ja": "膣内射精",            "level": "L3" },
-      { "tag": "facial",             "ja": "顔射",                "level": "L2" },
-      { "tag": "facial_after",       "ja": "顔射後",              "level": "L2" },
-      { "tag": "squirting",          "ja": "潮吹き",              "level": "L2" },
-    
+
       { "tag": "urination",          "ja": "放尿",                "level": "L2" },
       { "tag": "wetting_clothes",    "ja": "お漏らし（服の中で）","level": "L2" },
       { "tag": "pee_stream",         "ja": "尿を出す瞬間",        "level": "L2" },
       { "tag": "pee_puddle",         "ja": "尿だまり",            "level": "L2" },
       { "tag": "pee_dripping",       "ja": "尿だらだら",          "level": "L2" },
-    
+
       { "tag": "scat",               "ja": "排便/スカトロ",       "level": "L3" },
       { "tag": "scat_play",          "ja": "スカトロプレイ",      "level": "L3" },
-      { "tag": "coprophagia",        "ja": "スカトロ食",          "level": "L3" },
+      { "tag": "coprophagia",        "ja": "スカトロ食",          "level": "L3" }
+    ],
+    "action2": [
+      { "tag": "creampie",           "ja": "中出し",              "level": "L3" },
+      { "tag": "creampie_mark",      "ja": "中出し痕",            "level": "L2" },
+      { "tag": "cum_inside",         "ja": "膣内射精",            "level": "L3" },
+      { "tag": "cum_in_mouth",       "ja": "口内射精",            "level": "L3" },
+      { "tag": "cum_swallow",        "ja": "精液飲み込み",        "level": "L3" },
+      { "tag": "cum_spit",           "ja": "精液を吐き出す",      "level": "L2" },
+      { "tag": "facial",             "ja": "顔射",                "level": "L2" },
+      { "tag": "facial_after",       "ja": "顔射後",              "level": "L2" },
+      { "tag": "cum_on_body",        "ja": "体に射精",            "level": "L2" },
+      { "tag": "cum_on_breasts",     "ja": "胸射",                "level": "L2" },
+      { "tag": "cum_on_ass",         "ja": "尻射",                "level": "L2" },
+      { "tag": "cum_on_feet",        "ja": "足射",                "level": "L2" },
+      { "tag": "cum_in_hair",        "ja": "髪に射精",            "level": "L2" },
+      { "tag": "bukkake",            "ja": "ぶっかけ",            "level": "L3" },
+      { "tag": "gangbang_cum",       "ja": "乱交射精",            "level": "L3" },
+      { "tag": "multiple_creampie",  "ja": "連続中出し",          "level": "L3" },
+      { "tag": "cum_overflow",       "ja": "精液溢れ",            "level": "L3" },
+      { "tag": "cum_dripping",       "ja": "精液垂れ",            "level": "L2" },
+      { "tag": "cum_pool",           "ja": "精液溜まり",          "level": "L3" },
+      { "tag": "excessive_cum",      "ja": "大量射精",            "level": "L3" },
+
+      { "tag": "squirting",          "ja": "潮吹き",              "level": "L2" },
+      { "tag": "female_ejaculation", "ja": "女性の射精",          "level": "L2" },
+      { "tag": "multiple_orgasm",    "ja": "連続絶頂",            "level": "L2" },
+      { "tag": "simultaneous_orgasm","ja": "同時絶頂",            "level": "L2" },
+
       { "tag": "xray_cross_section",         "ja": "断面図（X線透過）",             "level": "L2" },
       { "tag": "xray_penetration_vaginal",   "ja": "断面図：膣挿入",                 "level": "L3" },
       { "tag": "xray_penetration_anal",      "ja": "断面図：肛門挿入",               "level": "L3" },
       { "tag": "xray_ejaculation_inside",    "ja": "断面図：膣内射精描写",           "level": "L3" },
-    
+
       { "tag": "genital_join_closeup",       "ja": "結合部アップ",                   "level": "L3" },
       { "tag": "insertion_closeup_start",    "ja": "挿入直前アップ",                 "level": "L2" },
       { "tag": "insertion_closeup_mid",      "ja": "挿入中アップ",                   "level": "L3" },
       { "tag": "withdrawal_closeup",         "ja": "抜き差しアップ",                 "level": "L3" },
-    
+
       { "tag": "fluids_vaginal",             "ja": "愛液の描写（糸/滴）",            "level": "L2" },
       { "tag": "fluids_cum_drip",            "ja": "精液が垂れる描写",               "level": "L2" },
       { "tag": "fluids_mix_closeup",         "ja": "体液が混ざる結合部アップ",       "level": "L3" },
-    
+
       { "tag": "condom_on",                  "ja": "コンドーム装着",                 "level": "L2" },
       { "tag": "condom_full",                "ja": "コンドーム精液溜まり",           "level": "L2" },
       { "tag": "condom_removal",             "ja": "コンドーム外し",                 "level": "L2" },
       { "tag": "condom_break",               "ja": "コンドーム破損",                 "level": "L2" },
-    
+
       { "tag": "censor_mosaic",              "ja": "モザイク処理",                   "level": "L1" },
       { "tag": "censor_bar",                 "ja": "黒帯/白抜きによる検閲",          "level": "L1" },
       { "tag": "soft_focus_censor",          "ja": "ソフトフォーカスでぼかす",       "level": "L1" },
-    
+
       { "tag": "aftercare_cuddle",           "ja": "事後の抱擁（アフターケア）",     "level": "L1" },
       { "tag": "cleaning_up_wipe",           "ja": "拭き取り/片付け描写",            "level": "L1" },
       { "tag": "towel_cover",                "ja": "タオルで隠す",                   "level": "L1" },
