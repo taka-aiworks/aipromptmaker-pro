@@ -446,7 +446,7 @@ function exportSecondCharSettings() {
   toast('2人目キャラ設定をエクスポートしました');
 }
 
-// 辞書データから選択肢を設定
+// 辞書データから選択肢を設定（ネガティブプロンプト対応版）
 function populateMangaOptions() {
   // 既存の辞書データ形式に合わせて参照を修正
   const SFW = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
@@ -550,13 +550,33 @@ function populateMangaOptions() {
     console.error('インタラクション選択肢設定エラー:', error);
   }
   
-  // ネガティブプリセット
+  // ========== ネガティブプロンプト（新システム対応）==========
   try {
-    populateCheckboxOptions('mangaNegativePreset', generateNegativePresets());
-    console.log('ネガティブプリセット設定完了');
+    // 新しいカテゴリ別UIが存在する場合は新システムを使用
+    if (document.getElementById('mangaNegEssential')) {
+      // 新しいネガティブプロンプトシステムの初期化は
+      // initMangaNegativeSystem() で行うため、ここでは何もしない
+      console.log('新ネガティブシステム検出 - initMangaNegativeSystem()で初期化');
+    } else {
+      // 既存システム（下位互換）
+      populateCheckboxOptions('mangaNegativePreset', generateNegativePresets());
+      console.log('旧ネガティブプリセット設定完了');
+    }
   } catch (error) {
-    console.error('ネガティブプリセット設定エラー:', error);
+    console.error('ネガティブプロンプト設定エラー:', error);
   }
+  
+  // ========== 新ネガティブシステムの初期化（遅延実行）==========
+  setTimeout(() => {
+    if (document.getElementById('mangaNegEssential') && typeof initMangaNegativeSystem === 'function') {
+      try {
+        initMangaNegativeSystem();
+        console.log('新ネガティブプロンプトシステム初期化完了');
+      } catch (error) {
+        console.error('新ネガティブプロンプトシステム初期化エラー:', error);
+      }
+    }
+  }, 300);
 }
 
 // インタラクション選択肢の設定
@@ -1103,22 +1123,57 @@ function getSecondCharColor(type) {
 function generateMangaNegative() {
   const negatives = [];
   
-  // プリセット
-  const presets = document.querySelectorAll('input[name="mangaNegativePreset"]:checked');
-  presets.forEach(preset => {
-    negatives.push(preset.value);
-  });
+  // 新しいカテゴリ別UI（改良版）が存在するかチェック
+  const hasNewUI = document.getElementById('mangaNegEssential');
   
-  // カスタム
-  const custom = document.getElementById('mangaNegativeCustom')?.value?.trim();
-  if (custom) {
-    custom.split(',').forEach(tag => {
-      const trimmed = tag.trim();
-      if (trimmed) negatives.push(trimmed);
+  if (hasNewUI) {
+    // ========== 新しいカテゴリ別UI ========== 
+    const containers = [
+      'mangaNegEssential', 'mangaNegQuality', 'mangaNegUnwanted',
+      'mangaNegFace', 'mangaNegBody', 'mangaNegStyle',
+      'mangaNegComposition', 'mangaNegClothing'
+    ];
+    
+    containers.forEach(containerId => {
+      const container = document.getElementById(containerId);
+      if (container) {
+        const checkedInputs = container.querySelectorAll('input[type="checkbox"]:checked');
+        checkedInputs.forEach(input => {
+          if (input.value && input.value.trim()) {
+            negatives.push(input.value.trim());
+          }
+        });
+      }
     });
+    
+    // カスタム追記
+    const custom = document.getElementById('mangaNegativeCustom')?.value?.trim();
+    if (custom) {
+      const customTags = custom.split(',').map(tag => tag.trim()).filter(Boolean);
+      negatives.push(...customTags);
+    }
+    
+  } else {
+    // ========== 既存のUI（下位互換） ========== 
+    // プリセット（既存のmangaNegativePreset）
+    const presets = document.querySelectorAll('input[name="mangaNegativePreset"]:checked');
+    presets.forEach(preset => {
+      negatives.push(preset.value);
+    });
+    
+    // カスタム（既存のmangaNegativeCustom）
+    const custom = document.getElementById('mangaNegativeCustom')?.value?.trim();
+    if (custom) {
+      custom.split(',').forEach(tag => {
+        const trimmed = tag.trim();
+        if (trimmed) negatives.push(trimmed);
+      });
+    }
   }
   
-  return negatives.join(', ');
+  // 重複除去して返す
+  const uniqueNegatives = [...new Set(negatives)];
+  return uniqueNegatives.join(', ');
 }
 
 // ヘルパー関数
@@ -1335,3 +1390,245 @@ if (typeof window !== 'undefined') {
   window.toggleSecondCharSettings = toggleSecondCharSettings;
   window.toggleInteractionMode = toggleInteractionMode;
 }
+
+// ========================================
+// 新しいネガティブプロンプト機能追加
+// ========================================
+
+// ネガティブプロンプト関連の初期化
+function initMangaNegativeSystem() {
+  const SFW = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
+  if (!SFW) {
+    console.log('辞書なし - デフォルトネガティブを設定');
+    populateDefaultNegativeOptions();
+    setupNegativePresetListeners();
+    setupNegativePreviewUpdate();
+    return;
+  }
+  
+  // カテゴリ別にネガティブプロンプトを設定
+  populateNegativeByCategory();
+  
+  // クイックプリセットのイベントリスナー
+  setupNegativePresetListeners();
+  
+  // リアルタイムプレビュー
+  setupNegativePreviewUpdate();
+  
+  console.log('ネガティブプロンプトシステム初期化完了');
+}
+
+// カテゴリ別のネガティブプロンプト設定
+function populateNegativeByCategory() {
+  const SFW = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
+  if (!SFW?.negative_presets) {
+    console.warn('negative_presets が辞書に見つかりません - デフォルトを使用');
+    populateDefaultNegativeOptions();
+    return;
+  }
+  
+  const presets = SFW.negative_presets;
+  
+  // 必須カテゴリ（基本的な品質問題）
+  const essentialItems = presets.filter(item => 
+    ['bad hands', 'bad anatomy', 'blurry', 'low quality'].includes(item.tag)
+  );
+  populateCheckboxOptions('mangaNegEssential', essentialItems);
+  
+  // その他のカテゴリ
+  const categoryMap = {
+    'mangaNegQuality': 'image_quality',
+    'mangaNegUnwanted': 'unwanted', 
+    'mangaNegFace': 'face',
+    'mangaNegBody': 'body',
+    'mangaNegStyle': 'style',
+    'mangaNegComposition': 'composition',
+    'mangaNegClothing': 'clothing'
+  };
+  
+  Object.entries(categoryMap).forEach(([elementId, category]) => {
+    const items = presets.filter(item => item.category === category);
+    populateCheckboxOptions(elementId, items);
+  });
+}
+
+// デフォルトのネガティブオプション（辞書がない場合）
+function populateDefaultNegativeOptions() {
+  const defaultOptions = {
+    mangaNegEssential: [
+      { tag: "bad hands", label: "手の崩れ防止" },
+      { tag: "bad anatomy", label: "解剖学的不正防止" },
+      { tag: "blurry", label: "ぼやけ防止" },
+      { tag: "low quality", label: "低品質防止" }
+    ],
+    mangaNegQuality: [
+      { tag: "worst quality", label: "最低品質防止" },
+      { tag: "jpeg artifacts", label: "JPEG劣化防止" },
+      { tag: "pixelated", label: "ピクセル化防止" }
+    ],
+    mangaNegUnwanted: [
+      { tag: "text", label: "テキスト除去" },
+      { tag: "watermark", label: "透かし除去" },
+      { tag: "signature", label: "署名除去" }
+    ],
+    mangaNegStyle: [
+      { tag: "3D", label: "3D風防止" },
+      { tag: "realistic", label: "リアル風防止" },
+      { tag: "photorealistic", label: "写実的防止" }
+    ]
+  };
+  
+  Object.entries(defaultOptions).forEach(([elementId, items]) => {
+    populateCheckboxOptions(elementId, items);
+  });
+}
+
+// クイックプリセットのイベントリスナー設定
+function setupNegativePresetListeners() {
+  const presets = {
+    light: ['bad hands', 'bad anatomy', 'blurry', 'low quality', 'text'],
+    standard: ['bad hands', 'bad anatomy', 'extra fingers', 'deformed', 'blurry', 'low quality', 'worst quality', 'text', 'watermark'],
+    high: ['bad hands', 'bad anatomy', 'extra fingers', 'deformed', 'mutated', 'blurry', 'low quality', 'worst quality', 'jpeg artifacts', 'text', 'watermark', 'bad face', 'bad eyes', 'extra limbs'],
+    manga: ['bad hands', 'bad anatomy', 'blurry', 'low quality', 'text', '3D', 'realistic', 'photorealistic', 'bad composition']
+  };
+  
+  // ボタンイベントの設定
+  ['Light', 'Standard', 'High', 'Manga'].forEach(type => {
+    const btn = document.getElementById(`negQuick${type}`);
+    if (btn) {
+      btn.addEventListener('click', () => {
+        setNegativePreset(presets[type.toLowerCase()]);
+        if (typeof toast === 'function') {
+          toast(`${type === 'Light' ? '軽量' : type === 'Standard' ? '標準' : type === 'High' ? '高品質' : '漫画特化'}セットを適用`);
+        }
+      });
+    }
+  });
+  
+  // 全解除ボタン
+  const clearBtn = document.getElementById('negClearAll');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      clearAllNegativeSelections();
+      if (typeof toast === 'function') toast('すべての選択を解除');
+    });
+  }
+}
+
+// ネガティブプリセットの適用
+function setNegativePreset(tags) {
+  clearAllNegativeSelections();
+  
+  tags.forEach(tag => {
+    // 漫画モード内のチェックボックスを対象に検索
+    const checkbox = document.querySelector(`#panelManga input[type="checkbox"][value="${tag}"]`);
+    if (checkbox) {
+      checkbox.checked = true;
+    }
+  });
+  
+  updateNegativePreview();
+  if (typeof updateMangaOutput === 'function') {
+    updateMangaOutput();
+  }
+}
+
+// すべてのネガティブ選択を解除
+function clearAllNegativeSelections() {
+  const containers = [
+    'mangaNegEssential', 'mangaNegQuality', 'mangaNegUnwanted',
+    'mangaNegFace', 'mangaNegBody', 'mangaNegStyle', 
+    'mangaNegComposition', 'mangaNegClothing'
+  ];
+  
+  containers.forEach(containerId => {
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+      });
+    }
+  });
+  
+  // カスタムテキストもクリア
+  const customTextarea = document.getElementById('mangaNegativeCustom');
+  if (customTextarea) customTextarea.value = '';
+  
+  updateNegativePreview();
+}
+
+// リアルタイムプレビューの設定
+function setupNegativePreviewUpdate() {
+  const containers = [
+    'mangaNegEssential', 'mangaNegQuality', 'mangaNegUnwanted',
+    'mangaNegFace', 'mangaNegBody', 'mangaNegStyle',
+    'mangaNegComposition', 'mangaNegClothing'
+  ];
+  
+  // 各コンテナの変更を監視
+  containers.forEach(containerId => {
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.addEventListener('change', () => {
+        updateNegativePreview();
+        if (typeof updateMangaOutput === 'function') updateMangaOutput();
+      });
+    }
+  });
+  
+  // カスタムテキストエリアも監視
+  const customTextarea = document.getElementById('mangaNegativeCustom');
+  if (customTextarea) {
+    customTextarea.addEventListener('input', () => {
+      updateNegativePreview();
+      if (typeof updateMangaOutput === 'function') updateMangaOutput();
+    });
+  }
+  
+  // 初期プレビュー
+  setTimeout(updateNegativePreview, 100);
+}
+
+// ネガティブプレビューの更新
+function updateNegativePreview() {
+  const negativeText = generateMangaNegative(); // 置き換えた関数を使用
+  const previewElement = document.getElementById('negativePreview');
+  
+  if (previewElement) {
+    if (negativeText.trim()) {
+      previewElement.textContent = negativeText;
+      previewElement.style.opacity = '1';
+    } else {
+      previewElement.textContent = '未選択';
+      previewElement.style.opacity = '0.6';
+    }
+  }
+}
+
+// 既存の初期化システムに統合
+const originalSetupMangaEventListeners = window.setupMangaEventListeners;
+window.setupMangaEventListeners = function() {
+  // 既存の処理を実行
+  if (originalSetupMangaEventListeners) {
+    originalSetupMangaEventListeners();
+  }
+  
+  // ネガティブプロンプト機能を追加
+  setTimeout(() => {
+    if (document.getElementById('mangaNegEssential')) {
+      initMangaNegativeSystem();
+    }
+  }, 200);
+};
+
+// フォールバック初期化
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    if (document.getElementById('mangaNegEssential') && !window.mangaNegativeInitialized) {
+      window.mangaNegativeInitialized = true;
+      initMangaNegativeSystem();
+    }
+  }, 1500);
+});
+
+
