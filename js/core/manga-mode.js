@@ -991,12 +991,31 @@ function updateMangaOutput() {
   console.log('📝 生成されたプロンプト:', prompt);
   console.log('🚫 生成されたネガティブ:', negative);
   
-  // フォーマット選択
-  const fmt = getFmt('#fmtManga', 'a1111');
+  // フォーマット選択（修正：getFmt関数の存在チェック付き）
+  let fmt;
+  if (typeof getFmt === 'function') {
+    fmt = getFmt('#fmtManga', 'a1111');
+  } else {
+    // フォールバック: デフォルトのフォーマッタ
+    fmt = {
+      line: (p, n, seed) => `Prompt: ${p}\nNegative prompt: ${n}\nSeed: ${seed}`
+    };
+  }
   
-  // seed生成
+  // seed生成（修正：seedFromName関数の存在チェック付き）
   const charName = document.getElementById('charName')?.value || 'manga_char';
-  const seed = typeof seedFromName === 'function' ? seedFromName(charName, 0) : Math.floor(Math.random() * 1000000);
+  let seed;
+  if (typeof seedFromName === 'function') {
+    seed = seedFromName(charName, 0);
+  } else {
+    // フォールバック: 簡易seed生成
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < charName.length; i++) { 
+      h ^= charName.charCodeAt(i); 
+      h = (h >>> 0) * 16777619 >>> 0; 
+    }
+    seed = h >>> 0;
+  }
   
   // 出力テキスト生成
   const allText = fmt.line(prompt, negative, seed);
