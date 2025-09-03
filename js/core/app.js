@@ -2974,71 +2974,6 @@ function createWordModeColorItem(item) {
     const countEl = document.getElementById('wm-selected-count');
     if (countEl) countEl.textContent = selectedCount;
   }
-
-// initWordMode関数内に以下の関数を追加
-function addToOutputTable(en, jp) {
-  const tbody = document.getElementById('wm-table-body');
-  if (!tbody) {
-    console.warn('wm-table-body が見つかりません');
-    return;
-  }
-  
-  // 最大20件制限
-  if (tbody.children.length >= 20) {
-    console.warn('テーブルの最大件数に達しています');
-    return;
-  }
-  
-  // 重複チェック
-  if (tbody.querySelector(`tr[data-en="${en}"]`)) {
-    console.warn('重複するアイテムです:', en);
-    return;
-  }
-  
-  // 新しい行を作成
-  const row = document.createElement('tr');
-  row.dataset.en = en;
-  row.innerHTML = `
-    <td class="wm-row-jp">${jp}</td>
-    <td class="wm-row-en">${en}</td>
-    <td>
-      <button type="button" class="wm-row-copy-en" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">EN</button>
-      <button type="button" class="wm-row-copy-both" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">両方</button>
-      <button type="button" class="wm-row-remove" style="padding: 2px 6px; font-size: 12px; color: #f44336;">削除</button>
-    </td>
-  `;
-  
-  // イベントリスナーを追加
-  const copyEnBtn = row.querySelector('.wm-row-copy-en');
-  const copyBothBtn = row.querySelector('.wm-row-copy-both');
-  const removeBtn = row.querySelector('.wm-row-remove');
-  
-  if (copyEnBtn) {
-    copyEnBtn.addEventListener('click', () => {
-      navigator.clipboard?.writeText(en).then(() => toast('英語タグをコピーしました')).catch(() => {
-        console.log('英語タグをコピーしました:', en);
-      });
-    });
-  }
-  
-  if (copyBothBtn) {
-    copyBothBtn.addEventListener('click', () => {
-      const text = jp && en ? `${jp}(${en})` : (en || jp);
-      navigator.clipboard?.writeText(text).then(() => toast('日英タグをコピーしました')).catch(() => {
-        console.log('日英タグをコピーしました:', text);
-      });
-    });
-  }
-  
-  if (removeBtn) {
-    removeBtn.addEventListener('click', () => {
-      row.remove();
-    });
-  }
-  
-  tbody.appendChild(row);
-  console.log('テーブルに行を追加しました:', { en, jp });
-}
    
 
   /* ===== 単語モードのイベントバインド（修正版） ===== */
@@ -3208,6 +3143,73 @@ async function loadDefaultDicts() {
     }
   }
 }
+
+// initWordMode関数内に以下の関数を追加
+function addToOutputTable(en, jp) {
+  const tbody = document.getElementById('wm-table-body');
+  if (!tbody) {
+    console.warn('wm-table-body が見つかりません');
+    return;
+  }
+  
+  // 最大20件制限
+  if (tbody.children.length >= 20) {
+    console.warn('テーブルの最大件数に達しています');
+    return;
+  }
+  
+  // 重複チェック
+  if (tbody.querySelector(`tr[data-en="${en}"]`)) {
+    console.warn('重複するアイテムです:', en);
+    return;
+  }
+  
+  // 新しい行を作成
+  const row = document.createElement('tr');
+  row.dataset.en = en;
+  row.innerHTML = `
+    <td class="wm-row-jp">${jp}</td>
+    <td class="wm-row-en">${en}</td>
+    <td>
+      <button type="button" class="wm-row-copy-en" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">EN</button>
+      <button type="button" class="wm-row-copy-both" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">両方</button>
+      <button type="button" class="wm-row-remove" style="padding: 2px 6px; font-size: 12px; color: #f44336;">削除</button>
+    </td>
+  `;
+  
+  // イベントリスナーを追加
+  const copyEnBtn = row.querySelector('.wm-row-copy-en');
+  const copyBothBtn = row.querySelector('.wm-row-copy-both');
+  const removeBtn = row.querySelector('.wm-row-remove');
+  
+  if (copyEnBtn) {
+    copyEnBtn.addEventListener('click', () => {
+      navigator.clipboard?.writeText(en).then(() => toast('英語タグをコピーしました')).catch(() => {
+        console.log('英語タグをコピーしました:', en);
+      });
+    });
+  }
+  
+  if (copyBothBtn) {
+    copyBothBtn.addEventListener('click', () => {
+      const text = jp && en ? `${jp}(${en})` : (en || jp);
+      navigator.clipboard?.writeText(text).then(() => toast('日英タグをコピーしました')).catch(() => {
+        console.log('日英タグをコピーしました:', text);
+      });
+    });
+  }
+  
+  if (removeBtn) {
+    removeBtn.addEventListener('click', () => {
+      row.remove();
+    });
+  }
+  
+  tbody.appendChild(row);
+  console.log('テーブルに行を追加しました:', { en, jp });
+}
+
+
 
 // performSearch関数を完全に置き換え
 function performSearch(searchTerm) {
