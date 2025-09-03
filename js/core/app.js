@@ -2901,65 +2901,40 @@ function initWordMode() {
     }, 100);
   };
 
-  // 単語モード用のヘルパー関数（エラーハンドリング追加）
-  function createWordModeItem(item, category) {
-    const template = document.getElementById('wm-item-tpl');
-    if (!template) {
-      console.warn('wm-item-tpl テンプレートが見つかりません');
-      return '';
-    }
-    
-    try {
-      const clone = template.content.cloneNode(true);
-      const button = clone.querySelector('.wm-item');
-      const jpSpan = clone.querySelector('.wm-jp');
-      const enSpan = clone.querySelector('.wm-en');
-      
-      if (button && jpSpan && enSpan) {
-        button.dataset.en = item.tag || '';
-        button.dataset.jp = item.label || item.tag || '';
-        button.dataset.cat = category;
-        
-        jpSpan.textContent = item.label || item.tag || '';
-        enSpan.textContent = item.tag || '';
-      }
-      
-      return clone.firstElementChild ? clone.firstElementChild.outerHTML : '';
-    } catch (error) {
-      console.warn('アイテム作成でエラー:', error);
-      return '';
-    }
+function createWordModeItem(item, category) {
+  try {
+    const showMini = item.tag && item.label && item.tag !== item.label;
+    return `<button type="button" class="wm-item" data-en="${item.tag || ''}" data-jp="${item.label || item.tag || ''}" data-cat="${category}">
+      <span class="wm-jp">${item.label || item.tag || ''}</span>
+      ${showMini ? `<span class="wm-en">${item.tag}</span>` : ''}
+      <div class="wm-item-actions">
+        <button type="button" class="wm-copy-en" title="英語タグをコピー">EN</button>
+        <button type="button" class="wm-copy-both" title="日英タグをコピー">両方</button>
+      </div>
+    </button>`;
+  } catch (error) {
+    console.warn('アイテム作成でエラー:', error);
+    return '';
   }
+}
 
+  // createWordModeColorItem関数を以下で置き換え
   function createWordModeColorItem(item) {
-    const template = document.getElementById('wm-item-tpl-color');
-    if (!template) {
-      console.warn('wm-item-tpl-color テンプレートが見つかりません');
-      return '';
-    }
-    
-    try {
-      const clone = template.content.cloneNode(true);
-      const button = clone.querySelector('.wm-item');
-      const jpSpan = clone.querySelector('.wm-jp');
-      const enSpan = clone.querySelector('.wm-en');
-      
-      if (button && jpSpan && enSpan) {
-        button.dataset.en = item.tag || '';
-        button.dataset.jp = item.label || item.tag || '';
-        button.dataset.cat = 'color';
-        
-        jpSpan.textContent = item.label || item.tag || '';
-        enSpan.textContent = item.tag || '';
-      }
-      
-      return clone.firstElementChild ? clone.firstElementChild.outerHTML : '';
-    } catch (error) {
-      console.warn('色アイテム作成でエラー:', error);
-      return '';
-    }
+  try {
+    const showMini = item.tag && item.label && item.tag !== item.label;
+    return `<button type="button" class="wm-item" data-en="${item.tag || ''}" data-jp="${item.label || item.tag || ''}" data-cat="color">
+      <span class="wm-jp">${item.label || item.tag || ''}</span>
+      ${showMini ? `<span class="wm-en">${item.tag}</span>` : ''}
+      <div class="wm-item-actions">
+        <button type="button" class="wm-copy-en" title="英語タグをコピー">EN</button>
+        <button type="button" class="wm-copy-both" title="日英タグをコピー">両方</button>
+      </div>
+    </button>`;
+  } catch (error) {
+    console.warn('色アイテム作成でエラー:', error);
+    return '';
   }
-
+}
   function addToSelectedChips(en, jp, cat) {
     const container = document.getElementById('wm-selected-chips');
     if (!container || selectedCount >= 20) return;
@@ -3215,19 +3190,37 @@ async function loadDefaultDicts() {
 
 // 検索機能の修正（未定義関数の追加）
 function performSearch(searchTerm) {
-  const items = document.querySelectorAll('#panelWordMode .wm-item');
-  let visibleCount = 0;
+  const containers = document.querySelectorAll('#panelWordMode .wm-items-container');
+  let totalVisible = 0;
+  let totalItems = 0;
   
-  items.forEach(item => {
-    const jp = (item.dataset.jp || '').toLowerCase();
-    const en = (item.dataset.en || '').toLowerCase();
-    const match = !searchTerm || jp.includes(searchTerm.toLowerCase()) || en.includes(searchTerm.toLowerCase());
+  containers.forEach(container => {
+    const items = container.querySelectorAll('.wm-item');
+    let visibleInContainer = 0;
     
-    item.style.display = match ? '' : 'none';
-    if (match) visibleCount++;
+    items.forEach(item => {
+      totalItems++;
+      const jp = (item.dataset.jp || '').toLowerCase();
+      const en = (item.dataset.en || '').toLowerCase();
+      const match = !searchTerm || jp.includes(searchTerm.toLowerCase()) || en.includes(searchTerm.toLowerCase());
+      
+      if (match) {
+        item.style.display = '';
+        visibleInContainer++;
+        totalVisible++;
+      } else {
+        item.style.display = 'none';
+      }
+    });
+    
+    // カテゴリごとの件数更新
+    const countEl = container.previousElementSibling?.querySelector('.wm-category-count');
+    if (countEl) {
+      countEl.textContent = `${visibleInContainer}件`;
+    }
   });
   
-  updateSearchStats(visibleCount, items.length);
+  updateSearchStats(totalVisible, totalItems);
 }
 
 function updateSearchStats(visible, total) {
