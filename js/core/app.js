@@ -3236,3 +3236,46 @@ function updateSearchStats(visible, total) {
     statsElement.textContent = `${visible}件 / ${total}件`;
   }
 }
+
+// 単語モード用のユーティリティ関数
+window.wordModeUtils = {
+  // 検索状態をリセット
+  resetSearch: function() {
+    const input = document.getElementById('wm-search-input');
+    if (input) {
+      input.value = '';
+      input.dispatchEvent(new Event('input'));
+    }
+  },
+  
+  // 全選択をクリア
+  clearAllSelections: function() {
+    const clearBtn = document.getElementById('wm-selected-clear');
+    if (clearBtn) clearBtn.click();
+  },
+  
+  // 選択中アイテム数を取得
+  getSelectedCount: function() {
+    const countEl = document.getElementById('wm-selected-count');
+    return countEl ? parseInt(countEl.textContent) || 0 : 0;
+  },
+  
+  // テーブル行数を取得
+  getTableRowCount: function() {
+    const tbody = document.getElementById('wm-table-body');
+    return tbody ? tbody.children.length : 0;
+  }
+};
+
+// デバッグ用ログ関数
+window.debugWordMode = function() {
+  console.log('=== 単語モード デバッグ情報 ===');
+  console.log('SFW辞書:', window.SFW);
+  console.log('NSFW辞書:', window.NSFW);
+  console.log('選択中アイテム数:', window.wordModeUtils.getSelectedCount());
+  console.log('テーブル行数:', window.wordModeUtils.getTableRowCount());
+  console.log('検索入力:', document.getElementById('wm-search-input')?.value);
+  console.log('全アイテム数:', document.querySelectorAll('#panelWordMode .wm-item').length);
+  console.log('表示中アイテム数:', document.querySelectorAll('#panelWordMode .wm-item:not(.wm-hidden)').length);
+};
+
