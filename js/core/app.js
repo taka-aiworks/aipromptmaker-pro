@@ -2788,110 +2788,91 @@ function initWordMode() {
     }
   }
 
-  // カテゴリ折りたたみ機能の初期化
-  function initCollapsibleCategories() {
-    const wordModePanel = document.getElementById('panelWordMode');
-    if (!wordModePanel) return;
+  // initCollapsibleCategories関数を以下で置き換え
+function initCollapsibleCategories() {
+  const wordModePanel = document.getElementById('panelWordMode');
+  if (!wordModePanel) return;
+  
+  // テーブルコンテナを取得
+  const tableContainer = document.getElementById('wm-table-container') || 
+                        document.querySelector('.wm-table-wrapper');
+  
+  if (!tableContainer) return;
+  
+  // カテゴリ折りたたみボタンを作成
+  let toggleButton = document.getElementById('wm-categories-toggle');
+  if (!toggleButton) {
+    toggleButton = document.createElement('button');
+    toggleButton.id = 'wm-categories-toggle';
+    toggleButton.type = 'button';
+    toggleButton.textContent = '▼ カテゴリ一覧を表示';
+    toggleButton.style.cssText = `
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background: var(--bg-secondary, #363c4a);
+      color: var(--text-primary, #ffffff);
+      border: 1px solid #555;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    `;
     
-    // 検索エリアを取得
-    const searchContainer = wordModePanel.querySelector('.wm-search-container') || 
-                           document.getElementById('wm-search-input')?.parentElement;
+    toggleButton.addEventListener('mouseover', () => {
+      toggleButton.style.backgroundColor = 'var(--bg-hover, #404652)';
+    });
+    toggleButton.addEventListener('mouseout', () => {
+      toggleButton.style.backgroundColor = 'var(--bg-secondary, #363c4a)';
+    });
+  }
+  
+  // カテゴリコンテナを取得または作成
+  let categoriesContainer = document.getElementById('wm-categories-container');
+  if (!categoriesContainer) {
+    // 既存のカテゴリ要素をすべて収集
+    const categoryElements = wordModePanel.querySelectorAll('details, .wm-category, .category-section');
     
-    if (!searchContainer) return;
-    
-    // カテゴリ折りたたみボタンを作成
-    let toggleButton = document.getElementById('wm-categories-toggle');
-    if (!toggleButton) {
-      toggleButton = document.createElement('button');
-      toggleButton.id = 'wm-categories-toggle';
-      toggleButton.type = 'button';
-      toggleButton.textContent = '▼ カテゴリ一覧を表示';
-      toggleButton.style.cssText = `
-        width: 100%;
-        padding: 10px;
-        margin: 10px 0;
-        background: var(--bg-secondary, #363c4a);
-        color: var(--text-primary, #ffffff);
-        border: 1px solid #555;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s ease;
-      `;
-      
-      toggleButton.addEventListener('mouseover', () => {
-        toggleButton.style.backgroundColor = 'var(--bg-hover, #404652)';
-      });
-      toggleButton.addEventListener('mouseout', () => {
-        toggleButton.style.backgroundColor = 'var(--bg-secondary, #363c4a)';
-      });
-    }
-    
-    // テーブルを検索エリアの直後に移動
-    const tableContainer = document.getElementById('wm-table-container') || 
-                          document.querySelector('.wm-table-wrapper');
-    if (tableContainer && !searchContainer.contains(tableContainer)) {
-      // テーブルのスタイルを調整
-      tableContainer.style.cssText = `
-        margin: 15px 0;
+    if (categoryElements.length > 0) {
+      categoriesContainer = document.createElement('div');
+      categoriesContainer.id = 'wm-categories-container';
+      categoriesContainer.style.cssText = `
+        display: none;
+        margin-top: 10px;
         padding: 10px;
         background: var(--bg-card, #2a2f3a);
         border: 1px solid #444;
         border-radius: 6px;
       `;
       
-      // 検索結果エリアの後、カテゴリトグルボタンの前に配置
-      const searchResults = document.getElementById('wm-search-results');
-      if (searchResults) {
-        searchContainer.insertBefore(tableContainer, searchResults.nextSibling);
-      } else {
-        searchContainer.appendChild(tableContainer);
-      }
-      searchContainer.insertBefore(toggleButton, tableContainer.nextSibling);
-    } else if (!document.getElementById('wm-categories-toggle')) {
-      searchContainer.appendChild(toggleButton);
+      // カテゴリ要素をコンテナに移動
+      categoryElements.forEach(element => {
+        categoriesContainer.appendChild(element);
+      });
     }
-    
-    // カテゴリコンテナを取得または作成
-    let categoriesContainer = document.getElementById('wm-categories-container');
-    if (!categoriesContainer) {
-      // 既存のカテゴリ要素をすべて収集
-      const categoryElements = wordModePanel.querySelectorAll('details, .wm-category, .category-section');
-      
-      if (categoryElements.length > 0) {
-        categoriesContainer = document.createElement('div');
-        categoriesContainer.id = 'wm-categories-container';
-        categoriesContainer.style.cssText = `
-          display: none;
-          margin-top: 10px;
-          padding: 10px;
-          background: var(--bg-card, #2a2f3a);
-          border: 1px solid #444;
-          border-radius: 6px;
-        `;
-        
-        // カテゴリ要素をコンテナに移動
-        categoryElements.forEach(element => {
-          categoriesContainer.appendChild(element);
-        });
-        
-        // トグルボタンの後に配置
-        toggleButton.parentNode.insertBefore(categoriesContainer, toggleButton.nextSibling);
-      }
-    }
-    
-    // トグル機能の実装
-    let isVisible = false;
-    toggleButton.addEventListener('click', () => {
-      if (categoriesContainer) {
-        isVisible = !isVisible;
-        categoriesContainer.style.display = isVisible ? 'block' : 'none';
-        const icon = isVisible ? '▲' : '▼';
-        const text = isVisible ? 'カテゴリ一覧を隠す' : 'カテゴリ一覧を表示';
-        toggleButton.textContent = `${icon} ${text}`;
-      }
-    });
   }
+  
+  // テーブルの直後にトグルボタンとカテゴリを配置
+  if (toggleButton && !toggleButton.parentNode) {
+    tableContainer.parentNode.insertBefore(toggleButton, tableContainer.nextSibling);
+  }
+  
+  if (categoriesContainer && !categoriesContainer.parentNode) {
+    toggleButton.parentNode.insertBefore(categoriesContainer, toggleButton.nextSibling);
+  }
+  
+  // トグル機能の実装
+  let isVisible = false;
+  toggleButton.addEventListener('click', () => {
+    if (categoriesContainer) {
+      isVisible = !isVisible;
+      categoriesContainer.style.display = isVisible ? 'block' : 'none';
+      const icon = isVisible ? '▲' : '▼';
+      const text = isVisible ? 'カテゴリ一覧を隠す' : 'カテゴリ一覧を表示';
+      toggleButton.textContent = `${icon} ${text}`;
+    }
+  });
+}
 
   // 単語モード項目初期化関数
   window.initWordModeItems = function() {
