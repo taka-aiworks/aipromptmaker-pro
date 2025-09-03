@@ -63,7 +63,7 @@ function initMangaMode() {
   console.log('漫画モード初期化完了');
 }
 
-// イベントリスナーの設定（修正版）
+// イベントリスナーの設定（修正版）- 既存のsetupMangaEventListeners関数を置き換え
 function setupMangaEventListeners() {
   // LoRA使用切り替え
   const loraToggle = document.getElementById('mangaUseLoRA');
@@ -159,18 +159,59 @@ function setupMangaEventListeners() {
     ['btnCopyMangaNeg', 'outMangaNeg']
   ]);
   
-  // リアルタイム更新
-  document.addEventListener('change', (e) => {
-    if (e.target.closest('#panelManga')) {
-      updateMangaOutput();
-    }
-  });
+  // 【重要修正】リアルタイム更新システムを呼び出し
+  setupMangaRealTimeUpdate();
   
   // 初期出力生成
   setTimeout(() => {
     updateMangaOutput();
   }, 500);
 }
+
+// 【新規関数】リアルタイム更新システム - setupMangaEventListeners の後に追加
+function setupMangaRealTimeUpdate() {
+  // 漫画パネル内のすべての入力要素を監視
+  const mangaPanel = document.getElementById('panelManga');
+  if (!mangaPanel) {
+    console.error('❌ #panelManga が見つかりません');
+    return;
+  }
+  
+  // イベント委譲を使用して動的に追加される要素も監視
+  mangaPanel.addEventListener('change', (e) => {
+    if (e.target.matches('input, select, textarea')) {
+      console.log('🔄 漫画モード要素変更検知:', e.target.name || e.target.id, '値:', e.target.value);
+      setTimeout(updateMangaOutput, 50); // 少し遅延させて確実に実行
+    }
+  });
+  
+  mangaPanel.addEventListener('input', (e) => {
+    if (e.target.matches('input[type="range"], textarea')) {
+      console.log('🔄 漫画モード入力変更:', e.target.name || e.target.id, '値:', e.target.value);
+      setTimeout(updateMangaOutput, 50);
+    }
+  });
+  
+  // 特定の要素の直接監視も追加（二重保険）
+  const criticalElements = [
+    'mangaEmotionPrimary', 'mangaExpressions', 'mangaNSFWExpr', 'mangaNSFWExpo',
+    'mangaSFWEnable', 'mangaNSFWEnable', 'mangaSecondCharEnable'
+  ];
+  
+  criticalElements.forEach(id => {
+    const container = document.getElementById(id);
+    if (container) {
+      container.addEventListener('change', () => {
+        console.log(`🔄 ${id} 変更検知`);
+        setTimeout(updateMangaOutput, 50);
+      });
+    }
+  });
+  
+  console.log('✅ リアルタイム更新システム設定完了');
+}
+
+
 
 // SFWパラメータ表示切り替え（新規関数）
 function toggleMangaSFWParams() {
@@ -825,10 +866,15 @@ function generateNegativePresets() {
   ];
 }
 
-// プロンプト生成と出力更新
+// プロンプト生成と出力更新（修正版） - 既存のupdateMangaOutput関数を置き換え
 function updateMangaOutput() {
+  console.log('🔄 updateMangaOutput実行開始');
+  
   const prompt = generateMangaPrompt();
   const negative = generateMangaNegative();
+  
+  console.log('📝 生成されたプロンプト:', prompt);
+  console.log('🚫 生成されたネガティブ:', negative);
   
   // フォーマット選択
   const fmt = getFmt('#fmtManga', 'a1111');
@@ -845,9 +891,26 @@ function updateMangaOutput() {
   const outPrompt = document.getElementById('outMangaPrompt');
   const outNeg = document.getElementById('outMangaNeg');
   
-  if (outAll) outAll.textContent = allText;
-  if (outPrompt) outPrompt.textContent = prompt;
-  if (outNeg) outNeg.textContent = negative;
+  if (outAll) {
+    outAll.textContent = allText;
+    console.log('✅ outMangaAll更新完了');
+  } else {
+    console.error('❌ outMangaAll要素が見つかりません');
+  }
+  
+  if (outPrompt) {
+    outPrompt.textContent = prompt;
+    console.log('✅ outMangaPrompt更新完了');
+  } else {
+    console.error('❌ outMangaPrompt要素が見つかりません');
+  }
+  
+  if (outNeg) {
+    outNeg.textContent = negative;
+    console.log('✅ outMangaNeg更新完了');
+  } else {
+    console.error('❌ outMangaNeg要素が見つかりません');
+  }
   
   // seed表示更新
   const seedElement = document.getElementById('mangaSeedValue');
@@ -855,16 +918,22 @@ function updateMangaOutput() {
   
   // 競合チェック
   checkMangaConflicts();
+  
+  console.log('✅ updateMangaOutput実行完了');
 }
 
+// プロンプト生成（修正版） - 既存のgenerateMangaPrompt関数を置き換え
 function generateMangaPrompt() {
   const tags = [];
+  
+  console.log('🚀 プロンプト生成開始');
   
   // 固定タグ（先頭に付与）
   const fixed = document.getElementById('fixedManga')?.value?.trim();
   if (fixed) {
     const fixedTags = fixed.split(/\s*,\s*/).filter(Boolean);
     tags.push(...fixedTags);
+    console.log('📌 固定タグ:', fixedTags);
   }
   
   // LoRAタグ（最優先）
@@ -873,12 +942,14 @@ function generateMangaPrompt() {
     if (loraTag) {
       const weight = document.getElementById('mangaLoRAWeight')?.value || '0.8';
       tags.push(loraTag.replace(':0.8>', `:${weight}>`));
+      console.log('🎭 LoRAタグ:', loraTag);
     }
   }
   
   // NSFW
   if (document.getElementById('mangaNSFWEnable')?.checked) {
     tags.push('NSFW');
+    console.log('🔞 NSFWモード有効');
   }
   
   // キャラ基礎設定（1人目）
@@ -886,6 +957,7 @@ function generateMangaPrompt() {
   if (useCharBase) {
     // 基本情報タブの値を参照
     tags.push('solo'); // 2人目がいる場合は後で修正
+    console.log('👤 基本キャラ設定使用');
     
     if (typeof getGenderCountTag === 'function') {
       const genderCountTag = getGenderCountTag();
@@ -893,7 +965,7 @@ function generateMangaPrompt() {
     }
     
     // 基本情報タブから取得する想定のタグ
-    addBasicInfoTags(tags);
+    addBasicInfoTagsSafe(tags);
   }
   
   // 2人目キャラ
@@ -904,6 +976,7 @@ function generateMangaPrompt() {
       tags.splice(soloIndex, 1);
     }
     tags.push('2people');
+    console.log('👥 2人目キャラ有効');
     
     // 2人目の設定を追加
     addSecondCharTags(tags);
@@ -912,56 +985,240 @@ function generateMangaPrompt() {
   // 漫画パラメータ（優先順位順）
   // SFWパラメータは有効化時のみ適用
   const sfwEnabled = document.getElementById('mangaSFWEnable')?.checked;
+  console.log('📊 SFW有効:', sfwEnabled);
+  
   if (sfwEnabled) {
-    addSelectedValues(tags, 'mangaEmotionPrimary');
-    addSelectedValues(tags, 'mangaEmotionDetail');
+    const addedTags = [];
+    
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaEmotionPrimary'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaEmotionDetail'));
     
     // NSFW vs SFW の競合解決
     if (document.getElementById('mangaNSFWEnable')?.checked) {
-      addSelectedValues(tags, 'mangaNSFWExpr') || addSelectedValues(tags, 'mangaExpressions');
+      addedTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWExpr'));
     } else {
-      addSelectedValues(tags, 'mangaExpressions');
+      addedTags.push(...addSelectedValuesSafe(tags, 'mangaExpressions'));
     }
     
-    addSelectedValues(tags, 'mangaEffectManga');
-    addSelectedValues(tags, 'mangaEyeState');
-    addSelectedValues(tags, 'mangaGaze');
-    addSelectedValues(tags, 'mangaMouthState');
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaEffectManga'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaEyeState'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaGaze'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaMouthState'));
     
     // ポーズ（NSFW優先）
     if (document.getElementById('mangaNSFWEnable')?.checked) {
-      addSelectedValues(tags, 'mangaNSFWPose') || addSelectedValues(tags, 'mangaPose');
+      addedTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWPose'));
     } else {
-      addSelectedValues(tags, 'mangaPose');
+      addedTags.push(...addSelectedValuesSafe(tags, 'mangaPose'));
     }
     
-    addSelectedValues(tags, 'mangaHandGesture');
-    addSelectedValues(tags, 'mangaMovementAction');
-    addSelectedValues(tags, 'mangaComposition');
-    addSelectedValues(tags, 'mangaView');
-    addSelectedValues(tags, 'mangaCameraView');
-    addSelectedValues(tags, 'mangaPropsLight');
-    addSelectedValues(tags, 'mangaEffectMangaFX');
-    addSelectedValues(tags, 'mangaBackground');
-    addSelectedValues(tags, 'mangaLighting');
-    addSelectedValues(tags, 'mangaArtStyle');
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaHandGesture'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaMovementAction'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaComposition'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaView'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaCameraView'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaPropsLight'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaEffectMangaFX'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaBackground'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaLighting'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaArtStyle'));
+    
+    console.log('✅ SFW追加タグ:', addedTags);
   }
   
   // NSFW専用項目
   if (document.getElementById('mangaNSFWEnable')?.checked) {
-    addSelectedValues(tags, 'mangaNSFWExpo');
-    addSelectedValues(tags, 'mangaNSFWSitu');
-    addSelectedValues(tags, 'mangaNSFWLight');
-    addSelectedValues(tags, 'mangaNSFWAction');
-    addSelectedValues(tags, 'mangaNSFWAcc');
-    addSelectedValues(tags, 'mangaNSFWOutfit');
-    addSelectedValues(tags, 'mangaNSFWBody');
-    addSelectedValues(tags, 'mangaNSFWNipples'); // 辞書のキーに合わせて調整済み
-    addSelectedValues(tags, 'mangaNSFWUnderwear');
+    const nsfwTags = [];
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWExpo'));
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWSitu'));
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWLight'));
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWAction'));
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWAcc'));
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWOutfit'));
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWBody'));
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWNipples')); // 辞書のキーに合わせて調整済み
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWUnderwear'));
+    
+    console.log('🔞 NSFW追加タグ:', nsfwTags);
   }
   
-  return tags.filter(Boolean).join(', ');
+  const finalPrompt = tags.filter(Boolean).join(', ');
+  console.log('🎯 最終プロンプト:', finalPrompt);
+  
+  return finalPrompt;
 }
+
+
+// 【新規関数】安全な値取得関数 - 既存のaddSelectedValues関数を置き換えまたは追加
+function addSelectedValuesSafe(tags, containerId) {
+  const container = document.getElementById(containerId);
+  const added = [];
+  
+  if (!container) {
+    console.warn(`⚠️ コンテナが見つかりません: ${containerId}`);
+    return added;
+  }
+  
+  // ラジオボタンとチェックボックス両方に対応
+  const selectedInputs = container.querySelectorAll('input:checked');
+  
+  selectedInputs.forEach(input => {
+    if (input.value && input.value.trim() && input.value !== '') {
+      tags.push(input.value.trim());
+      added.push(input.value.trim());
+    }
+  });
+  
+  if (added.length > 0) {
+    console.log(`✅ ${containerId}:`, added);
+  } else {
+    console.log(`📝 ${containerId}: 選択なし`);
+  }
+  
+  return added;
+}
+
+// 既存のaddSelectedValues関数も置き換える
+function addSelectedValues(tags, name) {
+  return addSelectedValuesSafe(tags, name);
+}
+
+// 【新規関数】基本情報タグの安全な追加 - addBasicInfoTags関数を置き換えまたは追加
+function addBasicInfoTagsSafe(tags) {
+  try {
+    // 既存の基本情報取得関数が利用可能な場合のみ実行
+    if (typeof getBFValue === 'function') {
+      const age = getBFValue('age');
+      const gender = getBFValue('gender');
+      const body = getBFValue('body');
+      const height = getBFValue('height');
+      if (age) tags.push(age);
+      if (gender) tags.push(gender);
+      if (body) tags.push(body);
+      if (height) tags.push(height);
+      console.log('👤 基本情報タグ追加:', { age, gender, body, height });
+    } else {
+      console.log('⚠️ getBFValue関数が利用できません - 基本情報タグをスキップ');
+    }
+    
+    if (typeof getOne === 'function') {
+      const hairStyle = getOne('hairStyle');
+      const eyeShape = getOne('eyeShape');
+      if (hairStyle) tags.push(hairStyle);
+      if (eyeShape) tags.push(eyeShape);
+      console.log('💄 スタイルタグ追加:', { hairStyle, eyeShape });
+    }
+    
+    // 色タグ（基本情報タブの色ピッカーから）
+    const textOf = id => {
+      const element = document.getElementById(id);
+      return element ? (element.textContent || "").trim() : "";
+    };
+    
+    const hairColor = textOf('tagH');
+    const eyeColor = textOf('tagE');
+    const skinColor = textOf('tagSkin');
+    if (hairColor) tags.push(hairColor);
+    if (eyeColor) tags.push(eyeColor);
+    if (skinColor) tags.push(skinColor);
+    
+    console.log('🎨 色タグ追加:', { hairColor, eyeColor, skinColor });
+    
+    // 服装（基本情報タブの設定から）
+    addBasicOutfitTagsSafe(tags);
+    
+  } catch (error) {
+    console.error('❌ 基本情報タグ追加エラー:', error);
+  }
+}
+
+// 既存関数との互換性のため
+function addBasicInfoTags(tags) {
+  return addBasicInfoTagsSafe(tags);
+}
+
+
+// 【新規関数】基本服装タグの安全な追加 - addBasicOutfitTags関数を置き換えまたは追加
+function addBasicOutfitTagsSafe(tags) {
+  try {
+    // 既存の関数が利用可能な場合のみ実行
+    if (typeof getIsOnepiece !== 'function' || typeof getOne !== 'function') {
+      console.log('⚠️ 服装関連関数が利用できません - 服装タグをスキップ');
+      return;
+    }
+    
+    const isOnepiece = getIsOnepiece();
+    const textOf = id => {
+      const element = document.getElementById(id);
+      return element ? (element.textContent || "").trim().replace(/^—$/, "") : "";
+    };
+    
+    if (isOnepiece) {
+      const dress = getOne('outfit_dress');
+      if (dress) {
+        const topColor = textOf('tag_top');
+        if (topColor) {
+          tags.push(`${topColor} ${dress}`);
+        } else {
+          tags.push(dress);
+        }
+        console.log('👗 ワンピース:', topColor ? `${topColor} ${dress}` : dress);
+      }
+    } else {
+      const top = getOne('outfit_top');
+      const bottomCat = getOne('bottomCat') || 'pants';
+      const pants = getOne('outfit_pants');
+      const skirt = getOne('outfit_skirt');
+      const shoes = getOne('outfit_shoes');
+      
+      if (top) {
+        const topColor = textOf('tag_top');
+        if (topColor) {
+          tags.push(`${topColor} ${top}`);
+        } else {
+          tags.push(top);
+        }
+      }
+      
+      if (bottomCat === 'pants' && pants) {
+        const bottomColor = textOf('tag_bottom');
+        if (bottomColor) {
+          tags.push(`${bottomColor} ${pants}`);
+        } else {
+          tags.push(pants);
+        }
+      } else if (bottomCat === 'skirt' && skirt) {
+        const bottomColor = textOf('tag_bottom');
+        if (bottomColor) {
+          tags.push(`${bottomColor} ${skirt}`);
+        } else {
+          tags.push(skirt);
+        }
+      }
+      
+      if (shoes) {
+        const shoeColor = textOf('tag_shoes');
+        if (shoeColor) {
+          tags.push(`${shoeColor} ${shoes}`);
+        } else {
+          tags.push(shoes);
+        }
+      }
+      
+      console.log('👕 分離服装:', { top, bottom: bottomCat === 'pants' ? pants : skirt, shoes });
+    }
+    
+  } catch (error) {
+    console.error('❌ 基本服装タグ追加エラー:', error);
+  }
+}
+
+// 既存関数との互換性のため
+function addBasicOutfitTags(tags) {
+  return addBasicOutfitTagsSafe(tags);
+}
+
+
 
 // 基本情報タブから値を取得してタグに追加
 function addBasicInfoTags(tags) {
