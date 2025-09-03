@@ -2994,17 +2994,142 @@ function initCollapsibleCategories() {
     // イベントハンドラーを追加
     bindWordModeEvents();
     
-    // 初期統計表示
-    setTimeout(() => {
-      const totalItems = document.querySelectorAll('#panelWordMode .wm-item').length;
-      updateSearchStats(totalItems, totalItems);
-    }, 100);
+      // 初期統計表示
+  setTimeout(() => {
+    const totalItems = document.querySelectorAll('#panelWordMode .wm-item').length;
+    updateSearchStats(totalItems, totalItems);
+  }, 100);
+  
+  // ★★★ 折りたたみ機能の初期化を確実に実行 ★★★
+  setTimeout(() => {
+    initCollapsibleCategoriesFixed();
+  }, 300);
+};
+
+// 新しい折りたたみ初期化関数
+function initCollapsibleCategoriesFixed() {
+  console.log('折りたたみ機能初期化開始'); // デバッグ用
+  
+  const wordModePanel = document.getElementById('panelWordMode');
+  if (!wordModePanel) {
+    console.warn('panelWordMode が見つかりません');
+    return;
+  }
+  
+  // テーブルコンテナを取得
+  const tableContainer = document.getElementById('wm-table-container') || 
+                        document.querySelector('.wm-table-wrapper') ||
+                        wordModePanel.querySelector('table')?.closest('div');
+  
+  if (!tableContainer) {
+    console.warn('テーブルコンテナが見つかりません');
+    return;
+  }
+  
+  console.log('テーブルコンテナ発見:', tableContainer);
+  
+  // 既存のボタンとコンテナをクリア
+  const existingToggle = document.getElementById('wm-categories-toggle');
+  const existingContainer = document.getElementById('wm-categories-container');
+  if (existingToggle) existingToggle.remove();
+  if (existingContainer) existingContainer.remove();
+  
+  // カテゴリ折りたたみボタンを作成
+  const toggleButton = document.createElement('button');
+  toggleButton.id = 'wm-categories-toggle';
+  toggleButton.type = 'button';
+  toggleButton.textContent = '▼ カテゴリ一覧を表示';
+  toggleButton.style.cssText = `
+    width: 100%;
+    padding: 10px;
+    margin: 15px 0 10px 0;
+    background: var(--bg-secondary, #363c4a);
+    color: var(--text-primary, #ffffff);
+    border: 1px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  `;
+  
+  toggleButton.addEventListener('mouseover', () => {
+    toggleButton.style.backgroundColor = 'var(--bg-hover, #404652)';
+  });
+  toggleButton.addEventListener('mouseout', () => {
+    toggleButton.style.backgroundColor = 'var(--bg-secondary, #363c4a)';
+  });
+  
+  // 既存のカテゴリ要素を取得（SFW、NSFW、Colorセクション）
+  const sfwSection = wordModePanel.querySelector('h3:contains("SFW")') || 
+                    Array.from(wordModePanel.querySelectorAll('h3, h2')).find(h => h.textContent.includes('SFW'));
+  const nsfwSection = wordModePanel.querySelector('h3:contains("NSFW")') || 
+                     Array.from(wordModePanel.querySelectorAll('h3, h2')).find(h => h.textContent.includes('NSFW'));
+  const colorSection = wordModePanel.querySelector('h3:contains("Color")') || 
+                      Array.from(wordModePanel.querySelectorAll('h3, h2')).find(h => h.textContent.includes('Color'));
+  
+  // すべてのdetails要素とカテゴリ関連要素を取得
+  const allCategoryElements = [];
+  
+  // detailsタグを探す
+  const detailsElements = wordModePanel.querySelectorAll('details');
+  detailsElements.forEach(el => allCategoryElements.push(el));
+  
+  // SFW、NSFW、Colorセクション以下の要素を探す
+  [sfwSection, nsfwSection, colorSection].forEach(section => {
+    if (section) {
+      let nextElement = section.nextElementSibling;
+      while (nextElement && !nextElement.querySelector('h2, h3')) {
+        if (nextElement.tagName !== 'BUTTON' && nextElement.id !== 'wm-categories-toggle') {
+          allCategoryElements.push(nextElement);
+        }
+        nextElement = nextElement.nextElementSibling;
+      }
+    }
+  });
+  
+  console.log('見つかったカテゴリ要素:', allCategoryElements.length);
+  
+  if (allCategoryElements.length === 0) {
+    console.warn('カテゴリ要素が見つかりません');
+    return;
+  }
+  
+  // カテゴリコンテナを作成
+  const categoriesContainer = document.createElement('div');
+  categoriesContainer.id = 'wm-categories-container';
+  categoriesContainer.style.cssText = `
+    display: none;
+    margin-top: 10px;
+    padding: 15px;
+    background: var(--bg-card, #2a2f3a);
+    border: 1px solid #444;
+    border-radius: 6px;
+  `;
+  
+  // カテゴリ要素をコンテナに移動
+  allCategoryElements.forEach(element => {
+    categoriesContainer.appendChild(element);
+  });
+  
+  // テーブルの後に配置
+  tableContainer.parentNode.insertBefore(toggleButton, tableContainer.nextSibling);
+  tableContainer.parentNode.insertBefore(categoriesContainer, toggleButton.nextSibling);
+  
+  // トグル機能の実装
+  let isVisible = false;
+  toggleButton.addEventListener('click', () => {
+    isVisible = !isVisible;
+    categoriesContainer.style.display = isVisible ? 'block' : 'none';
+    const icon = isVisible ? '▲' : '▼';
+    const text = isVisible ? 'カテゴリ一覧を隠す' : 'カテゴリ一覧を表示';
+    toggleButton.textContent = `${icon} ${text}`;
     
-    // 最後に折りたたみ機能を初期化
-    setTimeout(() => {
-      initCollapsibleCategories();
-    }, 200);
-  };
+    console.log('カテゴリ表示切り替え:', isVisible ? '表示' : '非表示');
+  });
+  
+  console.log('折りたたみ機能初期化完了');
+}
+   
 
   // createWordModeItem関数
   function createWordModeItem(item, category) {
