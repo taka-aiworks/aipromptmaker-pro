@@ -3211,8 +3211,9 @@ async function loadDefaultDicts() {
       console.warn('NSFWフォールバック辞書の使用でエラー:', error);
     }
   }
+}
 
-   // 検索機能の修正（未定義関数の追加）
+// 検索機能の修正（未定義関数の追加）
 function performSearch(searchTerm) {
   const items = document.querySelectorAll('#panelWordMode .wm-item');
   let visibleCount = 0;
@@ -3235,4 +3236,3 @@ function updateSearchStats(visible, total) {
     statsElement.textContent = `${visible}件 / ${total}件`;
   }
 }
-
