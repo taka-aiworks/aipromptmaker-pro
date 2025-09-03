@@ -3318,33 +3318,33 @@ function performSearch(searchTerm) {
   
   // 検索結果アイテムのクリックイベントを追加（修正版）
   searchResultsArea.querySelectorAll('.wm-search-result-item').forEach(resultItem => {
-    resultItem.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  resultItem.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const en = resultItem.dataset.en || '';
+    const jp = resultItem.dataset.jp || '';
+    const cat = resultItem.dataset.cat || '';
+    
+    console.log('Selected item:', { en, jp, cat }); // デバッグ用
+    
+    // テーブルに追加
+    if (en && jp) {
+      addToOutputTable(en, jp);
+      // addToSelectedChips(en, jp, cat); ← この行を削除またはコメントアウト
+      // updateSelectedCount(); ← この行を削除またはコメントアウト
       
-      const en = resultItem.dataset.en || '';
-      const jp = resultItem.dataset.jp || '';
-      const cat = resultItem.dataset.cat || '';
-      
-      console.log('Selected item:', { en, jp, cat }); // デバッグ用
-      
-      // テーブルに追加
-      if (en && jp) {
-        addToOutputTable(en, jp);
-        addToSelectedChips(en, jp, cat);
-        updateSelectedCount();
-        
-        // 検索をクリア
-        const searchInput = document.getElementById('wm-search-input');
-        if (searchInput) {
-          searchInput.value = '';
-        }
-        clearSearch();
-        
-        console.log('Item added to table'); // デバッグ用
+      // 検索をクリア
+      const searchInput = document.getElementById('wm-search-input');
+      if (searchInput) {
+        searchInput.value = '';
       }
-    });
+      clearSearch();
+      
+      console.log('Item added to table'); // デバッグ用
+    }
   });
+});
   
   updateSearchStats(matchedItems.length, allItems.length);
 }
