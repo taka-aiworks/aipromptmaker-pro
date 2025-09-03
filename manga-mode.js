@@ -63,12 +63,17 @@ function initMangaMode() {
   console.log('漫画モード初期化完了');
 }
 
-// イベントリスナーの設定（修正版）- 既存のsetupMangaEventListeners関数を置き換え
+// イベントリスナーの設定（デバッグ強化版） - 既存のsetupMangaEventListeners関数を置き換え
 function setupMangaEventListeners() {
+  console.log('🎬 setupMangaEventListeners 開始');
+  
   // LoRA使用切り替え
   const loraToggle = document.getElementById('mangaUseLoRA');
   if (loraToggle) {
     loraToggle.addEventListener('change', toggleLoRASettings);
+    console.log('✅ mangaUseLoRA イベントリスナー設定完了');
+  } else {
+    console.warn('⚠️ mangaUseLoRA 要素が見つかりません');
   }
   
   // SFWパラメータ表示切り替え（追加）
@@ -77,6 +82,9 @@ function setupMangaEventListeners() {
     sfwParamsToggle.addEventListener('change', toggleMangaSFWParams);
     // 初期状態を設定
     toggleMangaSFWParams();
+    console.log('✅ mangaSFWParamsToggle イベントリスナー設定完了');
+  } else {
+    console.warn('⚠️ mangaSFWParamsToggle 要素が見つかりません');
   }
   
   // 任意項目表示切り替え（追加）
@@ -85,18 +93,33 @@ function setupMangaEventListeners() {
     optionalToggle.addEventListener('change', toggleMangaOptionalContent);
     // 初期状態を設定
     toggleMangaOptionalContent();
+    console.log('✅ mangaOptionalToggle イベントリスナー設定完了');
+  } else {
+    console.warn('⚠️ mangaOptionalToggle 要素が見つかりません');
   }
   
   // SFW有効化切り替え
   const sfwToggle = document.getElementById('mangaSFWEnable');
   if (sfwToggle) {
-    sfwToggle.addEventListener('change', toggleMangaSFWPanel);
+    sfwToggle.addEventListener('change', () => {
+      console.log('🔄 SFW切り替え:', sfwToggle.checked);
+      toggleMangaSFWPanel();
+    });
+    console.log('✅ mangaSFWEnable イベントリスナー設定完了, 現在の状態:', sfwToggle.checked);
+  } else {
+    console.warn('⚠️ mangaSFWEnable 要素が見つかりません');
   }
   
   // NSFW有効化切り替え
   const nsfwToggle = document.getElementById('mangaNSFWEnable');
   if (nsfwToggle) {
-    nsfwToggle.addEventListener('change', toggleMangaNSFWPanel);
+    nsfwToggle.addEventListener('change', () => {
+      console.log('🔄 NSFW切り替え:', nsfwToggle.checked);
+      toggleMangaNSFWPanel();
+    });
+    console.log('✅ mangaNSFWEnable イベントリスナー設定完了, 現在の状態:', nsfwToggle.checked);
+  } else {
+    console.warn('⚠️ mangaNSFWEnable 要素が見つかりません');
   }
   
   // 2人目キャラ有効化切り替え
@@ -164,9 +187,79 @@ function setupMangaEventListeners() {
   
   // 初期出力生成
   setTimeout(() => {
+    console.log('⏰ 初期出力生成実行');
     updateMangaOutput();
   }, 500);
+  
+  console.log('🎬 setupMangaEventListeners 完了');
 }
+
+// 【新規関数】漫画モード要素のデバッグ - setupMangaEventListeners の後に追加
+function debugMangaElements() {
+  console.log('🔍 漫画モード要素デバッグ開始');
+  
+  // 重要な要素の存在確認
+  const criticalElements = [
+    'panelManga',
+    'mangaSFWEnable', 
+    'mangaNSFWEnable',
+    'mangaEmotionPrimary',
+    'mangaExpressions',
+    'mangaNSFWExpr',
+    'mangaNSFWExpo'
+  ];
+  
+  criticalElements.forEach(id => {
+    const element = document.getElementById(id);
+    console.log(`🔸 ${id}:`, {
+      exists: !!element,
+      type: element?.tagName,
+      children: element?.children?.length || 0,
+      has_inputs: element?.querySelectorAll('input')?.length || 0
+    });
+    
+    if (element && id.startsWith('manga') && !id.includes('Enable')) {
+      const inputs = element.querySelectorAll('input');
+      console.log(`  📄 ${id} 内の入力要素:`, [...inputs].map(inp => ({
+        type: inp.type,
+        value: inp.value,
+        checked: inp.checked,
+        name: inp.name
+      })));
+    }
+  });
+  
+  // 漫画パネル全体の統計
+  const mangaPanel = document.getElementById('panelManga');
+  if (mangaPanel) {
+    const allInputs = mangaPanel.querySelectorAll('input');
+    const checkedInputs = mangaPanel.querySelectorAll('input:checked');
+    
+    console.log('📊 漫画パネル全体統計:', {
+      total_inputs: allInputs.length,
+      checked_inputs: checkedInputs.length,
+      input_types: [...new Set([...allInputs].map(inp => inp.type))],
+      checked_values: [...checkedInputs].map(inp => inp.value)
+    });
+  }
+}
+
+// 初期化時にデバッグを実行
+function initMangaModeWithDebug() {
+  if (mangaInitialized) return;
+  
+  // 元の初期化処理
+  initMangaMode();
+  
+  // デバッグ情報出力
+  setTimeout(() => {
+    debugMangaElements();
+  }, 1000);
+}
+
+// デバッグ実行用のグローバル関数
+window.debugMangaElements = debugMangaElements;
+
 
 // 【新規関数】リアルタイム更新システム - setupMangaEventListeners の後に追加
 function setupMangaRealTimeUpdate() {
@@ -922,7 +1015,7 @@ function updateMangaOutput() {
   console.log('✅ updateMangaOutput実行完了');
 }
 
-// プロンプト生成（修正版） - 既存のgenerateMangaPrompt関数を置き換え
+// プロンプト生成（改良版） - 既存のgenerateMangaPrompt関数を置き換え
 function generateMangaPrompt() {
   const tags = [];
   
@@ -982,14 +1075,23 @@ function generateMangaPrompt() {
     addSecondCharTags(tags);
   }
   
-  // 漫画パラメータ（優先順位順）
-  // SFWパラメータは有効化時のみ適用
-  const sfwEnabled = document.getElementById('mangaSFWEnable')?.checked;
-  console.log('📊 SFW有効:', sfwEnabled);
+  // 【重要修正】SFW有効状態のチェックを改善
+  const sfwEnabledElement = document.getElementById('mangaSFWEnable');
+  const sfwEnabled = sfwEnabledElement ? sfwEnabledElement.checked : false;
+  console.log('📊 SFW有効状態確認:', {
+    element_found: !!sfwEnabledElement,
+    checked_value: sfwEnabledElement?.checked,
+    final_result: sfwEnabled
+  });
   
-  if (sfwEnabled) {
+  // 【修正】SFWが無効でも漫画パラメータを処理する（デフォルトで有効とみなす）
+  const shouldProcessMangaParams = sfwEnabled || !sfwEnabledElement;
+  console.log('🎯 漫画パラメータ処理:', shouldProcessMangaParams);
+  
+  if (shouldProcessMangaParams) {
     const addedTags = [];
     
+    // 基本的な漫画要素
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaEmotionPrimary'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaEmotionDetail'));
     
@@ -1023,7 +1125,9 @@ function generateMangaPrompt() {
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaLighting'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaArtStyle'));
     
-    console.log('✅ SFW追加タグ:', addedTags);
+    console.log('✅ 漫画パラメータ追加タグ:', addedTags);
+  } else {
+    console.log('⚠️ 漫画パラメータ処理がスキップされました');
   }
   
   // NSFW専用項目
@@ -1036,7 +1140,7 @@ function generateMangaPrompt() {
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWAcc'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWOutfit'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWBody'));
-    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWNipples')); // 辞書のキーに合わせて調整済み
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWNipples'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWUnderwear'));
     
     console.log('🔞 NSFW追加タグ:', nsfwTags);
@@ -1049,18 +1153,41 @@ function generateMangaPrompt() {
 }
 
 
-// 【新規関数】安全な値取得関数 - 既存のaddSelectedValues関数を置き換えまたは追加
+// 【改良版】安全な値取得関数 - 既存のaddSelectedValuesSafe関数を置き換え
 function addSelectedValuesSafe(tags, containerId) {
   const container = document.getElementById(containerId);
   const added = [];
   
+  console.log(`🔍 ${containerId} 要素チェック開始`);
+  
   if (!container) {
-    console.warn(`⚠️ コンテナが見つかりません: ${containerId}`);
+    console.warn(`❌ コンテナが見つかりません: ${containerId}`);
     return added;
   }
   
+  console.log(`✅ ${containerId} コンテナ確認OK`);
+  
   // ラジオボタンとチェックボックス両方に対応
+  const allInputs = container.querySelectorAll('input');
   const selectedInputs = container.querySelectorAll('input:checked');
+  
+  console.log(`📊 ${containerId} 統計:`, {
+    total_inputs: allInputs.length,
+    selected_inputs: selectedInputs.length,
+    input_types: [...allInputs].map(inp => inp.type),
+    selected_values: [...selectedInputs].map(inp => inp.value)
+  });
+  
+  // 各入力要素の詳細確認
+  allInputs.forEach((input, index) => {
+    console.log(`🔸 ${containerId}[${index}]:`, {
+      type: input.type,
+      name: input.name,
+      value: input.value,
+      checked: input.checked,
+      id: input.id
+    });
+  });
   
   selectedInputs.forEach(input => {
     if (input.value && input.value.trim() && input.value !== '') {
@@ -1070,9 +1197,9 @@ function addSelectedValuesSafe(tags, containerId) {
   });
   
   if (added.length > 0) {
-    console.log(`✅ ${containerId}:`, added);
+    console.log(`✅ ${containerId} 追加成功:`, added);
   } else {
-    console.log(`📝 ${containerId}: 選択なし`);
+    console.log(`📝 ${containerId}: 選択なし (全${allInputs.length}要素中、選択済み${selectedInputs.length}要素)`);
   }
   
   return added;
@@ -1082,6 +1209,7 @@ function addSelectedValuesSafe(tags, containerId) {
 function addSelectedValues(tags, name) {
   return addSelectedValuesSafe(tags, name);
 }
+
 
 // 【新規関数】基本情報タグの安全な追加 - addBasicInfoTags関数を置き換えまたは追加
 function addBasicInfoTagsSafe(tags) {
