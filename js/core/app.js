@@ -3210,6 +3210,25 @@ function addToOutputTable(en, jp) {
 }
 
 
+// clearSearch関数をグローバルスコープに追加
+function clearSearch() {
+  const searchInput = document.getElementById('wm-search-input');
+  const resultsArea = document.getElementById('wm-search-results');
+  
+  if (searchInput) {
+    searchInput.value = '';
+  }
+  
+  if (resultsArea) {
+    resultsArea.style.display = 'none';
+    resultsArea.innerHTML = '';
+  }
+  
+  // 統計を更新
+  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
+  updateSearchStats(allItems.length, allItems.length);
+}
+
 
 // performSearch関数を完全に置き換え
 function performSearch(searchTerm) {
