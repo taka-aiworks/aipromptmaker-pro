@@ -2735,7 +2735,7 @@ function fillAccessorySlots(){
   });
 }
 
-// initWordMode関数の修正版
+// initWordMode関数の完全版
 function initWordMode() {
   let selectedCount = 0;
   let searchTerm = ''; // 検索語を保持
@@ -2744,26 +2744,25 @@ function initWordMode() {
   window.performWordModeSearch = performSearch;
   window.clearWordModeSearch = clearSearch;
   
-// clearSearch関数を修正
-function clearSearch() {
-  const searchInput = document.getElementById('wm-search-input');
-  const resultsArea = document.getElementById('wm-search-results');
-  
-  if (searchInput) {
-    searchInput.value = '';
+  // clearSearch関数を修正
+  function clearSearch() {
+    const searchInput = document.getElementById('wm-search-input');
+    const resultsArea = document.getElementById('wm-search-results');
+    
+    if (searchInput) {
+      searchInput.value = '';
+    }
+    
+    if (resultsArea) {
+      resultsArea.style.display = 'none';
+      resultsArea.innerHTML = '';
+    }
+    
+    // 統計を更新
+    const allItems = document.querySelectorAll('#panelWordMode .wm-item');
+    updateSearchStats(allItems.length, allItems.length);
   }
-  
-  if (resultsArea) {
-    resultsArea.style.display = 'none';
-    resultsArea.innerHTML = '';
-  }
-  
-  // 統計を更新
-  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
-  updateSearchStats(allItems.length, allItems.length);
-}
 
-  
   // 検索イベントのバインド
   function bindSearchEvents() {
     const searchInput = document.getElementById('wm-search-input');
@@ -2788,7 +2787,113 @@ function clearSearch() {
       clearBtn.addEventListener('click', clearSearch);
     }
   }
-  
+
+  // カテゴリ折りたたみ機能の初期化
+  function initCollapsibleCategories() {
+    const wordModePanel = document.getElementById('panelWordMode');
+    if (!wordModePanel) return;
+    
+    // 検索エリアを取得
+    const searchContainer = wordModePanel.querySelector('.wm-search-container') || 
+                           document.getElementById('wm-search-input')?.parentElement;
+    
+    if (!searchContainer) return;
+    
+    // カテゴリ折りたたみボタンを作成
+    let toggleButton = document.getElementById('wm-categories-toggle');
+    if (!toggleButton) {
+      toggleButton = document.createElement('button');
+      toggleButton.id = 'wm-categories-toggle';
+      toggleButton.type = 'button';
+      toggleButton.textContent = '▼ カテゴリ一覧を表示';
+      toggleButton.style.cssText = `
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        background: var(--bg-secondary, #363c4a);
+        color: var(--text-primary, #ffffff);
+        border: 1px solid #555;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+      `;
+      
+      toggleButton.addEventListener('mouseover', () => {
+        toggleButton.style.backgroundColor = 'var(--bg-hover, #404652)';
+      });
+      toggleButton.addEventListener('mouseout', () => {
+        toggleButton.style.backgroundColor = 'var(--bg-secondary, #363c4a)';
+      });
+    }
+    
+    // テーブルを検索エリアの直後に移動
+    const tableContainer = document.getElementById('wm-table-container') || 
+                          document.querySelector('.wm-table-wrapper');
+    if (tableContainer && !searchContainer.contains(tableContainer)) {
+      // テーブルのスタイルを調整
+      tableContainer.style.cssText = `
+        margin: 15px 0;
+        padding: 10px;
+        background: var(--bg-card, #2a2f3a);
+        border: 1px solid #444;
+        border-radius: 6px;
+      `;
+      
+      // 検索結果エリアの後、カテゴリトグルボタンの前に配置
+      const searchResults = document.getElementById('wm-search-results');
+      if (searchResults) {
+        searchContainer.insertBefore(tableContainer, searchResults.nextSibling);
+      } else {
+        searchContainer.appendChild(tableContainer);
+      }
+      searchContainer.insertBefore(toggleButton, tableContainer.nextSibling);
+    } else if (!document.getElementById('wm-categories-toggle')) {
+      searchContainer.appendChild(toggleButton);
+    }
+    
+    // カテゴリコンテナを取得または作成
+    let categoriesContainer = document.getElementById('wm-categories-container');
+    if (!categoriesContainer) {
+      // 既存のカテゴリ要素をすべて収集
+      const categoryElements = wordModePanel.querySelectorAll('details, .wm-category, .category-section');
+      
+      if (categoryElements.length > 0) {
+        categoriesContainer = document.createElement('div');
+        categoriesContainer.id = 'wm-categories-container';
+        categoriesContainer.style.cssText = `
+          display: none;
+          margin-top: 10px;
+          padding: 10px;
+          background: var(--bg-card, #2a2f3a);
+          border: 1px solid #444;
+          border-radius: 6px;
+        `;
+        
+        // カテゴリ要素をコンテナに移動
+        categoryElements.forEach(element => {
+          categoriesContainer.appendChild(element);
+        });
+        
+        // トグルボタンの後に配置
+        toggleButton.parentNode.insertBefore(categoriesContainer, toggleButton.nextSibling);
+      }
+    }
+    
+    // トグル機能の実装
+    let isVisible = false;
+    toggleButton.addEventListener('click', () => {
+      if (categoriesContainer) {
+        isVisible = !isVisible;
+        categoriesContainer.style.display = isVisible ? 'block' : 'none';
+        const icon = isVisible ? '▲' : '▼';
+        const text = isVisible ? 'カテゴリ一覧を隠す' : 'カテゴリ一覧を表示';
+        toggleButton.textContent = `${icon} ${text}`;
+      }
+    });
+  }
+
+  // 単語モード項目初期化関数
   window.initWordModeItems = function() {
     // SFW項目の初期化（修正版）
     const sfwCategories = {
@@ -2913,35 +3018,40 @@ function clearSearch() {
       const totalItems = document.querySelectorAll('#panelWordMode .wm-item').length;
       updateSearchStats(totalItems, totalItems);
     }, 100);
+    
+    // 最後に折りたたみ機能を初期化
+    setTimeout(() => {
+      initCollapsibleCategories();
+    }, 200);
   };
 
-// createWordModeItem関数を以下で置き換え（コピーボタン削除）
-function createWordModeItem(item, category) {
-  try {
-    const showMini = item.tag && item.label && item.tag !== item.label;
-    return `<button type="button" class="wm-item" data-en="${item.tag || ''}" data-jp="${item.label || item.tag || ''}" data-cat="${category}">
-      <span class="wm-jp">${item.label || item.tag || ''}</span>
-      ${showMini ? `<span class="wm-en">${item.tag}</span>` : ''}
-    </button>`;
-  } catch (error) {
-    console.warn('アイテム作成でエラー:', error);
-    return '';
+  // createWordModeItem関数
+  function createWordModeItem(item, category) {
+    try {
+      const showMini = item.tag && item.label && item.tag !== item.label;
+      return `<button type="button" class="wm-item" data-en="${item.tag || ''}" data-jp="${item.label || item.tag || ''}" data-cat="${category}">
+        <span class="wm-jp">${item.label || item.tag || ''}</span>
+        ${showMini ? `<span class="wm-en">${item.tag}</span>` : ''}
+      </button>`;
+    } catch (error) {
+      console.warn('アイテム作成でエラー:', error);
+      return '';
+    }
   }
-}
 
-  // createWordModeColorItem関数を以下で置き換え（コピーボタン削除）
-function createWordModeColorItem(item) {
-  try {
-    const showMini = item.tag && item.label && item.tag !== item.label;
-    return `<button type="button" class="wm-item" data-en="${item.tag || ''}" data-jp="${item.label || item.tag || ''}" data-cat="color">
-      <span class="wm-jp">${item.label || item.tag || ''}</span>
-      ${showMini ? `<span class="wm-en">${item.tag}</span>` : ''}
-    </button>`;
-  } catch (error) {
-    console.warn('色アイテム作成でエラー:', error);
-    return '';
+  // createWordModeColorItem関数
+  function createWordModeColorItem(item) {
+    try {
+      const showMini = item.tag && item.label && item.tag !== item.label;
+      return `<button type="button" class="wm-item" data-en="${item.tag || ''}" data-jp="${item.label || item.tag || ''}" data-cat="color">
+        <span class="wm-jp">${item.label || item.tag || ''}</span>
+        ${showMini ? `<span class="wm-en">${item.tag}</span>` : ''}
+      </button>`;
+    } catch (error) {
+      console.warn('色アイテム作成でエラー:', error);
+      return '';
+    }
   }
-}
    
   function addToSelectedChips(en, jp, cat) {
     const container = document.getElementById('wm-selected-chips');
@@ -2974,7 +3084,70 @@ function createWordModeColorItem(item) {
     const countEl = document.getElementById('wm-selected-count');
     if (countEl) countEl.textContent = selectedCount;
   }
-   
+
+  function addToOutputTable(en, jp) {
+    const tbody = document.getElementById('wm-table-body');
+    if (!tbody) {
+      console.warn('wm-table-body が見つかりません');
+      return;
+    }
+    
+    // 最大20件制限
+    if (tbody.children.length >= 20) {
+      console.warn('テーブルの最大件数に達しています');
+      return;
+    }
+    
+    // 重複チェック
+    if (tbody.querySelector(`tr[data-en="${en}"]`)) {
+      console.warn('重複するアイテムです:', en);
+      return;
+    }
+    
+    // 新しい行を作成
+    const row = document.createElement('tr');
+    row.dataset.en = en;
+    row.innerHTML = `
+      <td class="wm-row-jp">${jp}</td>
+      <td class="wm-row-en">${en}</td>
+      <td>
+        <button type="button" class="wm-row-copy-en" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">EN</button>
+        <button type="button" class="wm-row-copy-both" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">両方</button>
+        <button type="button" class="wm-row-remove" style="padding: 2px 6px; font-size: 12px; color: #f44336;">削除</button>
+      </td>
+    `;
+    
+    // イベントリスナーを追加
+    const copyEnBtn = row.querySelector('.wm-row-copy-en');
+    const copyBothBtn = row.querySelector('.wm-row-copy-both');
+    const removeBtn = row.querySelector('.wm-row-remove');
+    
+    if (copyEnBtn) {
+      copyEnBtn.addEventListener('click', () => {
+        navigator.clipboard?.writeText(en).then(() => toast('英語タグをコピーしました')).catch(() => {
+          console.log('英語タグをコピーしました:', en);
+        });
+      });
+    }
+    
+    if (copyBothBtn) {
+      copyBothBtn.addEventListener('click', () => {
+        const text = jp && en ? `${jp}(${en})` : (en || jp);
+        navigator.clipboard?.writeText(text).then(() => toast('日英タグをコピーしました')).catch(() => {
+          console.log('日英タグをコピーしました:', text);
+        });
+      });
+    }
+    
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        row.remove();
+      });
+    }
+    
+    tbody.appendChild(row);
+    console.log('テーブルに行を追加しました:', { en, jp });
+  }
 
   /* ===== 単語モードのイベントバインド（修正版） ===== */
   function bindWordModeEvents() {
@@ -3061,153 +3234,8 @@ function createWordModeColorItem(item) {
   }
 }
 
-// loadDefaultDicts関数の修正（エラーハンドリング追加）
-async function loadDefaultDicts() {
-  let didSFW = false;
-  let didNSFW = false;
 
-  // 埋め込み（<script src="dict/default_*.js">）をまず試す
-  try {
-    if (window.DEFAULT_SFW_DICT) {
-      mergeIntoSFW(window.DEFAULT_SFW_DICT);
-      didSFW = true;
-    }
-    if (window.DEFAULT_NSFW_DICT) {
-      mergeIntoNSFW(window.DEFAULT_NSFW_DICT);
-      didNSFW = true;
-    }
-  } catch (error) {
-    console.warn('埋め込み辞書の読み込みでエラー:', error);
-  }
 
-  // 埋め込みが無いときだけ fetch（HTTPサーバやPagesで動く時の保険）
-  async function tryFetch(path) {
-    try {
-      const r = await fetch(path, { cache: "no-store" });
-      if (!r.ok) throw new Error(`bad status: ${r.status}`);
-      return await r.json();
-    } catch (error) {
-      console.warn(`辞書ファイル ${path} の取得に失敗:`, error);
-      return null;
-    }
-  }
-
-  if (!didSFW) {
-    const sfw = await tryFetch("dict/default_sfw.json");
-    if (sfw) {
-      mergeIntoSFW(sfw);
-      didSFW = true;
-    }
-  }
-
-  if (!didNSFW) {
-    const nsfw = await tryFetch("dict/default_nsfw.json");
-    if (nsfw) {
-      mergeIntoNSFW(nsfw);
-      didNSFW = true;
-    }
-  }
-
-  // レンダリングは「読めた側だけ」実行（重複防止）
-  if (didSFW) {
-    try { renderSFW && renderSFW(); } catch(error) { console.warn('renderSFW エラー:', error); }
-    try { fillAccessorySlots && fillAccessorySlots(); } catch(error) { console.warn('fillAccessorySlots エラー:', error); }
-    try { toast && toast("SFW辞書を読み込みました"); } catch(error) { console.warn('toast エラー:', error); }
-  }
-
-  if (didNSFW) {
-    try { renderNSFWProduction && renderNSFWProduction(); } catch(error) { console.warn('renderNSFWProduction エラー:', error); }
-    try { renderNSFWLearning && renderNSFWLearning(); } catch(error) { console.warn('renderNSFWLearning エラー:', error); }
-    try { toast && toast("NSFW辞書を読み込みました"); } catch(error) { console.warn('toast エラー:', error); }
-  }
-
-  // フォールバック辞書があれば使用
-  if (!didSFW && typeof getFallbackSFW === "function") {
-    try {
-      mergeIntoSFW(getFallbackSFW());
-      renderSFW && renderSFW();
-      fillAccessorySlots && fillAccessorySlots();
-      toast && toast("SFWフォールバック辞書を使用しました");
-    } catch (error) {
-      console.warn('SFWフォールバック辞書の使用でエラー:', error);
-    }
-  }
-  if (!didNSFW && typeof getFallbackNSFW === "function") {
-    try {
-      mergeIntoNSFW(getFallbackNSFW());
-      renderNSFWProduction && renderNSFWProduction();
-      renderNSFWLearning && renderNSFWLearning();
-      toast && toast("NSFWフォールバック辞書を使用しました");
-    } catch (error) {
-      console.warn('NSFWフォールバック辞書の使用でエラー:', error);
-    }
-  }
-}
-
-// initWordMode関数内に以下の関数を追加
-function addToOutputTable(en, jp) {
-  const tbody = document.getElementById('wm-table-body');
-  if (!tbody) {
-    console.warn('wm-table-body が見つかりません');
-    return;
-  }
-  
-  // 最大20件制限
-  if (tbody.children.length >= 20) {
-    console.warn('テーブルの最大件数に達しています');
-    return;
-  }
-  
-  // 重複チェック
-  if (tbody.querySelector(`tr[data-en="${en}"]`)) {
-    console.warn('重複するアイテムです:', en);
-    return;
-  }
-  
-  // 新しい行を作成
-  const row = document.createElement('tr');
-  row.dataset.en = en;
-  row.innerHTML = `
-    <td class="wm-row-jp">${jp}</td>
-    <td class="wm-row-en">${en}</td>
-    <td>
-      <button type="button" class="wm-row-copy-en" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">EN</button>
-      <button type="button" class="wm-row-copy-both" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">両方</button>
-      <button type="button" class="wm-row-remove" style="padding: 2px 6px; font-size: 12px; color: #f44336;">削除</button>
-    </td>
-  `;
-  
-  // イベントリスナーを追加
-  const copyEnBtn = row.querySelector('.wm-row-copy-en');
-  const copyBothBtn = row.querySelector('.wm-row-copy-both');
-  const removeBtn = row.querySelector('.wm-row-remove');
-  
-  if (copyEnBtn) {
-    copyEnBtn.addEventListener('click', () => {
-      navigator.clipboard?.writeText(en).then(() => toast('英語タグをコピーしました')).catch(() => {
-        console.log('英語タグをコピーしました:', en);
-      });
-    });
-  }
-  
-  if (copyBothBtn) {
-    copyBothBtn.addEventListener('click', () => {
-      const text = jp && en ? `${jp}(${en})` : (en || jp);
-      navigator.clipboard?.writeText(text).then(() => toast('日英タグをコピーしました')).catch(() => {
-        console.log('日英タグをコピーしました:', text);
-      });
-    });
-  }
-  
-  if (removeBtn) {
-    removeBtn.addEventListener('click', () => {
-      row.remove();
-    });
-  }
-  
-  tbody.appendChild(row);
-  console.log('テーブルに行を追加しました:', { en, jp });
-}
 
 
 // clearSearch関数をグローバルスコープに追加
@@ -3406,4 +3434,10 @@ window.debugWordMode = function() {
   console.log('全アイテム数:', document.querySelectorAll('#panelWordMode .wm-item').length);
   console.log('表示中アイテム数:', document.querySelectorAll('#panelWordMode .wm-item:not(.wm-hidden)').length);
 };
+
+
+
+
+
+
 
