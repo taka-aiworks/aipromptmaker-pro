@@ -2744,11 +2744,14 @@ function initWordMode() {
   window.performWordModeSearch = performSearch;
   window.clearWordModeSearch = clearSearch;
   
-  function clearSearch() {
-    const searchInput = document.getElementById('wm-search-input');
-    if (searchInput) searchInput.value = '';
+  // clearSearch関数を修正
+function clearSearch() {
+  const searchInput = document.getElementById('wm-search-input');
+  if (searchInput) {
+    searchInput.value = '';
     performSearch('');
   }
+}
   
   // 検索イベントのバインド
   function bindSearchEvents() {
@@ -2901,16 +2904,13 @@ function initWordMode() {
     }, 100);
   };
 
+// createWordModeItem関数を以下で置き換え（コピーボタン削除）
 function createWordModeItem(item, category) {
   try {
     const showMini = item.tag && item.label && item.tag !== item.label;
     return `<button type="button" class="wm-item" data-en="${item.tag || ''}" data-jp="${item.label || item.tag || ''}" data-cat="${category}">
       <span class="wm-jp">${item.label || item.tag || ''}</span>
       ${showMini ? `<span class="wm-en">${item.tag}</span>` : ''}
-      <div class="wm-item-actions">
-        <button type="button" class="wm-copy-en" title="英語タグをコピー">EN</button>
-        <button type="button" class="wm-copy-both" title="日英タグをコピー">両方</button>
-      </div>
     </button>`;
   } catch (error) {
     console.warn('アイテム作成でエラー:', error);
@@ -2918,23 +2918,20 @@ function createWordModeItem(item, category) {
   }
 }
 
-  // createWordModeColorItem関数を以下で置き換え
-  function createWordModeColorItem(item) {
+  // createWordModeColorItem関数を以下で置き換え（コピーボタン削除）
+function createWordModeColorItem(item) {
   try {
     const showMini = item.tag && item.label && item.tag !== item.label;
     return `<button type="button" class="wm-item" data-en="${item.tag || ''}" data-jp="${item.label || item.tag || ''}" data-cat="color">
       <span class="wm-jp">${item.label || item.tag || ''}</span>
       ${showMini ? `<span class="wm-en">${item.tag}</span>` : ''}
-      <div class="wm-item-actions">
-        <button type="button" class="wm-copy-en" title="英語タグをコピー">EN</button>
-        <button type="button" class="wm-copy-both" title="日英タグをコピー">両方</button>
-      </div>
     </button>`;
   } catch (error) {
     console.warn('色アイテム作成でエラー:', error);
     return '';
   }
 }
+   
   function addToSelectedChips(en, jp, cat) {
     const container = document.getElementById('wm-selected-chips');
     if (!container || selectedCount >= 20) return;
@@ -3190,37 +3187,21 @@ async function loadDefaultDicts() {
 
 // 検索機能の修正（未定義関数の追加）
 function performSearch(searchTerm) {
-  const containers = document.querySelectorAll('#panelWordMode .wm-items-container');
-  let totalVisible = 0;
-  let totalItems = 0;
+  const items = document.querySelectorAll('#panelWordMode .wm-item');
+  let visibleCount = 0;
   
-  containers.forEach(container => {
-    const items = container.querySelectorAll('.wm-item');
-    let visibleInContainer = 0;
+  items.forEach(item => {
+    const jp = (item.dataset.jp || '').toLowerCase();
+    const en = (item.dataset.en || '').toLowerCase();
+    const search = searchTerm.toLowerCase();
+    const match = !search || jp.includes(search) || en.includes(search);
     
-    items.forEach(item => {
-      totalItems++;
-      const jp = (item.dataset.jp || '').toLowerCase();
-      const en = (item.dataset.en || '').toLowerCase();
-      const match = !searchTerm || jp.includes(searchTerm.toLowerCase()) || en.includes(searchTerm.toLowerCase());
-      
-      if (match) {
-        item.style.display = '';
-        visibleInContainer++;
-        totalVisible++;
-      } else {
-        item.style.display = 'none';
-      }
-    });
-    
-    // カテゴリごとの件数更新
-    const countEl = container.previousElementSibling?.querySelector('.wm-category-count');
-    if (countEl) {
-      countEl.textContent = `${visibleInContainer}件`;
-    }
+    // アイテム自体の表示/非表示を切り替え
+    item.style.display = match ? 'block' : 'none';
+    if (match) visibleCount++;
   });
   
-  updateSearchStats(totalVisible, totalItems);
+  updateSearchStats(visibleCount, items.length);
 }
 
 function updateSearchStats(visible, total) {
