@@ -986,3 +986,72 @@ legend { display: none; }
     grid-template-columns: 1fr;
   }
 }
+
+.wm-search {
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.wm-search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.wm-search-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.wm-search-input:focus {
+  outline: none;
+  border-color: var(--accent-ok);
+  box-shadow: 0 0 0 2px rgba(100, 150, 255, 0.2);
+}
+
+.wm-search-clear {
+  padding: 6px 10px;
+  background: var(--bg-muted);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.wm-search-clear:hover {
+  background: var(--accent-bad);
+  color: white;
+}
+
+.wm-search-stats {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.wm-item.wm-hidden {
+  display: none !important;
+}
+
+.wm-acc.wm-no-results {
+  opacity: 0.5;
+}
+
+.wm-acc.wm-no-results summary {
+  color: var(--text-muted);
+}
+
+
+
+
