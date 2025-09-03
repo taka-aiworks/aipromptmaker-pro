@@ -288,7 +288,9 @@ function setupMangaRealTimeUpdate() {
   // 特定の要素の直接監視も追加（二重保険）
   const criticalElements = [
     'mangaEmotionPrimary', 'mangaExpressions', 'mangaNSFWExpr', 'mangaNSFWExpo',
-    'mangaSFWEnable', 'mangaNSFWEnable', 'mangaSecondCharEnable'
+    'mangaSFWEnable', 'mangaNSFWEnable', 'mangaSecondCharEnable',
+    // 🆕 追加
+    'mangaNSFWParticipants', 'mangaNSFWAction2'
   ];
   
   criticalElements.forEach(id => {
@@ -652,6 +654,9 @@ function populateMangaOptions() {
     // 辞書のキー名を確認：nipples または nipple
     populateRadioOptions('mangaNSFWNipples', NSFW.nipples || NSFW.nipple || []);
     populateRadioOptions('mangaNSFWUnderwear', NSFW.underwear || []);
+    populateRadioOptions('mangaNSFWParticipants', NSFW.participants || []);
+    // 🆕 射精・体液系アクション
+    populateCheckboxOptions('mangaNSFWAction2', NSFW.action2 || []);
     
     console.log('NSFW選択肢設定完了');
   } catch (error) {
@@ -1142,7 +1147,10 @@ function generateMangaPrompt() {
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWBody'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWNipples'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWUnderwear'));
-    
+    // 🆕 新カテゴリ追加
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWParticipants'));
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWAction2'));
+      
     console.log('🔞 NSFW追加タグ:', nsfwTags);
   }
   
