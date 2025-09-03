@@ -467,7 +467,7 @@ window.DEFAULT_SFW_DICT = {
       { "tag": "walking", "label": "歩く" },
       { "tag": "running", "label": "走る" },
       { "tag": "jumping", "label": "ジャンプ" },
-      { "tag": "sitting", "label": "座る" }
+      { "tag": "sitting", "label": "座る" },
       { "tag": "sitting_chair", "label": "椅子座り" },
       { "tag": "sitting_floor_agura", "label": "床座り（あぐら）" },
       { "tag": "sitting_floor_seiza", "label": "床座り（正座）" },
