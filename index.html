@@ -994,66 +994,164 @@
   </section>
 
   <!-- ========== アコーディオン（SFW） ========== -->
+  
   <section class="wm-accordion" id="wm-accordion-sfw">
     <h3 class="wm-acc-title">SFW</h3>
 
+    <!-- 既存項目 -->
     <details class="wm-acc" data-cat="background">
-      <summary>
-        背景 <span class="wm-count" id="wm-count-background">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-background"><!-- 動的挿入 --></div>
+      <summary>背景 <span class="wm-count" id="wm-count-background">0</span></summary>
+      <div class="wm-items" id="wm-items-background"></div>
     </details>
 
     <details class="wm-acc" data-cat="pose">
-      <summary>
-        ポーズ <span class="wm-count" id="wm-count-pose">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-pose"><!-- 動的挿入 --></div>
+      <summary>ポーズ <span class="wm-count" id="wm-count-pose">0</span></summary>
+      <div class="wm-items" id="wm-items-pose"></div>
     </details>
 
     <details class="wm-acc" data-cat="composition">
-      <summary>
-        構図 <span class="wm-count" id="wm-count-composition">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-composition"><!-- 動的挿入 --></div>
+      <summary>構図 <span class="wm-count" id="wm-count-composition">0</span></summary>
+      <div class="wm-items" id="wm-items-composition"></div>
     </details>
 
     <details class="wm-acc" data-cat="view">
-      <summary>
-        視点 <span class="wm-count" id="wm-count-view">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-view"><!-- 動的挿入 --></div>
+      <summary>視点 <span class="wm-count" id="wm-count-view">0</span></summary>
+      <div class="wm-items" id="wm-items-view"></div>
     </details>
 
     <details class="wm-acc" data-cat="expression-sfw">
-      <summary>
-        表情（SFW） <span class="wm-count" id="wm-count-expression-sfw">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-expression-sfw"><!-- 動的挿入 --></div>
+      <summary>表情（SFW） <span class="wm-count" id="wm-count-expression-sfw">0</span></summary>
+      <div class="wm-items" id="wm-items-expression-sfw"></div>
     </details>
 
     <details class="wm-acc" data-cat="lighting-sfw">
-      <summary>
-        ライティング（SFW） <span class="wm-count" id="wm-count-lighting-sfw">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-lighting-sfw"><!-- 動的挿入 --></div>
+      <summary>ライティング（SFW） <span class="wm-count" id="wm-count-lighting-sfw">0</span></summary>
+      <div class="wm-items" id="wm-items-lighting-sfw"></div>
     </details>
 
-    <details class="wm-acc" data-cat="world">
-      <summary>
-        世界観 <span class="wm-count" id="wm-count-world">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-world"><!-- 動的挿入 --></div>
+    <details class="wm-acc" data-cat="worldview">
+      <summary>世界観 <span class="wm-count" id="wm-count-worldview">0</span></summary>
+      <div class="wm-items" id="wm-items-worldview"></div>
     </details>
 
     <details class="wm-acc" data-cat="accessories">
-      <summary>
-        アクセサリー <span class="wm-count" id="wm-count-accessories">0</span>
-      </summary>
-      <div class="wm-items" id="wm-items-accessories"><!-- 動的挿入 --></div>
+      <summary>アクセサリー <span class="wm-count" id="wm-count-accessories">0</span></summary>
+      <div class="wm-items" id="wm-items-accessories"></div>
+    </details>
+
+    ★★★ 以下の項目を追加 ★★★
+    <details class="wm-acc" data-cat="age">
+      <summary>年齢 <span class="wm-count" id="wm-count-age">0</span></summary>
+      <div class="wm-items" id="wm-items-age"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="gender">
+      <summary>性別 <span class="wm-count" id="wm-count-gender">0</span></summary>
+      <div class="wm-items" id="wm-items-gender"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="body-type">
+      <summary>体型 <span class="wm-count" id="wm-count-body-type">0</span></summary>
+      <div class="wm-items" id="wm-items-body-type"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="height">
+      <summary>身長 <span class="wm-count" id="wm-count-height">0</span></summary>
+      <div class="wm-items" id="wm-items-height"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="hair-style">
+      <summary>髪型 <span class="wm-count" id="wm-count-hair-style">0</span></summary>
+      <div class="wm-items" id="wm-items-hair-style"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="hair-length">
+      <summary>髪の長さ <span class="wm-count" id="wm-count-hair-length">0</span></summary>
+      <div class="wm-items" id="wm-items-hair-length"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="bangs-style">
+      <summary>前髪 <span class="wm-count" id="wm-count-bangs-style">0</span></summary>
+      <div class="wm-items" id="wm-items-bangs-style"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="skin-features">
+      <summary>肌の特徴 <span class="wm-count" id="wm-count-skin-features">0</span></summary>
+      <div class="wm-items" id="wm-items-skin-features"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="eyes">
+      <summary>目の形 <span class="wm-count" id="wm-count-eyes">0</span></summary>
+      <div class="wm-items" id="wm-items-eyes"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="face">
+      <summary>顔の特徴 <span class="wm-count" id="wm-count-face">0</span></summary>
+      <div class="wm-items" id="wm-items-face"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="outfit-sfw">
+      <summary>服（SFW） <span class="wm-count" id="wm-count-outfit-sfw">0</span></summary>
+      <div class="wm-items" id="wm-items-outfit-sfw"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="art-style">
+      <summary>画風 <span class="wm-count" id="wm-count-art-style">0</span></summary>
+      <div class="wm-items" id="wm-items-art-style"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="emotion-primary">
+      <summary>基本感情 <span class="wm-count" id="wm-count-emotion-primary">0</span></summary>
+      <div class="wm-items" id="wm-items-emotion-primary"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="emotion-detail">
+      <summary>詳細感情 <span class="wm-count" id="wm-count-emotion-detail">0</span></summary>
+      <div class="wm-items" id="wm-items-emotion-detail"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="mouth-state">
+      <summary>口の状態 <span class="wm-count" id="wm-count-mouth-state">0</span></summary>
+      <div class="wm-items" id="wm-items-mouth-state"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="eye-state">
+      <summary>目の状態 <span class="wm-count" id="wm-count-eye-state">0</span></summary>
+      <div class="wm-items" id="wm-items-eye-state"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="gaze">
+      <summary>視線方向 <span class="wm-count" id="wm-count-gaze">0</span></summary>
+      <div class="wm-items" id="wm-items-gaze"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="pose-manga">
+      <summary>漫画ポーズ <span class="wm-count" id="wm-count-pose-manga">0</span></summary>
+      <div class="wm-items" id="wm-items-pose-manga"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="hand-gesture">
+      <summary>手のジェスチャー <span class="wm-count" id="wm-count-hand-gesture">0</span></summary>
+      <div class="wm-items" id="wm-items-hand-gesture"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="props-light">
+      <summary>小物 <span class="wm-count" id="wm-count-props-light">0</span></summary>
+      <div class="wm-items" id="wm-items-props-light"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="effect-manga">
+      <summary>漫画エフェクト <span class="wm-count" id="wm-count-effect-manga">0</span></summary>
+      <div class="wm-items" id="wm-items-effect-manga"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="movement-action">
+      <summary>動作アクション <span class="wm-count" id="wm-count-movement-action">0</span></summary>
+      <div class="wm-items" id="wm-items-movement-action"></div>
     </details>
 
   </section>
+
 
   <section class="wm-accordion" id="wm-accordion-nsfw">
   <h3 class="wm-acc-title">NSFW</h3>
@@ -1084,6 +1182,21 @@
     <summary>シチュエーション（NSFW） <span class="wm-count" id="wm-count-situation">0</span></summary>
     <div class="wm-items" id="wm-items-situation"></div>
   </details>
+
+        <details class="wm-acc" data-cat="action-nsfw">
+      <summary>NSFWアクション <span class="wm-count" id="wm-count-action-nsfw">0</span></summary>
+      <div class="wm-items" id="wm-items-action-nsfw"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="action2-nsfw">
+      <summary>射精・体液系 <span class="wm-count" id="wm-count-action2-nsfw">0</span></summary>
+      <div class="wm-items" id="wm-items-action2-nsfw"></div>
+    </details>
+
+    <details class="wm-acc" data-cat="participants">
+      <summary>人数・構成 <span class="wm-count" id="wm-count-participants">0</span></summary>
+      <div class="wm-items" id="wm-items-participants"></div>
+    </details>
 
   <details class="wm-acc" data-cat="lighting-nsfw">
     <summary>ライティング（NSFW） <span class="wm-count" id="wm-count-lighting-nsfw">0</span></summary>
