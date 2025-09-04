@@ -14,10 +14,8 @@ function initMangaMode() {
   // HTMLの漫画モード要素が存在するかチェック
   const mangaPanel = document.getElementById('panelManga');
   if (!mangaPanel) {
-    console.error('❌ #panelManga要素が見つかりません');
     return;
   }
-  console.log('✅ #panelManga要素確認OK');
   
   // 主要な要素の存在チェック
   const requiredElements = [
@@ -31,9 +29,7 @@ function initMangaMode() {
   requiredElements.forEach(id => {
     const element = document.getElementById(id);
     if (element) {
-      console.log(`✅ #${id} 要素確認OK`);
     } else {
-      console.error(`❌ #${id} 要素が見つかりません`);
       missingElements.push(id);
     }
   });
