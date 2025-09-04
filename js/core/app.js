@@ -3603,46 +3603,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 2000);
 });
 
-// 辞書データ読み込み問題の修正コード
-
-// === 1. 辞書データの強制初期化 ===
-function forceDictionaryInitialization() {
-  console.log('=== 辞書データ強制初期化 ===');
-  
-  // SFWとNSFWが未定義の場合、空オブジェクトで初期化
-  if (typeof window.SFW === 'undefined') {
-    console.log('SFW辞書を初期化中...');
-    window.SFW = {};
-  }
-  
-  if (typeof window.NSFW === 'undefined') {
-    console.log('NSFW辞書を初期化中...');
-    window.NSFW = {};
-  }
-  
-  // loadDefaultDicts関数の実行を強制
-  if (typeof window.loadDefaultDicts === 'function') {
-    console.log('loadDefaultDicts関数を実行中...');
-    window.loadDefaultDicts().then(() => {
-      console.log('loadDefaultDicts完了後のSFW:', window.SFW);
-      console.log('loadDefaultDicts完了後のNSFW:', window.NSFW);
-      
-      // 辞書読み込み完了後に単語モード初期化
-      setTimeout(() => {
-        if (window.initWordModeItems) {
-          window.initWordModeItems();
-        }
-      }, 1000);
-    }).catch(error => {
-      console.error('loadDefaultDicts実行エラー:', error);
-      // エラーでも強制的にダミーデータで初期化
-      createFallbackDictionaries();
-    });
-  } else {
-    console.warn('loadDefaultDicts関数が見つかりません。ダミーデータで初期化します。');
-    createFallbackDictionaries();
-  }
-}
 
 // === 2. フォールバック辞書データの作成 ===
 /* ===== フォールバック削除と単語モード修正 ===== */
@@ -3978,27 +3938,6 @@ function waitForDictionaries(maxAttempts = 10, interval = 1000) {
   checkDictionaries();
 }
 
-// === 4. 手動実行用の関数 ===
-window.fixDictionaryLoading = function() {
-  console.log('=== 辞書読み込み修正開始 ===');
-  
-  // まず強制初期化を試行
-  forceDictionaryInitialization();
-  
-  // 3秒後に監視開始
-  setTimeout(() => {
-    waitForDictionaries();
-  }, 3000);
-};
-
-// === 5. 自動実行 ===
-document.addEventListener('DOMContentLoaded', function() {
-  // ページ読み込み完了後、2秒待ってから辞書修正を実行
-  setTimeout(() => {
-    console.log('自動辞書修正開始');
-    window.fixDictionaryLoading();
-  }, 2000);
-  
   // さらにデバッグボタンを更新
   setTimeout(() => {
     const existingBtn = document.getElementById('debug-init-btn');
