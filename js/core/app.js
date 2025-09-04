@@ -1624,7 +1624,7 @@ function buildOnePlanner() {
     if (v) pushUnique(p, v);
   });
 
-  // アクセ：NSFW優先。なければ固定アクセ＋色（SFW）
+  // ★★★ 修正：アクセ処理を基本情報のcharacterAccessoryに変更 ★★★
   (function handleAccessory() {
     let picked = null;
     if (isNSFW) {
@@ -1632,10 +1632,15 @@ function buildOnePlanner() {
       if (ns && ns.length > 0) picked = ns[0];
     }
     if (!picked) {
-      const accSel = document.getElementById("pl_accSel");
-      const accTag = window.getPlannerAccColor ? window.getPlannerAccColor() : (document.getElementById('tag_plAcc')?.textContent || '').trim();
-      if (accSel && accSel.value) {
-        picked = accTag ? `${accTag} ${accSel.value}` : accSel.value;
+      // 基本情報のcharacterAccessoryを使用
+      const charAccSel = document.getElementById("characterAccessory");
+      const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
+      if (charAccSel && charAccSel.value) {
+        if (charAccColor && charAccColor !== "—") {
+          picked = `${charAccColor} ${charAccSel.value}`;
+        } else {
+          picked = charAccSel.value;
+        }
       }
     }
     if (picked) pushUnique(p, picked);
@@ -1819,7 +1824,6 @@ function buildOneLearning(extraSeed = 0){
     caption  // ← 追加
   };
 }
-
 
 // ===== 学習用配分ルールに基づいたバッチ生成関数を追加 =====
 function buildBatchLearning(n) {
