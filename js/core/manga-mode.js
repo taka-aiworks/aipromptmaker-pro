@@ -35,8 +35,8 @@ function initMangaMode() {
   });
   
   if (missingElements.length > 0) {
-    console.error('❌ 必要なHTML要素が不足しています:', missingElements);
-    console.log('💡 HTMLファイルの漫画モード部分を確認してください');
+    //console.error('❌ 必要なHTML要素が不足しています:', missingElements);
+    //console.log('💡 HTMLファイルの漫画モード部分を確認してください');
   }
   
   // イベントリスナーの設定
@@ -50,7 +50,7 @@ function initMangaMode() {
   const NSFW = window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW;
   
   if (SFW && NSFW) {
-    console.log('✅ 辞書データ確認OK - populateMangaOptions()を実行');
+    //console.log('✅ 辞書データ確認OK - populateMangaOptions()を実行');
     populateMangaOptions();
   } else {
     console.error('❌ 辞書データが取得できません');
@@ -61,15 +61,15 @@ function initMangaMode() {
 
 // イベントリスナーの設定（デバッグ強化版） - 既存のsetupMangaEventListeners関数を置き換え
 function setupMangaEventListeners() {
-  console.log('🎬 setupMangaEventListeners 開始');
+  //console.log('🎬 setupMangaEventListeners 開始');
   
   // LoRA使用切り替え
   const loraToggle = document.getElementById('mangaUseLoRA');
   if (loraToggle) {
     loraToggle.addEventListener('change', toggleLoRASettings);
-    console.log('✅ mangaUseLoRA イベントリスナー設定完了');
+    //console.log('✅ mangaUseLoRA イベントリスナー設定完了');
   } else {
-    console.warn('⚠️ mangaUseLoRA 要素が見つかりません');
+    //console.warn('⚠️ mangaUseLoRA 要素が見つかりません');
   }
   
   // SFWパラメータ表示切り替え（追加）
@@ -78,9 +78,9 @@ function setupMangaEventListeners() {
     sfwParamsToggle.addEventListener('change', toggleMangaSFWParams);
     // 初期状態を設定
     toggleMangaSFWParams();
-    console.log('✅ mangaSFWParamsToggle イベントリスナー設定完了');
+    //console.log('✅ mangaSFWParamsToggle イベントリスナー設定完了');
   } else {
-    console.warn('⚠️ mangaSFWParamsToggle 要素が見つかりません');
+    //console.warn('⚠️ mangaSFWParamsToggle 要素が見つかりません');
   }
   
   // 任意項目表示切り替え（追加）
@@ -89,33 +89,33 @@ function setupMangaEventListeners() {
     optionalToggle.addEventListener('change', toggleMangaOptionalContent);
     // 初期状態を設定
     toggleMangaOptionalContent();
-    console.log('✅ mangaOptionalToggle イベントリスナー設定完了');
+   // console.log('✅ mangaOptionalToggle イベントリスナー設定完了');
   } else {
-    console.warn('⚠️ mangaOptionalToggle 要素が見つかりません');
+    //console.warn('⚠️ mangaOptionalToggle 要素が見つかりません');
   }
   
   // SFW有効化切り替え
   const sfwToggle = document.getElementById('mangaSFWEnable');
   if (sfwToggle) {
     sfwToggle.addEventListener('change', () => {
-      console.log('🔄 SFW切り替え:', sfwToggle.checked);
+      //console.log('🔄 SFW切り替え:', sfwToggle.checked);
       toggleMangaSFWPanel();
     });
-    console.log('✅ mangaSFWEnable イベントリスナー設定完了, 現在の状態:', sfwToggle.checked);
+    //console.log('✅ mangaSFWEnable イベントリスナー設定完了, 現在の状態:', sfwToggle.checked);
   } else {
-    console.warn('⚠️ mangaSFWEnable 要素が見つかりません');
+    //console.warn('⚠️ mangaSFWEnable 要素が見つかりません');
   }
   
   // NSFW有効化切り替え
   const nsfwToggle = document.getElementById('mangaNSFWEnable');
   if (nsfwToggle) {
     nsfwToggle.addEventListener('change', () => {
-      console.log('🔄 NSFW切り替え:', nsfwToggle.checked);
+      //console.log('🔄 NSFW切り替え:', nsfwToggle.checked);
       toggleMangaNSFWPanel();
     });
-    console.log('✅ mangaNSFWEnable イベントリスナー設定完了, 現在の状態:', nsfwToggle.checked);
+    //console.log('✅ mangaNSFWEnable イベントリスナー設定完了, 現在の状態:', nsfwToggle.checked);
   } else {
-    console.warn('⚠️ mangaNSFWEnable 要素が見つかりません');
+    //console.warn('⚠️ mangaNSFWEnable 要素が見つかりません');
   }
   
   // 2人目キャラ有効化切り替え
@@ -188,17 +188,17 @@ function setupMangaEventListeners() {
   
   // 初期出力生成
   setTimeout(() => {
-    console.log('⏰ 初期出力生成実行');
+    //console.log('⏰ 初期出力生成実行');
     updateMangaOutput();
   }, 500);
   
-  console.log('🎬 setupMangaEventListeners 完了');
+  //console.log('🎬 setupMangaEventListeners 完了');
 }
 
 
 // 【新規関数】漫画モード要素のデバッグ - setupMangaEventListeners の後に追加
 function debugMangaElements() {
-  console.log('🔍 漫画モード要素デバッグ開始');
+  //console.log('🔍 漫画モード要素デバッグ開始');
   
   // 重要な要素の存在確認
   const criticalElements = [
@@ -213,7 +213,7 @@ function debugMangaElements() {
   
   criticalElements.forEach(id => {
     const element = document.getElementById(id);
-    console.log(`🔸 ${id}:`, {
+   // console.log(`🔸 ${id}:`, {
       exists: !!element,
       type: element?.tagName,
       children: element?.children?.length || 0,
@@ -222,7 +222,7 @@ function debugMangaElements() {
     
     if (element && id.startsWith('manga') && !id.includes('Enable')) {
       const inputs = element.querySelectorAll('input');
-      console.log(`  📄 ${id} 内の入力要素:`, [...inputs].map(inp => ({
+     // console.log(`  📄 ${id} 内の入力要素:`, [...inputs].map(inp => ({
         type: inp.type,
         value: inp.value,
         checked: inp.checked,
@@ -268,21 +268,21 @@ function setupMangaRealTimeUpdate() {
   // 漫画パネル内のすべての入力要素を監視
   const mangaPanel = document.getElementById('panelManga');
   if (!mangaPanel) {
-    console.error('❌ #panelManga が見つかりません');
+  //  console.error('❌ #panelManga が見つかりません');
     return;
   }
   
   // イベント委譲を使用して動的に追加される要素も監視
   mangaPanel.addEventListener('change', (e) => {
     if (e.target.matches('input, select, textarea')) {
-      console.log('🔄 漫画モード要素変更検知:', e.target.name || e.target.id, '値:', e.target.value);
+    //  console.log('🔄 漫画モード要素変更検知:', e.target.name || e.target.id, '値:', e.target.value);
       setTimeout(updateMangaOutput, 50); // 少し遅延させて確実に実行
     }
   });
   
   mangaPanel.addEventListener('input', (e) => {
     if (e.target.matches('input[type="range"], textarea')) {
-      console.log('🔄 漫画モード入力変更:', e.target.name || e.target.id, '値:', e.target.value);
+    //  console.log('🔄 漫画モード入力変更:', e.target.name || e.target.id, '値:', e.target.value);
       setTimeout(updateMangaOutput, 50);
     }
   });
@@ -299,13 +299,13 @@ function setupMangaRealTimeUpdate() {
     const container = document.getElementById(id);
     if (container) {
       container.addEventListener('change', () => {
-        console.log(`🔄 ${id} 変更検知`);
+       // console.log(`🔄 ${id} 変更検知`);
         setTimeout(updateMangaOutput, 50);
       });
     }
   });
   
-  console.log('✅ リアルタイム更新システム設定完了');
+ // console.log('✅ リアルタイム更新システム設定完了');
 }
 
 
@@ -320,7 +320,7 @@ function toggleMangaSFWParams() {
   const isVisible = toggle.checked;
   content.style.display = isVisible ? 'block' : 'none';
   
-  console.log('SFWパラメータ表示:', isVisible ? '表示' : '非表示');
+ // console.log('SFWパラメータ表示:', isVisible ? '表示' : '非表示');
 }
 
 // 任意項目表示切り替え（新規関数）
@@ -333,7 +333,7 @@ function toggleMangaOptionalContent() {
   const isVisible = toggle.checked;
   content.style.display = isVisible ? 'block' : 'none';
   
-  console.log('任意項目表示:', isVisible ? '表示' : '非表示');
+ // console.log('任意項目表示:', isVisible ? '表示' : '非表示');
 }
 
 // LoRA設定の切り替え
@@ -514,7 +514,7 @@ function importSecondCharSettings(event) {
       
       toast('2人目キャラ設定を読み込みました');
     } catch (error) {
-      console.error('2人目キャラ設定読み込みエラー:', error);
+     // console.error('2人目キャラ設定読み込みエラー:', error);
       toast('設定の読み込みに失敗しました');
     }
     
@@ -597,31 +597,31 @@ function populateMangaOptions() {
   const SFW = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
   const NSFW = window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW;
   
-  console.log('辞書データの詳細確認:', {
-    'window.DEFAULT_SFW_DICT': window.DEFAULT_SFW_DICT,
-    'window.DEFAULT_NSFW_DICT': window.DEFAULT_NSFW_DICT,
-    'SFW取得結果': SFW,
-    'NSFW取得結果': NSFW,
-    'SFW存在': !!SFW,
-    'NSFW存在': !!NSFW
-  });
+ // console.log('辞書データの詳細確認:', {
+ //   'window.DEFAULT_SFW_DICT': window.DEFAULT_SFW_DICT,
+ //   'window.DEFAULT_NSFW_DICT': window.DEFAULT_NSFW_DICT,
+ //   'SFW取得結果': SFW,
+ //   'NSFW取得結果': NSFW,
+ //   'SFW存在': !!SFW,
+ //   'NSFW存在': !!NSFW
+ // });
   
-  if (!SFW || !NSFW) {
-    console.error('辞書データが取得できません:', {
-      'DEFAULT_SFW_DICT構造': window.DEFAULT_SFW_DICT,
-      'DEFAULT_NSFW_DICT構造': window.DEFAULT_NSFW_DICT,
-      'SFW_keys': SFW ? Object.keys(SFW) : 'null',
-      'NSFW_keys': NSFW ? Object.keys(NSFW) : 'null'
-    });
-    return;
-  }
+ // if (!SFW || !NSFW) {
+ //   console.error('辞書データが取得できません:', {
+ //    'DEFAULT_SFW_DICT構造': window.DEFAULT_SFW_DICT,
+ //     'DEFAULT_NSFW_DICT構造': window.DEFAULT_NSFW_DICT,
+ //     'SFW_keys': SFW ? Object.keys(SFW) : 'null',
+ //     'NSFW_keys': NSFW ? Object.keys(NSFW) : 'null'
+ //   });
+ //   return;
+ // }
   
-  console.log('漫画モード選択肢を設定中...', {
-    SFW_keys: Object.keys(SFW),
-    NSFW_keys: Object.keys(NSFW),
-    'emotion_primary_sample': SFW.emotion_primary?.slice(0, 3),
-    'expression_sample': NSFW.expression?.slice(0, 3)
-  });
+ // console.log('漫画モード選択肢を設定中...', {
+ //   SFW_keys: Object.keys(SFW),
+ //   NSFW_keys: Object.keys(NSFW),
+ //   'emotion_primary_sample': SFW.emotion_primary?.slice(0, 3),
+ //   'expression_sample': NSFW.expression?.slice(0, 3)
+ // });
   
   // SFWオプションの設定（エラーハンドリング付き）
   try {
@@ -650,9 +650,9 @@ function populateMangaOptions() {
     populateRadioOptions('mangaLighting', SFW.lighting || []);
     populateRadioOptions('mangaArtStyle', SFW.art_style || []);
     
-    console.log('SFW選択肢設定完了');
+  //  console.log('SFW選択肢設定完了');
   } catch (error) {
-    console.error('SFW選択肢設定エラー:', error);
+  //  console.error('SFW選択肢設定エラー:', error);
   }
   
   // NSFWオプションの設定（エラーハンドリング付き）
@@ -673,9 +673,9 @@ function populateMangaOptions() {
     // 🆕 射精・体液系アクション
     populateCheckboxOptions('mangaNSFWAction2', NSFW.action2 || []);
     
-    console.log('NSFW選択肢設定完了');
+  //  console.log('NSFW選択肢設定完了');
   } catch (error) {
-    console.error('NSFW選択肢設定エラー:', error);
+  //  console.error('NSFW選択肢設定エラー:', error);
   }
   
   // 2人目キャラ用（詳細設定）- 存在する要素のみ設定
@@ -695,17 +695,17 @@ function populateMangaOptions() {
     populateOptionsIfExists('secondCharDress', getCategoryItems('dress', SFW), 'radio');
     populateOptionsIfExists('secondCharShoes', getCategoryItems('shoes', SFW), 'radio');
     
-    console.log('2人目キャラ選択肢設定完了');
+  //  console.log('2人目キャラ選択肢設定完了');
   } catch (error) {
-    console.error('2人目キャラ選択肢設定エラー:', error);
+  //  console.error('2人目キャラ選択肢設定エラー:', error);
   }
   
   // インタラクション
   try {
     populateInteractionOptions();
-    console.log('インタラクション選択肢設定完了');
+  //  console.log('インタラクション選択肢設定完了');
   } catch (error) {
-    console.error('インタラクション選択肢設定エラー:', error);
+  //  console.error('インタラクション選択肢設定エラー:', error);
   }
   
   // ========== ネガティブプロンプト（新システム対応）==========
@@ -714,14 +714,14 @@ function populateMangaOptions() {
     if (document.getElementById('mangaNegEssential')) {
       // 新しいネガティブプロンプトシステムの初期化は
       // initMangaNegativeSystem() で行うため、ここでは何もしない
-      console.log('新ネガティブシステム検出 - initMangaNegativeSystem()で初期化');
+   //   console.log('新ネガティブシステム検出 - initMangaNegativeSystem()で初期化');
     } else {
       // 既存システム（下位互換）
       populateCheckboxOptions('mangaNegativePreset', generateNegativePresets());
-      console.log('旧ネガティブプリセット設定完了');
+   //   console.log('旧ネガティブプリセット設定完了');
     }
   } catch (error) {
-    console.error('ネガティブプロンプト設定エラー:', error);
+   // console.error('ネガティブプロンプト設定エラー:', error);
   }
   
   // ========== 新ネガティブシステムの初期化（遅延実行）==========
@@ -736,7 +736,7 @@ function populateMangaOptions() {
     }
   }, 300);
   
-  console.log('漫画モード選択肢設定完了');
+//  console.log('漫画モード選択肢設定完了');
   
   // 🆕 検索統計の更新
   setTimeout(() => {
@@ -758,21 +758,21 @@ function populateRadioOptions(containerId, items) {
   const container = document.getElementById(containerId);
   
   if (!container) {
-    console.error(`❌ HTML要素が見つかりません: #${containerId}`);
+ //   console.error(`❌ HTML要素が見つかりません: #${containerId}`);
     return;
   }
   
   if (!Array.isArray(items)) {
-    console.error(`❌ データが配列ではありません: ${containerId}`, items);
+  //  console.error(`❌ データが配列ではありません: ${containerId}`, items);
     return;
   }
   
   if (items.length === 0) {
-    console.warn(`⚠️ 空の配列です: ${containerId}`);
+  //  console.warn(`⚠️ 空の配列です: ${containerId}`);
     return;
   }
   
-  console.log(`✅ ${containerId}: ${items.length}個のアイテムを設定中...`);
+ // console.log(`✅ ${containerId}: ${items.length}個のアイテムを設定中...`);
   
   container.innerHTML = '';
   
@@ -823,28 +823,28 @@ function populateRadioOptions(containerId, items) {
     container.appendChild(label);
   });
   
-  console.log(`✅ ${containerId}: 設定完了 (${container.children.length}個の要素、未選択ボタン含む)`);
+//  console.log(`✅ ${containerId}: 設定完了 (${container.children.length}個の要素、未選択ボタン含む)`);
 }
 
 function populateCheckboxOptions(containerId, items) {
   const container = document.getElementById(containerId);
   
   if (!container) {
-    console.error(`❌ HTML要素が見つかりません: #${containerId}`);
+  //  console.error(`❌ HTML要素が見つかりません: #${containerId}`);
     return;
   }
   
   if (!Array.isArray(items)) {
-    console.error(`❌ データが配列ではありません: ${containerId}`, items);
+  //  console.error(`❌ データが配列ではありません: ${containerId}`, items);
     return;
   }
   
   if (items.length === 0) {
-    console.warn(`⚠️ 空の配列です: ${containerId}`);
+  //  console.warn(`⚠️ 空の配列です: ${containerId}`);
     return;
   }
   
-  console.log(`✅ ${containerId}: ${items.length}個のアイテム（チェックボックス）を設定中...`);
+//  console.log(`✅ ${containerId}: ${items.length}個のアイテム（チェックボックス）を設定中...`);
   
   container.innerHTML = '';
   
@@ -900,14 +900,14 @@ function populateCheckboxOptions(containerId, items) {
     container.appendChild(label);
   });
   
-  console.log(`✅ ${containerId}: 設定完了 (${container.children.length}個の要素、全解除ボタン含む)`);
+//  console.log(`✅ ${containerId}: 設定完了 (${container.children.length}個の要素、全解除ボタン含む)`);
 }
 
 // 存在する要素にのみ設定するヘルパー関数
 function populateOptionsIfExists(containerId, items, type = 'radio') {
   const container = document.getElementById(containerId);
   if (!container) {
-    console.warn(`⚠️ 要素が存在しません: #${containerId} - スキップ`);
+  //  console.warn(`⚠️ 要素が存在しません: #${containerId} - スキップ`);
     return;
   }
   
@@ -992,13 +992,13 @@ function generateNegativePresets() {
 
 // プロンプト生成と出力更新（修正版） - 既存のupdateMangaOutput関数を置き換え
 function updateMangaOutput() {
-  console.log('🔄 updateMangaOutput実行開始');
+ // console.log('🔄 updateMangaOutput実行開始');
   
   const prompt = generateMangaPrompt();
   const negative = generateMangaNegative();
   
-  console.log('📝 生成されたプロンプト:', prompt);
-  console.log('🚫 生成されたネガティブ:', negative);
+//  console.log('📝 生成されたプロンプト:', prompt);
+//  console.log('🚫 生成されたネガティブ:', negative);
   
   // フォーマット選択（修正：getFmt関数の存在チェック付き）
   let fmt;
@@ -1036,23 +1036,23 @@ function updateMangaOutput() {
   
   if (outAll) {
     outAll.textContent = allText;
-    console.log('✅ outMangaAll更新完了');
+ //   console.log('✅ outMangaAll更新完了');
   } else {
-    console.error('❌ outMangaAll要素が見つかりません');
+ //   console.error('❌ outMangaAll要素が見つかりません');
   }
   
   if (outPrompt) {
     outPrompt.textContent = prompt;
-    console.log('✅ outMangaPrompt更新完了');
+  //  console.log('✅ outMangaPrompt更新完了');
   } else {
-    console.error('❌ outMangaPrompt要素が見つかりません');
+  //  console.error('❌ outMangaPrompt要素が見つかりません');
   }
   
   if (outNeg) {
     outNeg.textContent = negative;
-    console.log('✅ outMangaNeg更新完了');
+ //   console.log('✅ outMangaNeg更新完了');
   } else {
-    console.error('❌ outMangaNeg要素が見つかりません');
+ //   console.error('❌ outMangaNeg要素が見つかりません');
   }
   
   // seed表示更新
@@ -1062,14 +1062,14 @@ function updateMangaOutput() {
   // 競合チェック
   checkMangaConflicts();
   
-  console.log('✅ updateMangaOutput実行完了');
+//  console.log('✅ updateMangaOutput実行完了');
 }
 
 // プロンプト生成（改良版） - 既存のgenerateMangaPrompt関数を置き換え
 function generateMangaPrompt() {
   const tags = [];
   
-  console.log('🚀 プロンプト生成開始');
+ // console.log('🚀 プロンプト生成開始');
   
   // ===== 🎭 商用LoRAタグを最優先で先頭に追加 =====
   const commercialLoRAToggle = document.getElementById('mangaCommercialLoRAEnable');
@@ -1077,7 +1077,7 @@ function generateMangaPrompt() {
     const loraBaseTags = window.commercialLoRAManager.getSelectedLoRATags();
     if (loraBaseTags.length > 0) {
       tags.push(...loraBaseTags);
-      console.log('✅ 商用LoRAタグ追加（先頭配置）:', loraBaseTags);
+  //    console.log('✅ 商用LoRAタグ追加（先頭配置）:', loraBaseTags);
     }
   }
   
@@ -1086,7 +1086,7 @@ function generateMangaPrompt() {
   if (fixed) {
     const fixedTags = fixed.split(/\s*,\s*/).filter(Boolean);
     tags.push(...fixedTags);
-    console.log('📌 固定タグ:', fixedTags);
+ //   console.log('📌 固定タグ:', fixedTags);
   }
   
   // 従来のLoRAタグ（商用LoRAの後）
@@ -1095,14 +1095,14 @@ function generateMangaPrompt() {
     if (loraTag) {
       const weight = document.getElementById('mangaLoRAWeight')?.value || '0.8';
       tags.push(loraTag.replace(':0.8>', `:${weight}>`));
-      console.log('🎭 従来のLoRAタグ:', loraTag);
+  //    console.log('🎭 従来のLoRAタグ:', loraTag);
     }
   }
   
   // NSFW
   if (document.getElementById('mangaNSFWEnable')?.checked) {
     tags.push('NSFW');
-    console.log('🔞 NSFWモード有効');
+  // console.log('🔞 NSFWモード有効');
   }
   
   // キャラ基礎設定（1人目）
@@ -1110,7 +1110,7 @@ function generateMangaPrompt() {
   if (useCharBase) {
     // 基本情報タブの値を参照
     tags.push('solo'); // 2人目がいる場合は後で修正
-    console.log('👤 基本キャラ設定使用');
+ //   console.log('👤 基本キャラ設定使用');
     
     if (typeof getGenderCountTag === 'function') {
       const genderCountTag = getGenderCountTag();
@@ -1129,7 +1129,7 @@ function generateMangaPrompt() {
       tags.splice(soloIndex, 1);
     }
     tags.push('2people');
-    console.log('👥 2人目キャラ有効');
+  //  console.log('👥 2人目キャラ有効');
     
     // 2人目の設定を追加
     addSecondCharTags(tags);
@@ -1138,15 +1138,15 @@ function generateMangaPrompt() {
   // 【重要修正】SFW有効状態のチェックを改善
   const sfwEnabledElement = document.getElementById('mangaSFWEnable');
   const sfwEnabled = sfwEnabledElement ? sfwEnabledElement.checked : false;
-  console.log('📊 SFW有効状態確認:', {
-    element_found: !!sfwEnabledElement,
-    checked_value: sfwEnabledElement?.checked,
-    final_result: sfwEnabled
-  });
+//  console.log('📊 SFW有効状態確認:', {
+//    element_found: !!sfwEnabledElement,
+//    checked_value: sfwEnabledElement?.checked,
+//    final_result: sfwEnabled
+//  });
   
   // 【修正】SFWが無効でも漫画パラメータを処理する（デフォルトで有効とみなす）
   const shouldProcessMangaParams = sfwEnabled || !sfwEnabledElement;
-  console.log('🎯 漫画パラメータ処理:', shouldProcessMangaParams);
+//  console.log('🎯 漫画パラメータ処理:', shouldProcessMangaParams);
   
   if (shouldProcessMangaParams) {
     const addedTags = [];
