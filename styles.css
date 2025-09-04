@@ -1174,3 +1174,114 @@ legend { display: none; }
   border-radius: 10px;
   margin-left: 4px;
 }
+
+/* 商用LoRA用のスタイル */
+.commercial-lora-grid {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.lora-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--bg-card);
+  transition: all 0.2s ease;
+}
+
+.lora-item:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.lora-item.selected {
+  border-color: var(--accent-ok);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.lora-item-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.lora-checkbox {
+  margin-top: 2px;
+}
+
+.lora-info {
+  flex: 1;
+}
+
+.lora-title {
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: var(--text);
+}
+
+.lora-description {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 0 0 8px 0;
+}
+
+.lora-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.lora-weight-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.lora-weight-slider {
+  flex: 1;
+  min-width: 80px;
+}
+
+.lora-tag-display {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: rgba(0,0,0,0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  word-break: break-all;
+}
+
+.lora-tab-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.lora-tab-btn:hover {
+  background: var(--bg-hover);
+}
+
+.lora-tab-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.lora-category-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  border-radius: 3px;
+  margin-left: 8px;
+}
