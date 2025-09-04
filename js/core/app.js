@@ -1204,6 +1204,12 @@ function bindBasicInfo() {
           }
         });
         
+        // ★★★ アクセサリーの復元 ★★★
+        if (data.characterAccessory) {
+          const charAccSel = document.getElementById("characterAccessory");
+          if (charAccSel) charAccSel.value = data.characterAccessory;
+        }
+        
         // 色の復元（髪・目・肌）
         if (data.hairColor) {
           const satH = document.getElementById("satH");
@@ -1266,11 +1272,42 @@ function bindBasicInfo() {
           }
         });
         
+        // ★★★ アクセサリー色の復元 ★★★
+        if (data.charAccColor) {
+          const satCharAcc = document.getElementById("sat_charAcc");
+          const litCharAcc = document.getElementById("lit_charAcc");
+          if (satCharAcc && data.charAccColor.s !== undefined) satCharAcc.value = data.charAccColor.s;
+          if (litCharAcc && data.charAccColor.l !== undefined) litCharAcc.value = data.charAccColor.l;
+          
+          if (data.charAccColor.h !== undefined) {
+            setTimeout(() => {
+              const wheel = document.getElementById("wheel_charAcc");
+              const thumb = document.getElementById("thumb_charAcc");
+              if (wheel && thumb) {
+                const rect = wheel.getBoundingClientRect();
+                const radius = rect.width / 2 - 7;
+                const radians = (data.charAccColor.h - 90) * Math.PI / 180;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                thumb.style.left = (centerX + radius * Math.cos(radians) - 7) + "px";
+                thumb.style.top = (centerY + radius * Math.sin(radians) - 7) + "px";
+                
+                if (window.getCharAccColor?.onHue) {
+                  window.getCharAccColor.onHue(data.charAccColor.h);
+                }
+              }
+            }, 200);
+          }
+        }
+        
         // UI更新
         setTimeout(() => {
           if (window.applyOutfitMode) window.applyOutfitMode();
           paintSkin();
-        }, 200);
+          // ★★★ アクセサリー表示更新 ★★★
+          if (window.updateCharAccDisplay) window.updateCharAccDisplay();
+        }, 250);
         
         toast("キャラ設定を読み込みました");
       } catch (error) {
@@ -1306,6 +1343,8 @@ function bindBasicInfo() {
         face: getOne('face'),
         skinBody: getOne('skinBody'),
         artStyle: getOne('artStyle'),
+        // ★★★ アクセサリー追加 ★★★
+        characterAccessory: document.getElementById("characterAccessory")?.value || "",
         // 服
         outfit_top: getOne('outfit_top'),
         outfit_pants: getOne('outfit_pants'),
@@ -1342,6 +1381,13 @@ function bindBasicInfo() {
           h: window.getShoesColor?.onHue?.__lastHue || 0,
           s: document.getElementById("sat_shoes")?.value || 0,
           l: document.getElementById("lit_shoes")?.value || 30
+        },
+        // ★★★ アクセサリー色情報追加 ★★★
+        charAccColor: {
+          use: true, // 固定アクセは選択されていれば常に使用
+          h: window.getCharAccColor?.onHue?.__lastHue || 0,
+          s: document.getElementById("sat_charAcc")?.value || 75,
+          l: document.getElementById("lit_charAcc")?.value || 50
         }
       };
       
@@ -1693,13 +1739,15 @@ function buildOneLearning(extraSeed = 0){
     p.push(...finalOutfits);
   }
 
-  // 固定アクセサリー
-  const accSel = document.getElementById("learn_acc");
-  const accColor = window.getLearnAccColor ? window.getLearnAccColor() : "";
-  if (accSel && accSel.value && accColor) {
-    p.push(`${accColor} ${accSel.value}`);
-  } else if (accSel && accSel.value) {
-    p.push(accSel.value);
+  // ★★★ 修正：基本情報のアクセサリー（characterAccessory）を使用 ★★★
+  const charAccSel = document.getElementById("characterAccessory");
+  const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
+  if (charAccSel && charAccSel.value) {
+    if (charAccColor && charAccColor !== "—") {
+      p.push(`${charAccColor} ${charAccSel.value}`);
+    } else {
+      p.push(charAccSel.value);
+    }
   }
 
   // NSFW体型（未選択対応）
@@ -1771,6 +1819,7 @@ function buildOneLearning(extraSeed = 0){
     caption  // ← 追加
   };
 }
+
 
 // ===== 学習用配分ルールに基づいたバッチ生成関数を追加 =====
 function buildBatchLearning(n) {
@@ -2473,6 +2522,9 @@ function initHairEyeAndAccWheels(){
   window.getTopColor    = initColorWheel("top",    35,  80, 55);
   window.getBottomColor = initColorWheel("bottom", 210, 70, 50);
   window.getShoesColor  = initColorWheel("shoes",  0,   0,  30);
+
+  // ★★★ 基本情報のアクセサリー色ホイールを追加 ★★★
+  window.getCharAccColor = initColorWheel("charAcc", 0, 75, 50);
 }
 
 // 学習モード専用の初期化関数を追加
@@ -2717,17 +2769,81 @@ function bindDictIO(){
   });
 }
 
-/* ===== アクセサリー ===== */
+/* ===== アクセサリー初期化の修正 ===== */
 function fillAccessorySlots(){
   const accs = normList(SFW.accessories || []);
   const options = `<option value="">（未選択）</option>` + accs.map(a=>`<option value="${a.tag}">${a.label || a.tag}</option>`).join("");
-  ["p_accA","p_accB","p_accC","learn_acc","pl_accSel"].forEach(id=>{
-    const sel = document.getElementById(id); if (sel) sel.innerHTML = options;
+  
+  // 全てのアクセサリーセレクトボックスを更新
+  ["p_accA","p_accB","p_accC","learn_acc","pl_accSel","characterAccessory"].forEach(id=>{
+    const sel = document.getElementById(id); 
+    if (sel) {
+      sel.innerHTML = options;
+      
+      // characterAccessoryの場合は色ホイールも初期化
+      if (id === "characterAccessory") {
+        setTimeout(() => {
+          initCharacterAccessory();
+        }, 100);
+      }
+    }
   });
 }
 
 
-/* ===== 単語モード 完全動作版（エラー修正済み） ===== */
+
+/* ===== 基本情報のアクセサリー設定（固定アクセ） ===== */
+function initCharacterAccessory() {
+  // アクセサリーセレクトボックスの初期化
+  const charAccSel = document.getElementById("characterAccessory");
+  if (charAccSel && SFW.accessories) {
+    const options = '<option value="">（未選択）</option>' + 
+      SFW.accessories.map(acc => `<option value="${acc.tag}">${acc.label || acc.tag}</option>`).join('');
+    charAccSel.innerHTML = options;
+  }
+  
+  // 色ホイールの初期化（黒色で開始）
+  window.getCharAccColor = initColorWheel("charAcc", 0, 75, 50);
+  
+  // セレクトボックス変更時の処理
+  if (charAccSel) {
+    charAccSel.addEventListener('change', function() {
+      updateCharAccDisplay();
+    });
+  }
+  
+  // 色変更時の処理
+  const satCharAcc = document.getElementById("sat_charAcc");
+  const litCharAcc = document.getElementById("lit_charAcc");
+  
+  if (satCharAcc) satCharAcc.addEventListener('input', updateCharAccDisplay);
+  if (litCharAcc) litCharAcc.addEventListener('input', updateCharAccDisplay);
+}
+
+function updateCharAccDisplay() {
+  // 学習モードの現在設定表示を更新
+  const accSel = document.getElementById("characterAccessory");
+  const accColor = window.getCharAccColor ? window.getCharAccColor() : "";
+  const currentAccDisplay = document.getElementById("currentAccDisplay");
+  
+  if (currentAccDisplay) {
+    if (accSel && accSel.value && accColor && accColor !== "—") {
+      currentAccDisplay.textContent = `${accColor} ${accSel.value}`;
+    } else if (accSel && accSel.value) {
+      currentAccDisplay.textContent = accSel.value;
+    } else {
+      currentAccDisplay.textContent = "未設定";
+    }
+  }
+}
+
+
+
+
+
+
+
+
 
 /* ===== 単語モード 完全動作版（エラー修正済み） ===== */
 
