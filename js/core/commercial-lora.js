@@ -304,3 +304,49 @@ if (originalInitMangaMode) {
 }
 
 console.log('✅ 商用LoRA機能が読み込まれました');
+
+// ========================================
+// デバッグ・手動初期化用関数
+// ========================================
+
+// 手動初期化関数（デバッグ用）
+window.initCommercialLoRAManual = function() {
+  console.log('🔧 手動初期化開始');
+  
+  // 要素の存在確認
+  const toggle = document.getElementById('mangaCommercialLoRAEnable');
+  const panel = document.getElementById('commercialLoRAPanel');
+  const items = document.getElementById('commercialLoRAItems');
+  
+  console.log('📋 要素確認結果:', {
+    toggle: !!toggle,
+    panel: !!panel,
+    items: !!items,
+    dict: !!window.COMMERCIAL_LORA_DICT,
+    manager: !!window.commercialLoRAManager
+  });
+  
+  if (toggle && panel && window.COMMERCIAL_LORA_DICT) {
+    window.commercialLoRAManager.setupEventListeners();
+    window.commercialLoRAManager.init();
+    console.log('✅ 手動初期化完了');
+  } else {
+    console.error('❌ 手動初期化失敗 - 必要な要素が不足');
+  }
+};
+
+// 状態確認用関数（デバッグ用）
+window.checkCommercialLoRAStatus = function() {
+  const status = {
+    manager_initialized: window.commercialLoRAManager?.initialized || false,
+    toggle_element: !!document.getElementById('mangaCommercialLoRAEnable'),
+    panel_element: !!document.getElementById('commercialLoRAPanel'),
+    items_element: !!document.getElementById('commercialLoRAItems'),
+    dict_loaded: !!window.COMMERCIAL_LORA_DICT,
+    dict_count: window.COMMERCIAL_LORA_DICT?.commercial_lora?.length || 0,
+    selected_count: window.commercialLoRAManager?.selectedLoRAs?.size || 0
+  };
+  
+  console.log('📊 商用LoRA状態:', status);
+  return status;
+};
