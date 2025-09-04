@@ -1591,6 +1591,9 @@ legend { display: none; }
 
 
 
+<!-- ================================ -->
+<!-- CSS追加コード -->
+<!-- ================================ -->
 /* styles.cssに追加 */
 /* 漫画モード専用の検索スタイル */
 .manga-search {
@@ -1644,14 +1647,106 @@ legend { display: none; }
   text-align: right;
 }
 
-/* 検索で非表示になった要素のスタイル */
-.manga-hidden {
-  display: none !important;
+/* 🆕 検索結果表示エリア */
+.manga-search-results {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  max-height: 300px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* カテゴリセクション全体が空の場合のスタイル */
-.manga-section-empty {
-  opacity: 0.3;
+.manga-search-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--line);
+}
+
+.manga-search-results-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.manga-results-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.manga-results-close:hover {
+  background: rgba(255, 100, 100, 0.1);
+  color: var(--accent-bad);
+}
+
+.manga-search-results-content {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+/* 検索結果の選択肢アイテム */
+.manga-result-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.manga-result-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-ok);
+}
+
+.manga-result-item.selected {
+  background: rgba(100, 150, 255, 0.1);
+  border-color: var(--accent-ok);
+}
+
+.manga-result-item input[type="radio"],
+.manga-result-item input[type="checkbox"] {
+  margin: 0;
+}
+
+.manga-result-item-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.manga-result-item-main {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.manga-result-item-category {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.manga-result-item-tag {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: monospace;
+  background: rgba(100, 150, 255, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
 }
 
 /* 検索ハイライト */
