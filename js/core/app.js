@@ -3078,7 +3078,7 @@ window.initWordModeItems = function() {
   console.log(`=== 初期化完了: ${successCount}カテゴリ、${totalProcessed}件処理 ===`);
 };
 
-// === 安全なアイテム作成関数 ===
+// === createWordModeItemSafe 関数の定義 ===
 function createWordModeItemSafe(item, category) {
   if (!item) return '';
   
@@ -3105,14 +3105,7 @@ function createWordModeItemSafe(item, category) {
     
     // 両方空の場合は除外
     if (!tag && !label) {
-      console.warn('タグとラベル両方が空のアイテム:', item);
       return '';
-    }
-    
-    // "なし"ラベルの特別処理
-    if (label === 'なし' && !tag) {
-      tag = 'none';
-      label = 'なし';
     }
     
     const showMini = (tag !== label && label && tag);
@@ -3135,6 +3128,195 @@ function createWordModeItemSafe(item, category) {
     return '';
   }
 }
+
+// === 修正版：漫画モード独自タグの統合（カテゴリをまとめる） ===
+function extractAndIntegrateMangaOnlyTagsFixed() {
+  console.log('=== 漫画モード独自タグの統合（修正版） ===');
+  
+  // 漫画モードの全タグを抽出
+  const mangaPanel = document.getElementById('panelManga');
+  if (!mangaPanel) return;
+  
+  const mangaOnlyTags = new Map();
+  
+  // すべての入力要素からタグと詳細情報を抽出
+  const allInputs = mangaPanel.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+  allInputs.forEach(input => {
+    if (!input.value || !input.value.trim()) return;
+    
+    const tag = input.value.trim();
+    const label = input.closest('label')?.textContent?.trim() || tag;
+    const containerId = input.closest('[id^="manga"], [id^="secondChar"], [id^="neg"]')?.id || 'unknown';
+    
+    // カテゴリを大まかに分類（細分化しすぎを避ける）
+    let categoryType = 'Other';
+    let categoryLabel = 'その他';
+    
+    if (containerId.includes('EmotionPrimary')) {
+      categoryType = 'SFW';
+      categoryLabel = '基本感情';
+    } else if (containerId.includes('EmotionDetail')) {
+      categoryType = 'SFW';  
+      categoryLabel = '詳細感情';
+    } else if (containerId.includes('EffectManga')) {
+      categoryType = 'SFW';
+      categoryLabel = '漫画エフェクト';
+    } else if (containerId.includes('EyeState')) {
+      categoryType = 'SFW';
+      categoryLabel = '目の状態';
+    } else if (containerId.includes('Gaze')) {
+      categoryType = 'SFW';
+      categoryLabel = '視線方向';
+    } else if (containerId.includes('MouthState')) {
+      categoryType = 'SFW';
+      categoryLabel = '口の状態';
+    } else if (containerId.includes('HandGesture')) {
+      categoryType = 'SFW';
+      categoryLabel = '手のジェスチャー';
+    } else if (containerId.includes('MovementAction')) {
+      categoryType = 'SFW';
+      categoryLabel = '動作アクション';
+    } else if (containerId.includes('PropsLight')) {
+      categoryType = 'SFW';
+      categoryLabel = '小物';
+    } else if (containerId.includes('NSFWParticipants')) {
+      categoryType = 'NSFW';
+      categoryLabel = '人数構成';
+    } else if (containerId.includes('NSFWAction2')) {
+      categoryType = 'NSFW';
+      categoryLabel = '射精・体液系';
+    } else if (containerId.includes('NSFWAction')) {
+      categoryType = 'NSFW';
+      categoryLabel = 'NSFWアクション';
+    } else if (containerId.includes('secondChar')) {
+      categoryType = 'SecondChar';
+      categoryLabel = '2人目キャラ';
+    } else if (containerId.includes('Neg')) {
+      categoryType = 'Negative';
+      categoryLabel = 'ネガティブ';
+    }
+    
+    mangaOnlyTags.set(tag, {
+      label: label.replace(tag, '').trim() || tag,
+      category: containerId,
+      categoryLabel,
+      type: categoryType
+    });
+  });
+  
+  console.log(`漫画モード独自タグ抽出: ${mangaOnlyTags.size}件`);
+  
+  // 単語モードに存在しないタグのみフィルタリング
+  const wordPanel = document.getElementById('panelWordMode');
+  const existingWordTags = new Set();
+  
+  if (wordPanel) {
+    wordPanel.querySelectorAll('.wm-item').forEach(item => {
+      const tag = item.dataset.en;
+      if (tag) existingWordTags.add(tag.trim());
+    });
+  }
+  
+  const newTags = new Map();
+  mangaOnlyTags.forEach((info, tag) => {
+    if (!existingWordTags.has(tag)) {
+      newTags.set(tag, info);
+    }
+  });
+  
+  console.log(`単語モードに追加すべきタグ: ${newTags.size}件`);
+  
+  // カテゴリごとにグループ化（大カテゴリでまとめる）
+  const categorizedTags = {};
+  newTags.forEach((info, tag) => {
+    const categoryKey = `${info.categoryLabel}（${info.type}）`;
+    if (!categorizedTags[categoryKey]) {
+      categorizedTags[categoryKey] = [];
+    }
+    categorizedTags[categoryKey].push({
+      tag: tag,
+      label: info.label,
+      originalCategory: info.category
+    });
+  });
+  
+  console.log(`大カテゴリ数: ${Object.keys(categorizedTags).length}`);
+  Object.entries(categorizedTags).forEach(([category, tags]) => {
+    console.log(`${category}: ${tags.length}件`);
+  });
+  
+  // 単語モードに追加
+  const wordModePanel = document.getElementById('panelWordMode');
+  if (!wordModePanel) return 0;
+  
+  // 漫画専用セクションを作成
+  let mangaSection = document.getElementById('wm-manga-section');
+  if (!mangaSection) {
+    mangaSection = document.createElement('section');
+    mangaSection.id = 'wm-manga-section';
+    mangaSection.className = 'wm-accordion';
+    mangaSection.innerHTML = '<h3 class="wm-acc-title">漫画モード専用タグ</h3>';
+    wordModePanel.appendChild(mangaSection);
+  }
+  
+  let addedCount = 0;
+  
+  // カテゴリごとにアコーディオンを作成
+  Object.entries(categorizedTags).forEach(([categoryName, tags]) => {
+    if (tags.length === 0) return;
+    
+    const htmlId = `manga-${categoryName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}`;
+    
+    // 既存チェック
+    if (document.getElementById(`wm-items-${htmlId}`)) return;
+    
+    const itemsHTML = tags.map(item => {
+      return createWordModeItemSafe({
+        tag: item.tag,
+        label: item.label || item.tag
+      }, htmlId);
+    }).filter(Boolean).join('');
+    
+    const html = `
+      <details class="wm-acc" data-cat="${htmlId}" open>
+        <summary>${categoryName} <span class="wm-count" id="wm-count-${htmlId}">${tags.length}</span></summary>
+        <div class="wm-items" id="wm-items-${htmlId}">${itemsHTML}</div>
+      </details>
+    `;
+    
+    mangaSection.insertAdjacentHTML('beforeend', html);
+    
+    // 実際に生成された要素数を確認
+    const generatedContainer = document.getElementById(`wm-items-${htmlId}`);
+    const actualGenerated = generatedContainer ? generatedContainer.querySelectorAll('.wm-item').length : 0;
+    
+    addedCount += actualGenerated;
+    console.log(`✅ 追加: ${categoryName} (${actualGenerated}件)`);
+  });
+  
+  console.log(`=== 漫画専用タグ統合完了: ${addedCount}件追加 ===`);
+  
+  // 最終統計
+  setTimeout(() => {
+    const newTotal = document.querySelectorAll('#panelWordMode .wm-item').length;
+    console.log(`🎯 統合後総数: ${newTotal}件`);
+    console.log(`目標1408件との差: ${Math.abs(1408 - newTotal)}件`);
+    
+    if (newTotal >= 1300) {
+      console.log('🎉 1300件を突破！漫画モードとの差が大幅に縮まりました');
+    }
+    
+    if (typeof window.updateSearchStats === 'function') {
+      window.updateSearchStats(newTotal, newTotal);
+    }
+  }, 200);
+  
+  return addedCount;
+}
+
+// 実行
+console.log('🔧 関数定義完了 - 統合処理を再実行...');
+extractAndIntegrateMangaOnlyTagsFixed();
 
 // === 安全なコンテナ生成関数 ===
 function createMissingContainersSafe(missingContainers) {
