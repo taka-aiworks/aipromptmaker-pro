@@ -2087,29 +2087,84 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- ================================ -->
 // manga-mode.jsに追加する関数群
 
+// カテゴリ名のマッピング（日本語表示用）
+const MANGA_CATEGORY_NAMES = {
+  'mangaEmotionPrimary': '基本感情',
+  'mangaEmotionDetail': '詳細感情',
+  'mangaExpressions': '表情（SFW）',
+  'mangaEffectManga': '補助表情',
+  'mangaEyeState': '目の状態',
+  'mangaGaze': '視線方向',
+  'mangaMouthState': '口の状態',
+  'mangaPose': 'ポーズ',
+  'mangaHandGesture': '手のジェスチャー',
+  'mangaMovementAction': '動作',
+  'mangaComposition': '構図',
+  'mangaView': '体の向き',
+  'mangaCameraView': 'カメラワーク',
+  'mangaPropsLight': '小物',
+  'mangaEffectMangaFX': '効果演出',
+  'mangaBackground': '背景',
+  'mangaLighting': 'ライティング',
+  'mangaArtStyle': '画風',
+  'mangaNSFWExpr': 'NSFW表情',
+  'mangaNSFWExpo': '露出度',
+  'mangaNSFWSitu': 'シチュエーション',
+  'mangaNSFWLight': 'NSFWライティング',
+  'mangaNSFWPose': 'NSFWポーズ',
+  'mangaNSFWAction': 'NSFWアクション',
+  'mangaNSFWAction2': '射精・体液系',
+  'mangaNSFWAcc': 'NSFWアクセサリー',
+  'mangaNSFWOutfit': 'NSFW衣装',
+  'mangaNSFWBody': '身体特徴',
+  'mangaNSFWNipples': '乳首表現',
+  'mangaNSFWUnderwear': '下着状態',
+  'mangaNSFWParticipants': '人数・構成'
+};
+
+
+
+<!-- ================================ -->
+<!-- JavaScript追加コード -->
+<!-- ================================ -->
+// manga-mode.jsに追加する関数群
+
 // 漫画モード検索機能の初期化
 function initMangaSearchSystem() {
   const searchInput = document.getElementById('manga-search-input');
   const clearBtn = document.getElementById('manga-search-clear');
+  const resultsArea = document.getElementById('manga-search-results');
+  const resultsClose = document.getElementById('manga-results-close');
   
-  if (!searchInput || !clearBtn) {
+  if (!searchInput || !clearBtn || !resultsArea) {
     console.warn('漫画モード検索要素が見つかりません');
     return;
   }
   
   // 検索イベントのバインド
   searchInput.addEventListener('input', (e) => {
-    performMangaSearch(e.target.value);
+    const searchTerm = e.target.value.trim();
+    if (searchTerm) {
+      performMangaSearch(searchTerm);
+      showMangaSearchResults();
+    } else {
+      hideMangaSearchResults();
+    }
   });
   
   searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      performMangaSearch(e.target.value);
+      const searchTerm = e.target.value.trim();
+      if (searchTerm) {
+        performMangaSearch(searchTerm);
+        showMangaSearchResults();
+      }
     }
   });
   
   clearBtn.addEventListener('click', clearMangaSearch);
+  resultsClose.addEventListener('click', hideMangaSearchResults);
   
   // 初期統計表示
   setTimeout(updateMangaSearchStats, 100);
@@ -2117,40 +2172,186 @@ function initMangaSearchSystem() {
   console.log('✅ 漫画モード検索システム初期化完了');
 }
 
-// 漫画モード検索実行
+
+// 検索結果表示
+function showMangaSearchResults() {
+  const resultsArea = document.getElementById('manga-search-results');
+  if (resultsArea) {
+    resultsArea.style.display = 'block';
+  }
+}
+
+
+// 検索結果非表示
+function hideMangaSearchResults() {
+  const resultsArea = document.getElementById('manga-search-results');
+  if (resultsArea) {
+    resultsArea.style.display = 'none';
+  }
+}
+
+
+
+// 漫画モード検索実行（結果表示版）
 function performMangaSearch(searchTerm) {
   const mangaPanel = document.getElementById('panelManga');
   if (!mangaPanel) return;
   
-  // 検索対象：ラジオボタン・チェックボックスのラベル要素
-  const allItems = mangaPanel.querySelectorAll('.chip');
-  let visibleCount = 0;
+  const results = [];
+  const search = searchTerm.toLowerCase();
   
-  allItems.forEach(item => {
-    const text = (item.textContent || '').toLowerCase();
-    const search = searchTerm.toLowerCase();
-    const match = !search || text.includes(search);
+  // 全ての選択肢を検索
+  const allContainers = mangaPanel.querySelectorAll('[id^="manga"], [id^="secondChar"]');
+  
+  allContainers.forEach(container => {
+    const containerId = container.id;
+    const categoryName = MANGA_CATEGORY_NAMES[containerId] || containerId;
     
-    // 表示/非表示の切り替え
-    item.classList.toggle('manga-hidden', !match);
-    if (match) visibleCount++;
+    const chips = container.querySelectorAll('.chip');
+    chips.forEach(chip => {
+      const input = chip.querySelector('input');
+      const text = (chip.textContent || '').toLowerCase();
+      
+      if (text.includes(search) && input) {
+        const labelText = chip.textContent.replace(/\s+/g, ' ').trim();
+        const inputValue = input.value;
+        
+        results.push({
+          containerId,
+          categoryName,
+          labelText,
+          inputValue,
+          inputType: input.type,
+          inputName: input.name,
+          element: input,
+          chip: chip
+        });
+      }
+    });
   });
   
-  // カテゴリセクションの状態更新
-  updateMangaCategorySections();
-  updateMangaSearchStats(visibleCount, allItems.length);
+  displayMangaSearchResults(results, searchTerm);
+  updateMangaSearchStats(results.length, null);
   
-  console.log(`🔍 漫画モード検索: "${searchTerm}" - ${visibleCount}件ヒット`);
+  console.log(`🔍 漫画モード検索: "${searchTerm}" - ${results.length}件ヒット`);
 }
+
+// 検索結果の表示
+function displayMangaSearchResults(results, searchTerm) {
+  const resultsContent = document.getElementById('manga-search-results-content');
+  const resultsCount = document.getElementById('manga-results-count');
+  
+  if (!resultsContent || !resultsCount) return;
+  
+  resultsCount.textContent = results.length;
+  
+  if (results.length === 0) {
+    resultsContent.innerHTML = '<div class="manga-no-results">検索結果がありません</div>';
+    return;
+  }
+  
+  // 検索結果をカテゴリごとにグループ化
+  const groupedResults = {};
+  results.forEach(result => {
+    if (!groupedResults[result.categoryName]) {
+      groupedResults[result.categoryName] = [];
+    }
+    groupedResults[result.categoryName].push(result);
+  });
+  
+  let html = '';
+  Object.entries(groupedResults).forEach(([categoryName, categoryResults]) => {
+    html += `<div class="manga-result-category">
+      <div class="manga-result-category-title">${categoryName} (${categoryResults.length}件)</div>`;
+    
+    categoryResults.forEach(result => {
+      const isChecked = result.element.checked ? 'selected' : '';
+      const highlightedText = highlightSearchTerm(result.labelText, searchTerm);
+      
+      html += `
+        <div class="manga-result-item ${isChecked}" data-container-id="${result.containerId}" data-input-value="${result.inputValue}">
+          <input type="${result.inputType}" ${result.element.checked ? 'checked' : ''} data-original-element="true">
+          <div class="manga-result-item-label">
+            <div class="manga-result-item-main">${highlightedText}</div>
+            <div class="manga-result-item-tag">${result.inputValue}</div>
+          </div>
+        </div>`;
+    });
+    
+    html += '</div>';
+  });
+  
+  resultsContent.innerHTML = html;
+  
+  // 検索結果のクリックイベントをバインド
+  bindMangaSearchResultEvents();
+}
+
+// 検索結果のイベントバインド
+function bindMangaSearchResultEvents() {
+  const resultsContent = document.getElementById('manga-search-results-content');
+  if (!resultsContent) return;
+  
+  resultsContent.addEventListener('click', (e) => {
+    const resultItem = e.target.closest('.manga-result-item');
+    if (!resultItem) return;
+    
+    const containerId = resultItem.dataset.containerId;
+    const inputValue = resultItem.dataset.inputValue;
+    const container = document.getElementById(containerId);
+    
+    if (!container) return;
+    
+    // 元の入力要素を見つけて操作
+    const originalInput = container.querySelector(`input[value="${inputValue}"]`);
+    if (!originalInput) return;
+    
+    // ラジオボタンの場合は他を未選択に
+    if (originalInput.type === 'radio') {
+      const radioGroup = container.querySelectorAll(`input[name="${originalInput.name}"]`);
+      radioGroup.forEach(radio => {
+        radio.checked = false;
+        radio.closest('.chip')?.classList.remove('selected');
+      });
+    }
+    
+    // 選択状態を切り替え
+    originalInput.checked = !originalInput.checked;
+    originalInput.closest('.chip')?.classList.toggle('selected', originalInput.checked);
+    
+    // 検索結果の表示も更新
+    resultItem.classList.toggle('selected', originalInput.checked);
+    const resultInput = resultItem.querySelector('input');
+    if (resultInput) resultInput.checked = originalInput.checked;
+    
+    // プロンプト更新
+    if (typeof updateMangaOutput === 'function') {
+      updateMangaOutput();
+    }
+  });
+}
+
 
 // 漫画モード検索クリア
 function clearMangaSearch() {
   const searchInput = document.getElementById('manga-search-input');
   if (searchInput) {
     searchInput.value = '';
-    performMangaSearch(''); // 空文字で全表示
+    hideMangaSearchResults();
+    updateMangaSearchStats();
   }
 }
+
+
+// 検索語をハイライト
+function highlightSearchTerm(text, searchTerm) {
+  if (!searchTerm) return text;
+  
+  const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(regex, '<span class="manga-search-highlight">$1</span>');
+}
+
+
 
 // カテゴリセクションの状態更新
 function updateMangaCategorySections() {
@@ -2172,25 +2373,27 @@ function updateMangaSearchStats(visible = null, total = null) {
   
   if (!statsElement || !totalCountElement) return;
   
-  if (visible === null || total === null) {
+  if (total === null) {
     const mangaPanel = document.getElementById('panelManga');
     if (mangaPanel) {
       const allItems = mangaPanel.querySelectorAll('.chip');
-      const visibleItems = mangaPanel.querySelectorAll('.chip:not(.manga-hidden)');
       total = allItems.length;
-      visible = visibleItems.length;
     } else {
       total = 0;
-      visible = 0;
     }
   }
   
   totalCountElement.textContent = total;
-  statsElement.innerHTML = `${visible}件 / ${total}件`;
   
-  if (visible < total) {
-    statsElement.style.color = 'var(--accent-warn)';
+  if (visible !== null) {
+    statsElement.innerHTML = `検索: ${visible}件 / 全 ${total}件`;
+    if (visible < total) {
+      statsElement.style.color = 'var(--accent-warn)';
+    } else {
+      statsElement.style.color = 'var(--text-muted)';
+    }
   } else {
+    statsElement.innerHTML = `全 ${total}件`;
     statsElement.style.color = 'var(--text-muted)';
   }
 }
@@ -2198,3 +2401,4 @@ function updateMangaSearchStats(visible = null, total = null) {
 // 漫画モード検索機能をグローバルに公開
 window.performMangaSearch = performMangaSearch;
 window.clearMangaSearch = clearMangaSearch;
+
