@@ -288,19 +288,23 @@ class CommercialLoRAManager {
 // グローバルインスタンス
 window.commercialLoRAManager = new CommercialLoRAManager();
 
-// 既存の漫画モード初期化に統合
-const originalInitMangaMode = window.initMangaMode;
-if (originalInitMangaMode) {
-  window.initMangaMode = function() {
-    originalInitMangaMode();
-    
-    // 商用LoRAマネージャーの準備
-    setTimeout(() => {
-      if (window.COMMERCIAL_LORA_DICT && document.getElementById('mangaCommercialLoRAEnable')) {
-        window.commercialLoRAManager.setupEventListeners();
-      }
-    }, 500);
-  };
+// 既存の漫画モード初期化に統合（修正版 - 重複宣言を回避）
+if (!window.mangaModeHooked) {
+  window.mangaModeHooked = true;
+  
+  const originalInitMangaMode = window.initMangaMode;
+  if (originalInitMangaMode) {
+    window.initMangaMode = function() {
+      originalInitMangaMode();
+      
+      // 商用LoRAマネージャーの準備
+      setTimeout(() => {
+        if (window.COMMERCIAL_LORA_DICT && document.getElementById('mangaCommercialLoRAEnable')) {
+          window.commercialLoRAManager.setupEventListeners();
+        }
+      }, 500);
+    };
+  }
 }
 
 console.log('✅ 商用LoRA機能が読み込まれました');
