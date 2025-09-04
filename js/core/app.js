@@ -2865,272 +2865,241 @@ function initCollapsibleCategories() {
   });
 }
 
-// 単語モードの完全修正コード（ピンポイント）
-// app.js の initWordModeItems 関数を完全に置き換えてください
+// 1. まず app.js の構文エラーを修正してください
+// app.js の 4367行目付近の不正な } を削除
+
+// 2. 以下のコードを app.js の initWordModeItems 関数を完全に置き換えてください
 
 window.initWordModeItems = function() {
-  console.log('=== 単語モード初期化開始（完全版）===');
+  console.log('=== 単語モード完全修正版初期化開始 ===');
   
-  // 実際の辞書内容を確認
-  const allSFWKeys = Object.keys(SFW || {});
-  const allNSFWKeys = Object.keys(NSFW || {});
-  console.log('利用可能なSFWキー:', allSFWKeys);
-  console.log('利用可能なNSFWキー:', allNSFWKeys);
+  // HTMLコンテナとの正確なマッピング（実際のHTMLに合わせて調整）
+  const SFW_MAPPING = {
+    // 基本カテゴリ（HTMLで確認済み）
+    'hair_style': 'hair-style',
+    'hair_length': 'hair-length', 
+    'bangs_style': 'bangs-style',
+    'skin_features': 'skin-features',
+    'eyes': 'eyes',
+    'face': 'face',
+    'art_style': 'art-style',
+    'background': 'background',
+    'pose': 'pose',
+    'composition': 'composition',
+    'view': 'view',
+    'accessories': 'accessories',
+    'age': 'age',
+    'gender': 'gender',
+    'body_type': 'body-type',
+    'height': 'height',
+    'colors': 'color', // colors → color にマッピング
+    
+    // 特別マッピング（HTML IDが異なるもの）
+    'expressions': 'expression-sfw', // expressions → expression-sfw
+    'lighting': 'lighting-sfw',     // lighting → lighting-sfw
+    'outfit': 'outfit-sfw',         // outfit → outfit-sfw
+    
+    // 漫画カテゴリ（HTMLで確認済み）
+    'worldview': 'worldview',
+    'emotion_primary': 'emotion-primary',
+    'emotion_detail': 'emotion-detail', 
+    'mouth_state': 'mouth-state',
+    'eye_state': 'eye-state',
+    'gaze': 'gaze',
+    'pose_manga': 'pose-manga',
+    'hand_gesture': 'hand-gesture',
+    'movement_action': 'movement-action',
+    'props_light': 'props-light',
+    'effect_manga': 'effect-manga'
+  };
   
-  // SFW辞書のすべてのカテゴリを動的にマップ（実際に存在するもののみ）
-  const sfwCategories = {};
-  allSFWKeys.forEach(key => {
-    const items = SFW[key];
-    if (Array.isArray(items) && items.length > 0) {
-      // キー名をHTML IDに変換（アンダースコアをハイフンに）
-      const htmlId = key.replace(/_/g, '-');
-      sfwCategories[htmlId] = items;
-    }
-  });
+  const NSFW_MAPPING = {
+    'expression': 'expression-nsfw',
+    'exposure': 'exposure',      // HTMLにコンテナあり
+    'underwear': 'underwear-nsfw', 
+    'outfit': 'outfit-nsfw',
+    'situation': 'situation',    // HTMLにコンテナあり  
+    'lighting': 'lighting-nsfw',
+    'pose': 'pose-nsfw',
+    'accessory': 'accessory-nsfw',
+    'body': 'body-nsfw',
+    'nipples': 'nipple-nsfw',    // nipples → nipple-nsfw
+    
+    // 新しいNSFWカテゴリ
+    'action': 'action-nsfw',
+    'action2': 'action2-nsfw', 
+    'participants': 'participants'
+  };
   
-  // NSFW辞書のすべてのカテゴリを動的にマップ（実際に存在するもののみ）
-  const nsfwCategories = {};
-  allNSFWKeys.forEach(key => {
-    const items = NSFW[key];
-    if (Array.isArray(items) && items.length > 0) {
-      // NSFWは接尾辞を付けて区別
-      const htmlId = key.replace(/_/g, '-') + '-nsfw';
-      nsfwCategories[htmlId] = items;
-    }
-  });
-  
-  console.log(`SFWカテゴリ: ${Object.keys(sfwCategories).length}個`);
-  console.log(`NSFWカテゴリ: ${Object.keys(nsfwCategories).length}個`);
-  
-  // 各カテゴリにアイテムを読み込み
   let totalItems = 0;
-  let successCategories = 0;
+  let successCount = 0;
+  let missingContainers = [];
   
   // SFWカテゴリの処理
-  Object.entries(sfwCategories).forEach(([htmlId, items]) => {
-    const container = document.getElementById(`wm-items-${htmlId}`);
-    const count = document.getElementById(`wm-count-${htmlId}`);
-    
-    try {
-      const itemsHtml = items.map(item => createWordModeItem(item, htmlId)).join('');
-      container.innerHTML = itemsHtml;
-      if (count) count.textContent = items.length;
-      totalItems += items.length;
-      successCategories++;
-      console.log(`✓ SFW ${htmlId}: ${items.length}件`);
-    } catch (error) {
-      console.warn(`SFW ${htmlId} でエラー:`, error);
+  Object.entries(SFW_MAPPING).forEach(([dictKey, htmlId]) => {
+    const items = SFW[dictKey];
+    if (Array.isArray(items) && items.length > 0) {
+      const container = document.getElementById(`wm-items-${htmlId}`);
+      const counter = document.getElementById(`wm-count-${htmlId}`);
+      
+      if (container) {
+        try {
+          container.innerHTML = items.map(item => createWordModeItem(item, htmlId)).join('');
+          if (counter) counter.textContent = items.length;
+          totalItems += items.length;
+          successCount++;
+          console.log(`✓ SFW ${dictKey} → ${htmlId}: ${items.length}件`);
+        } catch (error) {
+          console.warn(`SFW ${dictKey} でエラー:`, error);
+        }
+      } else {
+        missingContainers.push({
+          dict: 'SFW',
+          key: dictKey,
+          htmlId: htmlId,
+          count: items.length
+        });
+        console.log(`⚠️ SFW ${dictKey} → ${htmlId}: コンテナなし（${items.length}件）`);
+      }
     }
   });
   
   // NSFWカテゴリの処理
-  Object.entries(nsfwCategories).forEach(([htmlId, items]) => {
-    const container = document.getElementById(`wm-items-${htmlId}`);
-    const count = document.getElementById(`wm-count-${htmlId}`);
-    
-    try {
-      const itemsHtml = items.map(item => createWordModeItem(item, htmlId)).join('');
-      container.innerHTML = itemsHtml;
-      if (count) count.textContent = items.length;
-      totalItems += items.length;
-      successCategories++;
-      console.log(`✓ NSFW ${htmlId}: ${items.length}件`);
-    } catch (error) {
-      console.warn(`NSFW ${htmlId} でエラー:`, error);
+  Object.entries(NSFW_MAPPING).forEach(([dictKey, htmlId]) => {
+    const items = NSFW[dictKey];
+    if (Array.isArray(items) && items.length > 0) {
+      const container = document.getElementById(`wm-items-${htmlId}`);
+      const counter = document.getElementById(`wm-count-${htmlId}`);
+      
+      if (container) {
+        try {
+          container.innerHTML = items.map(item => createWordModeItem(item, htmlId)).join('');
+          if (counter) counter.textContent = items.length;
+          totalItems += items.length; 
+          successCount++;
+          console.log(`✓ NSFW ${dictKey} → ${htmlId}: ${items.length}件`);
+        } catch (error) {
+          console.warn(`NSFW ${dictKey} でエラー:`, error);
+        }
+      } else {
+        missingContainers.push({
+          dict: 'NSFW',
+          key: dictKey, 
+          htmlId: htmlId,
+          count: items.length
+        });
+        console.log(`⚠️ NSFW ${dictKey} → ${htmlId}: コンテナなし（${items.length}件）`);
+      }
     }
   });
   
-  // 色カテゴリの処理（複数のIDパターンを試す）
-  const colors = SFW.colors || [
-    {tag: 'white', label: '白'}, {tag: 'black', label: '黒'},
-    {tag: 'red', label: '赤'}, {tag: 'blue', label: '青'},
-    {tag: 'green', label: '緑'}, {tag: 'yellow', label: '黄'},
-    {tag: 'pink', label: 'ピンク'}, {tag: 'purple', label: '紫'},
-    {tag: 'orange', label: 'オレンジ'}, {tag: 'brown', label: '茶'}
-  ];
-  
-  // 色コンテナを複数のIDで試す
-  const colorContainerIds = ['wm-items-color', 'wm-items-colors'];
-  let colorContainer = null;
-  let colorCount = null;
-  
-  for (const id of colorContainerIds) {
-    colorContainer = document.getElementById(id);
-    if (colorContainer) {
-      colorCount = document.getElementById(id.replace('items', 'count'));
-      break;
-    }
+  // 不足コンテナがある場合は動的生成
+  if (missingContainers.length > 0) {
+    console.log(`=== 不足コンテナを動的生成: ${missingContainers.length}個 ===`);
+    createMissingWordModeContainers(missingContainers);
   }
   
-  if (colorContainer) {
-    try {
-      const colorHtml = colors.map(item => createWordModeColorItem(item)).join('');
-      colorContainer.innerHTML = colorHtml;
-      if (colorCount) colorCount.textContent = colors.length;
-      totalItems += colors.length;
-      console.log(`✓ 色カテゴリ: ${colors.length}件`);
-    } catch (error) {
-      console.warn('色カテゴリでエラー:', error);
-    }
-  } else {
-    console.log(`⚠️ 色カテゴリ: コンテナが見つかりません（${colors.length}件のデータあり）`);
-  }
+  console.log(`=== 初期化完了: ${successCount}カテゴリ、${totalItems}アイテム ===`);
   
-  console.log(`=== 初期化完了: ${successCategories}カテゴリ、${totalItems}アイテム ===`);
-  
-  // 統計表示を更新
+  // 統計更新
   setTimeout(() => {
-    const actualItems = document.querySelectorAll('#panelWordMode .wm-item').length;
+    const actualCount = document.querySelectorAll('#panelWordMode .wm-item').length;
     if (typeof window.updateSearchStats === 'function') {
-      window.updateSearchStats(actualItems, actualItems);
+      window.updateSearchStats(actualCount, actualCount);
     }
-    console.log(`実際のDOM要素数: ${actualItems}`);
-    
-    // 不足要素を補うための代替処理
-    if (actualItems < totalItems) {
-      console.log(`⚠️ 一部要素が表示されていません（期待値: ${totalItems}, 実際: ${actualItems}）`);
-      fallbackContainerCreation();
-    }
+    console.log(`実際のDOM要素数: ${actualCount}`);
   }, 100);
-  
-  // 不足しているHTMLコンテナを自動生成（オプション）
-  generateMissingContainers();
 };
 
-// フォールバック: 不足コンテナを動的作成
-function fallbackContainerCreation() {
-  const missingData = [];
+// 不足コンテナの動的生成関数
+function createMissingWordModeContainers(missingContainers) {
+  const sfwSection = document.getElementById('wm-accordion-sfw');
+  const nsfwSection = document.getElementById('wm-accordion-nsfw');
   
-  // SFW辞書の不足分をチェック
-  Object.keys(SFW || {}).forEach(key => {
-    const items = SFW[key];
-    if (Array.isArray(items) && items.length > 0) {
-      const patterns = [key, key.replace(/_/g, '-')];
-      let found = false;
-      for (const pattern of patterns) {
-        if (document.getElementById(`wm-items-${pattern}`)) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        missingData.push({ key, items, type: 'sfw' });
-      }
-    }
-  });
-  
-  // NSFW辞書の不足分をチェック
-  Object.keys(NSFW || {}).forEach(key => {
-    const items = NSFW[key];
-    if (Array.isArray(items) && items.length > 0) {
-      const patterns = [key + '-nsfw', key.replace(/_/g, '-') + '-nsfw'];
-      let found = false;
-      for (const pattern of patterns) {
-        if (document.getElementById(`wm-items-${pattern}`)) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        missingData.push({ key, items, type: 'nsfw' });
-      }
-    }
-  });
-  
-  if (missingData.length > 0) {
-    console.log(`フォールバック: ${missingData.length}個の不足カテゴリを検出`);
-    
-    // 動的にコンテナを作成
-    const wordModePanel = document.getElementById('panelWordMode');
-    if (wordModePanel) {
-      const fallbackSection = document.createElement('div');
-      fallbackSection.id = 'wm-fallback-section';
-      fallbackSection.innerHTML = '<h3>追加カテゴリ（動的生成）</h3>';
-      
-      missingData.forEach(({ key, items, type }) => {
-        const htmlId = key.replace(/_/g, '-') + (type === 'nsfw' ? '-nsfw' : '');
-        const label = convertKeyToLabel(key) + (type === 'nsfw' ? '（NSFW）' : '');
-        
-        const categoryHtml = `
-          <details class="wm-acc" data-cat="${htmlId}">
-            <summary>${label} <span class="wm-count" id="wm-count-${htmlId}">${items.length}</span></summary>
-            <div class="wm-items" id="wm-items-${htmlId}">
-              ${items.map(item => createWordModeItem(item, htmlId)).join('')}
-            </div>
-          </details>
-        `;
-        
-        fallbackSection.innerHTML += categoryHtml;
-        console.log(`✓ フォールバック作成: ${label} (${items.length}件)`);
-      });
-      
-      wordModePanel.appendChild(fallbackSection);
-      
-      // 統計を再更新
-      setTimeout(() => {
-        const newActualItems = document.querySelectorAll('#panelWordMode .wm-item').length;
-        if (typeof window.updateSearchStats === 'function') {
-          window.updateSearchStats(newActualItems, newActualItems);
-        }
-        console.log(`フォールバック後のDOM要素数: ${newActualItems}`);
-      }, 50);
-    }
+  if (!sfwSection || !nsfwSection) {
+    console.error('アコーディオンセクションが見つかりません');
+    return;
   }
+  
+  // ラベルマッピング
+  const labelMap = {
+    'outfit': '服装（SFW）',
+    'skin_body': '体型・特徴', 
+    'exposure': '露出',
+    'situation': 'シチュエーション',
+    'nipples': '乳首表現',
+    'action': 'NSFWアクション',
+    'action2': '射精・体液系',
+    'participants': '人数・構成'
+  };
+  
+  missingContainers.forEach(missing => {
+    const isNSFW = missing.dict === 'NSFW';
+    const section = isNSFW ? nsfwSection : sfwSection;
+    const label = labelMap[missing.key] || missing.key;
+    
+    // HTMLを動的生成
+    const html = `
+      <details class="wm-acc" data-cat="${missing.htmlId}">
+        <summary>${label} <span class="wm-count" id="wm-count-${missing.htmlId}">${missing.count}</span></summary>
+        <div class="wm-items" id="wm-items-${missing.htmlId}"></div>
+      </details>
+    `;
+    
+    section.insertAdjacentHTML('beforeend', html);
+    
+    // データを追加
+    const dictData = isNSFW ? NSFW[missing.key] : SFW[missing.key];
+    const newContainer = document.getElementById(`wm-items-${missing.htmlId}`);
+    if (newContainer && dictData) {
+      newContainer.innerHTML = dictData.map(item => createWordModeItem(item, missing.htmlId)).join('');
+      console.log(`✓ 動的生成: ${missing.dict} ${missing.key} → ${missing.htmlId} (${missing.count}件)`);
+    }
+  });
 }
-};
 
-// 不足コンテナの自動生成関数
-function generateMissingContainers() {
-  const wordModePanel = document.getElementById('panelWordMode');
-  if (!wordModePanel) return;
+// createWordModeItem関数（改良版）
+function createWordModeItem(item, category) {
+  if (!item) return '';
   
-  // 実際に辞書にあるがHTMLコンテナが存在しないカテゴリを検出
-  const missingCategories = [];
+  const tag = String(item.tag || '').trim();
+  const label = String(item.label || item.ja || item.tag || '').trim();
+  const level = item.level || '';
   
-  // SFW辞書をチェック
-  Object.keys(SFW || {}).forEach(key => {
-    const items = SFW[key];
-    if (Array.isArray(items) && items.length > 0) {
-      const htmlId = key.replace(/_/g, '-');
-      const container = document.getElementById(`wm-items-${htmlId}`);
-      if (!container) {
-        missingCategories.push({
-          id: htmlId,
-          label: convertKeyToLabel(key),
-          type: 'sfw',
-          count: items.length
-        });
-      }
-    }
-  });
+  if (!tag || !label) return '';
   
-  // NSFW辞書をチェック
-  Object.keys(NSFW || {}).forEach(key => {
-    const items = NSFW[key];
-    if (Array.isArray(items) && items.length > 0) {
-      const htmlId = key.replace(/_/g, '-') + '-nsfw';
-      const container = document.getElementById(`wm-items-${htmlId}`);
-      if (!container) {
-        missingCategories.push({
-          id: htmlId,
-          label: convertKeyToLabel(key) + '（NSFW）',
-          type: 'nsfw',
-          count: items.length
-        });
-      }
-    }
-  });
+  const showMini = (tag !== label);
+  const levelBadge = level && level !== 'L1' ? ` <span class="level-badge">${level}</span>` : '';
   
-  if (missingCategories.length > 0) {
-    console.log(`不足コンテナ: ${missingCategories.length}個`);
-    missingCategories.forEach(cat => {
-      console.log(`  ${cat.label} (${cat.id}): ${cat.count}件`);
-    });
-    
-    // 必要に応じて動的にコンテナを生成
-    // createMissingContainers(missingCategories);
-  }
+  return `
+    <button type="button" class="wm-item" 
+            data-en="${tag}" 
+            data-jp="${label}" 
+            data-cat="${category}"
+            title="${tag}${level ? ' (' + level + ')' : ''}">
+      <span class="wm-jp">${label}${levelBadge}</span>
+      ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
+      <span class="wm-actions">
+        <button class="wm-copy-en" type="button" title="英語のみコピー">EN</button>
+        <button class="wm-copy-both" type="button" title="日本語(英語)コピー">BOTH</button>
+      </span>
+    </button>
+  `;
 }
+
+// 即座に実行（辞書が既に読み込まれている場合）
+if (typeof SFW === 'object' && typeof NSFW === 'object') {
+  console.log('辞書が利用可能です。単語モードを初期化中...');
+  setTimeout(() => {
+    if (window.initWordModeItems) {
+      window.initWordModeItems();
+    }
+  }, 500);
+}
+
+console.log('✅ 単語モード完全修正版を読み込みました');
+console.log('手動実行: window.initWordModeItems()');
+   
 
 // キー名を表示用ラベルに変換
 function convertKeyToLabel(key) {
@@ -3286,16 +3255,6 @@ console.log('✅ 単語モード完全修正版を読み込みました');
 console.log('実行方法:');
 console.log('1. window.initWordModeItems() - 辞書を完全読み込み');
 console.log('2. window.debugFullDictionary() - 辞書内容の完全確認');
-
-// 自動実行（辞書が読み込まれている場合）
-if (typeof SFW === 'object' && typeof NSFW === 'object') {
-  console.log('辞書が利用可能です。自動実行中...');
-  setTimeout(() => {
-    if (window.initWordModeItems) {
-      window.initWordModeItems();
-    }
-  }, 100);
-}
 
 // 不足コンテナの自動生成関数
 function generateMissingContainers() {
