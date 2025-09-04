@@ -3041,7 +3041,7 @@ function initWordMode() {
   window.performWordModeSearch = performSearch;
   window.clearWordModeSearch = clearSearch;
   
-  // 既存のinitWordModeItems関数を上書き
+// 既存のinitWordModeItems関数を上書き
 window.initWordModeItems = function() {
   console.log('=== 単語モード データ読み込み開始（修正版） ===');
   console.log('SFW:', window.SFW);
@@ -3135,7 +3135,8 @@ window.initWordModeItems = function() {
     'action2': 'action2-nsfw',
     'participants': 'participants'
   };
-   // アイテム作成関数（既存のものを使用）
+  
+  // アイテム作成関数（既存のものを使用）
   function createWordModeItem(item, category) {
     if (!item) return '';
     
@@ -3289,23 +3290,95 @@ window.initWordModeItems = function() {
   }
 };
 
-// デバッグ用：実際のHTML IDを確認する関数
-window.debugWordModeIds = function() {
-  console.log('=== 実際のHTML ID確認 ===');
-  const containers = document.querySelectorAll('#panelWordMode [id^="wm-items-"]');
-  console.log(`wm-items- で始まるコンテナ数: ${containers.length}`);
-  containers.forEach(container => {
-    const id = container.id.replace('wm-items-', '');
-    console.log(`  HTML ID: wm-items-${id}`);
+// 完全なデバッグ版：辞書の中身とHTMLの両方を確認
+window.completeDebugWordMode = function() {
+  console.log('=== 完全デバッグ：辞書とHTMLの照合 ===');
+  
+  // 1. 辞書の中身を確認
+  console.log('--- SFW辞書の実際の内容 ---');
+  if (window.SFW) {
+    Object.entries(window.SFW).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        console.log(`SFW.${key}: ${value.length}件`);
+        if (value.length > 0) {
+          console.log(`  例: ${JSON.stringify(value[0])}`);
+        }
+      }
+    });
+  }
+  
+  console.log('--- NSFW辞書の実際の内容 ---');
+  if (window.NSFW) {
+    Object.entries(window.NSFW).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        console.log(`NSFW.${key}: ${value.length}件`);
+        if (value.length > 0) {
+          console.log(`  例: ${JSON.stringify(value[0])}`);
+        }
+      }
+    });
+  }
+  
+  // 2. HTMLに存在するが辞書に存在しないIDを特定
+  console.log('--- HTMLにあるが辞書にない項目 ---');
+  const htmlIds = Array.from(document.querySelectorAll('#panelWordMode [id^="wm-items-"]'))
+    .map(el => el.id.replace('wm-items-', ''));
+  
+  const sfwKeys = window.SFW ? Object.keys(window.SFW) : [];
+  const nsfwKeys = window.NSFW ? Object.keys(window.NSFW) : [];
+  
+  htmlIds.forEach(htmlId => {
+    // HTMLのID（ハイフン）から辞書キー（アンダースコア）への逆変換を試す
+    const possibleDictKeys = [
+      htmlId.replace(/-/g, '_'),           // hair-style → hair_style
+      htmlId.replace(/-sfw$/, ''),         // expression-sfw → expression
+      htmlId.replace(/-nsfw$/, ''),        // expression-nsfw → expression
+      htmlId.replace(/s$/, ''),            // colors → color (複数→単数)
+      htmlId + 's',                        // color → colors (単数→複数)
+      htmlId
+    ];
+    
+    let found = false;
+    for (const dictKey of possibleDictKeys) {
+      if (sfwKeys.includes(dictKey) || nsfwKeys.includes(dictKey)) {
+        found = true;
+        break;
+      }
+    }
+    
+    if (!found) {
+      console.log(`❌ HTMLにあるが辞書にない: wm-items-${htmlId}`);
+    }
   });
   
-  const counters = document.querySelectorAll('#panelWordMode [id^="wm-count-"]');
-  console.log(`wm-count- で始まるカウンター数: ${counters.length}`);
-  counters.forEach(counter => {
-    const id = counter.id.replace('wm-count-', '');
-    console.log(`  Counter ID: wm-count-${id}`);
+  // 3. 辞書にあるがHTMLにない項目を特定
+  console.log('--- 辞書にあるがHTMLにない項目 ---');
+  [...sfwKeys, ...nsfwKeys].forEach(dictKey => {
+    const possibleHtmlIds = [
+      dictKey.replace(/_/g, '-'),          // hair_style → hair-style
+      dictKey + '-sfw',                    // expression → expression-sfw
+      dictKey + '-nsfw',                   // expression → expression-nsfw
+      dictKey.replace(/s$/, ''),           // colors → color
+      dictKey + 's',                       // color → colors
+      dictKey
+    ];
+    
+    let found = false;
+    for (const htmlId of possibleHtmlIds) {
+      if (htmlIds.includes(htmlId)) {
+        found = true;
+        break;
+      }
+    }
+    
+    if (!found) {
+      console.log(`❌ 辞書にあるがHTMLにない: ${dictKey}`);
+    }
   });
 };
+
+// デバッグ実行
+window.completeDebugWordMode();
 
 // 即座に実行してテスト
 console.log('単語モード修正パッチ適用完了');
@@ -3315,7 +3388,6 @@ setTimeout(() => {
     window.initWordModeItems();
   }
 }, 1000);
-
 
 
    
