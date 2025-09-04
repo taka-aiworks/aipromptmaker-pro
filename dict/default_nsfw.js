@@ -71,7 +71,9 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "tongue_heart",     "ja": "ハート舌", "level": "L2" },
     
       { "tag": "biting_lip_pain",  "ja": "苦痛に唇を噛む", "level": "L3" },
-      { "tag": "forced_smile",     "ja": "無理やりの笑顔", "level": "L3" }
+      { "tag": "forced_smile",     "ja": "無理やりの笑顔", "level": "L3" },
+      { "tag": "orgasm_face_closeup",      "ja": "絶頂時の顔アップ", "level": "L2" },
+      { "tag": "afterglow_face",           "ja": "事後の恍惚顔アップ", "level": "L1" }
     ],
 
       "exposure": [
@@ -204,18 +206,42 @@ window.DEFAULT_NSFW_DICT = {
         { "tag": "against_wall",    "ja": "壁に寄りかかる",    "level": "L1" },
         { "tag": "press_against_wall","ja": "壁ドンされる姿勢", "level": "L2" },
       
-        { "tag": "missionary_pose", "ja": "正常位",            "level": "L2" },
-        { "tag": "reverse_missionary","ja": "逆正常位",        "level": "L2" },
-        { "tag": "cowgirl_pose",    "ja": "騎乗位",            "level": "L2" },
-        { "tag": "reverse_cowgirl", "ja": "背面騎乗位",        "level": "L2" },
-        { "tag": "doggy_style",     "ja": "バック（後背位）",  "level": "L2" },
-        { "tag": "reverse_doggy",   "ja": "腹這いバック",      "level": "L2" },
-        { "tag": "standing_sex",    "ja": "立位体位",          "level": "L2" },
-        { "tag": "spooning_pose",   "ja": "添い寝位",          "level": "L2" },
-        { "tag": "lotus_position",  "ja": "対面座位（蓮華座）", "level": "L2" },
-        { "tag": "lap_sitting",     "ja": "膝の上に座る",      "level": "L2" },
-        { "tag": "chair_sex",       "ja": "椅子の上体位",      "level": "L2" },
-        { "tag": "tabletop_sex",    "ja": "机の上体位",        "level": "L2" },
+        { "tag": "missionary_leg_hold",       "ja": "正常位・足を持ち上げる",         "level": "L2" },
+        { "tag": "missionary_leg_on_shoulder","ja": "正常位・足を肩に乗せる",         "level": "L2" },
+        { "tag": "missionary_leg_spread",     "ja": "正常位・足を大きく広げられる",   "level": "L2" },
+        
+        { "tag": "cowgirl_leg_grab",          "ja": "騎乗位・足を持たれる",           "level": "L2" },
+        { "tag": "reverse_cowgirl_leg_hold",  "ja": "背面騎乗位・足を掴まれる",       "level": "L2" },
+        
+        { "tag": "legs_over_shoulders",       "ja": "両脚を肩にかけられる",           "level": "L3" },
+        { "tag": "legs_pinned",               "ja": "脚を押さえつけられる体位",       "level": "L3" },
+        { "tag": "legs_spread_holding",       "ja": "足を持って強制的に広げられる",   "level": "L3" },
+        
+        { "tag": "standing_leg_up",           "ja": "立位・片脚持ち上げ体位",         "level": "L2" },
+        { "tag": "standing_double_leg_hold",  "ja": "立位・両脚抱え上げ体位",         "level": "L3" },
+
+        { "tag": "doggy_leg_lift",         "ja": "バック・片脚上げ",          "level": "L2" },
+        { "tag": "doggy_leg_hold",         "ja": "バック・脚を持たれる",      "level": "L2" },
+        { "tag": "reverse_doggy_flat",     "ja": "腹這い・押さえつけバック",  "level": "L3" },
+        
+        { "tag": "standing_leg_hold",      "ja": "立位・片脚持ち上げ",        "level": "L2" },
+        { "tag": "standing_carry",         "ja": "立位・抱き上げ体位",        "level": "L3" },
+        { "tag": "against_wall_standing",  "ja": "壁押し付け立位",            "level": "L2" },
+        
+        { "tag": "spooning_leg_lift",      "ja": "添い寝位・片脚持ち上げ",    "level": "L2" },
+        { "tag": "reverse_spooning",       "ja": "背面添い寝位",              "level": "L2" },
+        
+        { "tag": "lotus_leg_wrap",         "ja": "蓮華座・足を絡める",        "level": "L2" },
+        
+        { "tag": "lap_sitting_facing",     "ja": "膝上騎乗・対面",            "level": "L2" },
+        { "tag": "lap_sitting_reverse",    "ja": "膝上騎乗・背面",            "level": "L2" },
+        
+        { "tag": "chair_reverse_cowgirl",  "ja": "椅子上・背面騎乗位",        "level": "L2" },
+        { "tag": "chair_sideways",         "ja": "椅子上・横向き騎乗位",      "level": "L2" },
+        
+        { "tag": "tabletop_doggy",         "ja": "机の上バック体位",          "level": "L2" },
+        { "tag": "tabletop_spread",        "ja": "机の上・脚を広げる体位",    "level": "L3" },
+
       
         { "tag": "sixty_nine",      "ja": "69",                "level": "L2" },
         { "tag": "facesitting",     "ja": "顔面騎乗位",        "level": "L2" },
@@ -254,7 +280,36 @@ window.DEFAULT_NSFW_DICT = {
         { "tag": "collared_pose",   "ja": "首輪をつけられる",  "level": "L3" },
         { "tag": "leashed_pose",    "ja": "リードで引かれる",  "level": "L3" },
         { "tag": "public_exposure_pose","ja": "人前で晒される","level": "L3" },
-        { "tag": "cage_pose",       "ja": "檻の中に拘束",      "level": "L3" }
+        { "tag": "cage_pose",       "ja": "檻の中に拘束",      "level": "L3" },
+        { "tag": "side_missionary",       "ja": "側位（横向き正常位）",       "level": "L2" },
+        { "tag": "reverse_side_missionary","ja": "逆側位（背後から横向き）",   "level": "L2" },
+        
+        { "tag": "cowgirl_forward_lean",  "ja": "騎乗位・前傾姿勢",            "level": "L2" },
+        { "tag": "cowgirl_back_lean",     "ja": "騎乗位・反り返り",            "level": "L2" },
+        { "tag": "reverse_cowgirl_low",   "ja": "背面騎乗位・低く座る",        "level": "L2" },
+        
+        { "tag": "doggy_flat",            "ja": "バック・ベッドに押し付け",    "level": "L2" },
+        { "tag": "doggy_standing",        "ja": "立位バック（立ちバック）",    "level": "L2" },
+        { "tag": "doggy_over_table",      "ja": "机に手をついてバック",        "level": "L2" },
+        
+        { "tag": "reverse_spooning_leg_hold", "ja": "背面添い寝・片脚持ち上げ","level": "L2" },
+        { "tag": "sideways_leg_hold",     "ja": "横向き・脚を持ち上げる体位", "level": "L2" },
+        
+        { "tag": "chair_forward",         "ja": "椅子上・前抱き体位",          "level": "L2" },
+        { "tag": "chair_doggy",           "ja": "椅子上・後背位",              "level": "L2" },
+        
+        { "tag": "against_wall_leg_up",   "ja": "壁押し付け・片脚上げ",        "level": "L3" },
+        { "tag": "against_wall_carry",    "ja": "壁押し付け・持ち上げ体位",    "level": "L3" },
+        
+        { "tag": "prone_bone",            "ja": "うつ伏せ体位（寝バック）",   "level": "L2" },
+        
+        { "tag": "lap_sitting_sideways",  "ja": "膝上・横向き座位",            "level": "L2" },
+        
+        { "tag": "reverse_bridge",        "ja": "逆ブリッジ体位",              "level": "L3" },
+        { "tag": "handstand_position",    "ja": "逆立ち体位",                  "level": "L3" },
+        
+        { "tag": "multiple_partner_chain","ja": "連結体位（複数人繋がる）",   "level": "L3" }
+
       ],
     
     "accessories": [
@@ -629,7 +684,21 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "aftercare_cuddle",           "ja": "事後の抱擁（アフターケア）",     "level": "L1" },
       { "tag": "cleaning_up_wipe",           "ja": "拭き取り/片付け描写",            "level": "L1" },
       { "tag": "towel_cover",                "ja": "タオルで隠す",                   "level": "L1" },
-      { "tag": "sheets_stain_focus",         "ja": "シーツの染みを強調",             "level": "L2" }
+      { "tag": "sheets_stain_focus",         "ja": "シーツの染みを強調",             "level": "L2" },
+      { "tag": "condom_insertion_vaginal", "ja": "コンドーム付き膣挿入", "level": "L2" },
+      { "tag": "condom_insertion_anal",    "ja": "コンドーム付きアナル挿入", "level": "L2" },
+      { "tag": "condom_creampie",          "ja": "コンドーム中出し", "level": "L2" },
+      { "tag": "condom_withdrawal",        "ja": "コンドーム付き抜き差し", "level": "L2" },
+      { "tag": "condom_visible",           "ja": "コンドームが見える描写", "level": "L1" },
+      
+      { "tag": "cum_on_hand",              "ja": "手に射精", "level": "L2" },
+      { "tag": "cum_on_stomach",           "ja": "お腹に射精", "level": "L2" },
+      { "tag": "cum_between_breasts",      "ja": "谷間射精", "level": "L2" },
+      { "tag": "cum_clothes_stain",        "ja": "服に精液染み", "level": "L2" },
+      
+      { "tag": "post_cum_drip",            "ja": "射精後の精液滴り", "level": "L2" },
+      { "tag": "post_squirting",           "ja": "絶頂後の潮吹き余韻", "level": "L2" }
+
     ],
         "participants": [
       { "tag": "solo",              "ja": "1人（単独）", "level": "L1" },
