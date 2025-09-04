@@ -1175,6 +1175,309 @@ legend { display: none; }
   margin-left: 4px;
 }
 
+/* 単語モード専用スタイル - HTMLのheadセクションまたは適切な場所に追加 */
+.wm-hidden {
+  display: none !important;
+}
+
+.wm-no-results {
+  opacity: 0.5;
+}
+
+.wm-no-results > summary {
+  color: #666;
+}
+
+.wm-search {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(100, 150, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(100, 150, 255, 0.2);
+}
+
+.wm-search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.wm-search-input {
+  flex: 1;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.wm-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(100, 150, 255, 0.2);
+}
+
+.wm-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.wm-search-clear:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.wm-search-stats {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+}
+
+.wm-selected {
+  background: rgba(100, 200, 100, 0.05);
+  border: 1px solid rgba(100, 200, 100, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.wm-selected-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.wm-selected-actions button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.wm-selected-actions button:hover {
+  opacity: 0.8;
+}
+
+.wm-chip-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+  align-items: flex-start;
+}
+
+.wm-selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 12px;
+}
+
+.wm-selected-chip small {
+  opacity: 0.8;
+  margin-left: 2px;
+}
+
+.wm-selected-chip button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.wm-selected-chip button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.wm-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.wm-table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.wm-table-actions button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.wm-table-actions button:hover {
+  opacity: 0.8;
+}
+
+.wm-table-actions button:last-child {
+  background: #dc3545;
+}
+
+.wm-count {
+  font-size: 11px;
+  color: #999;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.wm-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.wm-table th,
+.wm-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.wm-table th {
+  background: rgba(100, 150, 255, 0.1);
+  font-weight: bold;
+}
+
+.wm-row-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.wm-row-actions button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.wm-row-actions button:hover {
+  opacity: 0.8;
+}
+
+.wm-row-actions button:last-child {
+  background: #dc3545;
+}
+
+.wm-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.wm-item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--card-bg);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.wm-item:hover {
+  background: rgba(100, 150, 255, 0.1);
+  border-color: var(--accent);
+}
+
+.wm-jp {
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.wm-en {
+  font-size: 11px;
+  color: #999;
+  opacity: 0.8;
+}
+
+.wm-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.wm-item:hover .wm-actions {
+  opacity: 1;
+}
+
+.wm-actions button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 2px 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.wm-actions button:hover {
+  opacity: 0.8;
+}
+
+.wm-acc-title {
+  margin: 16px 0 8px 0;
+  padding: 8px 0;
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+}
+
+
+
+
 /* 商用LoRA用のスタイル */
 .commercial-lora-grid {
   max-height: 400px;
