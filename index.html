@@ -334,6 +334,14 @@
 <section id="panelManga" class="card" hidden>
   <div class="manga-mode-header">
     <h2>🎨 漫画モード</h2>
+    <!-- 漫画モードパネルの先頭（h2の後）に追加 -->
+    <section class="manga-search">
+      <div class="manga-search-container">
+        <input type="text" id="manga-search-input" placeholder="日本語・英語で検索（部分一致）" class="manga-search-input">
+        <button type="button" id="manga-search-clear" class="manga-search-clear">クリア</button>
+      </div>
+      <div class="manga-search-stats" id="manga-search-stats">全 <span id="manga-total-count">0</span> 件</div>
+    </section>
     <div class="manga-priority-note">
       ※ 上から選ぶほど意味が強くなります。競合する場合はNSFW設定が優先されます。
     </div>
