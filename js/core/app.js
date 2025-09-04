@@ -2729,6 +2729,8 @@ function fillAccessorySlots(){
 
 /* ===== 単語モード 完全動作版（エラー修正済み） ===== */
 
+/* ===== 単語モード 完全動作版（エラー修正済み） ===== */
+
 // 1. toast関数を定義（存在しない場合）
 if (typeof window.toast !== 'function') {
   window.toast = function(message) {
@@ -2888,7 +2890,7 @@ function createWordItem(item, category) {
   `;
 }
 
-// 5. 検索機能
+// 5. 検索機能（結果を下に表示）
 window.performWordModeSearch = function(searchTerm) {
   console.log('検索実行:', searchTerm);
   
@@ -2904,17 +2906,28 @@ window.performWordModeSearch = function(searchTerm) {
     searchResultsArea.id = 'wm-search-results';
     searchResultsArea.style.cssText = `
       display: none;
-      max-height: 250px;
+      width: 100%;
+      max-height: 300px;
       overflow-y: auto;
       border: 1px solid #444;
       border-radius: 6px;
-      margin: 8px 0;
-      padding: 8px;
+      margin: 15px 0;
+      padding: 10px;
       background: var(--bg-card, #2a2f3a);
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      position: relative;
+      z-index: 100;
     `;
     
-    searchInput.parentNode.insertBefore(searchResultsArea, searchInput.nextSibling);
+    // 検索ボックスの親コンテナを取得
+    const searchContainer = searchInput.parentElement || searchInput.parentNode;
+    
+    // 検索結果を検索ボックスコンテナの後に配置
+    if (searchContainer.nextSibling) {
+      searchContainer.parentNode.insertBefore(searchResultsArea, searchContainer.nextSibling);
+    } else {
+      searchContainer.parentNode.appendChild(searchResultsArea);
+    }
   }
   
   const allItems = document.querySelectorAll('#panelWordMode .wm-item');
@@ -2945,10 +2958,21 @@ window.performWordModeSearch = function(searchTerm) {
   console.log('検索結果:', matchedItems.length);
   
   if (matchedItems.length === 0) {
-    searchResultsArea.innerHTML = '<div style="text-align: center; color: #888; padding: 16px;">検索結果がありません</div>';
+    searchResultsArea.innerHTML = `
+      <div style="text-align: center; color: #888; padding: 20px; font-size: 14px;">
+        「${searchTerm}」の検索結果がありません
+      </div>
+    `;
     searchResultsArea.style.display = 'block';
     return;
   }
+  
+  // 検索結果のヘッダーを追加
+  const headerHTML = `
+    <div style="margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #555; color: #ccc; font-size: 14px; font-weight: 500;">
+      検索結果: ${matchedItems.length}件
+    </div>
+  `;
   
   const resultsHTML = matchedItems.map(item => {
     const showEn = item.en !== item.jp;
@@ -2957,16 +2981,23 @@ window.performWordModeSearch = function(searchTerm) {
     
     return `
       <button type="button" class="wm-search-result-item" 
-              style="display: block; width: 100%; padding: 8px; margin: 2px 0; background: var(--bg-secondary, #363c4a); border: 1px solid #555; border-radius: 4px; color: white; cursor: pointer;"
+              style="display: block; width: 100%; padding: 10px; margin: 3px 0; background: var(--bg-secondary, #363c4a); border: 1px solid #555; border-radius: 4px; color: white; cursor: pointer; text-align: left; transition: background-color 0.2s ease;"
+              onmouseover="this.style.backgroundColor='var(--bg-hover, #404652)'"
+              onmouseout="this.style.backgroundColor='var(--bg-secondary, #363c4a)'"
               onclick="window.addToOutputTable('${escapedEn}', '${escapedJp}'); document.getElementById('wm-search-input').value=''; window.clearWordModeSearch();">
-        <span style="font-weight: 500;">${item.jp}</span>
-        ${showEn ? `<span style="color: #aaa; font-size: 12px; margin-left: 8px;">${item.en}</span>` : ''}
+        <span style="font-weight: 500; display: block;">${item.jp}</span>
+        ${showEn ? `<span style="color: #aaa; font-size: 12px; margin-top: 2px; display: block;">${item.en}</span>` : ''}
       </button>
     `;
   }).join('');
   
-  searchResultsArea.innerHTML = resultsHTML;
+  searchResultsArea.innerHTML = headerHTML + resultsHTML;
   searchResultsArea.style.display = 'block';
+  
+  // 検索結果エリアにスムーズスクロール
+  setTimeout(() => {
+    searchResultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
 };
 
 window.clearWordModeSearch = function() {
