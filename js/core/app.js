@@ -2960,7 +2960,7 @@ window.clearWordModeSearch = function() {
   }
 };
 
-// 6. カテゴリ移動機能
+// 6. カテゴリ完全折りたたみ機能（改良版）
 window.moveCategoriesToBottom = function() {
   const wordModePanel = document.getElementById('panelWordMode');
   const tableContainer = document.getElementById('wm-table-container') || 
@@ -2968,12 +2968,52 @@ window.moveCategoriesToBottom = function() {
   
   if (!wordModePanel || !tableContainer) return;
   
-  // カテゴリ要素を取得
-  const categoryElements = wordModePanel.querySelectorAll('details, .wm-category, .category-section');
+  // 1. すべてのカテゴリ要素（details、.wm-category、その他のカテゴリセクション）を取得
+  const categoryElements = wordModePanel.querySelectorAll('details, .wm-category, .category-section, [class*="category"], [id*="category"]');
   
-  if (categoryElements.length === 0) return;
+  // 2. SFW/NSFWの大きなセクションも取得
+  const sfwSection = wordModePanel.querySelector('#sfw-section, .sfw-section, [data-category="sfw"]');
+  const nsfwSection = wordModePanel.querySelector('#nsfw-section, .nsfw-section, [data-category="nsfw"]');
   
-  // 折りたたみコンテナを作成
+  console.log('カテゴリ要素数:', categoryElements.length);
+  console.log('SFWセクション:', !!sfwSection);
+  console.log('NSFWセクション:', !!nsfwSection);
+  
+  // 3. 検索・テーブル以外のすべての子要素を取得（より安全なアプローチ）
+  const allChildren = Array.from(wordModePanel.children);
+  const excludeSelectors = [
+    '#wm-search-input', 
+    '#wm-search-clear', 
+    '#wm-search-results',
+    '#wm-table-container',
+    '.wm-table-wrapper',
+    '[id*="search"]',
+    '[id*="table"]',
+    '[class*="search"]',
+    '[class*="table"]'
+  ];
+  
+  const elementsToMove = allChildren.filter(element => {
+    // 検索・テーブル関連要素は除外
+    const isExcluded = excludeSelectors.some(selector => {
+      try {
+        return element.matches(selector) || element.querySelector(selector);
+      } catch (e) {
+        return false;
+      }
+    });
+    
+    return !isExcluded;
+  });
+  
+  console.log('移動対象要素数:', elementsToMove.length);
+  
+  if (elementsToMove.length === 0) {
+    console.warn('移動するカテゴリ要素が見つかりません');
+    return;
+  }
+  
+  // 4. 折りたたみコンテナを作成
   let categoriesContainer = document.getElementById('wm-categories-container');
   if (!categoriesContainer) {
     categoriesContainer = document.createElement('div');
@@ -2985,10 +3025,12 @@ window.moveCategoriesToBottom = function() {
       background: var(--bg-card, #2a2f3a);
       border: 1px solid #444;
       border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
     `;
   }
   
-  // トグルボタンを作成
+  // 5. トグルボタンを作成
   let toggleButton = document.getElementById('wm-categories-toggle');
   if (!toggleButton) {
     toggleButton = document.createElement('button');
@@ -3017,14 +3059,27 @@ window.moveCategoriesToBottom = function() {
       const text = isVisible ? 'カテゴリ一覧を隠す' : 'カテゴリ一覧を表示';
       toggleButton.textContent = `${icon} ${text}`;
     });
+    
+    // ホバー効果
+    toggleButton.addEventListener('mouseenter', () => {
+      toggleButton.style.backgroundColor = 'var(--bg-hover, #404652)';
+    });
+    
+    toggleButton.addEventListener('mouseleave', () => {
+      toggleButton.style.backgroundColor = 'var(--bg-secondary, #363c4a)';
+    });
   }
   
-  // カテゴリ要素を移動
-  categoryElements.forEach(element => {
-    categoriesContainer.appendChild(element);
+  // 6. すべての対象要素をコンテナに移動
+  elementsToMove.forEach(element => {
+    try {
+      categoriesContainer.appendChild(element);
+    } catch (e) {
+      console.warn('要素の移動に失敗:', element, e);
+    }
   });
   
-  // テーブルの後ろに配置
+  // 7. テーブルの後ろに配置
   if (tableContainer.parentNode) {
     if (!toggleButton.parentNode) {
       tableContainer.parentNode.insertBefore(toggleButton, tableContainer.nextSibling);
@@ -3034,7 +3089,12 @@ window.moveCategoriesToBottom = function() {
     }
   }
   
-  console.log('カテゴリをテーブル下に移動完了');
+  // 8. 既存のdetails要素を強制的に閉じる
+  categoriesContainer.querySelectorAll('details').forEach(details => {
+    details.open = false;
+  });
+  
+  console.log('カテゴリ折りたたみ完了:', elementsToMove.length, '個の要素を移動');
 };
 
 // 7. メイン初期化関数
