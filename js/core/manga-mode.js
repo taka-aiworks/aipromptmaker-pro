@@ -1351,7 +1351,7 @@ function addSelectedValues(tags, name) {
 }
 
 
-// 【新規関数】基本情報タグの安全な追加 - addBasicInfoTags関数を置き換えまたは追加
+// 【修正版】基本情報タグの安全な追加
 function addBasicInfoTagsSafe(tags) {
   try {
     // 既存の基本情報取得関数が利用可能な場合のみ実行
@@ -1372,13 +1372,15 @@ function addBasicInfoTagsSafe(tags) {
     if (typeof getOne === 'function') {
       const hairStyle = getOne('hairStyle');
       const eyeShape = getOne('eyeShape');
-        // ★★★ 以下3行を追加 ★★★
       const hairLength = getOne('hairLength');
       const bangsStyle = getOne('bangsStyle');
       const skinFeatures = getOne('skinFeatures');
       if (hairStyle) tags.push(hairStyle);
       if (eyeShape) tags.push(eyeShape);
-      console.log('💄 スタイルタグ追加:', { hairStyle, eyeShape });
+      if (hairLength) tags.push(hairLength);
+      if (bangsStyle) tags.push(bangsStyle);
+      if (skinFeatures) tags.push(skinFeatures);
+      console.log('💄 スタイルタグ追加:', { hairStyle, eyeShape, hairLength, bangsStyle, skinFeatures });
     }
     
     // 色タグ（基本情報タブの色ピッカーから）
@@ -1395,6 +1397,19 @@ function addBasicInfoTagsSafe(tags) {
     if (skinColor) tags.push(skinColor);
     
     console.log('🎨 色タグ追加:', { hairColor, eyeColor, skinColor });
+    
+    // ★★★ 【追加】基本情報のアクセサリー処理 ★★★
+    const charAccSel = document.getElementById("characterAccessory");
+    const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
+    if (charAccSel && charAccSel.value) {
+      if (charAccColor && charAccColor !== "—") {
+        tags.push(`${charAccColor} ${charAccSel.value}`);
+        console.log('💎 基本アクセサリー追加（色付き）:', `${charAccColor} ${charAccSel.value}`);
+      } else {
+        tags.push(charAccSel.value);
+        console.log('💎 基本アクセサリー追加:', charAccSel.value);
+      }
+    }
     
     // 服装（基本情報タブの設定から）
     addBasicOutfitTagsSafe(tags);
