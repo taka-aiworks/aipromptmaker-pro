@@ -2729,6 +2729,7 @@ function fillAccessorySlots(){
 
 
 /* ===== 単語モード タグ読み込み修正（簡潔版） ===== */
+/* ===== 単語モード タグ読み込み修正（簡潔版） ===== */
 
 // 1. 既存の問題のある関数を無効化
 window.createFallbackDictionaries = () => console.log('フォールバック無効化済み');
@@ -3043,13 +3044,254 @@ window.autoFixWordMode = function() {
   return result;
 };
 
-// 8. 即座に実行
-console.log('📝 単語モード修正コード適用完了');
+// 8. 元のinitWordMode関数を定義（app.jsのエラー修正）
+window.initWordMode = function() {
+  console.log('=== initWordMode呼び出し（修正版） ===');
+  
+  // 検索機能の初期化
+  bindSearchEvents();
+  
+  // カテゴリ折りたたみの初期化
+  initCollapsibleCategories();
+  
+  // イベントバインドの初期化
+  bindWordModeEvents();
+  
+  // アイテムの初期化（修正版を使用）
+  window.autoFixWordMode();
+};
+
+// 9. イベントバインド関数群の定義
+function bindSearchEvents() {
+  const searchInput = document.getElementById('wm-search-input');
+  const clearBtn = document.getElementById('wm-search-clear');
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      if (window.performWordModeSearch) {
+        window.performWordModeSearch(e.target.value);
+      }
+    });
+    
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (window.performWordModeSearch) {
+          window.performWordModeSearch(e.target.value);
+        }
+      }
+    });
+  }
+  
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      if (window.clearWordModeSearch) {
+        window.clearWordModeSearch();
+      }
+    });
+  }
+}
+
+function initCollapsibleCategories() {
+  const wordModePanel = document.getElementById('panelWordMode');
+  if (!wordModePanel) return;
+  
+  const tableContainer = document.getElementById('wm-table-container') || 
+                        document.querySelector('.wm-table-wrapper');
+  
+  if (!tableContainer) return;
+  
+  let toggleButton = document.getElementById('wm-categories-toggle');
+  if (!toggleButton) {
+    toggleButton = document.createElement('button');
+    toggleButton.id = 'wm-categories-toggle';
+    toggleButton.type = 'button';
+    toggleButton.textContent = '▼ カテゴリ一覧を表示';
+    toggleButton.style.cssText = `
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background: var(--bg-secondary, #363c4a);
+      color: var(--text-primary, #ffffff);
+      border: 1px solid #555;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    `;
+    
+    tableContainer.parentNode.insertBefore(toggleButton, tableContainer.nextSibling);
+  }
+}
+
+function bindWordModeEvents() {
+  const root = document.getElementById('panelWordMode');
+  if (!root) return;
+  
+  // 既存のイベントリスナーを削除
+  const newRoot = root.cloneNode(true);
+  root.parentNode.replaceChild(newRoot, root);
+  
+  newRoot.addEventListener('click', (e) => {
+    if (e.target.closest('summary')) return;
+    
+    if (e.target.classList.contains('wm-copy-en')) {
+      e.preventDefault();
+      const item = e.target.closest('.wm-item');
+      const en = item?.dataset.en || '';
+      if (en && navigator.clipboard) {
+        navigator.clipboard.writeText(en);
+        if (window.toast) window.toast('英語タグをコピーしました');
+      }
+      return;
+    }
+    
+    if (e.target.classList.contains('wm-copy-both')) {
+      e.preventDefault();
+      const item = e.target.closest('.wm-item');
+      const jp = item?.dataset.jp || '';
+      const en = item?.dataset.en || '';
+      const text = jp && en ? `${jp}(${en})` : (en || jp);
+      if (text && navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        if (window.toast) window.toast('日英タグをコピーしました');
+      }
+      return;
+    }
+    
+    const itemBtn = e.target.closest('.wm-item');
+    if (itemBtn) {
+      const en = itemBtn.dataset.en || '';
+      const jp = itemBtn.dataset.jp || '';
+      if (en && jp && window.addToOutputTable) {
+        window.addToOutputTable(en, jp);
+      }
+    }
+  });
+}
+
+// 10. 検索機能の実装
+window.performWordModeSearch = function(searchTerm) {
+  searchTerm = (searchTerm || '').trim();
+  
+  let searchResultsArea = document.getElementById('wm-search-results');
+  
+  if (!searchResultsArea) {
+    const searchInput = document.getElementById('wm-search-input');
+    if (!searchInput) return;
+    
+    searchResultsArea = document.createElement('div');
+    searchResultsArea.id = 'wm-search-results';
+    searchResultsArea.style.cssText = `
+      display: none;
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid #444;
+      border-radius: 6px;
+      margin: 8px 0;
+      padding: 8px;
+      background: var(--bg-card, #2a2f3a);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    `;
+    
+    searchInput.parentNode.insertBefore(searchResultsArea, searchInput.nextSibling);
+  }
+  
+  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
+  
+  if (!searchTerm) {
+    searchResultsArea.style.display = 'none';
+    searchResultsArea.innerHTML = '';
+    if (window.updateSearchStats) {
+      window.updateSearchStats(allItems.length, allItems.length);
+    }
+    return;
+  }
+  
+  const matchedItems = [];
+  const searchLower = searchTerm.toLowerCase();
+  
+  allItems.forEach(item => {
+    const jp = (item.dataset.jp || '').toLowerCase();
+    const en = (item.dataset.en || '').toLowerCase();
+    
+    if (jp.includes(searchLower) || en.includes(searchLower)) {
+      matchedItems.push({
+        en: item.dataset.en,
+        jp: item.dataset.jp,
+        cat: item.dataset.cat
+      });
+    }
+  });
+  
+  if (matchedItems.length === 0) {
+    searchResultsArea.innerHTML = '<div style="text-align: center; color: #888; padding: 16px;">検索結果がありません</div>';
+    searchResultsArea.style.display = 'block';
+    if (window.updateSearchStats) {
+      window.updateSearchStats(0, allItems.length);
+    }
+    return;
+  }
+  
+  const resultsHTML = matchedItems.map(item => {
+    const showEn = item.en !== item.jp;
+    return `
+      <button type="button" class="wm-search-result-item" 
+              data-en="${item.en}" 
+              data-jp="${item.jp}">
+        <span style="font-weight: 500;">${item.jp}</span>
+        ${showEn ? `<span style="color: #aaa; font-size: 12px; margin-left: 8px;">${item.en}</span>` : ''}
+      </button>
+    `;
+  }).join('');
+  
+  searchResultsArea.innerHTML = resultsHTML;
+  searchResultsArea.style.display = 'block';
+  
+  searchResultsArea.querySelectorAll('.wm-search-result-item').forEach(resultItem => {
+    resultItem.addEventListener('click', () => {
+      const en = resultItem.dataset.en;
+      const jp = resultItem.dataset.jp;
+      
+      if (en && jp && window.addToOutputTable) {
+        window.addToOutputTable(en, jp);
+      }
+      
+      const searchInput = document.getElementById('wm-search-input');
+      if (searchInput) searchInput.value = '';
+      window.clearWordModeSearch();
+    });
+  });
+  
+  if (window.updateSearchStats) {
+    window.updateSearchStats(matchedItems.length, allItems.length);
+  }
+};
+
+window.clearWordModeSearch = function() {
+  const searchInput = document.getElementById('wm-search-input');
+  const resultsArea = document.getElementById('wm-search-results');
+  
+  if (searchInput) searchInput.value = '';
+  if (resultsArea) {
+    resultsArea.style.display = 'none';
+    resultsArea.innerHTML = '';
+  }
+  
+  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
+  if (window.updateSearchStats) {
+    window.updateSearchStats(allItems.length, allItems.length);
+  }
+};
+
+// 11. 即座に実行
+console.log('initWordMode関数定義完了');
 
 // 辞書が既に利用可能な場合は即座に実行
 if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NSFW_DICT)) {
   setTimeout(() => {
-    console.log('🚀 修正版で即座に初期化');
+    console.log('修正版で即座に初期化');
     window.autoFixWordMode();
   }, 100);
 } else {
@@ -3062,7 +3304,7 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     console.log(`辞書待機中... (${attempts}/${maxAttempts})`);
     
     if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NSFW_DICT)) {
-      console.log('✅ 辞書確認完了、初期化開始');
+      console.log('辞書確認完了、初期化開始');
       window.autoFixWordMode();
       return;
     }
@@ -3070,7 +3312,7 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     if (attempts < maxAttempts) {
       setTimeout(waitForDicts, 500);
     } else {
-      console.error('❌ 辞書読み込みタイムアウト');
+      console.error('辞書読み込みタイムアウト');
       window.debugWordMode();
     }
   };
