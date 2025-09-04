@@ -1927,13 +1927,14 @@ function buildBatchLearning(n) {
     }
     
     // 固定アクセサリー
-    const accSel = document.getElementById("learn_acc");
-    const accColor = window.getLearnAccColor ? window.getLearnAccColor() : "";
-    if (accSel && accSel.value) {
-      if (accColor && accColor !== "—") {
-        p.push(`${accColor} ${accSel.value}`);
+    // ★★★ 修正：基本情報のアクセサリー（characterAccessory）を使用 ★★★
+    const charAccSel = document.getElementById("characterAccessory");
+    const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
+    if (charAccSel && charAccSel.value) {
+      if (charAccColor && charAccColor !== "—") {
+        p.push(`${charAccColor} ${charAccSel.value}`);
       } else {
-        p.push(accSel.value);
+        p.push(charAccSel.value);
       }
     }
     
