@@ -2211,6 +2211,359 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 </script>
+<script>
+/* ===== 漫画カテゴリ単語モード統合スクリプト ===== */
+/* このスクリプトをindex.htmlの最後、</body>の直前に配置してください */
+
+(function() {
+  'use strict';
+  
+  // 初期化完了フラグ
+  let mangaWordModeInitialized = false;
+  
+  // 漫画カテゴリと辞書プロパティのマッピング
+  const MANGA_CATEGORY_MAPPING = {
+    // SFW漫画カテゴリ
+    'worldview': 'worldview',
+    'emotion-primary': 'emotion_primary',
+    'emotion-detail': 'emotion_detail',
+    'mouth-state': 'mouth_state',
+    'eye-state': 'eye_state',
+    'gaze': 'gaze',
+    'pose-manga': 'pose_manga',
+    'hand-gesture': 'hand_gesture',
+    'movement-action': 'movement_action',
+    'props-light': 'props_light',
+    'effect-manga': 'effect_manga',
+    'camera-view': 'camera_view',
+    'camera-angle': 'camera_angle',
+    'interaction-sfw': 'interaction_sfw',
+    
+    // ネガティブプロンプト系
+    'negative-essential': 'negative_essential',
+    'negative-quality': 'negative_quality',
+    'negative-unwanted': 'negative_unwanted',
+    'negative-face': 'negative_face',
+    'negative-body': 'negative_body',
+    'negative-style': 'negative_style',
+    'negative-composition': 'negative_composition',
+    'negative-clothing': 'negative_clothing',
+    
+    // NSFW漫画カテゴリ
+    'interaction-nsfw': 'interaction_nsfw',
+    'background-nsfw': 'background_nsfw'
+  };
+  
+  // 辞書データの完全性チェック
+  function checkDictionaryCompleteness() {
+    console.log('=== 辞書完全性チェック ===');
+    
+    const missingCategories = [];
+    const availableCategories = [];
+    
+    // SFWカテゴリをチェック
+    Object.entries(MANGA_CATEGORY_MAPPING).forEach(([displayName, dictKey]) => {
+      let found = false;
+      let count = 0;
+      
+      // SFWから検索
+      if (window.SFW && window.SFW[dictKey] && Array.isArray(window.SFW[dictKey])) {
+        count = window.SFW[dictKey].length;
+        if (count > 0) {
+          found = true;
+          availableCategories.push({ name: displayName, dict: 'SFW', key: dictKey, count });
+        }
+      }
+      
+      // NSFWから検索
+      if (!found && window.NSFW && window.NSFW[dictKey] && Array.isArray(window.NSFW[dictKey])) {
+        count = window.NSFW[dictKey].length;
+        if (count > 0) {
+          found = true;
+          availableCategories.push({ name: displayName, dict: 'NSFW', key: dictKey, count });
+        }
+      }
+      
+      if (!found) {
+        missingCategories.push({ name: displayName, key: dictKey });
+      }
+    });
+    
+    console.log(`利用可能カテゴリ: ${availableCategories.length}`);
+    availableCategories.forEach(cat => {
+      console.log(`  ✓ ${cat.name} (${cat.dict}.${cat.key}): ${cat.count}件`);
+    });
+    
+    if (missingCategories.length > 0) {
+      console.log(`不足カテゴリ: ${missingCategories.length}`);
+      missingCategories.forEach(cat => {
+        console.log(`  ✗ ${cat.name} (${cat.key}): 辞書に存在しない`);
+      });
+    }
+    
+    return { available: availableCategories, missing: missingCategories };
+  }
+  
+  // HTMLコンテナの存在チェック
+  function checkHTMLContainers() {
+    console.log('=== HTMLコンテナチェック ===');
+    
+    const missingContainers = [];
+    const availableContainers = [];
+    
+    Object.keys(MANGA_CATEGORY_MAPPING).forEach(displayName => {
+      const containerId = `wm-items-${displayName}`;
+      const countId = `wm-count-${displayName}`;
+      
+      const container = document.getElementById(containerId);
+      const counter = document.getElementById(countId);
+      
+      if (container && counter) {
+        availableContainers.push(displayName);
+      } else {
+        missingContainers.push({
+          name: displayName,
+          hasContainer: !!container,
+          hasCounter: !!counter
+        });
+      }
+    });
+    
+    console.log(`利用可能コンテナ: ${availableContainers.length}`);
+    availableContainers.forEach(name => {
+      console.log(`  ✓ ${name}`);
+    });
+    
+    if (missingContainers.length > 0) {
+      console.log(`不足コンテナ: ${missingContainers.length}`);
+      missingContainers.forEach(cat => {
+        console.log(`  ✗ ${cat.name} - Container: ${cat.hasContainer ? '✓' : '✗'}, Counter: ${cat.hasCounter ? '✓' : '✗'}`);
+      });
+    }
+    
+    return { available: availableContainers, missing: missingContainers };
+  }
+  
+  // 不足コンテナの動的生成
+  function generateMissingContainers(missingContainers) {
+    console.log('=== 不足コンテナ動的生成 ===');
+    
+    const sfwAccordion = document.getElementById('wm-accordion-sfw');
+    const nsfwAccordion = document.getElementById('wm-accordion-nsfw');
+    
+    if (!sfwAccordion || !nsfwAccordion) {
+      console.error('アコーディオン親要素が見つかりません');
+      return;
+    }
+    
+    missingContainers.forEach(cat => {
+      const isNSFW = cat.name.includes('nsfw') || cat.name.includes('interaction-nsfw') || cat.name.includes('background-nsfw');
+      const parentAccordion = isNSFW ? nsfwAccordion : sfwAccordion;
+      
+      // ラベル生成
+      const labelMap = {
+        'worldview': '世界観',
+        'emotion-primary': '基本感情',
+        'emotion-detail': '詳細感情',
+        'mouth-state': '口の状態',
+        'eye-state': '目の状態',
+        'gaze': '視線方向',
+        'pose-manga': '漫画ポーズ',
+        'hand-gesture': '手のジェスチャー',
+        'movement-action': '動作アクション',
+        'props-light': '小物',
+        'effect-manga': '漫画エフェクト',
+        'camera-view': 'カメラビュー',
+        'camera-angle': 'カメラアングル',
+        'interaction-sfw': 'インタラクション（SFW）',
+        'interaction-nsfw': 'インタラクション（NSFW）',
+        'background-nsfw': '背景（NSFW）',
+        'negative-essential': 'ネガティブ（必須）',
+        'negative-quality': 'ネガティブ（品質）',
+        'negative-unwanted': 'ネガティブ（不要素）',
+        'negative-face': 'ネガティブ（顔）',
+        'negative-body': 'ネガティブ（身体）',
+        'negative-style': 'ネガティブ（画風）',
+        'negative-composition': 'ネガティブ（構図）',
+        'negative-clothing': 'ネガティブ（服装）'
+      };
+      
+      const label = labelMap[cat.name] || cat.name;
+      
+      // HTMLを生成
+      const html = `
+        <details class="wm-acc" data-cat="${cat.name}">
+          <summary>${label} <span class="wm-count" id="wm-count-${cat.name}">0</span></summary>
+          <div class="wm-items" id="wm-items-${cat.name}"></div>
+        </details>
+      `;
+      
+      // 挿入
+      parentAccordion.insertAdjacentHTML('beforeend', html);
+      console.log(`  ✓ ${cat.name} (${label}) コンテナを生成`);
+    });
+  }
+  
+  // 漫画カテゴリ専用初期化関数
+  function initMangaCategories() {
+    console.log('=== 漫画カテゴリ初期化開始 ===');
+    
+    if (mangaWordModeInitialized) {
+      console.log('既に初期化済みです');
+      return;
+    }
+    
+    // 1. 辞書の完全性チェック
+    const dictCheck = checkDictionaryCompleteness();
+    
+    // 2. HTMLコンテナのチェック
+    const containerCheck = checkHTMLContainers();
+    
+    // 3. 不足コンテナがあれば生成
+    if (containerCheck.missing.length > 0) {
+      generateMissingContainers(containerCheck.missing);
+    }
+    
+    // 4. 利用可能なカテゴリのみ初期化
+    let totalInitialized = 0;
+    dictCheck.available.forEach(cat => {
+      const containerId = `wm-items-${cat.name}`;
+      const countId = `wm-count-${cat.name}`;
+      
+      const container = document.getElementById(containerId);
+      const counter = document.getElementById(countId);
+      
+      if (container && counter) {
+        try {
+          const dictData = cat.dict === 'SFW' ? window.SFW[cat.key] : window.NSFW[cat.key];
+          
+          if (dictData && dictData.length > 0) {
+            // アイテム作成（既存のcreateWordModeItem関数を使用）
+            if (typeof window.createWordModeItem === 'function') {
+              container.innerHTML = dictData.map(item => window.createWordModeItem(item, cat.name)).join('');
+            } else {
+              // フォールバック：シンプルなHTML生成
+              container.innerHTML = dictData.map(item => {
+                const tag = item.tag || '';
+                const label = item.label || item.tag || '';
+                return `
+                  <button class="wm-item" type="button" data-en="${tag}" data-jp="${label}" data-cat="${cat.name}">
+                    <span class="wm-jp">${label}</span>
+                    <small class="wm-en">${tag}</small>
+                    <span class="wm-actions">
+                      <button class="wm-copy-en" type="button" title="英語のみコピー">EN</button>
+                      <button class="wm-copy-both" type="button" title="日本語(英語)コピー">BOTH</button>
+                    </span>
+                  </button>
+                `;
+              }).join('');
+            }
+            
+            counter.textContent = dictData.length;
+            totalInitialized += dictData.length;
+            console.log(`  ✓ ${cat.name}: ${dictData.length}件初期化`);
+          }
+        } catch (error) {
+          console.warn(`${cat.name} の初期化でエラー:`, error);
+        }
+      }
+    });
+    
+    console.log(`=== 漫画カテゴリ初期化完了: ${totalInitialized}アイテム ===`);
+    mangaWordModeInitialized = true;
+    
+    // 検索統計を更新
+    setTimeout(() => {
+      if (typeof window.updateSearchStats === 'function') {
+        const totalItems = document.querySelectorAll('#panelWordMode .wm-item').length;
+        window.updateSearchStats(totalItems, totalItems);
+      }
+    }, 100);
+  }
+  
+  // 初期化タイミングの制御
+  function scheduleInitialization() {
+    // 複数のタイミングで初期化を試行
+    const initTriggers = [
+      // 1. DOM読み込み完了後
+      () => {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initMangaCategories);
+        } else {
+          setTimeout(initMangaCategories, 100);
+        }
+      },
+      
+      // 2. 辞書読み込み完了後
+      () => {
+        const checkDictionaries = () => {
+          if (window.SFW && window.NSFW) {
+            initMangaCategories();
+          } else {
+            setTimeout(checkDictionaries, 500);
+          }
+        };
+        setTimeout(checkDictionaries, 1000);
+      },
+      
+      // 3. 単語モードタブが初回クリックされた時
+      () => {
+        const wordTab = document.querySelector('.tab[data-mode="word"]');
+        if (wordTab) {
+          const originalClick = () => {
+            setTimeout(initMangaCategories, 200);
+            wordTab.removeEventListener('click', originalClick);
+          };
+          wordTab.addEventListener('click', originalClick);
+        }
+      }
+    ];
+    
+    // すべてのトリガーを設定
+    initTriggers.forEach((trigger, index) => {
+      try {
+        trigger();
+      } catch (error) {
+        console.warn(`初期化トリガー ${index} でエラー:`, error);
+      }
+    });
+  }
+  
+  // グローバル関数として公開
+  window.initMangaWordMode = initMangaCategories;
+  window.checkMangaWordMode = function() {
+    return {
+      initialized: mangaWordModeInitialized,
+      dictionary: checkDictionaryCompleteness(),
+      containers: checkHTMLContainers()
+    };
+  };
+  
+  // 強制再初期化
+  window.reinitMangaWordMode = function() {
+    mangaWordModeInitialized = false;
+    
+    // 既存のアイテムをクリア
+    Object.keys(MANGA_CATEGORY_MAPPING).forEach(categoryName => {
+      const container = document.getElementById(`wm-items-${categoryName}`);
+      const counter = document.getElementById(`wm-count-${categoryName}`);
+      if (container) container.innerHTML = '';
+      if (counter) counter.textContent = '0';
+    });
+    
+    initMangaCategories();
+  };
+  
+  // 初期化スケジュール実行
+  scheduleInitialization();
+  
+  console.log('漫画カテゴリ単語モード統合スクリプトが読み込まれました');
+  console.log('デバッグコマンド:');
+  console.log('  window.checkMangaWordMode() - 状態確認');
+  console.log('  window.reinitMangaWordMode() - 強制再初期化');
+  
+})();
+</script>         
 
 
       
