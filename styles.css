@@ -1588,3 +1588,75 @@ legend { display: none; }
   border-radius: 3px;
   margin-left: 8px;
 }
+
+
+
+/* styles.cssに追加 */
+/* 漫画モード専用の検索スタイル */
+.manga-search {
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(100, 150, 255, 0.1);
+  border-radius: 8px;
+}
+
+.manga-search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.manga-search-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.manga-search-input:focus {
+  outline: none;
+  border-color: var(--accent-ok);
+  box-shadow: 0 0 0 2px rgba(100, 150, 255, 0.2);
+}
+
+.manga-search-clear {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-light);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 60px;
+}
+
+.manga-search-clear:hover {
+  background: var(--bg-hover);
+}
+
+.manga-search-stats {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* 検索で非表示になった要素のスタイル */
+.manga-hidden {
+  display: none !important;
+}
+
+/* カテゴリセクション全体が空の場合のスタイル */
+.manga-section-empty {
+  opacity: 0.3;
+}
+
+/* 検索ハイライト */
+.manga-search-highlight {
+  background-color: rgba(255, 255, 0, 0.3);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
