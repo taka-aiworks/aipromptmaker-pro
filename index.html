@@ -341,6 +341,17 @@
         <button type="button" id="manga-search-clear" class="manga-search-clear">クリア</button>
       </div>
       <div class="manga-search-stats" id="manga-search-stats">全 <span id="manga-total-count">0</span> 件</div>
+      
+      <!-- 🆕 検索結果表示エリア -->
+      <div id="manga-search-results" class="manga-search-results" style="display: none;">
+        <div class="manga-search-results-header">
+          <span class="manga-search-results-title">検索結果 (<span id="manga-results-count">0</span>件)</span>
+          <button type="button" id="manga-results-close" class="manga-results-close">×</button>
+        </div>
+        <div id="manga-search-results-content" class="manga-search-results-content">
+          <!-- 検索結果がここに動的に表示される -->
+        </div>
+      </div>
     </section>
     <div class="manga-priority-note">
       ※ 上から選ぶほど意味が強くなります。競合する場合はNSFW設定が優先されます。
