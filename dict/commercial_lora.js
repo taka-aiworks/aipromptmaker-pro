@@ -149,6 +149,108 @@ window.COMMERCIAL_LORA_DICT = {
       weight_min: 0.4,
       weight_max: 1.1,
       commercial: true
+    },
+
+    // ちびキャラ・デフォルメ系
+    {
+      tag: "<lora:chibi_style_v3:0.9>",
+      label: "ちびキャラ",
+      category: "chibi",
+      description: "可愛いちびキャラ風に変換",
+      weight_default: 0.9,
+      weight_min: 0.5,
+      weight_max: 1.4,
+      commercial: true
+    },
+    {
+      tag: "<lora:super_deform_v2:0.8>",
+      label: "スーパーデフォルメ",
+      category: "chibi",
+      description: "極端にデフォルメされたスタイル",
+      weight_default: 0.8,
+      weight_min: 0.4,
+      weight_max: 1.3,
+      commercial: true
+    },
+    {
+      tag: "<lora:mini_character_v1:0.7>",
+      label: "ミニキャラ",
+      category: "chibi",
+      description: "小さく可愛いミニキャラクター",
+      weight_default: 0.7,
+      weight_min: 0.4,
+      weight_max: 1.2,
+      commercial: true
+    },
+    {
+      tag: "<lora:kawaii_deform_v2:0.8>",
+      label: "かわいいデフォルメ",
+      category: "chibi",
+      description: "可愛さを強調したデフォルメ",
+      weight_default: 0.8,
+      weight_min: 0.5,
+      weight_max: 1.3,
+      commercial: true
+    },
+    {
+      tag: "<lora:mascot_style_v1:0.9>",
+      label: "マスコット風",
+      category: "chibi",
+      description: "マスコットキャラクター風",
+      weight_default: 0.9,
+      weight_min: 0.6,
+      weight_max: 1.5,
+      commercial: true
+    },
+    {
+      tag: "<lora:round_chibi_v1:0.8>",
+      label: "まるっこちびキャラ",
+      category: "chibi",
+      description: "丸い体型の愛らしいちびキャラ",
+      weight_default: 0.8,
+      weight_min: 0.5,
+      weight_max: 1.3,
+      commercial: true
+    },
+    {
+      tag: "<lora:emoji_style_v1:0.7>",
+      label: "絵文字風",
+      category: "chibi",
+      description: "絵文字のようなシンプルデフォルメ",
+      weight_default: 0.7,
+      weight_min: 0.4,
+      weight_max: 1.1,
+      commercial: true
+    },
+    {
+      tag: "<lora:sticker_chibi_v2:0.8>",
+      label: "ステッカー風ちび",
+      category: "chibi",
+      description: "ステッカーのような平面的なちびキャラ",
+      weight_default: 0.8,
+      weight_min: 0.5,
+      weight_max: 1.2,
+      commercial: true
+    },
+    {
+      tag: "<lora:big_head_chibi_v1:0.9>",
+      label: "頭身低めちび",
+      category: "chibi",
+      description: "頭が大きく体が小さいちびキャラ",
+      weight_default: 0.9,
+      weight_min: 0.6,
+      weight_max: 1.4,
+      commercial: true
+    },
+    {
+      tag: "<lora:plushie_style_v1:0.7>",
+      label: "ぬいぐるみ風",
+      category: "chibi",
+      description: "ぬいぐるみのような質感とデフォルメ",
+      weight_default: 0.7,
+      weight_min: 0.4,
+      weight_max: 1.1,
+      commercial: true
     }
   ]
 };
