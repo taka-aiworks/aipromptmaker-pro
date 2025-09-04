@@ -185,6 +185,11 @@ function setupMangaEventListeners() {
   // 【重要修正】リアルタイム更新システムを呼び出し
   setupMangaRealTimeUpdate();
   
+  // 🆕 漫画モード検索機能の初期化
+  setTimeout(() => {
+    initMangaSearchSystem();
+  }, 500);
+  
   // 初期出力生成
   setTimeout(() => {
     console.log('⏰ 初期出力生成実行');
@@ -193,6 +198,7 @@ function setupMangaEventListeners() {
   
   console.log('🎬 setupMangaEventListeners 完了');
 }
+
 
 // 【新規関数】漫画モード要素のデバッグ - setupMangaEventListeners の後に追加
 function debugMangaElements() {
@@ -733,6 +739,13 @@ function populateMangaOptions() {
       }
     }
   }, 300);
+  
+  console.log('漫画モード選択肢設定完了');
+  
+  // 🆕 検索統計の更新
+  setTimeout(() => {
+    updateMangaSearchStats();
+  }, 100);
 }
 
 // インタラクション選択肢の設定
@@ -2068,3 +2081,120 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 1500);
 });
 
+
+<!-- ================================ -->
+<!-- JavaScript追加コード -->
+<!-- ================================ -->
+// manga-mode.jsに追加する関数群
+
+// 漫画モード検索機能の初期化
+function initMangaSearchSystem() {
+  const searchInput = document.getElementById('manga-search-input');
+  const clearBtn = document.getElementById('manga-search-clear');
+  
+  if (!searchInput || !clearBtn) {
+    console.warn('漫画モード検索要素が見つかりません');
+    return;
+  }
+  
+  // 検索イベントのバインド
+  searchInput.addEventListener('input', (e) => {
+    performMangaSearch(e.target.value);
+  });
+  
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      performMangaSearch(e.target.value);
+    }
+  });
+  
+  clearBtn.addEventListener('click', clearMangaSearch);
+  
+  // 初期統計表示
+  setTimeout(updateMangaSearchStats, 100);
+  
+  console.log('✅ 漫画モード検索システム初期化完了');
+}
+
+// 漫画モード検索実行
+function performMangaSearch(searchTerm) {
+  const mangaPanel = document.getElementById('panelManga');
+  if (!mangaPanel) return;
+  
+  // 検索対象：ラジオボタン・チェックボックスのラベル要素
+  const allItems = mangaPanel.querySelectorAll('.chip');
+  let visibleCount = 0;
+  
+  allItems.forEach(item => {
+    const text = (item.textContent || '').toLowerCase();
+    const search = searchTerm.toLowerCase();
+    const match = !search || text.includes(search);
+    
+    // 表示/非表示の切り替え
+    item.classList.toggle('manga-hidden', !match);
+    if (match) visibleCount++;
+  });
+  
+  // カテゴリセクションの状態更新
+  updateMangaCategorySections();
+  updateMangaSearchStats(visibleCount, allItems.length);
+  
+  console.log(`🔍 漫画モード検索: "${searchTerm}" - ${visibleCount}件ヒット`);
+}
+
+// 漫画モード検索クリア
+function clearMangaSearch() {
+  const searchInput = document.getElementById('manga-search-input');
+  if (searchInput) {
+    searchInput.value = '';
+    performMangaSearch(''); // 空文字で全表示
+  }
+}
+
+// カテゴリセクションの状態更新
+function updateMangaCategorySections() {
+  const mangaPanel = document.getElementById('panelManga');
+  if (!mangaPanel) return;
+  
+  // 各カテゴリセクションをチェック
+  const sections = mangaPanel.querySelectorAll('.manga-params-section');
+  sections.forEach(section => {
+    const visibleItems = section.querySelectorAll('.chip:not(.manga-hidden)');
+    section.classList.toggle('manga-section-empty', visibleItems.length === 0);
+  });
+}
+
+// 漫画モード検索統計更新
+function updateMangaSearchStats(visible = null, total = null) {
+  const statsElement = document.getElementById('manga-search-stats');
+  const totalCountElement = document.getElementById('manga-total-count');
+  
+  if (!statsElement || !totalCountElement) return;
+  
+  if (visible === null || total === null) {
+    const mangaPanel = document.getElementById('panelManga');
+    if (mangaPanel) {
+      const allItems = mangaPanel.querySelectorAll('.chip');
+      const visibleItems = mangaPanel.querySelectorAll('.chip:not(.manga-hidden)');
+      total = allItems.length;
+      visible = visibleItems.length;
+    } else {
+      total = 0;
+      visible = 0;
+    }
+  }
+  
+  totalCountElement.textContent = total;
+  statsElement.innerHTML = `${visible}件 / ${total}件`;
+  
+  if (visible < total) {
+    statsElement.style.color = 'var(--accent-warn)';
+  } else {
+    statsElement.style.color = 'var(--text-muted)';
+  }
+}
+
+// 漫画モード検索機能をグローバルに公開
+window.performMangaSearch = performMangaSearch;
+window.clearMangaSearch = clearMangaSearch;
