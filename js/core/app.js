@@ -3645,215 +3645,308 @@ function forceDictionaryInitialization() {
 }
 
 // === 2. フォールバック辞書データの作成 ===
-function createFallbackDictionaries() {
-  console.log('=== フォールバック辞書データ作成 ===');
+/* ===== フォールバック削除と単語モード修正 ===== */
+
+// 1. フォールバック関連の関数を無効化
+window.createFallbackDictionaries = function() {
+  console.log('⚠️ createFallbackDictionaries は無効化されました');
+};
+
+window.waitForDictionaries = function() {
+  console.log('⚠️ waitForDictionaries は無効化されました');
+};
+
+window.fixDictionaryLoading = function() {
+  console.log('⚠️ fixDictionaryLoading は無効化されました');
+};
+
+// 2. 既存のタイマーをクリア
+const timers = [];
+const originalSetTimeout = window.setTimeout;
+window.setTimeout = function(fn, delay) {
+  if (fn.toString().includes('createFallbackDictionaries') || 
+      fn.toString().includes('waitForDictionaries') ||
+      fn.toString().includes('checkDictionaries')) {
+    console.log('🚫 フォールバック関連のタイマーをブロックしました');
+    return;
+  }
+  return originalSetTimeout(fn, delay);
+};
+
+// 3. 正しい単語モード初期化関数（フォールバック無し版）
+window.initWordModeClean = function() {
+  console.log('=== 単語モード クリーン初期化 ===');
   
-  // 基本的なSFW辞書データ
-  window.SFW = {
-    hair_style: [
-      {tag: "long hair", label: "ロングヘア"},
-      {tag: "short hair", label: "ショートヘア"},
-      {tag: "twin tails", label: "ツインテール"},
-      {tag: "ponytail", label: "ポニーテール"},
-      {tag: "bob cut", label: "ボブカット"}
-    ],
-    hair_length: [
-      {tag: "very long hair", label: "超ロングヘア"},
-      {tag: "long hair", label: "ロングヘア"},
-      {tag: "medium hair", label: "ミディアムヘア"},
-      {tag: "short hair", label: "ショートヘア"},
-      {tag: "very short hair", label: "ベリーショート"}
-    ],
-    bangs_style: [
-      {tag: "blunt bangs", label: "ぱっつん前髪"},
-      {tag: "side bangs", label: "サイド前髪"},
-      {tag: "swept bangs", label: "流し前髪"},
-      {tag: "no bangs", label: "前髪なし"}
-    ],
-    skin_features: [
-      {tag: "freckles", label: "そばかす"},
-      {tag: "mole", label: "ほくろ"},
-      {tag: "scar", label: "傷跡"},
-      {tag: "tattoo", label: "タトゥー"}
-    ],
-    eyes: [
-      {tag: "blue eyes", label: "青い目"},
-      {tag: "brown eyes", label: "茶色い目"},
-      {tag: "green eyes", label: "緑の目"},
-      {tag: "red eyes", label: "赤い目"},
-      {tag: "purple eyes", label: "紫の目"}
-    ],
-    expressions: [
-      {tag: "smile", label: "笑顔"},
-      {tag: "serious", label: "真剣"},
-      {tag: "happy", label: "幸せ"},
-      {tag: "sad", label: "悲しい"},
-      {tag: "angry", label: "怒り"}
-    ],
-    outfit: [
-      {tag: "school uniform", label: "制服"},
-      {tag: "casual dress", label: "カジュアルドレス"},
-      {tag: "t-shirt", label: "Tシャツ"},
-      {tag: "jeans", label: "ジーンズ"},
-      {tag: "skirt", label: "スカート"}
-    ],
-    background: [
-      {tag: "classroom", label: "教室"},
-      {tag: "park", label: "公園"},
-      {tag: "beach", label: "ビーチ"},
-      {tag: "city", label: "街"},
-      {tag: "forest", label: "森"}
-    ],
-    pose: [
-      {tag: "standing", label: "立っている"},
-      {tag: "sitting", label: "座っている"},
-      {tag: "walking", label: "歩いている"},
-      {tag: "running", label: "走っている"},
-      {tag: "lying down", label: "横になっている"}
-    ],
-    composition: [
-      {tag: "close-up", label: "クローズアップ"},
-      {tag: "medium shot", label: "ミディアムショット"},
-      {tag: "full body", label: "全身"},
-      {tag: "portrait", label: "ポートレート"},
-      {tag: "wide shot", label: "ワイドショット"}
-    ],
-    view: [
-      {tag: "front view", label: "正面"},
-      {tag: "side view", label: "横向き"},
-      {tag: "back view", label: "後ろ向き"},
-      {tag: "three-quarter view", label: "斜め向き"}
-    ],
-    lighting: [
-      {tag: "natural light", label: "自然光"},
-      {tag: "soft light", label: "ソフトライト"},
-      {tag: "dramatic light", label: "ドラマチックライト"},
-      {tag: "backlight", label: "逆光"}
-    ],
-    accessories: [
-      {tag: "glasses", label: "メガネ"},
-      {tag: "hat", label: "帽子"},
-      {tag: "necklace", label: "ネックレス"},
-      {tag: "earrings", label: "イヤリング"},
-      {tag: "bracelet", label: "ブレスレット"}
-    ],
-    age: [
-      {tag: "child", label: "子供"},
-      {tag: "teenager", label: "ティーンエイジャー"},
-      {tag: "young adult", label: "若い大人"},
-      {tag: "adult", label: "大人"}
-    ],
-    gender: [
-      {tag: "1girl", label: "女の子"},
-      {tag: "1boy", label: "男の子"},
-      {tag: "woman", label: "女性"},
-      {tag: "man", label: "男性"}
-    ],
-    body_type: [
-      {tag: "slender", label: "スレンダー"},
-      {tag: "average", label: "普通"},
-      {tag: "curvy", label: "グラマー"},
-      {tag: "muscular", label: "筋肉質"}
-    ],
-    height: [
-      {tag: "tall", label: "背が高い"},
-      {tag: "average height", label: "普通の身長"},
-      {tag: "short", label: "背が低い"},
-      {tag: "petite", label: "小柄"}
-    ],
-    face: [
-      {tag: "round face", label: "丸顔"},
-      {tag: "oval face", label: "卵型"},
-      {tag: "square face", label: "四角顔"},
-      {tag: "heart face", label: "ハート型"}
-    ],
-    skin_body: [
-      {tag: "fair skin", label: "色白"},
-      {tag: "tan skin", label: "日焼け肌"},
-      {tag: "dark skin", label: "褐色肌"},
-      {tag: "pale skin", label: "青白い肌"}
-    ],
-    art_style: [
-      {tag: "anime", label: "アニメ"},
-      {tag: "manga", label: "漫画"},
-      {tag: "realistic", label: "リアル"},
-      {tag: "cartoon", label: "カートゥーン"}
-    ],
-    colors: [
-      {tag: "red", label: "赤"},
-      {tag: "blue", label: "青"},
-      {tag: "green", label: "緑"},
-      {tag: "yellow", label: "黄色"},
-      {tag: "purple", label: "紫"},
-      {tag: "pink", label: "ピンク"},
-      {tag: "orange", label: "オレンジ"},
-      {tag: "black", label: "黒"},
-      {tag: "white", label: "白"},
-      {tag: "brown", label: "茶色"}
-    ]
+  // まず埋め込み辞書の確認
+  if (!window.DEFAULT_SFW_DICT || !window.DEFAULT_NSFW_DICT) {
+    console.error('❌ 埋め込み辞書が見つかりません');
+    console.log('DEFAULT_SFW_DICT:', !!window.DEFAULT_SFW_DICT);
+    console.log('DEFAULT_NSFW_DICT:', !!window.DEFAULT_NSFW_DICT);
+    return;
+  }
+  
+  // 実際の辞書データを取得
+  const realSFW = window.DEFAULT_SFW_DICT.SFW || window.DEFAULT_SFW_DICT;
+  const realNSFW = window.DEFAULT_NSFW_DICT.NSFW || window.DEFAULT_NSFW_DICT;
+  
+  console.log('✅ 実際のSFW辞書キー:', Object.keys(realSFW));
+  console.log('✅ 実際のNSFW辞書キー:', Object.keys(realNSFW));
+  
+  // 正確なマッピングテーブル
+  const SFW_MAPPING = {
+    // === 実際の辞書構造に基づくマッピング ===
+    'age': 'age',
+    'gender': 'gender',
+    'body_type': 'body-type', 
+    'height': 'height',
+    'worldview': 'worldview',
+    'speech_tone': null, // HTMLに存在しない
+    
+    // 髪関連
+    'hair_style': 'hair-style',
+    'hair_length': 'hair-length',
+    'bangs_style': 'bangs-style',
+    
+    // 顔・肌
+    'skin_features': 'skin-features', 
+    'eyes': 'eyes',
+    'face': 'face',
+    'skin_body': null, // HTMLに存在しない
+    
+    // 服・アクセサリー
+    'outfit': 'outfit-sfw',
+    'accessories': 'accessories',
+    
+    // ポーズ・構図
+    'pose': 'pose',
+    'composition': 'composition', 
+    'view': 'view',
+    
+    // 表情・感情
+    'expressions': 'expression-sfw',
+    'emotion_primary': 'emotion-primary',
+    'emotion_detail': 'emotion-detail',
+    'mouth_state': 'mouth-state',
+    'eye_state': 'eye-state',
+    'gaze': 'gaze',
+    
+    // 環境
+    'background': 'background',
+    'lighting': 'lighting-sfw',
+    'art_style': 'art-style',
+    
+    // アクション（SFW辞書に実際に存在する）
+    'pose_manga': 'pose-manga',
+    'hand_gesture': 'hand-gesture', 
+    'props_light': 'props-light',
+    'effect_manga': 'effect-manga',
+    'movement_action': 'movement-action',
+    
+    // その他
+    'colors': 'color',
+    
+    // ネガティブプロンプト
+    'negative_presets': 'negative-essential' // カテゴリ分けして配置
   };
   
-  // 基本的なNSFW辞書データ
-  window.NSFW = {
-    expression: [
-      {tag: "blushing", label: "赤面", level: "L1"},
-      {tag: "shy", label: "恥ずかしがり", level: "L1"},
-      {tag: "seductive", label: "誘惑的", level: "L2"}
-    ],
-    exposure: [
-      {tag: "cleavage", label: "胸の谷間", level: "L1"},
-      {tag: "midriff", label: "お腹見せ", level: "L1"},
-      {tag: "bare shoulders", label: "肩出し", level: "L1"}
-    ],
-    situation: [
-      {tag: "romantic", label: "ロマンチック", level: "L1"},
-      {tag: "intimate", label: "親密", level: "L2"}
-    ],
-    lighting: [
-      {tag: "moody lighting", label: "ムーディーライト", level: "L1"},
-      {tag: "candlelight", label: "キャンドルライト", level: "L1"}
-    ],
-    background: [
-      {tag: "bedroom", label: "寝室", level: "L1"},
-      {tag: "bathroom", label: "バスルーム", level: "L2"}
-    ],
-    pose: [
-      {tag: "lying pose", label: "横たわるポーズ", level: "L1"},
-      {tag: "sitting pose", label: "座りポーズ", level: "L1"}
-    ],
-    accessory: [
-      {tag: "choker", label: "チョーカー", level: "L1"},
-      {tag: "stockings", label: "ストッキング", level: "L1"}
-    ],
-    outfit: [
-      {tag: "bikini", label: "ビキニ", level: "L1"},
-      {tag: "swimsuit", label: "水着", level: "L1"}
-    ],
-    body: [
-      {tag: "curvy figure", label: "曲線美", level: "L1"},
-      {tag: "athletic body", label: "アスリート体型", level: "L1"}
-    ],
-    nipples: [
-      {tag: "covered nipples", label: "隠れた乳首", level: "L2"}
-    ],
-    underwear: [
-      {tag: "lingerie", label: "ランジェリー", level: "L2"},
-      {tag: "bra", label: "ブラジャー", level: "L1"}
-    ]
+  const NSFW_MAPPING = {
+    // === 実際のNSFW辞書構造に基づく ===
+    'expression': 'expression-nsfw',
+    'exposure': 'exposure',
+    'situation': 'situation',
+    'lighting': 'lighting-nsfw', 
+    'pose': 'pose-nsfw',
+    'accessories': 'accessory-nsfw', // 複数形注意
+    'outfit': 'outfit-nsfw',
+    'underwear': 'underwear-nsfw',
+    'body': 'body-nsfw',
+    'nipple': 'nipple-nsfw',
+    'action': 'action-nsfw',
+    'action2': 'action2-nsfw',
+    'participants': 'participants'
   };
   
-  console.log('フォールバック辞書作成完了');
-  console.log('SFW categories:', Object.keys(window.SFW).length);
-  console.log('NSFW categories:', Object.keys(window.NSFW).length);
-  
-  // 単語モード初期化実行
-  setTimeout(() => {
-    if (window.initWordModeItems) {
-      console.log('フォールバックデータで単語モード初期化');
-      window.initWordModeItems();
+  // アイテム作成関数
+  function createWordModeItem(item, category) {
+    if (!item) return '';
+    
+    let tag, label, level;
+    
+    if (typeof item === 'string') {
+      tag = label = item.trim();
+      level = '';
+    } else if (typeof item === 'object') {
+      tag = (item.tag || '').toString().trim();
+      label = (item.label || item.ja || item.tag || '').toString().trim();
+      level = (item.level || '').toString().trim();
+    } else {
+      return '';
     }
-  }, 500);
+    
+    if (!tag && !label) return '';
+    if (!tag) tag = label;
+    if (!label) label = tag;
+    
+    const showMini = (tag !== label && tag.length > 0 && label.length > 0);
+    const levelText = level ? ` [${level}]` : '';
+    
+    return `
+      <button type="button" class="wm-item" 
+              data-en="${tag}" 
+              data-jp="${label}" 
+              data-cat="${category}"
+              title="${tag}${levelText}">
+        <span class="wm-jp">${label}${levelText}</span>
+        ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
+        <span class="wm-actions">
+          <button class="wm-copy-en" type="button">EN</button>
+          <button class="wm-copy-both" type="button">BOTH</button>
+        </span>
+      </button>
+    `;
+  }
+  
+  // 既存の内容をクリア
+  const allContainers = document.querySelectorAll('#panelWordMode .wm-items');
+  console.log(`🧹 ${allContainers.length}個のコンテナをクリア`);
+  allContainers.forEach(container => {
+    container.innerHTML = '';
+  });
+  
+  let totalGenerated = 0;
+  
+  // SFW辞書の処理
+  console.log('--- SFW辞書処理開始 ---');
+  Object.entries(realSFW).forEach(([dictKey, items]) => {
+    if (!Array.isArray(items) || items.length === 0) {
+      console.log(`⏭️ スキップ: ${dictKey} (空またはnull)`);
+      return;
+    }
+    
+    const htmlId = SFW_MAPPING[dictKey];
+    if (!htmlId) {
+      console.log(`⚠️ マッピング未定義: ${dictKey}`);
+      return;
+    }
+    
+    const containerId = `wm-items-${htmlId}`;
+    const container = document.getElementById(containerId);
+    
+    if (container) {
+      const validItems = items.filter(item => {
+        if (!item) return false;
+        if (typeof item === 'string') return item.trim() !== '';
+        const tag = (item.tag || '').toString().trim();
+        const label = (item.label || item.ja || item.tag || '').toString().trim();
+        return tag !== '' || label !== '';
+      });
+      
+      const html = validItems.map(item => createWordModeItem(item, dictKey)).join('');
+      container.innerHTML = html;
+      
+      const count = container.querySelectorAll('.wm-item').length;
+      totalGenerated += count;
+      
+      console.log(`✅ SFW: ${count}件 (${dictKey} → ${containerId})`);
+      
+      // カウンター更新
+      const counterId = `wm-count-${htmlId}`;
+      const counter = document.getElementById(counterId);
+      if (counter) {
+        counter.textContent = count;
+      }
+    } else {
+      console.warn(`❌ コンテナ未発見: ${containerId} for ${dictKey}`);
+    }
+  });
+  
+  // NSFW辞書の処理
+  console.log('--- NSFW辞書処理開始 ---');
+  Object.entries(realNSFW).forEach(([dictKey, items]) => {
+    if (!Array.isArray(items) || items.length === 0) {
+      console.log(`⏭️ NSFWスキップ: ${dictKey} (空またはnull)`);
+      return;
+    }
+    
+    const htmlId = NSFW_MAPPING[dictKey];
+    if (!htmlId) {
+      console.log(`⚠️ NSFWマッピング未定義: ${dictKey}`);
+      return;
+    }
+    
+    const containerId = `wm-items-${htmlId}`;
+    const container = document.getElementById(containerId);
+    
+    if (container) {
+      const validItems = items.filter(item => {
+        if (!item) return false;
+        if (typeof item === 'string') return item.trim() !== '';
+        const tag = (item.tag || '').toString().trim();
+        const label = (item.label || item.ja || item.tag || '').toString().trim();
+        return tag !== '' || label !== '';
+      });
+      
+      const html = validItems.map(item => createWordModeItem(item, dictKey)).join('');
+      container.innerHTML = html;
+      
+      const count = container.querySelectorAll('.wm-item').length;
+      totalGenerated += count;
+      
+      console.log(`✅ NSFW: ${count}件 (${dictKey} → ${containerId})`);
+      
+      // カウンター更新
+      const counterId = `wm-count-${htmlId}`;
+      const counter = document.getElementById(counterId);
+      if (counter) {
+        counter.textContent = count;
+      }
+    } else {
+      console.warn(`❌ NSFWコンテナ未発見: ${containerId} for ${dictKey}`);
+    }
+  });
+  
+  console.log(`🎉 クリーン初期化完了: ${totalGenerated}件生成`);
+  
+  // 統計更新
+  if (window.updateSearchStats) {
+    window.updateSearchStats(totalGenerated, totalGenerated);
+  }
+  
+  const totalCountEl = document.getElementById('wm-total-count');
+  if (totalCountEl) {
+    totalCountEl.textContent = totalGenerated;
+  }
+};
+
+// 4. 元の関数を置き換え
+window.initWordModeItems = window.initWordModeClean;
+
+// 5. フォールバックでデータが汚染されている場合の復旧
+if (window.SFW && Object.keys(window.SFW).length <= 25) {
+  console.log('🔄 フォールバックデータを検出、実際の辞書で復旧中...');
+  
+  // 実際の辞書でSFW/NSFWを復旧
+  if (window.DEFAULT_SFW_DICT && window.mergeIntoSFW) {
+    window.mergeIntoSFW(window.DEFAULT_SFW_DICT);
+  }
+  if (window.DEFAULT_NSFW_DICT && window.mergeIntoNSFW) {
+    window.mergeIntoNSFW(window.DEFAULT_NSFW_DICT);
+  }
 }
+
+// 6. 即座に実行
+setTimeout(() => {
+  console.log('🚀 フォールバック削除後の単語モード初期化開始');
+  window.initWordModeClean();
+}, 200);
+
+// 7. デバッグ情報表示
+console.log('✅ フォールバック削除完了');
+console.log('📊 現在の辞書状況:');
+console.log('- SFW keys:', window.SFW ? Object.keys(window.SFW).length : 'undefined');
+console.log('- NSFW keys:', window.NSFW ? Object.keys(window.NSFW).length : 'undefined');
+console.log('- DEFAULT_SFW_DICT:', !!window.DEFAULT_SFW_DICT);
+console.log('- DEFAULT_NSFW_DICT:', !!window.DEFAULT_NSFW_DICT);
 
 // === 3. 辞書読み込みの監視と再試行 ===
 function waitForDictionaries(maxAttempts = 10, interval = 1000) {
