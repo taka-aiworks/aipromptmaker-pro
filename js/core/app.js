@@ -3019,6 +3019,9 @@ window.initWordModeItems = function() {
   
   console.log(`=== 初期化完了: ${successCategories}カテゴリ、${totalItems}アイテム ===`);
   
+  // 存在しないカテゴリのHTMLコンテナを非表示にする
+  hideEmptyCategories();
+  
   // 検索機能のイベントバインド
   if (typeof bindSearchEvents === 'function') {
     bindSearchEvents();
@@ -3038,6 +3041,32 @@ window.initWordModeItems = function() {
     console.log(`実際のDOM要素数: ${actualItems}`);
   }, 100);
 };
+
+// 空のカテゴリを非表示にする関数
+function hideEmptyCategories() {
+  // 存在しない漫画カテゴリを非表示
+  const emptyCategories = [
+    'worldview', 'emotion-primary', 'emotion-detail', 'mouth-state', 
+    'eye-state', 'gaze', 'pose-manga', 'hand-gesture', 'movement-action', 
+    'props-light', 'effect-manga', 'negative-presets', 'negative-categories', 
+    'negative-quick-presets', 'action-nsfw', 'action2-nsfw', 'participants'
+  ];
+  
+  emptyCategories.forEach(catId => {
+    const container = document.getElementById(`wm-items-${catId}`);
+    if (container) {
+      // detailsタグを探して非表示にする
+      let parent = container.parentElement;
+      while (parent && parent.tagName !== 'DETAILS') {
+        parent = parent.parentElement;
+      }
+      if (parent && parent.tagName === 'DETAILS') {
+        parent.style.display = 'none';
+        console.log(`✓ 空のカテゴリを非表示: ${catId}`);
+      }
+    }
+  });
+}
 
 // 辞書のキー一覧をチェックする関数（デバッグ用）
 window.checkDictionaryKeys = function() {
@@ -3066,7 +3095,6 @@ window.checkDictionaryKeys = function() {
 console.log('修正版 initWordModeItems 関数を定義しました');
 console.log('実行するには: window.initWordModeItems()');
 console.log('辞書キー確認: window.checkDictionaryKeys()');
-
    
 // createWordModeItem 関数も定義（存在しない場合のフォールバック）
 if (typeof window.createWordModeItem !== 'function') {
