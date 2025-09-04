@@ -2726,7 +2726,9 @@ function fillAccessorySlots(){
   });
 }
 
-// initWordMode関数の完全版
+
+
+// initWordMode関数の完全版（置き換え用）
 function initWordMode() {
   let selectedCount = 0;
   let searchTerm = ''; // 検索語を保持
@@ -2754,6 +2756,111 @@ function initWordMode() {
     updateSearchStats(allItems.length, allItems.length);
   }
 
+  // performSearch関数（ローカル版）
+  function performSearch(searchTerm) {
+    searchTerm = (searchTerm || '').trim();
+    
+    let searchResultsArea = document.getElementById('wm-search-results');
+    
+    // 検索結果エリアの作成（存在しない場合のみ）
+    if (!searchResultsArea) {
+      const searchInput = document.getElementById('wm-search-input');
+      if (!searchInput) return;
+      
+      searchResultsArea = document.createElement('div');
+      searchResultsArea.id = 'wm-search-results';
+      searchResultsArea.style.cssText = `
+        display: none;
+        max-height: 250px;
+        overflow-y: auto;
+        border: 1px solid #444;
+        border-radius: 6px;
+        margin: 8px 0;
+        padding: 8px;
+        background: var(--bg-card, #2a2f3a);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      `;
+      
+      searchInput.parentNode.insertBefore(searchResultsArea, searchInput.nextSibling);
+    }
+    
+    const allItems = document.querySelectorAll('#panelWordMode .wm-item');
+    
+    if (!searchTerm) {
+      searchResultsArea.style.display = 'none';
+      searchResultsArea.innerHTML = '';
+      updateSearchStats(allItems.length, allItems.length);
+      return;
+    }
+    
+    // 検索実行
+    const matchedItems = [];
+    const searchLower = searchTerm.toLowerCase();
+    
+    allItems.forEach(item => {
+      const jp = (item.dataset.jp || '').toLowerCase();
+      const en = (item.dataset.en || '').toLowerCase();
+      
+      if (jp.includes(searchLower) || en.includes(searchLower)) {
+        matchedItems.push({
+          en: item.dataset.en,
+          jp: item.dataset.jp,
+          cat: item.dataset.cat
+        });
+      }
+    });
+    
+    if (matchedItems.length === 0) {
+      searchResultsArea.innerHTML = '<div style="text-align: center; color: #888; padding: 16px;">検索結果がありません</div>';
+      searchResultsArea.style.display = 'block';
+      updateSearchStats(0, allItems.length);
+      return;
+    }
+    
+    // 検索結果HTML生成
+    const resultsHTML = matchedItems.map(item => {
+      const showEn = item.en !== item.jp;
+      return `
+        <button type="button" class="wm-search-result-item" 
+                data-en="${item.en}" 
+                data-jp="${item.jp}">
+          <span style="font-weight: 500;">${item.jp}</span>
+          ${showEn ? `<span style="color: #aaa; font-size: 12px; margin-left: 8px;">${item.en}</span>` : ''}
+        </button>
+      `;
+    }).join('');
+    
+    searchResultsArea.innerHTML = resultsHTML;
+    searchResultsArea.style.display = 'block';
+    
+    // クリックイベント設定
+    searchResultsArea.querySelectorAll('.wm-search-result-item').forEach(resultItem => {
+      resultItem.addEventListener('click', () => {
+        const en = resultItem.dataset.en;
+        const jp = resultItem.dataset.jp;
+        
+        if (en && jp && typeof window.addToOutputTable === 'function') {
+          window.addToOutputTable(en, jp);
+        }
+        
+        // 検索をクリア
+        const searchInput = document.getElementById('wm-search-input');
+        if (searchInput) searchInput.value = '';
+        clearSearch();
+      });
+    });
+    
+    updateSearchStats(matchedItems.length, allItems.length);
+  }
+
+  // updateSearchStats関数（ローカル版）
+  function updateSearchStats(visible, total) {
+    const statsElement = document.getElementById('wm-search-stats');
+    if (statsElement) {
+      statsElement.textContent = `${visible}件 / ${total}件`;
+    }
+  }
+
   // 検索イベントのバインド
   function bindSearchEvents() {
     const searchInput = document.getElementById('wm-search-input');
@@ -2779,677 +2886,93 @@ function initWordMode() {
     }
   }
 
-  // initCollapsibleCategories関数を以下で置き換え
-function initCollapsibleCategories() {
-  const wordModePanel = document.getElementById('panelWordMode');
-  if (!wordModePanel) return;
-  
-  // テーブルコンテナを取得
-  const tableContainer = document.getElementById('wm-table-container') || 
-                        document.querySelector('.wm-table-wrapper');
-  
-  if (!tableContainer) return;
-  
-  // カテゴリ折りたたみボタンを作成
-  let toggleButton = document.getElementById('wm-categories-toggle');
-  if (!toggleButton) {
-    toggleButton = document.createElement('button');
-    toggleButton.id = 'wm-categories-toggle';
-    toggleButton.type = 'button';
-    toggleButton.textContent = '▼ カテゴリ一覧を表示';
-    toggleButton.style.cssText = `
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      background: var(--bg-secondary, #363c4a);
-      color: var(--text-primary, #ffffff);
-      border: 1px solid #555;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.2s ease;
-    `;
+  // initCollapsibleCategories関数
+  function initCollapsibleCategories() {
+    const wordModePanel = document.getElementById('panelWordMode');
+    if (!wordModePanel) return;
     
-    toggleButton.addEventListener('mouseover', () => {
-      toggleButton.style.backgroundColor = 'var(--bg-hover, #404652)';
-    });
-    toggleButton.addEventListener('mouseout', () => {
-      toggleButton.style.backgroundColor = 'var(--bg-secondary, #363c4a)';
-    });
-  }
-  
-  // カテゴリコンテナを取得または作成
-  let categoriesContainer = document.getElementById('wm-categories-container');
-  if (!categoriesContainer) {
-    // 既存のカテゴリ要素をすべて収集
-    const categoryElements = wordModePanel.querySelectorAll('details, .wm-category, .category-section');
+    // テーブルコンテナを取得
+    const tableContainer = document.getElementById('wm-table-container') || 
+                          document.querySelector('.wm-table-wrapper');
     
-    if (categoryElements.length > 0) {
-      categoriesContainer = document.createElement('div');
-      categoriesContainer.id = 'wm-categories-container';
-      categoriesContainer.style.cssText = `
-        display: none;
-        margin-top: 10px;
+    if (!tableContainer) return;
+    
+    // カテゴリ折りたたみボタンを作成
+    let toggleButton = document.getElementById('wm-categories-toggle');
+    if (!toggleButton) {
+      toggleButton = document.createElement('button');
+      toggleButton.id = 'wm-categories-toggle';
+      toggleButton.type = 'button';
+      toggleButton.textContent = '▼ カテゴリ一覧を表示';
+      toggleButton.style.cssText = `
+        width: 100%;
         padding: 10px;
-        background: var(--bg-card, #2a2f3a);
-        border: 1px solid #444;
+        margin: 10px 0;
+        background: var(--bg-secondary, #363c4a);
+        color: var(--text-primary, #ffffff);
+        border: 1px solid #555;
         border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
       `;
       
-      // カテゴリ要素をコンテナに移動
-      categoryElements.forEach(element => {
-        categoriesContainer.appendChild(element);
+      toggleButton.addEventListener('mouseover', () => {
+        toggleButton.style.backgroundColor = 'var(--bg-hover, #404652)';
+      });
+      toggleButton.addEventListener('mouseout', () => {
+        toggleButton.style.backgroundColor = 'var(--bg-secondary, #363c4a)';
       });
     }
-  }
-  
-  // テーブルの直後にトグルボタンとカテゴリを配置
-  if (toggleButton && !toggleButton.parentNode) {
-    tableContainer.parentNode.insertBefore(toggleButton, tableContainer.nextSibling);
-  }
-  
-  if (categoriesContainer && !categoriesContainer.parentNode) {
-    toggleButton.parentNode.insertBefore(categoriesContainer, toggleButton.nextSibling);
-  }
-  
-  // トグル機能の実装
-  let isVisible = false;
-  toggleButton.addEventListener('click', () => {
-    if (categoriesContainer) {
-      isVisible = !isVisible;
-      categoriesContainer.style.display = isVisible ? 'block' : 'none';
-      const icon = isVisible ? '▲' : '▼';
-      const text = isVisible ? 'カテゴリ一覧を隠す' : 'カテゴリ一覧を表示';
-      toggleButton.textContent = `${icon} ${text}`;
-    }
-  });
-}
-
-// =====================================
-// ピンポイント修正: 2つの問題を解決
-// =====================================
-
-/* ===== 単語モード統一コード（置き換え用） ===== */
-
-// === 1. 単語モード初期化の統一版 ===
-window.initWordModeItems = function() {
-  console.log('=== 単語モード統一初期化 ===');
-  
-  // 既存の内容をクリア
-  const allContainers = document.querySelectorAll('#panelWordMode .wm-items');
-  allContainers.forEach(container => {
-    container.innerHTML = '';
-  });
-  
-  let totalGenerated = 0;
-  
-  // === SFW辞書の処理 ===
-  Object.entries(window.SFW || {}).forEach(([dictKey, items]) => {
-    if (!Array.isArray(items) || items.length === 0) return;
     
-    const possibleIds = [
-      dictKey,
-      dictKey.replace(/_/g, '-'),
-      dictKey.replace(/_/g, ''),
-      // 特別な変換
-      ...(dictKey === 'expressions' ? ['expression', 'expr'] : []),
-      ...(dictKey === 'lighting' ? ['light'] : []),
-      ...(dictKey === 'hair_length' ? ['hair-length'] : []),
-      ...(dictKey === 'bangs_style' ? ['bangs-style'] : []),
-      ...(dictKey === 'skin_features' ? ['skin-features'] : [])
-    ];
-    
-    let container = null;
-    for (const id of possibleIds) {
-      container = document.getElementById(`wm-items-${id}`);
-      if (container) break;
-    }
-    
-    if (container) {
-      const validItems = items.filter(item => {
-        if (!item) return false;
-        if (typeof item === 'string') return item.trim() !== '';
-        return (item.tag || '').trim() !== '' || (item.label || '').trim() !== '';
-      });
+    // カテゴリコンテナを取得または作成
+    let categoriesContainer = document.getElementById('wm-categories-container');
+    if (!categoriesContainer) {
+      // 既存のカテゴリ要素をすべて収集
+      const categoryElements = wordModePanel.querySelectorAll('details, .wm-category, .category-section');
       
-      container.innerHTML = validItems.map(item => createWordModeItem(item, dictKey)).join('');
-      
-      const count = container.querySelectorAll('.wm-item').length;
-      totalGenerated += count;
-      
-      const counter = document.getElementById(`wm-count-${dictKey}`) || 
-                      document.getElementById(`wm-count-${dictKey.replace(/_/g, '-')}`);
-      if (counter) counter.textContent = count;
-    }
-  });
-  
-  // === NSFW辞書の処理 ===
-  Object.entries(window.NSFW || {}).forEach(([dictKey, items]) => {
-    if (!Array.isArray(items) || items.length === 0) return;
-    
-    const possibleIds = [
-      dictKey + '-nsfw',
-      dictKey.replace(/_/g, '-') + '-nsfw',
-      dictKey,
-      dictKey.replace(/_/g, '-')
-    ];
-    
-    let container = null;
-    for (const id of possibleIds) {
-      container = document.getElementById(`wm-items-${id}`);
-      if (container) break;
-    }
-    
-    if (container) {
-      const validItems = items.filter(item => {
-        if (!item) return false;
-        if (typeof item === 'string') return item.trim() !== '';
-        return (item.tag || '').trim() !== '' || (item.label || '').trim() !== '';
-      });
-      
-      container.innerHTML = validItems.map(item => createWordModeItem(item, dictKey)).join('');
-      
-      const count = container.querySelectorAll('.wm-item').length;
-      totalGenerated += count;
-      
-      const counter = document.getElementById(`wm-count-${dictKey}-nsfw`) || 
-                      document.getElementById(`wm-count-${dictKey.replace(/_/g, '-')}-nsfw`);
-      if (counter) counter.textContent = count;
-    }
-  });
-  
-  console.log(`✅ 単語モード初期化完了: ${totalGenerated}件生成`);
-  
-  // 統計更新
-  if (typeof window.updateSearchStats === 'function') {
-    window.updateSearchStats(totalGenerated, totalGenerated);
-  }
-  
-  // イベントバインド
-  bindWordModeEvents();
-};
-
-// === 2. 統一されたアイテム作成関数 ===
-function createWordModeItem(item, category) {
-  if (!item) return '';
-  
-  let tag, label;
-  
-  if (typeof item === 'string') {
-    tag = label = item.trim();
-  } else {
-    tag = String(item.tag || '').trim();
-    label = String(item.label || item.ja || item.tag || '').trim();
-  }
-  
-  if (!tag && !label) return '';
-  if (!tag) tag = label;
-  if (!label) label = tag;
-  
-  const showMini = (tag !== label);
-  const level = item.level ? ` [${item.level}]` : '';
-  
-  return `
-    <button type="button" class="wm-item" 
-            data-en="${tag}" 
-            data-jp="${label}" 
-            data-cat="${category}"
-            title="${tag}${level}">
-      <span class="wm-jp">${label}${level}</span>
-      ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
-      <span class="wm-actions">
-        <button class="wm-copy-en" type="button">EN</button>
-        <button class="wm-copy-both" type="button">BOTH</button>
-      </span>
-    </button>
-  `;
-}
-
-// === 3. 検索機能 ===
-window.performSearch = function(searchTerm) {
-  searchTerm = (searchTerm || '').trim();
-  
-  let searchResultsArea = document.getElementById('wm-search-results');
-  
-  // 検索結果エリアの作成（存在しない場合のみ）
-  if (!searchResultsArea) {
-    const searchInput = document.getElementById('wm-search-input');
-    if (!searchInput) return;
-    
-    searchResultsArea = document.createElement('div');
-    searchResultsArea.id = 'wm-search-results';
-    searchResultsArea.style.cssText = `
-      display: none;
-      max-height: 250px;
-      overflow-y: auto;
-      border: 1px solid #444;
-      border-radius: 6px;
-      margin: 8px 0;
-      padding: 8px;
-      background: var(--bg-card, #2a2f3a);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    `;
-    
-    searchInput.parentNode.insertBefore(searchResultsArea, searchInput.nextSibling);
-  }
-  
-  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
-  
-  if (!searchTerm) {
-    searchResultsArea.style.display = 'none';
-    searchResultsArea.innerHTML = '';
-    if (typeof window.updateSearchStats === 'function') {
-      window.updateSearchStats(allItems.length, allItems.length);
-    }
-    return;
-  }
-  
-  // 検索実行
-  const matchedItems = [];
-  const searchLower = searchTerm.toLowerCase();
-  
-  allItems.forEach(item => {
-    const jp = (item.dataset.jp || '').toLowerCase();
-    const en = (item.dataset.en || '').toLowerCase();
-    
-    if (jp.includes(searchLower) || en.includes(searchLower)) {
-      matchedItems.push({
-        en: item.dataset.en,
-        jp: item.dataset.jp,
-        cat: item.dataset.cat
-      });
-    }
-  });
-  
-  if (matchedItems.length === 0) {
-    searchResultsArea.innerHTML = '<div style="text-align: center; color: #888; padding: 16px;">検索結果がありません</div>';
-    searchResultsArea.style.display = 'block';
-    if (typeof window.updateSearchStats === 'function') {
-      window.updateSearchStats(0, allItems.length);
-    }
-    return;
-  }
-  
-  // 検索結果HTML生成
-  const resultsHTML = matchedItems.map(item => {
-    const showEn = item.en !== item.jp;
-    return `
-      <button type="button" class="wm-search-result-item" 
-              data-en="${item.en}" 
-              data-jp="${item.jp}">
-        <span style="font-weight: 500;">${item.jp}</span>
-        ${showEn ? `<span style="color: #aaa; font-size: 12px; margin-left: 8px;">${item.en}</span>` : ''}
-      </button>
-    `;
-  }).join('');
-  
-  searchResultsArea.innerHTML = resultsHTML;
-  searchResultsArea.style.display = 'block';
-  
-  // クリックイベント設定
-  searchResultsArea.querySelectorAll('.wm-search-result-item').forEach(resultItem => {
-    resultItem.addEventListener('click', () => {
-      const en = resultItem.dataset.en;
-      const jp = resultItem.dataset.jp;
-      
-      if (en && jp && typeof window.addToOutputTable === 'function') {
-        window.addToOutputTable(en, jp);
-      }
-      
-      // 検索をクリア
-      const searchInput = document.getElementById('wm-search-input');
-      if (searchInput) searchInput.value = '';
-      window.clearSearch();
-    });
-  });
-  
-  if (typeof window.updateSearchStats === 'function') {
-    window.updateSearchStats(matchedItems.length, allItems.length);
-  }
-};
-
-// === 4. 検索クリア機能 ===
-window.clearSearch = function() {
-  const searchInput = document.getElementById('wm-search-input');
-  const resultsArea = document.getElementById('wm-search-results');
-  
-  if (searchInput) searchInput.value = '';
-  if (resultsArea) {
-    resultsArea.style.display = 'none';
-    resultsArea.innerHTML = '';
-  }
-  
-  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
-  if (typeof window.updateSearchStats === 'function') {
-    window.updateSearchStats(allItems.length, allItems.length);
-  }
-};
-
-// === 5. テーブル追加機能 ===
-window.addToOutputTable = function(en, jp) {
-  const tbody = document.getElementById('wm-table-body');
-  if (!tbody) {
-    console.warn('wm-table-body が見つかりません');
-    return;
-  }
-  
-  // 最大20件制限
-  if (tbody.children.length >= 20) {
-    console.warn('テーブルの最大件数に達しています');
-    return;
-  }
-  
-  // 重複チェック
-  if (tbody.querySelector(`tr[data-en="${en}"]`)) {
-    console.warn('重複するアイテムです:', en);
-    return;
-  }
-  
-  // 新しい行を作成
-  const row = document.createElement('tr');
-  row.dataset.en = en;
-  row.innerHTML = `
-    <td class="wm-row-jp">${jp}</td>
-    <td class="wm-row-en">${en}</td>
-    <td>
-      <button type="button" class="wm-row-copy-en" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">EN</button>
-      <button type="button" class="wm-row-copy-both" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">両方</button>
-      <button type="button" class="wm-row-remove" style="padding: 2px 6px; font-size: 12px; color: #f44336;">削除</button>
-    </td>
-  `;
-  
-  // イベントリスナーを追加
-  const copyEnBtn = row.querySelector('.wm-row-copy-en');
-  const copyBothBtn = row.querySelector('.wm-row-copy-both');
-  const removeBtn = row.querySelector('.wm-row-remove');
-  
-  if (copyEnBtn) {
-    copyEnBtn.addEventListener('click', () => {
-      navigator.clipboard?.writeText(en).then(() => toast('英語タグをコピーしました')).catch(() => {});
-    });
-  }
-  
-  if (copyBothBtn) {
-    copyBothBtn.addEventListener('click', () => {
-      const text = jp && en ? `${jp}(${en})` : (en || jp);
-      navigator.clipboard?.writeText(text).then(() => toast('日英タグをコピーしました')).catch(() => {});
-    });
-  }
-  
-  if (removeBtn) {
-    removeBtn.addEventListener('click', () => {
-      row.remove();
-    });
-  }
-  
-  tbody.appendChild(row);
-};
-
-// === 6. 統計表示機能 ===
-window.updateSearchStats = function(visible, total) {
-  const statsElement = document.getElementById('wm-search-stats');
-  if (statsElement) {
-    statsElement.textContent = `${visible}件 / ${total}件`;
-  }
-};
-
-// === 7. イベントバインド ===
-function bindWordModeEvents() {
-  const root = document.getElementById('panelWordMode');
-  if (!root) return;
-  
-  // 検索イベント
-  const searchInput = root.querySelector('#wm-search-input');
-  if (searchInput) {
-    // 既存のリスナーを削除
-    const newSearchInput = searchInput.cloneNode(true);
-    searchInput.parentNode.replaceChild(newSearchInput, searchInput);
-    
-    // 新しいリスナーを追加
-    newSearchInput.addEventListener('input', (e) => window.performSearch(e.target.value));
-  }
-  
-  const clearBtn = root.querySelector('#wm-search-clear');
-  if (clearBtn) {
-    clearBtn.addEventListener('click', () => {
-      const currentSearchInput = root.querySelector('#wm-search-input');
-      if (currentSearchInput) currentSearchInput.value = '';
-      window.clearSearch();
-    });
-  }
-  
-  // アイテムクリックイベント（委譲）
-  root.addEventListener('click', (e) => {
-    if (e.target.closest('summary')) return;
-    
-    if (e.target.classList.contains('wm-copy-en')) {
-      e.preventDefault();
-      const item = e.target.closest('.wm-item');
-      const en = item?.dataset.en || '';
-      if (en && navigator.clipboard) {
-        navigator.clipboard.writeText(en);
-        toast('英語タグをコピーしました');
-      }
-      return;
-    }
-    
-    if (e.target.classList.contains('wm-copy-both')) {
-      e.preventDefault();
-      const item = e.target.closest('.wm-item');
-      const jp = item?.dataset.jp || '';
-      const en = item?.dataset.en || '';
-      const text = jp && en ? `${jp}(${en})` : (en || jp);
-      if (text && navigator.clipboard) {
-        navigator.clipboard.writeText(text);
-        toast('日英タグをコピーしました');
-      }
-      return;
-    }
-    
-    const itemBtn = e.target.closest('.wm-item');
-    if (itemBtn) {
-      const en = itemBtn.dataset.en || '';
-      const jp = itemBtn.dataset.jp || '';
-      if (en && jp && window.addToOutputTable) {
-        window.addToOutputTable(en, jp);
+      if (categoryElements.length > 0) {
+        categoriesContainer = document.createElement('div');
+        categoriesContainer.id = 'wm-categories-container';
+        categoriesContainer.style.cssText = `
+          display: none;
+          margin-top: 10px;
+          padding: 10px;
+          background: var(--bg-card, #2a2f3a);
+          border: 1px solid #444;
+          border-radius: 6px;
+        `;
+        
+        // カテゴリ要素をコンテナに移動
+        categoryElements.forEach(element => {
+          categoriesContainer.appendChild(element);
+        });
       }
     }
-  });
-}
-
-// === 8. 自動実行設定 ===
-document.addEventListener('DOMContentLoaded', function() {
-  // 辞書が読み込まれるまで待機
-  const checkAndInit = () => {
-    if (typeof window.SFW === 'object' && typeof window.NSFW === 'object') {
-      setTimeout(() => {
-        if (window.initWordModeItems) {
-          window.initWordModeItems();
-        }
-      }, 500);
-    } else {
-      setTimeout(checkAndInit, 100);
-    }
-  };
-  
-  checkAndInit();
-});
-   
-   
-
-// 検索クリア関数の修正
-window.clearSearch = function() {
-  const searchInput = document.getElementById('wm-search-input');
-  const resultsArea = document.getElementById('wm-search-results');
-  
-  if (searchInput) searchInput.value = '';
-  if (resultsArea) {
-    resultsArea.style.display = 'none';
-    resultsArea.innerHTML = '';
-  }
-  
-  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
-  if (typeof window.updateSearchStats === 'function') {
-    window.updateSearchStats(allItems.length, allItems.length);
-  }
-};
-
-// 検索入力のイベントバインド修正
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(() => {
-    const searchInput = document.getElementById('wm-search-input');
-    const clearBtn = document.getElementById('wm-search-clear');
     
-    if (searchInput) {
-      // 既存のイベントリスナーを削除してから新しいものを追加
-      searchInput.removeEventListener('input', window.performSearch);
-      searchInput.addEventListener('input', (e) => window.performSearch(e.target.value));
+    // テーブルの直後にトグルボタンとカテゴリを配置
+    if (toggleButton && !toggleButton.parentNode) {
+      tableContainer.parentNode.insertBefore(toggleButton, tableContainer.nextSibling);
     }
     
-    if (clearBtn) {
-      clearBtn.removeEventListener('click', window.clearSearch);
-      clearBtn.addEventListener('click', window.clearSearch);
+    if (categoriesContainer && !categoriesContainer.parentNode) {
+      toggleButton.parentNode.insertBefore(categoriesContainer, toggleButton.nextSibling);
     }
     
-    // 初期化を実行
-    if (window.initWordModeItems) {
-      window.initWordModeItems();
-    }
-  }, 1000);
-});
-
-
-
-// createWordModeItem関数（改善版）
-function createWordModeItem(item, category) {
-  if (!item) return '';
-  
-  const tag = String(item.tag || '').trim();
-  const label = String(item.label || item.ja || item.tag || '').trim();
-  const level = item.level || '';
-  
-  if (!tag || !label) return '';
-  
-  const showMini = (tag !== label);
-  const levelText = level ? ` [${level}]` : '';
-  
-  return `
-    <button type="button" class="wm-item" 
-            data-en="${tag}" 
-            data-jp="${label}" 
-            data-cat="${category}"
-            title="${tag}${levelText}">
-      <span class="wm-jp">${label}</span>
-      ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
-      ${levelText ? `<span class="wm-level">${levelText}</span>` : ''}
-      <span class="wm-actions">
-        <button class="wm-copy-en" type="button" title="英語のみコピー">EN</button>
-        <button class="wm-copy-both" type="button" title="日本語(英語)コピー">BOTH</button>
-      </span>
-    </button>
-  `;
-}
-
-// createWordModeColorItem関数（改善版）
-function createWordModeColorItem(item) {
-  if (!item) return '';
-  
-  const tag = String(item.tag || '').trim();
-  const label = String(item.label || item.tag || '').trim();
-  
-  if (!tag || !label) return '';
-  
-  const showMini = (tag !== label);
-  
-  return `
-    <button type="button" class="wm-item wm-item-color" 
-            data-en="${tag}" 
-            data-jp="${label}" 
-            data-cat="color"
-            title="${tag}">
-      <span class="wm-jp">${label}</span>
-      ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
-      <span class="wm-actions">
-        <button class="wm-copy-en" type="button" title="英語のみコピー">EN</button>
-      </span>
-    </button>
-  `;
-}
-
-
-   
-
-// createWordModeItem関数（改善版）
-function createWordModeItem(item, category) {
-  if (!item) return '';
-  
-  const tag = String(item.tag || '').trim();
-  const label = String(item.label || item.ja || item.tag || '').trim();
-  const level = item.level || '';
-  
-  if (!tag || !label) return '';
-  
-  const showMini = (tag !== label);
-  const levelText = level ? ` [${level}]` : '';
-  
-  return `
-    <button type="button" class="wm-item" 
-            data-en="${tag}" 
-            data-jp="${label}" 
-            data-cat="${category}"
-            title="${tag}${levelText}">
-      <span class="wm-jp">${label}</span>
-      ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
-      ${levelText ? `<span class="wm-level">${levelText}</span>` : ''}
-      <span class="wm-actions">
-        <button class="wm-copy-en" type="button" title="英語のみコピー">EN</button>
-        <button class="wm-copy-both" type="button" title="日本語(英語)コピー">BOTH</button>
-      </span>
-    </button>
-  `;
-}
-
-
-
-  // createWordModeItem関数
-  function createWordModeItem(item, category) {
-    try {
-      const showMini = item.tag && item.label && item.tag !== item.label;
-      return `<button type="button" class="wm-item" data-en="${item.tag || ''}" data-jp="${item.label || item.tag || ''}" data-cat="${category}">
-        <span class="wm-jp">${item.label || item.tag || ''}</span>
-        ${showMini ? `<span class="wm-en">${item.tag}</span>` : ''}
-      </button>`;
-    } catch (error) {
-      console.warn('アイテム作成でエラー:', error);
-      return '';
-    }
+    // トグル機能の実装
+    let isVisible = false;
+    toggleButton.addEventListener('click', () => {
+      if (categoriesContainer) {
+        isVisible = !isVisible;
+        categoriesContainer.style.display = isVisible ? 'block' : 'none';
+        const icon = isVisible ? '▲' : '▼';
+        const text = isVisible ? 'カテゴリ一覧を隠す' : 'カテゴリ一覧を表示';
+        toggleButton.textContent = `${icon} ${text}`;
+      }
+    });
   }
 
-  // createWordModeColorItem関数（改善版）
-function createWordModeColorItem(item) {
-  if (!item) return '';
-  
-  const tag = String(item.tag || '').trim();
-  const label = String(item.label || item.tag || '').trim();
-  
-  if (!tag || !label) return '';
-  
-  const showMini = (tag !== label);
-  
-  return `
-    <button type="button" class="wm-item wm-item-color" 
-            data-en="${tag}" 
-            data-jp="${label}" 
-            data-cat="color"
-            title="${tag}">
-      <span class="wm-jp">${label}</span>
-      ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
-      <span class="wm-actions">
-        <button class="wm-copy-en" type="button" title="英語のみコピー">EN</button>
-      </span>
-    </button>
-  `;
-}
+  // addToSelectedChips関数
   function addToSelectedChips(en, jp, cat) {
     const container = document.getElementById('wm-selected-chips');
     if (!container || selectedCount >= 20) return;
@@ -3468,6 +2991,7 @@ function createWordModeColorItem(item) {
     updateSelectedCount();
   }
 
+  // removeSelectedChip関数
   window.removeSelectedChip = function(btn) {
     const chip = btn.closest('.wm-selected-chip');
     if (chip) {
@@ -3477,274 +3001,271 @@ function createWordModeColorItem(item) {
     }
   };
 
+  // updateSelectedCount関数
   function updateSelectedCount() {
     const countEl = document.getElementById('wm-selected-count');
     if (countEl) countEl.textContent = selectedCount;
   }
 
-  // initWordMode関数の外（グローバルスコープ）に以下の関数を移動
-
-// addToOutputTable関数をグローバルスコープに移動
-window.addToOutputTable = function(en, jp) {
-  const tbody = document.getElementById('wm-table-body');
-  if (!tbody) {
-    console.warn('wm-table-body が見つかりません');
-    return;
-  }
-  
-  // 最大20件制限
-  if (tbody.children.length >= 20) {
-    console.warn('テーブルの最大件数に達しています');
-    return;
-  }
-  
-  // 重複チェック
-  if (tbody.querySelector(`tr[data-en="${en}"]`)) {
-    console.warn('重複するアイテムです:', en);
-    return;
-  }
-  
-  // 新しい行を作成
-  const row = document.createElement('tr');
-  row.dataset.en = en;
-  row.innerHTML = `
-    <td class="wm-row-jp">${jp}</td>
-    <td class="wm-row-en">${en}</td>
-    <td>
-      <button type="button" class="wm-row-copy-en" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">EN</button>
-      <button type="button" class="wm-row-copy-both" style="margin-right: 4px; padding: 2px 6px; font-size: 12px;">両方</button>
-      <button type="button" class="wm-row-remove" style="padding: 2px 6px; font-size: 12px; color: #f44336;">削除</button>
-    </td>
-  `;
-  
-  // イベントリスナーを追加
-  const copyEnBtn = row.querySelector('.wm-row-copy-en');
-  const copyBothBtn = row.querySelector('.wm-row-copy-both');
-  const removeBtn = row.querySelector('.wm-row-remove');
-  
-  if (copyEnBtn) {
-    copyEnBtn.addEventListener('click', () => {
-      navigator.clipboard?.writeText(en).then(() => toast('英語タグをコピーしました')).catch(() => {
-      });
-    });
-  }
-  
-  if (copyBothBtn) {
-    copyBothBtn.addEventListener('click', () => {
-      const text = jp && en ? `${jp}(${en})` : (en || jp);
-      navigator.clipboard?.writeText(text).then(() => toast('日英タグをコピーしました')).catch(() => {
-      });
-    });
-  }
-  
-  if (removeBtn) {
-    removeBtn.addEventListener('click', () => {
-      row.remove();
-    });
-  }
-  
-  tbody.appendChild(row);
-};
-
-// updateSearchStats関数もグローバルスコープに移動
-window.updateSearchStats = function(visible, total) {
-  const statsElement = document.getElementById('wm-search-stats');
-  if (statsElement) {
-    statsElement.textContent = `${visible}件 / ${total}件`;
-  }
-};
-
-// clearSearch関数もグローバルスコープに移動
-window.clearSearch = function() {
-  const searchInput = document.getElementById('wm-search-input');
-  const resultsArea = document.getElementById('wm-search-results');
-  
-  if (searchInput) {
-    searchInput.value = '';
-  }
-  
-  if (resultsArea) {
-    resultsArea.style.display = 'none';
-    resultsArea.innerHTML = '';
-  }
-  
-  // 統計を更新
-  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
-  updateSearchStats(allItems.length, allItems.length);
-};
-
-
-
-
-// clearSearch関数をグローバルスコープに追加
-function clearSearch() {
-  const searchInput = document.getElementById('wm-search-input');
-  const resultsArea = document.getElementById('wm-search-results');
-  
-  if (searchInput) {
-    searchInput.value = '';
-  }
-  
-  if (resultsArea) {
-    resultsArea.style.display = 'none';
-    resultsArea.innerHTML = '';
-  }
-  
-  // 統計を更新
-  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
-  updateSearchStats(allItems.length, allItems.length);
-}
-
-
-
-// 単語モード用のユーティリティ関数
-window.wordModeUtils = {
-  // 検索状態をリセット
-  resetSearch: function() {
-    const input = document.getElementById('wm-search-input');
-    if (input) {
-      input.value = '';
-      input.dispatchEvent(new Event('input'));
-    }
-  },
-  
-  // 全選択をクリア
-  clearAllSelections: function() {
-    const clearBtn = document.getElementById('wm-selected-clear');
-    if (clearBtn) clearBtn.click();
-  },
-  
-  // 選択中アイテム数を取得
-  getSelectedCount: function() {
-    const countEl = document.getElementById('wm-selected-count');
-    return countEl ? parseInt(countEl.textContent) || 0 : 0;
-  },
-  
-  // テーブル行数を取得
-  getTableRowCount: function() {
-    const tbody = document.getElementById('wm-table-body');
-    return tbody ? tbody.children.length : 0;
-  }
-};
-
-
-   // window.performSearch関数を1つに統合（最終版）
-window.performSearch = function(searchTerm) {
-  searchTerm = (searchTerm || '').trim();
-  
-  let searchResultsArea = document.getElementById('wm-search-results');
-  
-  // 検索結果エリアの作成（存在しない場合のみ）
-  if (!searchResultsArea) {
-    const searchInput = document.getElementById('wm-search-input');
-    if (!searchInput) return;
+  // createWordModeItem関数
+  function createWordModeItem(item, category) {
+    if (!item) return '';
     
-    searchResultsArea = document.createElement('div');
-    searchResultsArea.id = 'wm-search-results';
-    searchResultsArea.style.cssText = `
-      display: none;
-      max-height: 250px;
-      overflow-y: auto;
-      border: 1px solid #444;
-      border-radius: 6px;
-      margin: 8px 0;
-      padding: 8px;
-      background: var(--bg-card, #2a2f3a);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    `;
+    const tag = String(item.tag || '').trim();
+    const label = String(item.label || item.ja || item.tag || '').trim();
+    const level = item.level || '';
     
-    searchInput.parentNode.insertBefore(searchResultsArea, searchInput.nextSibling);
-  }
-  
-  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
-  
-  if (!searchTerm) {
-    searchResultsArea.style.display = 'none';
-    searchResultsArea.innerHTML = '';
-    if (typeof window.updateSearchStats === 'function') {
-      window.updateSearchStats(allItems.length, allItems.length);
-    }
-    return;
-  }
-  
-  // 検索実行
-  const matchedItems = [];
-  const searchLower = searchTerm.toLowerCase();
-  
-  allItems.forEach(item => {
-    const jp = (item.dataset.jp || '').toLowerCase();
-    const en = (item.dataset.en || '').toLowerCase();
+    if (!tag || !label) return '';
     
-    if (jp.includes(searchLower) || en.includes(searchLower)) {
-      matchedItems.push({
-        en: item.dataset.en,
-        jp: item.dataset.jp,
-        cat: item.dataset.cat
-      });
-    }
-  });
-  
-  if (matchedItems.length === 0) {
-    searchResultsArea.innerHTML = '<div style="text-align: center; color: #888; padding: 16px;">検索結果がありません</div>';
-    searchResultsArea.style.display = 'block';
-    if (typeof window.updateSearchStats === 'function') {
-      window.updateSearchStats(0, allItems.length);
-    }
-    return;
-  }
-  
-  // 検索結果HTML生成
-  const resultsHTML = matchedItems.map(item => {
-    const showEn = item.en !== item.jp;
+    const showMini = (tag !== label);
+    const levelText = level ? ` [${level}]` : '';
+    
     return `
-      <button type="button" class="wm-search-result-item" 
-              data-en="${item.en}" 
-              data-jp="${item.jp}">
-        <span style="font-weight: 500;">${item.jp}</span>
-        ${showEn ? `<span style="color: #aaa; font-size: 12px; margin-left: 8px;">${item.en}</span>` : ''}
+      <button type="button" class="wm-item" 
+              data-en="${tag}" 
+              data-jp="${label}" 
+              data-cat="${category}"
+              title="${tag}${levelText}">
+        <span class="wm-jp">${label}</span>
+        ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
+        ${levelText ? `<span class="wm-level">${levelText}</span>` : ''}
+        <span class="wm-actions">
+          <button class="wm-copy-en" type="button" title="英語のみコピー">EN</button>
+          <button class="wm-copy-both" type="button" title="日本語(英語)コピー">BOTH</button>
+        </span>
       </button>
     `;
-  }).join('');
-  
-  searchResultsArea.innerHTML = resultsHTML;
-  searchResultsArea.style.display = 'block';
-  
-  // クリックイベント設定
-  searchResultsArea.querySelectorAll('.wm-search-result-item').forEach(resultItem => {
-    resultItem.addEventListener('click', () => {
-      const en = resultItem.dataset.en;
-      const jp = resultItem.dataset.jp;
+  }
+
+  // createWordModeColorItem関数
+  function createWordModeColorItem(item) {
+    if (!item) return '';
+    
+    const tag = String(item.tag || '').trim();
+    const label = String(item.label || item.tag || '').trim();
+    
+    if (!tag || !label) return '';
+    
+    const showMini = (tag !== label);
+    
+    return `
+      <button type="button" class="wm-item wm-item-color" 
+              data-en="${tag}" 
+              data-jp="${label}" 
+              data-cat="color"
+              title="${tag}">
+        <span class="wm-jp">${label}</span>
+        ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
+        <span class="wm-actions">
+          <button class="wm-copy-en" type="button" title="英語のみコピー">EN</button>
+        </span>
+      </button>
+    `;
+  }
+
+  // initWordModeItems関数を内部関数として定義
+  window.initWordModeItems = function() {
+    console.log('=== 単語モード統一初期化 ===');
+    
+    // 既存の内容をクリア
+    const allContainers = document.querySelectorAll('#panelWordMode .wm-items');
+    allContainers.forEach(container => {
+      container.innerHTML = '';
+    });
+    
+    let totalGenerated = 0;
+    
+    // === SFW辞書の処理 ===
+    Object.entries(window.SFW || {}).forEach(([dictKey, items]) => {
+      if (!Array.isArray(items) || items.length === 0) return;
       
-      if (en && jp && typeof window.addToOutputTable === 'function') {
-        window.addToOutputTable(en, jp);
+      const possibleIds = [
+        dictKey,
+        dictKey.replace(/_/g, '-'),
+        dictKey.replace(/_/g, ''),
+        // 特別な変換
+        ...(dictKey === 'expressions' ? ['expression', 'expr'] : []),
+        ...(dictKey === 'lighting' ? ['light'] : []),
+        ...(dictKey === 'hair_length' ? ['hair-length'] : []),
+        ...(dictKey === 'bangs_style' ? ['bangs-style'] : []),
+        ...(dictKey === 'skin_features' ? ['skin-features'] : [])
+      ];
+      
+      let container = null;
+      for (const id of possibleIds) {
+        container = document.getElementById(`wm-items-${id}`);
+        if (container) break;
       }
       
-      // 検索をクリア
-      const searchInput = document.getElementById('wm-search-input');
-      if (searchInput) searchInput.value = '';
-      window.clearSearch();
+      if (container) {
+        const validItems = items.filter(item => {
+          if (!item) return false;
+          if (typeof item === 'string') return item.trim() !== '';
+          return (item.tag || '').trim() !== '' || (item.label || '').trim() !== '';
+        });
+        
+        container.innerHTML = validItems.map(item => createWordModeItem(item, dictKey)).join('');
+        
+        const count = container.querySelectorAll('.wm-item').length;
+        totalGenerated += count;
+        
+        const counter = document.getElementById(`wm-count-${dictKey}`) || 
+                        document.getElementById(`wm-count-${dictKey.replace(/_/g, '-')}`);
+        if (counter) counter.textContent = count;
+      }
     });
-  });
-  
-  if (typeof window.updateSearchStats === 'function') {
-    window.updateSearchStats(matchedItems.length, allItems.length);
-  }
-};
+    
+    // === NSFW辞書の処理 ===
+    Object.entries(window.NSFW || {}).forEach(([dictKey, items]) => {
+      if (!Array.isArray(items) || items.length === 0) return;
+      
+      const possibleIds = [
+        dictKey + '-nsfw',
+        dictKey.replace(/_/g, '-') + '-nsfw',
+        dictKey,
+        dictKey.replace(/_/g, '-')
+      ];
+      
+      let container = null;
+      for (const id of possibleIds) {
+        container = document.getElementById(`wm-items-${id}`);
+        if (container) break;
+      }
+      
+      if (container) {
+        const validItems = items.filter(item => {
+          if (!item) return false;
+          if (typeof item === 'string') return item.trim() !== '';
+          return (item.tag || '').trim() !== '' || (item.label || '').trim() !== '';
+        });
+        
+        container.innerHTML = validItems.map(item => createWordModeItem(item, dictKey)).join('');
+        
+        const count = container.querySelectorAll('.wm-item').length;
+        totalGenerated += count;
+        
+        const counter = document.getElementById(`wm-count-${dictKey}-nsfw`) || 
+                        document.getElementById(`wm-count-${dictKey.replace(/_/g, '-')}-nsfw`);
+        if (counter) counter.textContent = count;
+      }
+    });
+    
+    console.log(`✅ 単語モード初期化完了: ${totalGenerated}件生成`);
+    
+    // 統計更新
+    updateSearchStats(totalGenerated, totalGenerated);
+    
+    // イベントバインド
+    bindWordModeEvents();
+  };
 
-// window.clearSearch関数を1つに統合
-window.clearSearch = function() {
-  const searchInput = document.getElementById('wm-search-input');
-  const resultsArea = document.getElementById('wm-search-results');
-  
-  if (searchInput) searchInput.value = '';
-  if (resultsArea) {
-    resultsArea.style.display = 'none';
-    resultsArea.innerHTML = '';
+  // bindWordModeEvents関数
+  function bindWordModeEvents() {
+    const root = document.getElementById('panelWordMode');
+    if (!root) return;
+    
+    // アイテムクリックイベント（委譲）
+    root.addEventListener('click', (e) => {
+      if (e.target.closest('summary')) return;
+      
+      if (e.target.classList.contains('wm-copy-en')) {
+        e.preventDefault();
+        const item = e.target.closest('.wm-item');
+        const en = item?.dataset.en || '';
+        if (en && navigator.clipboard) {
+          navigator.clipboard.writeText(en);
+          toast('英語タグをコピーしました');
+        }
+        return;
+      }
+      
+      if (e.target.classList.contains('wm-copy-both')) {
+        e.preventDefault();
+        const item = e.target.closest('.wm-item');
+        const jp = item?.dataset.jp || '';
+        const en = item?.dataset.en || '';
+        const text = jp && en ? `${jp}(${en})` : (en || jp);
+        if (text && navigator.clipboard) {
+          navigator.clipboard.writeText(text);
+          toast('日英タグをコピーしました');
+        }
+        return;
+      }
+      
+      const itemBtn = e.target.closest('.wm-item');
+      if (itemBtn) {
+        const en = itemBtn.dataset.en || '';
+        const jp = itemBtn.dataset.jp || '';
+        if (en && jp && window.addToOutputTable) {
+          window.addToOutputTable(en, jp);
+        }
+      }
+    });
   }
-  
-  const allItems = document.querySelectorAll('#panelWordMode .wm-item');
-  if (typeof window.updateSearchStats === 'function') {
-    window.updateSearchStats(allItems.length, allItems.length);
-  }
-};
 
+  // 出力テーブルのイベント
+  const outputTable = document.getElementById('wm-table-body');
+  if (outputTable) {
+    outputTable.addEventListener('click', (e) => {
+      if (e.target.classList.contains('wm-row-copy-en')) {
+        const row = e.target.closest('tr');
+        const en = row?.dataset.en;
+        if (en && navigator.clipboard) {
+          navigator.clipboard.writeText(en);
+          toast('英語タグをコピーしました');
+        }
+      } else if (e.target.classList.contains('wm-row-copy-both')) {
+        const row = e.target.closest('tr');
+        const jp = row?.querySelector('.wm-row-jp')?.textContent;
+        const en = row?.dataset.en;
+        const text = jp && en ? `${jp}(${en})` : (en || jp);
+        if (text && navigator.clipboard) {
+          navigator.clipboard.writeText(text);
+          toast('日英タグをコピーしました');
+        }
+      } else if (e.target.classList.contains('wm-row-remove')) {
+        const row = e.target.closest('tr');
+        if (row) row.remove();
+      }
+    });
+  }
+
+  // 一括コピーボタンの処理
+  const copyAllBtn = document.getElementById('wm-copy-all');
+  if (copyAllBtn) {
+    copyAllBtn.addEventListener('click', () => {
+      const tbody = document.getElementById('wm-table-body');
+      if (!tbody || !tbody.children.length) {
+        toast('コピーするアイテムがありません');
+        return;
+      }
+      
+      const tags = Array.from(tbody.children).map(row => {
+        return row.dataset.en || '';
+      }).filter(Boolean);
+      
+      if (tags.length > 0 && navigator.clipboard) {
+        navigator.clipboard.writeText(tags.join(', '));
+        toast(`${tags.length}件の英語タグをコピーしました`);
+      }
+    });
+  }
+
+  // テーブル全クリアボタンの処理
+  const clearAllBtn = document.getElementById('wm-clear-all');
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', () => {
+      const tbody = document.getElementById('wm-table-body');
+      if (tbody) {
+        tbody.innerHTML = '';
+        toast('テーブルをクリアしました');
+      }
+    });
+  }
+
+  // 検索イベントのバインド
+  bindSearchEvents();
+  
+  // 折りたたみカテゴリの初期化
+  initCollapsibleCategories();
+}
