@@ -2872,7 +2872,7 @@ function initCollapsibleCategories() {
 // 【問題1】HTMLに存在しないコンテナが多数ある
 // 【問題2】検索結果表示が機能していない
 
-// === 最終修正版：28件不足完全解決 ===
+// === 最終修正版：完全版（全関数定義込み） ===
 window.initWordModeItems = function() {
   console.log('=== 単語モード最終修正版初期化開始 ===');
   
@@ -2910,7 +2910,6 @@ window.initWordModeItems = function() {
   }
   
   let totalProcessed = 0;
-  let totalGenerated = 0;
   let successCount = 0;
   let missingContainers = [];
   let processingLog = [];
@@ -2927,12 +2926,11 @@ window.initWordModeItems = function() {
           // フィルタリング前の件数
           const originalCount = items.length;
           
-          // 有効なアイテムのみフィルタリング（空タグを除外しない）
+          // 有効なアイテムのみフィルタリング
           const validItems = items.filter(item => {
             if (!item) return false;
             if (typeof item === 'string') return item.trim() !== '';
             
-            // タグが空でもラベルがあれば有効とする
             const tag = String(item.tag || '').trim();
             const label = String(item.label || item.ja || '').trim();
             return tag !== '' || label !== '';
@@ -2944,32 +2942,27 @@ window.initWordModeItems = function() {
             console.warn(`⚠️ ${dictKey}: ${originalCount - filteredCount}件のアイテムをスキップ`);
           }
           
-          // HTMLを生成（一括処理でDOM操作を最小化）
-          const itemsHTML = validItems.map(item => createWordModeItemFixed(item, id)).filter(Boolean).join('');
+          // 🔥 重複生成防止：コンテナの既存内容を確実にクリア
+          container.innerHTML = '';
           
-          // DOM更新（一度だけ）
+          // HTMLを生成
+          const itemsHTML = validItems.map(item => createWordModeItemSafe(item, id)).filter(Boolean).join('');
+          
+          // 🔥 一括でDOM更新（重複防止）
           container.innerHTML = itemsHTML;
           
-          // 実際に生成された要素数を確認（DOM反映後に確認）
-          setTimeout(() => {
-            const actualCount = container.querySelectorAll('.wm-item').length;
-            totalGenerated += actualCount;
-            
-            if (counter) counter.textContent = actualCount;
-            
-            if (actualCount !== filteredCount) {
-              console.error(`❌ DOM反映失敗: ${dictKey} フィルタ後${filteredCount}件 DOM${actualCount}件`);
-              
-              // 失敗した場合の詳細調査
-              console.log('生成HTML長さ:', itemsHTML.length);
-              console.log('HTML内容サンプル:', itemsHTML.substring(0, 200) + '...');
-            } else {
-              processingLog.push(`✅ SFW ${dictKey} → ${id}: ${originalCount}件 → フィルタ${filteredCount}件 → DOM${actualCount}件`);
-            }
-          }, 10);
+          // 即座に結果確認
+          const actualCount = container.querySelectorAll('.wm-item').length;
           
+          if (counter) counter.textContent = actualCount;
           totalProcessed += filteredCount;
           successCount++;
+          
+          if (actualCount !== filteredCount) {
+            console.error(`❌ DOM生成数不一致: ${dictKey} 期待${filteredCount}件 実際${actualCount}件`);
+          } else {
+            processingLog.push(`✅ SFW ${dictKey} → ${id}: ${originalCount}件 → ${filteredCount}件 → DOM${actualCount}件`);
+          }
           
         } catch (error) {
           console.error(`❌ SFW ${dictKey} 処理エラー:`, error);
@@ -2996,10 +2989,8 @@ window.initWordModeItems = function() {
       
       if (container) {
         try {
-          // フィルタリング前の件数
           const originalCount = items.length;
           
-          // 有効なアイテムのみフィルタリング
           const validItems = items.filter(item => {
             if (!item) return false;
             if (typeof item === 'string') return item.trim() !== '';
@@ -3015,28 +3006,23 @@ window.initWordModeItems = function() {
             console.warn(`⚠️ ${dictKey}: ${originalCount - filteredCount}件のアイテムをスキップ`);
           }
           
-          // HTMLを生成
-          const itemsHTML = validItems.map(item => createWordModeItemFixed(item, id)).filter(Boolean).join('');
+          // 🔥 重複生成防止
+          container.innerHTML = '';
           
-          // DOM更新
+          const itemsHTML = validItems.map(item => createWordModeItemSafe(item, id)).filter(Boolean).join('');
           container.innerHTML = itemsHTML;
           
-          // 実際に生成された要素数を確認
-          setTimeout(() => {
-            const actualCount = container.querySelectorAll('.wm-item').length;
-            totalGenerated += actualCount;
-            
-            if (counter) counter.textContent = actualCount;
-            
-            if (actualCount !== filteredCount) {
-              console.error(`❌ DOM反映失敗: ${dictKey} フィルタ後${filteredCount}件 DOM${actualCount}件`);
-            } else {
-              processingLog.push(`✅ NSFW ${dictKey} → ${id}: ${originalCount}件 → フィルタ${filteredCount}件 → DOM${actualCount}件`);
-            }
-          }, 10);
+          const actualCount = container.querySelectorAll('.wm-item').length;
           
+          if (counter) counter.textContent = actualCount;
           totalProcessed += filteredCount;
           successCount++;
+          
+          if (actualCount !== filteredCount) {
+            console.error(`❌ DOM生成数不一致: ${dictKey} 期待${filteredCount}件 実際${actualCount}件`);
+          } else {
+            processingLog.push(`✅ NSFW ${dictKey} → ${id}: ${originalCount}件 → ${filteredCount}件 → DOM${actualCount}件`);
+          }
           
         } catch (error) {
           console.error(`❌ NSFW ${dictKey} 処理エラー:`, error);
@@ -3058,11 +3044,11 @@ window.initWordModeItems = function() {
   // 不足コンテナの動的生成
   if (missingContainers.length > 0) {
     console.log(`=== 不足コンテナ ${missingContainers.length}個を動的生成 ===`);
-    const dynamicCount = createMissingContainersFixed(missingContainers);
+    const dynamicCount = createMissingContainersSafe(missingContainers);
     totalProcessed += missingContainers.reduce((sum, missing) => sum + missing.count, 0);
   }
   
-  // 最終確認と統計（DOM更新完了を待つ）
+  // 最終確認
   setTimeout(() => {
     const finalCount = document.querySelectorAll('#panelWordMode .wm-item').length;
     
@@ -3078,21 +3064,143 @@ window.initWordModeItems = function() {
     
     if (finalCount === totalProcessed) {
       console.log('🎉 要素数完全一致 - 問題完全解決！');
+    } else if (finalCount > totalProcessed) {
+      console.warn(`⚠️ 予想より${finalCount - totalProcessed}件多く生成されました`);
     } else {
       console.error(`❌ まだ${totalProcessed - finalCount}件不足しています`);
-      
-      // 詳細調査
-      detectMissingElements();
     }
     
     if (typeof window.updateSearchStats === 'function') {
       window.updateSearchStats(finalCount, finalCount);
     }
-  }, 500); // DOM更新完了を確実に待つ
+  }, 100);
   
-  console.log(`=== 初期化完了: ${successCount}カテゴリ処理開始 ===`);
+  console.log(`=== 初期化完了: ${successCount}カテゴリ、${totalProcessed}件処理 ===`);
 };
 
+// === 安全なアイテム作成関数 ===
+function createWordModeItemSafe(item, category) {
+  if (!item) return '';
+  
+  try {
+    // 文字列の場合は正規化
+    if (typeof item === 'string') {
+      item = { tag: item, label: item };
+    }
+    
+    // プロパティ取得（null/undefined 安全）
+    let tag = String(item.tag || item.en || item.keyword || item.value || item.name || '').trim();
+    let label = String(item.label || item.ja || item.jp || item.desc || item['name_ja'] || item['label_ja'] || '').trim();
+    const level = item.level || '';
+    
+    // タグが空の場合はラベルをタグとして使用
+    if (!tag && label) {
+      tag = label;
+    }
+    
+    // ラベルが空の場合はタグをラベルとして使用
+    if (!label && tag) {
+      label = tag;
+    }
+    
+    // 両方空の場合は除外
+    if (!tag && !label) {
+      console.warn('タグとラベル両方が空のアイテム:', item);
+      return '';
+    }
+    
+    // "なし"ラベルの特別処理
+    if (label === 'なし' && !tag) {
+      tag = 'none';
+      label = 'なし';
+    }
+    
+    const showMini = (tag !== label && label && tag);
+    const levelBadge = level && level !== 'L1' ? ` <small class="level">[${level}]</small>` : '';
+    
+    // HTMLエスケープ
+    const escapeHtml = (str) => {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+    
+    return `<button type="button" class="wm-item" data-en="${escapeHtml(tag)}" data-jp="${escapeHtml(label)}" data-cat="${escapeHtml(category)}" title="${escapeHtml(tag)}${level ? ' (' + escapeHtml(level) + ')' : ''}"><span class="wm-jp">${escapeHtml(label)}${levelBadge}</span>${showMini ? `<span class="wm-en">${escapeHtml(tag)}</span>` : ''}<span class="wm-actions"><button class="wm-copy-en" type="button" title="英語のみコピー">EN</button><button class="wm-copy-both" type="button" title="日本語(英語)コピー">BOTH</button></span></button>`;
+    
+  } catch (error) {
+    console.error('アイテム作成エラー:', error, 'item:', item);
+    return '';
+  }
+}
+
+// === 安全なコンテナ生成関数 ===
+function createMissingContainersSafe(missingContainers) {
+  const wordModePanel = document.getElementById('panelWordMode');
+  if (!wordModePanel) return 0;
+  
+  // ラベルマッピング
+  const labelMap = {
+    'personality': '性格',
+    'background': 'NSFW背景'
+  };
+  
+  // 動的生成セクションを作成または取得
+  let dynamicSection = document.getElementById('wm-dynamic-section');
+  if (!dynamicSection) {
+    dynamicSection = document.createElement('section');
+    dynamicSection.id = 'wm-dynamic-section';
+    dynamicSection.className = 'wm-accordion';
+    dynamicSection.innerHTML = '<h3 class="wm-acc-title">追加カテゴリ（動的生成）</h3>';
+    wordModePanel.appendChild(dynamicSection);
+  }
+  
+  let dynamicTotal = 0;
+  
+  missingContainers.forEach(missing => {
+    const htmlId = missing.htmlId;
+    const label = labelMap[missing.key] || missing.key.replace(/_/g, ' ');
+    
+    // 有効なアイテムのみフィルタリング
+    const validItems = missing.items.filter(item => {
+      if (!item) return false;
+      if (typeof item === 'string') return item.trim() !== '';
+      
+      const tag = String(item.tag || '').trim();
+      const labelText = String(item.label || item.ja || '').trim();
+      return tag !== '' || labelText !== '';
+    });
+    
+    const itemsHTML = validItems.map(item => createWordModeItemSafe(item, htmlId)).filter(Boolean).join('');
+    
+    const html = `
+      <details class="wm-acc" data-cat="${htmlId}" open>
+        <summary>${label} <span class="wm-count" id="wm-count-${htmlId}">${validItems.length}</span></summary>
+        <div class="wm-items" id="wm-items-${htmlId}">${itemsHTML}</div>
+      </details>
+    `;
+    
+    dynamicSection.insertAdjacentHTML('beforeend', html);
+    
+    // 実際に生成された要素数を確認
+    const generatedContainer = document.getElementById(`wm-items-${htmlId}`);
+    const actualGenerated = generatedContainer ? generatedContainer.querySelectorAll('.wm-item').length : 0;
+    
+    dynamicTotal += actualGenerated;
+    console.log(`✓ 動的生成: ${missing.dict} ${missing.key} → ${label} (${actualGenerated}件)`);
+  });
+  
+  console.log(`✓ 動的生成完了: ${dynamicTotal}件追加`);
+  return dynamicTotal;
+}
+
+console.log('🎯 最終修正版（完全版・関数定義込み） initWordModeItems を定義しました');
+console.log('実行: window.initWordModeItems()');
+
+
+   
 // === 不足要素検出関数 ===
 function detectMissingElements() {
   console.log('=== 不足要素の詳細調査 ===');
