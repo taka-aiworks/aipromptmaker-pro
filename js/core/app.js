@@ -2728,8 +2728,36 @@ function fillAccessorySlots(){
 
 
 /* ===== 単語モード 完全動作版 ===== */
+/* ===== 単語モード 完全動作版（エラー修正済み） ===== */
 
-// 1. 正確なマッピングテーブル
+// 1. toast関数を定義（存在しない場合）
+if (typeof window.toast !== 'function') {
+  window.toast = function(message) {
+    console.log('Toast:', message);
+    // 簡易的な通知表示
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #333;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 4px;
+      z-index: 10000;
+      font-size: 14px;
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 3000);
+  };
+}
+
+// 2. 正確なマッピングテーブル
 const MAPPING_TABLE = {
   SFW: {
     'age': 'age',
@@ -2781,7 +2809,7 @@ const MAPPING_TABLE = {
   }
 };
 
-// 2. テーブル操作機能
+// 3. テーブル操作機能
 window.addToOutputTable = function(en, jp) {
   console.log('addToOutputTable呼び出し:', en, jp);
   
@@ -2792,12 +2820,12 @@ window.addToOutputTable = function(en, jp) {
   }
   
   if (tbody.children.length >= 20) {
-    if (window.toast) window.toast('テーブルの最大件数（20件）に達しています');
+    window.toast('テーブルの最大件数（20件）に達しています');
     return;
   }
   
   if (tbody.querySelector(`tr[data-en="${en}"]`)) {
-    if (window.toast) window.toast('重複するアイテムです');
+    window.toast('重複するアイテムです');
     return;
   }
   
@@ -2814,12 +2842,12 @@ window.addToOutputTable = function(en, jp) {
   `;
   
   tbody.appendChild(row);
-  if (window.toast) window.toast(`「${jp}」をテーブルに追加しました`);
+  window.toast(`「${jp}」をテーブルに追加しました`);
   
   console.log('テーブルに追加完了:', en, jp);
 };
 
-// 3. アイテム作成関数
+// 4. アイテム作成関数（シンプル版）
 function createWordItem(item, category) {
   if (!item) return '';
   
@@ -2843,33 +2871,23 @@ function createWordItem(item, category) {
   const showMini = (tag !== label && tag.length > 0 && label.length > 0);
   const levelText = level ? ` [${level}]` : '';
   
+  // エスケープ処理
+  const escapedTag = tag.replace(/'/g, "\\'");
+  const escapedLabel = label.replace(/'/g, "\\'");
+  
   return `
     <button type="button" class="wm-item" 
             data-en="${tag}" 
             data-jp="${label}" 
             data-cat="${category}"
             title="${tag}${levelText}"
-            onclick="window.addToOutputTable('${tag}', '${label}')">
-      <span class="wm-jp">${label}${levelText}</span>
-      ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
-      <span class="wm-actions">
-        <button class="wm-copy-en" type="button" onclick="event.stopPropagation(); copyToClipboard('${tag}', '英語タグをコピーしました')">EN</button>
-        <button class="wm-copy-both" type="button" onclick="event.stopPropagation(); copyToClipboard('${label && tag ? `${label}(${tag})` : (tag || label)}', '日英タグをコピーしました')">BOTH</button>
-      </span>
+            onclick="window.addToOutputTable('${escapedTag}', '${escapedLabel}')"
+            style="display: block; width: 100%; padding: 8px; margin: 2px 0; background: var(--bg-secondary, #363c4a); border: 1px solid #555; border-radius: 4px; color: white; cursor: pointer; text-align: left;">
+      <span class="wm-jp" style="font-weight: 500;">${label}${levelText}</span>
+      ${showMini ? `<span class="wm-en" style="color: #aaa; font-size: 12px; margin-left: 8px;">${tag}</span>` : ''}
     </button>
   `;
 }
-
-// 4. クリップボード機能
-window.copyToClipboard = function(text, message) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => {
-      if (window.toast) window.toast(message);
-    }).catch(() => {
-      console.error('クリップボードコピー失敗');
-    });
-  }
-};
 
 // 5. 検索機能
 window.performWordModeSearch = function(searchTerm) {
@@ -2935,10 +2953,13 @@ window.performWordModeSearch = function(searchTerm) {
   
   const resultsHTML = matchedItems.map(item => {
     const showEn = item.en !== item.jp;
+    const escapedEn = item.en.replace(/'/g, "\\'");
+    const escapedJp = item.jp.replace(/'/g, "\\'");
+    
     return `
       <button type="button" class="wm-search-result-item" 
               style="display: block; width: 100%; padding: 8px; margin: 2px 0; background: var(--bg-secondary, #363c4a); border: 1px solid #555; border-radius: 4px; color: white; cursor: pointer;"
-              onclick="window.addToOutputTable('${item.en}', '${item.jp}'); document.getElementById('wm-search-input').value=''; window.clearWordModeSearch();">
+              onclick="window.addToOutputTable('${escapedEn}', '${escapedJp}'); document.getElementById('wm-search-input').value=''; window.clearWordModeSearch();">
         <span style="font-weight: 500;">${item.jp}</span>
         ${showEn ? `<span style="color: #aaa; font-size: 12px; margin-left: 8px;">${item.en}</span>` : ''}
       </button>
@@ -2960,7 +2981,7 @@ window.clearWordModeSearch = function() {
   }
 };
 
-// 6. カテゴリ完全折りたたみ機能（改良版）
+// 6. カテゴリ折りたたみ機能
 window.moveCategoriesToBottom = function() {
   const wordModePanel = document.getElementById('panelWordMode');
   const tableContainer = document.getElementById('wm-table-container') || 
@@ -2968,18 +2989,7 @@ window.moveCategoriesToBottom = function() {
   
   if (!wordModePanel || !tableContainer) return;
   
-  // 1. すべてのカテゴリ要素（details、.wm-category、その他のカテゴリセクション）を取得
-  const categoryElements = wordModePanel.querySelectorAll('details, .wm-category, .category-section, [class*="category"], [id*="category"]');
-  
-  // 2. SFW/NSFWの大きなセクションも取得
-  const sfwSection = wordModePanel.querySelector('#sfw-section, .sfw-section, [data-category="sfw"]');
-  const nsfwSection = wordModePanel.querySelector('#nsfw-section, .nsfw-section, [data-category="nsfw"]');
-  
-  console.log('カテゴリ要素数:', categoryElements.length);
-  console.log('SFWセクション:', !!sfwSection);
-  console.log('NSFWセクション:', !!nsfwSection);
-  
-  // 3. 検索・テーブル以外のすべての子要素を取得（より安全なアプローチ）
+  // 検索・テーブル以外のすべての要素を取得
   const allChildren = Array.from(wordModePanel.children);
   const excludeSelectors = [
     '#wm-search-input', 
@@ -2988,22 +2998,26 @@ window.moveCategoriesToBottom = function() {
     '#wm-table-container',
     '.wm-table-wrapper',
     '[id*="search"]',
-    '[id*="table"]',
-    '[class*="search"]',
-    '[class*="table"]'
+    '[id*="table"]'
   ];
   
   const elementsToMove = allChildren.filter(element => {
     // 検索・テーブル関連要素は除外
     const isExcluded = excludeSelectors.some(selector => {
       try {
-        return element.matches(selector) || element.querySelector(selector);
+        return element.matches && element.matches(selector);
       } catch (e) {
         return false;
       }
     });
     
-    return !isExcluded;
+    // ID/classでもチェック
+    const id = element.id || '';
+    const className = element.className || '';
+    const isSearchTable = id.includes('search') || id.includes('table') || 
+                         className.includes('search') || className.includes('table');
+    
+    return !isExcluded && !isSearchTable;
   });
   
   console.log('移動対象要素数:', elementsToMove.length);
@@ -3013,7 +3027,7 @@ window.moveCategoriesToBottom = function() {
     return;
   }
   
-  // 4. 折りたたみコンテナを作成
+  // 折りたたみコンテナを作成
   let categoriesContainer = document.getElementById('wm-categories-container');
   if (!categoriesContainer) {
     categoriesContainer = document.createElement('div');
@@ -3030,7 +3044,7 @@ window.moveCategoriesToBottom = function() {
     `;
   }
   
-  // 5. トグルボタンを作成
+  // トグルボタンを作成
   let toggleButton = document.getElementById('wm-categories-toggle');
   if (!toggleButton) {
     toggleButton = document.createElement('button');
@@ -3059,18 +3073,9 @@ window.moveCategoriesToBottom = function() {
       const text = isVisible ? 'カテゴリ一覧を隠す' : 'カテゴリ一覧を表示';
       toggleButton.textContent = `${icon} ${text}`;
     });
-    
-    // ホバー効果
-    toggleButton.addEventListener('mouseenter', () => {
-      toggleButton.style.backgroundColor = 'var(--bg-hover, #404652)';
-    });
-    
-    toggleButton.addEventListener('mouseleave', () => {
-      toggleButton.style.backgroundColor = 'var(--bg-secondary, #363c4a)';
-    });
   }
   
-  // 6. すべての対象要素をコンテナに移動
+  // 要素を移動
   elementsToMove.forEach(element => {
     try {
       categoriesContainer.appendChild(element);
@@ -3079,7 +3084,7 @@ window.moveCategoriesToBottom = function() {
     }
   });
   
-  // 7. テーブルの後ろに配置
+  // テーブルの後ろに配置
   if (tableContainer.parentNode) {
     if (!toggleButton.parentNode) {
       tableContainer.parentNode.insertBefore(toggleButton, tableContainer.nextSibling);
@@ -3088,11 +3093,6 @@ window.moveCategoriesToBottom = function() {
       toggleButton.parentNode.insertBefore(categoriesContainer, toggleButton.nextSibling);
     }
   }
-  
-  // 8. 既存のdetails要素を強制的に閉じる
-  categoriesContainer.querySelectorAll('details').forEach(details => {
-    details.open = false;
-  });
   
   console.log('カテゴリ折りたたみ完了:', elementsToMove.length, '個の要素を移動');
 };
@@ -3216,21 +3216,28 @@ window.initWordModeFixed = function() {
   return totalItems;
 };
 
-// 8. テーブルイベント処理
-window.initTableEvents = function() {
+// 8. イベント処理の初期化
+window.initAllEvents = function() {
+  // テーブルイベント
   const outputTable = document.getElementById('wm-table-body');
   if (outputTable) {
     outputTable.addEventListener('click', (e) => {
       if (e.target.classList.contains('wm-row-copy-en')) {
         const row = e.target.closest('tr');
         const en = row?.dataset.en;
-        if (en) window.copyToClipboard(en, '英語タグをコピーしました');
+        if (en && navigator.clipboard) {
+          navigator.clipboard.writeText(en);
+          window.toast('英語タグをコピーしました');
+        }
       } else if (e.target.classList.contains('wm-row-copy-both')) {
         const row = e.target.closest('tr');
         const jp = row?.querySelector('.wm-row-jp')?.textContent;
         const en = row?.dataset.en;
         const text = jp && en ? `${jp}(${en})` : (en || jp);
-        if (text) window.copyToClipboard(text, '日英タグをコピーしました');
+        if (text && navigator.clipboard) {
+          navigator.clipboard.writeText(text);
+          window.toast('日英タグをコピーしました');
+        }
       } else if (e.target.classList.contains('wm-row-remove')) {
         const row = e.target.closest('tr');
         if (row) row.remove();
@@ -3238,38 +3245,7 @@ window.initTableEvents = function() {
     });
   }
   
-  // 一括コピー・クリアボタン
-  const copyAllBtn = document.getElementById('wm-copy-all');
-  if (copyAllBtn) {
-    copyAllBtn.addEventListener('click', () => {
-      const tbody = document.getElementById('wm-table-body');
-      if (!tbody || !tbody.children.length) {
-        if (window.toast) window.toast('コピーするアイテムがありません');
-        return;
-      }
-      
-      const tags = Array.from(tbody.children).map(row => row.dataset.en || '').filter(Boolean);
-      
-      if (tags.length > 0) {
-        window.copyToClipboard(tags.join(', '), `${tags.length}件の英語タグをコピーしました`);
-      }
-    });
-  }
-  
-  const clearAllBtn = document.getElementById('wm-clear-all');
-  if (clearAllBtn) {
-    clearAllBtn.addEventListener('click', () => {
-      const tbody = document.getElementById('wm-table-body');
-      if (tbody) {
-        tbody.innerHTML = '';
-        if (window.toast) window.toast('テーブルをクリアしました');
-      }
-    });
-  }
-};
-
-// 9. 検索イベント処理
-window.initSearchEvents = function() {
+  // 検索イベント
   const searchInput = document.getElementById('wm-search-input');
   const clearBtn = document.getElementById('wm-search-clear');
   
@@ -3291,37 +3267,66 @@ window.initSearchEvents = function() {
       window.clearWordModeSearch();
     });
   }
+  
+  // 一括ボタン
+  const copyAllBtn = document.getElementById('wm-copy-all');
+  if (copyAllBtn) {
+    copyAllBtn.addEventListener('click', () => {
+      const tbody = document.getElementById('wm-table-body');
+      if (!tbody || !tbody.children.length) {
+        window.toast('コピーするアイテムがありません');
+        return;
+      }
+      
+      const tags = Array.from(tbody.children).map(row => row.dataset.en || '').filter(Boolean);
+      
+      if (tags.length > 0 && navigator.clipboard) {
+        navigator.clipboard.writeText(tags.join(', '));
+        window.toast(`${tags.length}件の英語タグをコピーしました`);
+      }
+    });
+  }
+  
+  const clearAllBtn = document.getElementById('wm-clear-all');
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', () => {
+      const tbody = document.getElementById('wm-table-body');
+      if (tbody) {
+        tbody.innerHTML = '';
+        window.toast('テーブルをクリアしました');
+      }
+    });
+  }
 };
 
-// 10. メインのinitWordMode関数
+// 9. メインのinitWordMode関数
 window.initWordMode = function() {
-  console.log('=== initWordMode呼び出し（完全版） ===');
+  console.log('=== initWordMode呼び出し（エラー修正版） ===');
   
   // 初期化実行
   const result = window.initWordModeFixed();
   
   // イベント処理の初期化
-  window.initTableEvents();
-  window.initSearchEvents();
+  window.initAllEvents();
   
-  // カテゴリをテーブル下に移動
+  // カテゴリをテーブル下に移動（少し遅延）
   setTimeout(() => {
     window.moveCategoriesToBottom();
-  }, 500);
+  }, 1000);
   
   console.log(`initWordMode完了: ${result}件のタグを読み込み`);
   
   return result;
 };
 
-// 11. 即座に実行
-console.log('単語モード完全版適用完了');
+// 10. 即座に実行
+console.log('単語モード エラー修正版 適用完了');
 
 if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NSFW_DICT)) {
   setTimeout(() => {
     console.log('辞書確認完了、初期化開始');
     window.initWordMode();
-  }, 200);
+  }, 500);
 } else {
   let attempts = 0;
   const maxAttempts = 15;
@@ -3337,7 +3342,7 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     }
     
     if (attempts < maxAttempts) {
-      setTimeout(waitForDicts, 600);
+      setTimeout(waitForDicts, 800);
     } else {
       console.error('辞書読み込みタイムアウト');
     }
