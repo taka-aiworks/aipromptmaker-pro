@@ -2854,7 +2854,7 @@ function createWordItem(item, category) {
       ${showMini ? `<span class="wm-en">${tag}</span>` : ''}
       <span class="wm-actions">
         <button class="wm-copy-en" type="button" onclick="event.stopPropagation(); copyToClipboard('${tag}', '英語タグをコピーしました')">EN</button>
-        <button class="wm-copy-both" type="button" onclick="event.stopPropagation(); copyToClipboard('${jp && en ? `${label}(${tag})` : (tag || label)}', '日英タグをコピーしました')">BOTH</button>
+        <button class="wm-copy-both" type="button" onclick="event.stopPropagation(); copyToClipboard('${label && tag ? `${label}(${tag})` : (tag || label)}', '日英タグをコピーしました')">BOTH</button>
       </span>
     </button>
   `;
