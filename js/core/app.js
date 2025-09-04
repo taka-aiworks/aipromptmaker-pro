@@ -3450,3 +3450,381 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }, 2000);
 });
+
+// 辞書データ読み込み問題の修正コード
+
+// === 1. 辞書データの強制初期化 ===
+function forceDictionaryInitialization() {
+  console.log('=== 辞書データ強制初期化 ===');
+  
+  // SFWとNSFWが未定義の場合、空オブジェクトで初期化
+  if (typeof window.SFW === 'undefined') {
+    console.log('SFW辞書を初期化中...');
+    window.SFW = {};
+  }
+  
+  if (typeof window.NSFW === 'undefined') {
+    console.log('NSFW辞書を初期化中...');
+    window.NSFW = {};
+  }
+  
+  // loadDefaultDicts関数の実行を強制
+  if (typeof window.loadDefaultDicts === 'function') {
+    console.log('loadDefaultDicts関数を実行中...');
+    window.loadDefaultDicts().then(() => {
+      console.log('loadDefaultDicts完了後のSFW:', window.SFW);
+      console.log('loadDefaultDicts完了後のNSFW:', window.NSFW);
+      
+      // 辞書読み込み完了後に単語モード初期化
+      setTimeout(() => {
+        if (window.initWordModeItems) {
+          window.initWordModeItems();
+        }
+      }, 1000);
+    }).catch(error => {
+      console.error('loadDefaultDicts実行エラー:', error);
+      // エラーでも強制的にダミーデータで初期化
+      createFallbackDictionaries();
+    });
+  } else {
+    console.warn('loadDefaultDicts関数が見つかりません。ダミーデータで初期化します。');
+    createFallbackDictionaries();
+  }
+}
+
+// === 2. フォールバック辞書データの作成 ===
+function createFallbackDictionaries() {
+  console.log('=== フォールバック辞書データ作成 ===');
+  
+  // 基本的なSFW辞書データ
+  window.SFW = {
+    hair_style: [
+      {tag: "long hair", label: "ロングヘア"},
+      {tag: "short hair", label: "ショートヘア"},
+      {tag: "twin tails", label: "ツインテール"},
+      {tag: "ponytail", label: "ポニーテール"},
+      {tag: "bob cut", label: "ボブカット"}
+    ],
+    hair_length: [
+      {tag: "very long hair", label: "超ロングヘア"},
+      {tag: "long hair", label: "ロングヘア"},
+      {tag: "medium hair", label: "ミディアムヘア"},
+      {tag: "short hair", label: "ショートヘア"},
+      {tag: "very short hair", label: "ベリーショート"}
+    ],
+    bangs_style: [
+      {tag: "blunt bangs", label: "ぱっつん前髪"},
+      {tag: "side bangs", label: "サイド前髪"},
+      {tag: "swept bangs", label: "流し前髪"},
+      {tag: "no bangs", label: "前髪なし"}
+    ],
+    skin_features: [
+      {tag: "freckles", label: "そばかす"},
+      {tag: "mole", label: "ほくろ"},
+      {tag: "scar", label: "傷跡"},
+      {tag: "tattoo", label: "タトゥー"}
+    ],
+    eyes: [
+      {tag: "blue eyes", label: "青い目"},
+      {tag: "brown eyes", label: "茶色い目"},
+      {tag: "green eyes", label: "緑の目"},
+      {tag: "red eyes", label: "赤い目"},
+      {tag: "purple eyes", label: "紫の目"}
+    ],
+    expressions: [
+      {tag: "smile", label: "笑顔"},
+      {tag: "serious", label: "真剣"},
+      {tag: "happy", label: "幸せ"},
+      {tag: "sad", label: "悲しい"},
+      {tag: "angry", label: "怒り"}
+    ],
+    outfit: [
+      {tag: "school uniform", label: "制服"},
+      {tag: "casual dress", label: "カジュアルドレス"},
+      {tag: "t-shirt", label: "Tシャツ"},
+      {tag: "jeans", label: "ジーンズ"},
+      {tag: "skirt", label: "スカート"}
+    ],
+    background: [
+      {tag: "classroom", label: "教室"},
+      {tag: "park", label: "公園"},
+      {tag: "beach", label: "ビーチ"},
+      {tag: "city", label: "街"},
+      {tag: "forest", label: "森"}
+    ],
+    pose: [
+      {tag: "standing", label: "立っている"},
+      {tag: "sitting", label: "座っている"},
+      {tag: "walking", label: "歩いている"},
+      {tag: "running", label: "走っている"},
+      {tag: "lying down", label: "横になっている"}
+    ],
+    composition: [
+      {tag: "close-up", label: "クローズアップ"},
+      {tag: "medium shot", label: "ミディアムショット"},
+      {tag: "full body", label: "全身"},
+      {tag: "portrait", label: "ポートレート"},
+      {tag: "wide shot", label: "ワイドショット"}
+    ],
+    view: [
+      {tag: "front view", label: "正面"},
+      {tag: "side view", label: "横向き"},
+      {tag: "back view", label: "後ろ向き"},
+      {tag: "three-quarter view", label: "斜め向き"}
+    ],
+    lighting: [
+      {tag: "natural light", label: "自然光"},
+      {tag: "soft light", label: "ソフトライト"},
+      {tag: "dramatic light", label: "ドラマチックライト"},
+      {tag: "backlight", label: "逆光"}
+    ],
+    accessories: [
+      {tag: "glasses", label: "メガネ"},
+      {tag: "hat", label: "帽子"},
+      {tag: "necklace", label: "ネックレス"},
+      {tag: "earrings", label: "イヤリング"},
+      {tag: "bracelet", label: "ブレスレット"}
+    ],
+    age: [
+      {tag: "child", label: "子供"},
+      {tag: "teenager", label: "ティーンエイジャー"},
+      {tag: "young adult", label: "若い大人"},
+      {tag: "adult", label: "大人"}
+    ],
+    gender: [
+      {tag: "1girl", label: "女の子"},
+      {tag: "1boy", label: "男の子"},
+      {tag: "woman", label: "女性"},
+      {tag: "man", label: "男性"}
+    ],
+    body_type: [
+      {tag: "slender", label: "スレンダー"},
+      {tag: "average", label: "普通"},
+      {tag: "curvy", label: "グラマー"},
+      {tag: "muscular", label: "筋肉質"}
+    ],
+    height: [
+      {tag: "tall", label: "背が高い"},
+      {tag: "average height", label: "普通の身長"},
+      {tag: "short", label: "背が低い"},
+      {tag: "petite", label: "小柄"}
+    ],
+    face: [
+      {tag: "round face", label: "丸顔"},
+      {tag: "oval face", label: "卵型"},
+      {tag: "square face", label: "四角顔"},
+      {tag: "heart face", label: "ハート型"}
+    ],
+    skin_body: [
+      {tag: "fair skin", label: "色白"},
+      {tag: "tan skin", label: "日焼け肌"},
+      {tag: "dark skin", label: "褐色肌"},
+      {tag: "pale skin", label: "青白い肌"}
+    ],
+    art_style: [
+      {tag: "anime", label: "アニメ"},
+      {tag: "manga", label: "漫画"},
+      {tag: "realistic", label: "リアル"},
+      {tag: "cartoon", label: "カートゥーン"}
+    ],
+    colors: [
+      {tag: "red", label: "赤"},
+      {tag: "blue", label: "青"},
+      {tag: "green", label: "緑"},
+      {tag: "yellow", label: "黄色"},
+      {tag: "purple", label: "紫"},
+      {tag: "pink", label: "ピンク"},
+      {tag: "orange", label: "オレンジ"},
+      {tag: "black", label: "黒"},
+      {tag: "white", label: "白"},
+      {tag: "brown", label: "茶色"}
+    ]
+  };
+  
+  // 基本的なNSFW辞書データ
+  window.NSFW = {
+    expression: [
+      {tag: "blushing", label: "赤面", level: "L1"},
+      {tag: "shy", label: "恥ずかしがり", level: "L1"},
+      {tag: "seductive", label: "誘惑的", level: "L2"}
+    ],
+    exposure: [
+      {tag: "cleavage", label: "胸の谷間", level: "L1"},
+      {tag: "midriff", label: "お腹見せ", level: "L1"},
+      {tag: "bare shoulders", label: "肩出し", level: "L1"}
+    ],
+    situation: [
+      {tag: "romantic", label: "ロマンチック", level: "L1"},
+      {tag: "intimate", label: "親密", level: "L2"}
+    ],
+    lighting: [
+      {tag: "moody lighting", label: "ムーディーライト", level: "L1"},
+      {tag: "candlelight", label: "キャンドルライト", level: "L1"}
+    ],
+    background: [
+      {tag: "bedroom", label: "寝室", level: "L1"},
+      {tag: "bathroom", label: "バスルーム", level: "L2"}
+    ],
+    pose: [
+      {tag: "lying pose", label: "横たわるポーズ", level: "L1"},
+      {tag: "sitting pose", label: "座りポーズ", level: "L1"}
+    ],
+    accessory: [
+      {tag: "choker", label: "チョーカー", level: "L1"},
+      {tag: "stockings", label: "ストッキング", level: "L1"}
+    ],
+    outfit: [
+      {tag: "bikini", label: "ビキニ", level: "L1"},
+      {tag: "swimsuit", label: "水着", level: "L1"}
+    ],
+    body: [
+      {tag: "curvy figure", label: "曲線美", level: "L1"},
+      {tag: "athletic body", label: "アスリート体型", level: "L1"}
+    ],
+    nipples: [
+      {tag: "covered nipples", label: "隠れた乳首", level: "L2"}
+    ],
+    underwear: [
+      {tag: "lingerie", label: "ランジェリー", level: "L2"},
+      {tag: "bra", label: "ブラジャー", level: "L1"}
+    ]
+  };
+  
+  console.log('フォールバック辞書作成完了');
+  console.log('SFW categories:', Object.keys(window.SFW).length);
+  console.log('NSFW categories:', Object.keys(window.NSFW).length);
+  
+  // 単語モード初期化実行
+  setTimeout(() => {
+    if (window.initWordModeItems) {
+      console.log('フォールバックデータで単語モード初期化');
+      window.initWordModeItems();
+    }
+  }, 500);
+}
+
+// === 3. 辞書読み込みの監視と再試行 ===
+function waitForDictionaries(maxAttempts = 10, interval = 1000) {
+  let attempts = 0;
+  
+  const checkDictionaries = () => {
+    attempts++;
+    console.log(`辞書チェック試行 ${attempts}/${maxAttempts}`);
+    
+    if (window.SFW && window.NSFW && 
+        Object.keys(window.SFW).length > 0 && 
+        Object.keys(window.NSFW).length > 0) {
+      console.log('辞書データ確認完了！単語モード初期化開始');
+      if (window.initWordModeItems) {
+        window.initWordModeItems();
+      }
+      return;
+    }
+    
+    if (attempts >= maxAttempts) {
+      console.warn('辞書読み込みタイムアウト。フォールバックデータを使用');
+      createFallbackDictionaries();
+      return;
+    }
+    
+    setTimeout(checkDictionaries, interval);
+  };
+  
+  checkDictionaries();
+}
+
+// === 4. 手動実行用の関数 ===
+window.fixDictionaryLoading = function() {
+  console.log('=== 辞書読み込み修正開始 ===');
+  
+  // まず強制初期化を試行
+  forceDictionaryInitialization();
+  
+  // 3秒後に監視開始
+  setTimeout(() => {
+    waitForDictionaries();
+  }, 3000);
+};
+
+// === 5. 自動実行 ===
+document.addEventListener('DOMContentLoaded', function() {
+  // ページ読み込み完了後、2秒待ってから辞書修正を実行
+  setTimeout(() => {
+    console.log('自動辞書修正開始');
+    window.fixDictionaryLoading();
+  }, 2000);
+  
+  // さらにデバッグボタンを更新
+  setTimeout(() => {
+    const existingBtn = document.getElementById('debug-init-btn');
+    if (existingBtn) {
+      existingBtn.textContent = '🔧 辞書修正 & 再初期化';
+      existingBtn.addEventListener('click', () => {
+        window.fixDictionaryLoading();
+      });
+    }
+  }, 3000);
+});
+
+// === 6. loadDefaultDicts関数が見つからない場合の対策 ===
+if (typeof window.loadDefaultDicts === 'undefined') {
+  console.warn('loadDefaultDicts関数が未定義です。代替実装を作成します。');
+  
+  window.loadDefaultDicts = async function() {
+    console.log('代替loadDefaultDicts実行');
+    
+    // 埋め込みスクリプトの確認
+    if (window.DEFAULT_SFW_DICT) {
+      console.log('埋め込みSFW辞書発見');
+      if (typeof window.mergeIntoSFW === 'function') {
+        window.mergeIntoSFW(window.DEFAULT_SFW_DICT);
+      } else {
+        window.SFW = window.DEFAULT_SFW_DICT.SFW || window.DEFAULT_SFW_DICT;
+      }
+    }
+    
+    if (window.DEFAULT_NSFW_DICT) {
+      console.log('埋め込みNSFW辞書発見');
+      if (typeof window.mergeIntoNSFW === 'function') {
+        window.mergeIntoNSFW(window.DEFAULT_NSFW_DICT);
+      } else {
+        window.NSFW = window.DEFAULT_NSFW_DICT.NSFW || window.DEFAULT_NSFW_DICT;
+      }
+    }
+    
+    // 外部JSONファイルの読み込み試行
+    try {
+      const sfwResponse = await fetch('dict/default_sfw.json');
+      if (sfwResponse.ok) {
+        const sfwData = await sfwResponse.json();
+        console.log('外部SFW辞書読み込み成功');
+        if (typeof window.mergeIntoSFW === 'function') {
+          window.mergeIntoSFW(sfwData);
+        } else {
+          window.SFW = sfwData.SFW || sfwData;
+        }
+      }
+    } catch (error) {
+      console.log('外部SFW辞書読み込み失敗:', error.message);
+    }
+    
+    try {
+      const nsfwResponse = await fetch('dict/default_nsfw.json');
+      if (nsfwResponse.ok) {
+        const nsfwData = await nsfwResponse.json();
+        console.log('外部NSFW辞書読み込み成功');
+        if (typeof window.mergeIntoNSFW === 'function') {
+          window.mergeIntoNSFW(nsfwData);
+        } else {
+          window.NSFW = nsfwData.NSFW || nsfwData;
+        }
+      }
+    } catch (error) {
+      console.log('外部NSFW辞書読み込み失敗:', error.message);
+    }
+    
+    console.log('代替loadDefaultDicts完了');
+  };
+}
+
+
