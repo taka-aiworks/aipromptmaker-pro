@@ -1319,15 +1319,15 @@ function addSelectedValuesSafe(tags, containerId) {
   //});
   
   // 各入力要素の詳細確認
-  allInputs.forEach((input, index) => {
-    console.log(`🔸 ${containerId}[${index}]:`, {
-      type: input.type,
-      name: input.name,
-      value: input.value,
-      checked: input.checked,
-      id: input.id
-    });
-  });
+  //allInputs.forEach((input, index) => {
+  //  console.log(`🔸 ${containerId}[${index}]:`, {
+  //    type: input.type,
+  //    name: input.name,
+  //    value: input.value,
+  //    checked: input.checked,
+  //    id: input.id
+  //  });
+  //});
   
   selectedInputs.forEach(input => {
     if (input.value && input.value.trim() && input.value !== '') {
