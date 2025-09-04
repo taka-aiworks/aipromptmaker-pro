@@ -2865,14 +2865,13 @@ function initCollapsibleCategories() {
   });
 }
 
-  /* ===== 単語モード：漫画カテゴリ追加修正版 ===== */
-
-/* ===== 正確な辞書プロパティに基づく修正版 initWordModeItems ===== */
+// 単語モード辞書キー修正コード
+// app.js の initWordModeItems 関数内の sfwCategories と nsfwCategories を以下で置き換え
 
 window.initWordModeItems = function() {
   console.log('=== 単語モード初期化開始（修正版）===');
   
-  // 実際に辞書に存在するSFWカテゴリ（確認済み）
+  // 正確な辞書キー名で参照（アンダースコア形式）
   const sfwCategories = {
     // === 基本カテゴリ（既存・動作確認済み）===
     'background': SFW.background || [],
@@ -2897,26 +2896,26 @@ window.initWordModeItems = function() {
     'outfit-sfw': SFW.outfit || [],
     'art-style': SFW.art_style || [],
     
-    // === 実在する漫画モード専用カテゴリ ===
-    'worldview': SFW.worldview || [],                    // ✓ 辞書に存在
-    'emotion-primary': SFW.emotion_primary || [],        // ✓ 辞書に存在  
-    'emotion-detail': SFW.emotion_detail || [],          // ✓ 辞書に存在
-    'mouth-state': SFW.mouth_state || [],                // ✓ 辞書に存在
-    'eye-state': SFW.eye_state || [],                    // ✓ 辞書に存在
-    'gaze': SFW.gaze || [],                              // ✓ 辞書に存在
-    'pose-manga': SFW.pose_manga || [],                  // ✓ 辞書に存在
-    'hand-gesture': SFW.hand_gesture || [],              // ✓ 辞書に存在
-    'movement-action': SFW.movement_action || [],        // ✓ 辞書に存在
-    'props-light': SFW.props_light || [],                // ✓ 辞書に存在
-    'effect-manga': SFW.effect_manga || [],              // ✓ 辞書に存在
+    // === 漫画モード専用（正しいキー名で参照）===
+    'worldview': SFW.worldview || [],
+    'emotion-primary': SFW.emotion_primary || [],
+    'emotion-detail': SFW.emotion_detail || [],
+    'mouth-state': SFW.mouth_state || [],
+    'eye-state': SFW.eye_state || [],
+    'gaze': SFW.gaze || [],
+    'pose-manga': SFW.pose_manga || [],
+    'hand-gesture': SFW.hand_gesture || [],
+    'movement-action': SFW.movement_action || [],
+    'props-light': SFW.props_light || [],
+    'effect-manga': SFW.effect_manga || [],
     
-    // === ネガティブプロンプト系（実在する） ===
-    'negative-presets': SFW.negative_presets || [],      // ✓ 辞書に存在
-    'negative-categories': SFW.negative_categories || [], // ✓ 辞書に存在
-    'negative-quick-presets': SFW.negative_quick_presets || [] // ✓ 辞書に存在
+    // === ネガティブプロンプト系（正しいキー名で参照）===
+    'negative-presets': SFW.negative_presets || [],
+    'negative-categories': SFW.negative_categories || [],
+    'negative-quick-presets': SFW.negative_quick_presets || []
   };
 
-  // 実際に辞書に存在するNSFWカテゴリ（確認済み）
+  // NSFWカテゴリも正確なキー名で参照
   const nsfwCategories = {
     // === 基本NSFW（既存・動作確認済み）===
     'exposure': NSFW.exposure || [],
@@ -2930,13 +2929,13 @@ window.initWordModeItems = function() {
     'body-nsfw': NSFW.body || [],
     'nipple-nsfw': NSFW.nipples || [],
     
-    // === 実在する漫画モード専用NSFWカテゴリ ===
-    'action-nsfw': NSFW.action || [],                    // ✓ 辞書に存在
-    'action2-nsfw': NSFW.action2 || [],                  // ✓ 辞書に存在  
-    'participants': NSFW.participants || []              // ✓ 辞書に存在
+    // === 漫画モード専用NSFW（正しいキー名で参照）===
+    'action-nsfw': NSFW.action || [],
+    'action2-nsfw': NSFW.action2 || [],
+    'participants': NSFW.participants || []
   };
   
-  // 色の初期化（既存）
+  // 色の初期化（既存のまま）
   const colors = SFW.colors || [
     {tag: 'white', label: '白'}, {tag: 'black', label: '黒'},
     {tag: 'red', label: '赤'}, {tag: 'blue', label: '青'},
@@ -2947,6 +2946,14 @@ window.initWordModeItems = function() {
   
   console.log(`SFWカテゴリ数: ${Object.keys(sfwCategories).length}`);
   console.log(`NSFWカテゴリ数: ${Object.keys(nsfwCategories).length}`);
+  
+  // デバッグ用：実際の辞書の中身をチェック
+  console.log('=== 辞書デバッグ情報 ===');
+  console.log('SFW.worldview:', SFW.worldview ? `${SFW.worldview.length}件` : 'なし');
+  console.log('SFW.emotion_primary:', SFW.emotion_primary ? `${SFW.emotion_primary.length}件` : 'なし');
+  console.log('SFW.pose_manga:', SFW.pose_manga ? `${SFW.pose_manga.length}件` : 'なし');
+  console.log('NSFW.action:', NSFW.action ? `${NSFW.action.length}件` : 'なし');
+  console.log('NSFW.participants:', NSFW.participants ? `${NSFW.participants.length}件` : 'なし');
   
   // 各カテゴリにアイテムを追加（エラーハンドリング付き）
   let totalItems = 0;
@@ -2963,7 +2970,7 @@ window.initWordModeItems = function() {
         successCategories++;
         console.log(`✓ SFW ${cat}: ${items.length}件`);
       } else if (container && (!items || items.length === 0)) {
-        console.log(`△ SFW ${cat}: コンテナはあるが辞書データなし`);
+        console.log(`△ SFW ${cat}: コンテナはあるが辞書データなし（辞書内の実際のデータ: ${items ? items.length : 'undefined'}）`);
       } else if (items && items.length > 0) {
         console.log(`△ SFW ${cat}: 辞書データ${items.length}件あるがコンテナなし`);
       } else {
@@ -2985,7 +2992,7 @@ window.initWordModeItems = function() {
         successCategories++;
         console.log(`✓ NSFW ${cat}: ${items.length}件`);
       } else if (container && (!items || items.length === 0)) {
-        console.log(`△ NSFW ${cat}: コンテナはあるが辞書データなし`);
+        console.log(`△ NSFW ${cat}: コンテナはあるが辞書データなし（辞書内の実際のデータ: ${items ? items.length : 'undefined'}）`);
       } else if (items && items.length > 0) {
         console.log(`△ NSFW ${cat}: 辞書データ${items.length}件あるがコンテナなし`);
       } else {
@@ -3032,6 +3039,35 @@ window.initWordModeItems = function() {
   }, 100);
 };
 
+// 辞書のキー一覧をチェックする関数（デバッグ用）
+window.checkDictionaryKeys = function() {
+  console.log('=== SFW辞書のキー一覧 ===');
+  Object.keys(SFW).forEach(key => {
+    const value = SFW[key];
+    if (Array.isArray(value)) {
+      console.log(`${key}: ${value.length}件`);
+    } else {
+      console.log(`${key}: ${typeof value} (${value})`);
+    }
+  });
+  
+  console.log('=== NSFW辞書のキー一覧 ===');
+  Object.keys(NSFW).forEach(key => {
+    const value = NSFW[key];
+    if (Array.isArray(value)) {
+      console.log(`${key}: ${value.length}件`);
+    } else {
+      console.log(`${key}: ${typeof value} (${value})`);
+    }
+  });
+};
+
+// 実行
+console.log('修正版 initWordModeItems 関数を定義しました');
+console.log('実行するには: window.initWordModeItems()');
+console.log('辞書キー確認: window.checkDictionaryKeys()');
+
+   
 // createWordModeItem 関数も定義（存在しない場合のフォールバック）
 if (typeof window.createWordModeItem !== 'function') {
   window.createWordModeItem = function(item, category) {
