@@ -213,7 +213,8 @@ function debugMangaElements() {
   
   criticalElements.forEach(id => {
     const element = document.getElementById(id);
-   // console.log(`🔸 ${id}:`, {
+   // console.log(`🔸 ${id}:`, 
+    {
       exists: !!element,
       type: element?.tagName,
       children: element?.children?.length || 0,
