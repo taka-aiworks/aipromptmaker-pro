@@ -213,22 +213,21 @@ function debugMangaElements() {
   
   criticalElements.forEach(id => {
     const element = document.getElementById(id);
-   // console.log(`🔸 ${id}:`, 
-    {
-      exists: !!element,
-      type: element?.tagName,
-      children: element?.children?.length || 0,
-      has_inputs: element?.querySelectorAll('input')?.length || 0
-    });
+   // console.log(`🔸 ${id}:`,{
+   //   exists: !!element,
+   //   type: element?.tagName,
+   //   children: element?.children?.length || 0,
+   //   has_inputs: element?.querySelectorAll('input')?.length || 0
+  //  });
     
     if (element && id.startsWith('manga') && !id.includes('Enable')) {
       const inputs = element.querySelectorAll('input');
      // console.log(`  📄 ${id} 内の入力要素:`, [...inputs].map(inp => ({
-        type: inp.type,
-        value: inp.value,
-        checked: inp.checked,
-        name: inp.name
-      })));
+     //   type: inp.type,
+     //   value: inp.value,
+     //   checked: inp.checked,
+     //   name: inp.name
+     // })));
     }
   });
   
