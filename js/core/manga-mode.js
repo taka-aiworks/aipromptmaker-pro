@@ -2287,7 +2287,7 @@ function displayMangaSearchResults(results, searchTerm) {
   bindMangaSearchResultEvents();
 }
 
-// 検索結果のイベントバインド
+// 検索結果のイベントバインド（修正版）
 function bindMangaSearchResultEvents() {
   const resultsContent = document.getElementById('manga-search-results-content');
   if (!resultsContent) return;
@@ -2295,6 +2295,9 @@ function bindMangaSearchResultEvents() {
   resultsContent.addEventListener('click', (e) => {
     const resultItem = e.target.closest('.manga-result-item');
     if (!resultItem) return;
+    
+    // クリックが検索結果の入力要素自体の場合は処理をスキップ
+    if (e.target.tagName === 'INPUT') return;
     
     const containerId = resultItem.dataset.containerId;
     const inputValue = resultItem.dataset.inputValue;
@@ -2313,24 +2316,100 @@ function bindMangaSearchResultEvents() {
         radio.checked = false;
         radio.closest('.chip')?.classList.remove('selected');
       });
+      
+      // 選択状態に設定
+      originalInput.checked = true;
+      originalInput.closest('.chip')?.classList.add('selected');
+      
+      // 検索結果の表示も更新（ラジオボタンの場合は同じname全てを更新）
+      const allResultRadios = resultsContent.querySelectorAll(`input[type="radio"]`);
+      allResultRadios.forEach(radio => {
+        const parentItem = radio.closest('.manga-result-item');
+        if (parentItem && parentItem.dataset.containerId === containerId) {
+          const isSelected = (parentItem.dataset.inputValue === inputValue);
+          radio.checked = isSelected;
+          parentItem.classList.toggle('selected', isSelected);
+        }
+      });
+      
+    } else if (originalInput.type === 'checkbox') {
+      // チェックボックスの場合は切り替え
+      originalInput.checked = !originalInput.checked;
+      originalInput.closest('.chip')?.classList.toggle('selected', originalInput.checked);
+      
+      // 検索結果の表示も更新
+      resultItem.classList.toggle('selected', originalInput.checked);
+      const resultInput = resultItem.querySelector('input[type="checkbox"]');
+      if (resultInput) resultInput.checked = originalInput.checked;
     }
     
-    // 選択状態を切り替え
-    originalInput.checked = !originalInput.checked;
-    originalInput.closest('.chip')?.classList.toggle('selected', originalInput.checked);
-    
-    // 検索結果の表示も更新
-    resultItem.classList.toggle('selected', originalInput.checked);
-    const resultInput = resultItem.querySelector('input');
-    if (resultInput) resultInput.checked = originalInput.checked;
+    // changeイベントを手動で発火（リアルタイム更新のため）
+    originalInput.dispatchEvent(new Event('change', { bubbles: true }));
     
     // プロンプト更新
     if (typeof updateMangaOutput === 'function') {
-      updateMangaOutput();
+      setTimeout(updateMangaOutput, 10);
     }
+    
+    console.log(`✅ 検索結果から選択: ${inputValue} (${originalInput.type}) = ${originalInput.checked}`);
+  });
+  
+  // 検索結果内の入力要素への直接クリックも処理
+  resultsContent.addEventListener('change', (e) => {
+    if (e.target.tagName !== 'INPUT') return;
+    
+    const resultItem = e.target.closest('.manga-result-item');
+    if (!resultItem) return;
+    
+    const containerId = resultItem.dataset.containerId;
+    const inputValue = resultItem.dataset.inputValue;
+    const container = document.getElementById(containerId);
+    
+    if (!container) return;
+    
+    const originalInput = container.querySelector(`input[value="${inputValue}"]`);
+    if (!originalInput) return;
+    
+    // 検索結果の入力状態を元の入力に反映
+    if (originalInput.type === 'radio' && e.target.checked) {
+      // ラジオボタンの場合は他を未選択に
+      const radioGroup = container.querySelectorAll(`input[name="${originalInput.name}"]`);
+      radioGroup.forEach(radio => {
+        radio.checked = false;
+        radio.closest('.chip')?.classList.remove('selected');
+      });
+      
+      originalInput.checked = true;
+      originalInput.closest('.chip')?.classList.add('selected');
+      
+      // 検索結果内の同じグループも更新
+      const allResultRadios = resultsContent.querySelectorAll(`input[type="radio"]`);
+      allResultRadios.forEach(radio => {
+        const parentItem = radio.closest('.manga-result-item');
+        if (parentItem && parentItem.dataset.containerId === containerId) {
+          const isSelected = (parentItem.dataset.inputValue === inputValue);
+          radio.checked = isSelected;
+          parentItem.classList.toggle('selected', isSelected);
+        }
+      });
+      
+    } else if (originalInput.type === 'checkbox') {
+      originalInput.checked = e.target.checked;
+      originalInput.closest('.chip')?.classList.toggle('selected', originalInput.checked);
+      resultItem.classList.toggle('selected', originalInput.checked);
+    }
+    
+    // changeイベントを手動で発火
+    originalInput.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    // プロンプト更新
+    if (typeof updateMangaOutput === 'function') {
+      setTimeout(updateMangaOutput, 10);
+    }
+    
+    console.log(`✅ 検索結果入力変更: ${inputValue} (${originalInput.type}) = ${originalInput.checked}`);
   });
 }
-
 
 // 漫画モード検索クリア
 function clearMangaSearch() {
