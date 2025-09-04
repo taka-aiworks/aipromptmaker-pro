@@ -207,6 +207,7 @@ class CommercialLoRAManager {
     const labels = {
       style: '画風',
       quality: '品質',
+      chibi: 'ちび',
       expression: '表現',
       pose: 'ポーズ',
       effect: '効果',
