@@ -98,7 +98,16 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "pubic_hair_out",   "ja": "下着からはみ毛", "level": "L2" },
       { "tag": "exposed_genitals", "ja": "性器露出", "level": "L3" },
       { "tag": "lewd_outfit",   "ja": "卑猥な衣装", "level": "L3" },
-      { "tag": "bondage_exposure", "ja": "拘束露出", "level": "L3" }
+      { "tag": "bondage_exposure", "ja": "拘束露出", "level": "L3" },
+      { "tag": "transparent_bra",     "ja": "透けブラ",         "level": "L1" },
+      { "tag": "transparent_panties", "ja": "透けパンツ",       "level": "L1" },
+      { "tag": "sheer_stockings",     "ja": "シースルーストッキング", "level": "L1" },
+      { "tag": "wet_see_through",     "ja": "濡れて透ける服",   "level": "L2" },
+      { "tag": "white_shirt_see_through","ja": "白シャツ透け",  "level": "L2" },
+      { "tag": "lingerie_see_through","ja": "透けランジェリー", "level": "L2" },
+      { "tag": "full_transparent_outfit", "ja": "全身透け衣装", "level": "L3" },
+      { "tag": "mesh_outfit",         "ja": "メッシュ透け衣装", "level": "L2" },
+      { "tag": "latex_transparent",   "ja": "透明ラバー衣装",   "level": "L3" }
     ],
 
       "situation": [
