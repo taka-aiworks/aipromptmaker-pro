@@ -237,12 +237,12 @@ function debugMangaElements() {
     const allInputs = mangaPanel.querySelectorAll('input');
     const checkedInputs = mangaPanel.querySelectorAll('input:checked');
     
-    console.log('📊 漫画パネル全体統計:', {
-      total_inputs: allInputs.length,
-      checked_inputs: checkedInputs.length,
-      input_types: [...new Set([...allInputs].map(inp => inp.type))],
-      checked_values: [...checkedInputs].map(inp => inp.value)
-    });
+ //   console.log('📊 漫画パネル全体統計:', {
+ //   total_inputs: allInputs.length,
+ //     checked_inputs: checkedInputs.length,
+ //     input_types: [...new Set([...allInputs].map(inp => inp.type))],
+ //    checked_values: [...checkedInputs].map(inp => inp.value)
+ //   });
   }
 }
 
@@ -1311,12 +1311,12 @@ function addSelectedValuesSafe(tags, containerId) {
   const allInputs = container.querySelectorAll('input');
   const selectedInputs = container.querySelectorAll('input:checked');
   
-  console.log(`📊 ${containerId} 統計:`, {
-    total_inputs: allInputs.length,
-    selected_inputs: selectedInputs.length,
-    input_types: [...allInputs].map(inp => inp.type),
-    selected_values: [...selectedInputs].map(inp => inp.value)
-  });
+  //console.log(`📊 ${containerId} 統計:`, {
+  //  total_inputs: allInputs.length,
+  //  selected_inputs: selectedInputs.length,
+  //  input_types: [...allInputs].map(inp => inp.type),
+  //  selected_values: [...selectedInputs].map(inp => inp.value)
+  //});
   
   // 各入力要素の詳細確認
   allInputs.forEach((input, index) => {
