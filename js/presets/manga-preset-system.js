@@ -19,7 +19,7 @@ class MangaPresetSystem {
     console.log('✅ 漫画プリセットシステム初期化完了');
   }
 
-  // プリセットUI作成
+// プリセットUI作成（検索欄の下に配置）
   createPresetUI() {
     const mangaPanel = document.getElementById('panelManga');
     if (!mangaPanel) {
@@ -27,15 +27,22 @@ class MangaPresetSystem {
       return;
     }
 
-    // プリセットセクションを最上部に挿入
+    // 検索セクションを探す
+    const searchSection = mangaPanel.querySelector('.manga-search');
+    if (!searchSection) {
+      console.error('❌ 検索セクションが見つかりません');
+      return;
+    }
+
+    // プリセットセクションを作成
     const presetSection = document.createElement('div');
     presetSection.className = 'manga-presets-section';
     presetSection.innerHTML = this.generatePresetHTML();
     
-    // パネルの最初に挿入
-    mangaPanel.insertBefore(presetSection, mangaPanel.firstChild);
+    // 検索セクションの直後に挿入
+    searchSection.insertAdjacentElement('afterend', presetSection);
     
-    console.log('✅ プリセットUI作成完了');
+    console.log('✅ プリセットUIを検索欄の下に作成完了');
   }
 
   // プリセットHTML生成
