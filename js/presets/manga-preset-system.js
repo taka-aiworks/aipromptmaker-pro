@@ -369,7 +369,78 @@ class MangaPresetSystem {
     console.log(`📋 プリセット詳細表示: ${presetData.name} - ${settingsDetails.length}項目`);
   }
 
-  // 設定詳細を抽出するメソッド（完全版日本語マッピング）
+  // 辞書データから日本語ラベルを取得する関数
+  getJapaneseLabelFromDictionary(categoryId, value) {
+    // カテゴリIDから辞書のプロパティ名を推測
+    const categoryMappings = {
+      'mangaEmotionPrimary': 'emotion_primary',
+      'mangaEmotionDetail': 'emotion_detail',
+      'mangaExpressions': 'expressions',
+      'mangaEyeState': 'eye_state',
+      'mangaGaze': 'gaze',
+      'mangaMouthState': 'mouth_state',
+      'mangaPose': 'pose',
+      'mangaHandGesture': 'hand_gesture',
+      'mangaMovementAction': 'movement_action',
+      'mangaComposition': 'composition',
+      'mangaView': 'view',
+      'mangaCameraView': 'camera_view',
+      'mangaPropsLight': 'props_light',
+      'mangaEffectManga': 'effect_manga',
+      'mangaBackground': 'background',
+      'mangaLighting': 'lighting',
+      'mangaArtStyle': 'art_style',
+      // NSFW系（推測）
+      'mangaNSFWExpr': 'n_expr',
+      'mangaNSFWExpo': 'n_expo',
+      'mangaNSFWSitu': 'n_situ',
+      'mangaNSFWLight': 'n_light',
+      'mangaNSFWPose': 'n_pose',
+      'mangaNSFWUnderwear': 'n_underwear',
+      'mangaNSFWOutfit': 'n_outfit',
+      'mangaNSFWAction': 'n_action',
+      'mangaNSFWAcc': 'n_acc',
+      'mangaNSFWBody': 'n_body',
+      'mangaNSFWNipples': 'n_nipples'
+    };
+
+    const dictProperty = categoryMappings[categoryId];
+    if (!dictProperty) return null;
+
+    // SFW辞書から検索
+    if (window.SFW && window.SFW[dictProperty] && Array.isArray(window.SFW[dictProperty])) {
+      const item = window.SFW[dictProperty].find(item => item.tag === value);
+      if (item && item.label) return item.label;
+    }
+
+    // NSFW辞書から検索（存在しない場合もあるので、DOM要素から取得を試行）
+    if (window.NSFW && window.NSFW[dictProperty] && Array.isArray(window.NSFW[dictProperty])) {
+      const item = window.NSFW[dictProperty].find(item => item.tag === value);
+      if (item && item.label) return item.label;
+    }
+
+    // DOM要素から日本語ラベルを取得（最後の手段）
+    const container = document.getElementById(categoryId);
+    if (container) {
+      const input = container.querySelector(`input[value="${value}"]`);
+      if (input) {
+        // ラベル要素またはテキストコンテンツから日本語を取得
+        const label = input.closest('label') || input.parentElement;
+        if (label) {
+          const textContent = label.textContent || label.innerText;
+          // "日本語 (english)" のような形式から日本語部分を抽出
+          const match = textContent.match(/^([^(]+)/);
+          if (match) {
+            return match[1].trim();
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  // 設定詳細を抽出するメソッド（辞書ベース版）
   extractSettingsDetails(settings) {
     const categoryNames = {
       'mangaEmotionPrimary': '基本感情',
@@ -402,150 +473,17 @@ class MangaPresetSystem {
       'mangaNSFWNipples': 'NSFW乳首'
     };
 
-    // 完全版日本語値マッピング
-    const valueNames = {
-      // === SFW値（既存） ===
-      // 基本感情
-      'joy': '喜び',
-      'sadness': '悲しみ',
-      'anger': '怒り',
-      'embarrassment': '恥ずかしさ',
-      'surprise': '驚き',
-      'sleepiness': '眠気',
-      'calm': '穏やか',
-      'fear': '恐怖',
-      'love': '愛',
-      
-      // 詳細感情
-      'delighted': '喜悦',
-      'cheerful': '陽気',
-      'tearful': '涙ぐましい',
-      'sobbing': '号泣',
-      'annoyed': 'イライラ',
-      'furious': '激怒',
-      'bashful': '恥ずかしがり',
-      'shocked': 'ショック',
-      'relieved': '安心',
-      
-      // 表情
-      'bright_smile': '明るい笑顔',
-      'smiling_open_mouth': '口を開けて笑う',
-      'soft_smile': '優しい微笑み',
-      'teary_eyes': '涙目',
-      'crying': '泣き顔',
-      'pouting': 'ふくれっ面',
-      'furious': '激怒の表情',
-      'embarrassed_face': '恥ずかしい顔',
-      'blushing': '赤面',
-      'surprised': '驚いた顔',
-      'sleepy_eyes': '眠そうな目',
-      
-      // 構図
-      'upper_body': '上半身',
-      'full_body': '全身',
-      'bust': 'バストアップ',
-      'portrait': 'ポートレート',
-      
-      // === NSFW値（新規追加） ===
-      // NSFW表情
-      'aroused': '興奮した表情',
-      'flushed': '上気した顔',
-      'embarrassed': '恥ずかしがった顔',
-      'seductive_smile': '誘惑的な微笑み',
-      'half_lidded_eyes': '半目',
-      'bedroom_eyes': '誘惑的な目',
-      'lip_bite': '唇を噛む',
-      'bashful_smile': '恥ずかしそうな微笑み',
-      'soft_moan': '小さなうめき声',
-      'smirk': 'にやり笑い',
-      'wink': 'ウィンク',
-      'shy_smile': '恥ずかしそうな笑顔',
-      
-      // NSFW露出
-      'mild_cleavage': '軽い胸の谷間',
-      'off_shoulder': '肩出し',
-      'bare_back': '背中見せ',
-      'leggy': '脚見せ',
-      'short_skirt': 'ミニスカート',
-      'tight_clothes': 'タイトな服',
-      'wet_clothes': '濡れた服',
-      'see_through': '透け感',
-      'sideboob': '横乳',
-      'underboob': 'アンダーバスト',
-      'cleavage_window': '胸元の窓',
-      
-      // NSFWシチュエーション
-      'mirror_selfie': '鏡越しセルフィー',
-      'after_shower': 'シャワー後',
-      'towel_wrap': 'タオル巻き',
-      'sauna_steam': 'サウナの蒸気',
-      'sunbathing': '日光浴',
-      'in_bed_sheets': 'ベッドシーツの中',
-      'bedroom': '寝室',
-      'bathroom': '浴室',
-      'beach': 'ビーチ',
-      'classroom': '教室',
-      'stage_performance': 'ステージパフォーマンス',
-      
-      // NSFWライティング
-      'softbox': 'ソフトボックス照明',
-      'rim_light': 'リムライト',
-      'backlit': '逆光',
-      'window_glow': '窓からの光',
-      'golden_hour': 'ゴールデンアワー',
-      'neon': 'ネオン',
-      'candlelight': 'キャンドルライト',
-      'low_key': 'ローキー照明',
-      'hard_light': 'ハードライト',
-      'spotlight': 'スポットライト',
-      'moody_bedroom': 'ムーディーな寝室照明',
-      
-      // NSFWポーズ
-      'standing': '立ちポーズ',
-      'sitting': '座りポーズ',
-      'lying_down': '横たわり',
-      'kneeling': '膝立ち',
-      'seiza_pose': '正座',
-      'crouching': 'しゃがみ',
-      'bent_over': '前かがみ',
-      'arched_back': '反り返り',
-      'spread_legs': '開脚',
-      'frog_pose': 'カエルポーズ',
-      'hand_on_hips': '腰に手',
-      'lying_side': '横向きに寝る',
-      
-      // NSFW下着
-      'bra_off': 'ブラ外し',
-      'bra_unhooked': 'ブラのホック外し',
-      'bra_pulled_aside': 'ブラずらし',
-      'panties_off': 'パンツ脱ぎ',
-      'panties_pulled_aside': 'パンツずらし',
-      'lingerie_white': '白いランジェリー',
-      'lingerie_black': '黒いランジェリー',
-      'lingerie_red': '赤いランジェリー',
-      'lingerie_pink': 'ピンクのランジェリー',
-      
-      // NSFW衣装
-      'bunny_suit': 'バニースーツ',
-      'nurse_uniform': 'ナース服',
-      'maid_outfit': 'メイド服',
-      'school_swimsuit': 'スクール水着',
-      'sailor_uniform_r18': 'セーラー服（R18）',
-      'bikini': 'ビキニ',
-      'micro_bikini': 'マイクロビキニ',
-      'negligee': 'ネグリジェ',
-      'stripper_outfit': 'ストリッパー衣装'
-    };
-
     const details = [];
     
     Object.entries(settings || {}).forEach(([key, value]) => {
-      // 値の型チェックを追加
+      // 値の型チェック
       if (value && (typeof value === 'string' || typeof value === 'number') && String(value).trim() !== '') {
         const categoryName = categoryNames[key] || key;
         const stringValue = String(value);
         const englishValue = stringValue.replace(/_/g, ' ');
-        const japaneseValue = valueNames[stringValue] || englishValue;
+        
+        // 辞書から日本語ラベルを取得
+        const japaneseValue = this.getJapaneseLabelFromDictionary(key, stringValue) || englishValue;
         
         details.push({
           category: categoryName,
