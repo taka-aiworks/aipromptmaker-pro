@@ -832,6 +832,6 @@ window.DEFAULT_NSFW_DICT = {
   { "tag": "landlord_tenant", "ja": "大家と住人", "level": "L2" },
   { "tag": "delivery_customer", "ja": "配達員と客", "level": "L2" },
   { "tag": "tutor_student", "ja": "家庭教師と生徒", "level": "L2" }
-],
+]
   }
 };
