@@ -1007,10 +1007,10 @@ legend { display: none; }
 /* モバイル対応（さらに小さく） */
 @media (max-width: 768px) {
   .preset-btn {
-    padding: 1px 4px !important;      /* 縦をさらに短く */
-    font-size: 9px !important;
-    min-width: 40px !important;
-    line-height: 1.1 !important;
+    padding: 3px 8px !important;      /* モバイルも中間サイズ */
+    font-size: 10px !important;
+    min-width: 45px !important;
+    line-height: 1.2 !important;
   }
 }
 
