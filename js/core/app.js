@@ -5824,9 +5824,328 @@ function saveGASSettings() {
   }
 }
 
-// 以下、setupGASUI、testGASConnection、performManualBackup、resetGASSettings、
-// enhanceExistingGASFunctions、setupAutoBackup、initGASIntegration は
-// 前回のコードと同じものを使用
+// 4. UI関数
+function setupGASUI() {
+  const settingsPanel = document.getElementById("panelSettings");
+  if (!settingsPanel) return;
+  
+  let gasSection = document.getElementById("gas-settings-section");
+  if (!gasSection) {
+    gasSection = document.createElement("div");
+    gasSection.id = "gas-settings-section";
+    gasSection.className = "panel";
+    settingsPanel.appendChild(gasSection);
+  }
+  
+  gasSection.innerHTML = `
+    <h3>☁️ Google Apps Script連携</h3>
+    
+    <div class="form-row">
+      <label>GAS WebアプリURL:</label>
+      <input type="url" id="set_gasUrl" placeholder="https://script.google.com/macros/s/...../exec" style="width: 100%;">
+      <div class="note mini">GASでデプロイしたWebアプリのURLを入力</div>
+    </div>
+    
+    <div class="form-row">
+      <label>認証トークン（オプション）:</label>
+      <input type="password" id="set_gasToken" placeholder="セキュリティ用トークン" style="width: 100%;">
+      <div class="note mini">GAS側で認証を設定している場合のみ</div>
+    </div>
+    
+    <div class="form-row">
+      <label>
+        <input type="checkbox" id="set_autoBackup"> 自動バックアップを有効化
+      </label>
+      <div style="margin-left: 20px; margin-top: 8px;">
+        <label>間隔: 
+          <select id="set_backupInterval">
+            <option value="1">1時間</option>
+            <option value="6">6時間</option>
+            <option value="24" selected>24時間</option>
+            <option value="168">1週間</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    
+    <div class="form-row" style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button id="btnSaveGASSettings" class="btn ok small">💾 設定保存</button>
+      <button id="btnTestGAS" class="btn ghost small">🔌 接続テスト</button>
+      <button id="btnManualBackup" class="btn ghost small">☁️ 手動バックアップ</button>
+      <button id="btnResetGAS" class="btn bad small">🗑️ リセット</button>
+    </div>
+    
+    <div id="gasStatus" class="note" style="margin-top: 12px; padding: 8px; border-radius: 4px; display: none;">
+      ステータス表示エリア
+    </div>
+    
+    <details style="margin-top: 16px;">
+      <summary style="cursor: pointer; font-weight: 500;">📚 設定手順</summary>
+      <div style="margin-top: 8px; font-size: 12px; line-height: 1.6;">
+        <ol>
+          <li><strong>Google Apps Scriptを開く</strong><br>
+          <a href="https://script.google.com/" target="_blank">https://script.google.com/</a></li>
+          <li><strong>新しいプロジェクトを作成</strong></li>
+          <li><strong>提供されたGASコードをコピー&ペースト</strong></li>
+          <li><strong>setupGAS()関数を一度実行</strong></li>
+          <li><strong>「デプロイ」→「新しいデプロイ」</strong>
+            <ul>
+              <li>種類: ウェブアプリ</li>
+              <li>実行者: 自分</li>
+              <li>アクセス: 全員</li>
+            </ul>
+          </li>
+          <li><strong>生成されたURLをここに入力</strong></li>
+        </ol>
+      </div>
+    </details>
+  `;
+  
+  // イベントリスナー設定
+  document.getElementById("btnSaveGASSettings")?.addEventListener("click", saveGASSettings);
+  document.getElementById("btnTestGAS")?.addEventListener("click", testGASConnection);
+  document.getElementById("btnManualBackup")?.addEventListener("click", performManualBackup);
+  document.getElementById("btnResetGAS")?.addEventListener("click", resetGASSettings);
+  
+  loadGASSettings();
+}
+
+// 5. テスト・バックアップ機能
+async function testGASConnection() {
+  const statusDiv = document.getElementById("gasStatus");
+  const testBtn = document.getElementById("btnTestGAS");
+  
+  if (!statusDiv || !testBtn) return;
+  
+  // UI更新（開始）
+  statusDiv.style.display = "block";
+  statusDiv.style.backgroundColor = "#fbbf24";
+  statusDiv.style.color = "#92400e";
+  statusDiv.textContent = "🔄 接続テスト中（JSONP方式）...";
+  testBtn.disabled = true;
+  testBtn.textContent = "テスト中...";
+  
+  try {
+    const result = await gasConnector.testConnection();
+    
+    // 成功時のUI
+    statusDiv.style.backgroundColor = "#10b981";
+    statusDiv.style.color = "#ffffff";
+    statusDiv.innerHTML = `
+      ✅ 接続成功!<br>
+      📡 ${result.message}<br>
+      ⏰ ${result.data?.serverTime ? new Date(result.data.serverTime).toLocaleString('ja-JP') : ''}
+    `;
+    toast("✅ GAS接続テストに成功しました");
+    
+  } catch (error) {
+    // 失敗時のUI
+    statusDiv.style.backgroundColor = "#ef4444";
+    statusDiv.style.color = "#ffffff";
+    statusDiv.innerHTML = `
+      ❌ 接続失敗<br>
+      🔍 ${error.message}<br>
+      💡 GAS URLとデプロイ設定を確認してください
+    `;
+    toast("❌ GAS接続テストに失敗しました");
+    
+  } finally {
+    // UI復元
+    testBtn.disabled = false;
+    testBtn.textContent = "🔌 接続テスト";
+    
+    // 7秒後にステータスを非表示
+    setTimeout(() => {
+      if (statusDiv) statusDiv.style.display = "none";
+    }, 7000);
+  }
+}
+
+async function performManualBackup() {
+  const backupBtn = document.getElementById("btnManualBackup");
+  if (!backupBtn) return;
+  
+  const originalText = backupBtn.textContent;
+  backupBtn.disabled = true;
+  backupBtn.textContent = "バックアップ中...";
+  
+  try {
+    // 全設定データを収集
+    const backupData = {
+      version: "2.1",
+      timestamp: new Date().toISOString(),
+      settings: {},
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    };
+    
+    // ローカルストレージから設定を収集
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("LPM_")) {
+        try {
+          backupData.settings[key] = JSON.parse(localStorage.getItem(key));
+        } catch {
+          backupData.settings[key] = localStorage.getItem(key);
+        }
+      }
+    }
+    
+    // GASに送信
+    const result = await gasConnector.sendBackup(backupData);
+    
+    // 最終バックアップ時刻を更新
+    GASSettings.lastBackup = new Date().toISOString();
+    localStorage.setItem(GAS_SETTINGS_KEY, JSON.stringify(GASSettings));
+    
+    toast(`✅ バックアップ完了! ファイルID: ${result.data?.fileId?.substring(0, 8)}...`);
+    
+  } catch (error) {
+    console.error("バックアップエラー:", error);
+    toast(`❌ バックアップ失敗: ${error.message}`);
+    
+  } finally {
+    backupBtn.disabled = false;
+    backupBtn.textContent = originalText;
+  }
+}
+
+function resetGASSettings() {
+  if (!confirm("GAS設定をリセットしますか？\n（保存されたデータは削除されません）")) return;
+  
+  // 設定をデフォルトに戻す
+  Object.assign(GASSettings, {
+    gasUrl: "",
+    gasToken: "",
+    autoBackup: false,
+    backupInterval: 24,
+    lastBackup: null
+  });
+  
+  localStorage.removeItem(GAS_SETTINGS_KEY);
+  loadGASSettings();
+  
+  toast("🔄 GAS設定をリセットしました");
+}
+
+// 6. 既存機能の強化
+function enhanceExistingGASFunctions() {
+  // 学習データCSV送信ボタンの強化
+  const btnCloudLearn = document.getElementById("btnCloudLearn");
+  if (btnCloudLearn) {
+    const newBtn = btnCloudLearn.cloneNode(true);
+    btnCloudLearn.parentNode.replaceChild(newBtn, btnCloudLearn);
+    
+    newBtn.addEventListener("click", async () => {
+      const originalText = newBtn.textContent;
+      newBtn.disabled = true;
+      newBtn.textContent = "送信中...";
+      
+      try {
+        const csvData = csvFromLearn();
+        if (!csvData || csvData.trim() === '') {
+          throw new Error("学習データが生成されていません");
+        }
+        
+        const result = await gasConnector.sendCSV("learning", csvData, {
+          mode: "learning",
+          generatedRows: csvData.split('\n').length - 1
+        });
+        
+        toast(`✅ 学習データを送信完了! ${result.data?.csvFileId ? 'ID: ' + result.data.csvFileId.substring(0, 8) + '...' : ''}`);
+        
+      } catch (error) {
+        console.error("学習データ送信エラー:", error);
+        toast(`❌ 送信失敗: ${error.message}`);
+        
+      } finally {
+        newBtn.disabled = false;
+        newBtn.textContent = originalText;
+      }
+    });
+  }
+  
+  // 量産データCSV送信ボタンの強化
+  const btnCloudProd = document.getElementById("btnCloudProd");
+  if (btnCloudProd) {
+    const newBtn = btnCloudProd.cloneNode(true);
+    btnCloudProd.parentNode.replaceChild(newBtn, btnCloudProd);
+    
+    newBtn.addEventListener("click", async () => {
+      const originalText = newBtn.textContent;
+      newBtn.disabled = true;
+      newBtn.textContent = "送信中...";
+      
+      try {
+        const csvData = csvFromProd();
+        if (!csvData || csvData.trim() === '') {
+          throw new Error("量産データが生成されていません");
+        }
+        
+        const result = await gasConnector.sendCSV("production", csvData, {
+          mode: "production",
+          generatedRows: csvData.split('\n').length - 1
+        });
+        
+        toast(`✅ 量産データを送信完了! ${result.data?.csvFileId ? 'ID: ' + result.data.csvFileId.substring(0, 8) + '...' : ''}`);
+        
+      } catch (error) {
+        console.error("量産データ送信エラー:", error);
+        toast(`❌ 送信失敗: ${error.message}`);
+        
+      } finally {
+        newBtn.disabled = false;
+        newBtn.textContent = originalText;
+      }
+    });
+  }
+}
+
+// 7. 自動バックアップ
+function setupAutoBackup() {
+  function checkAutoBackup() {
+    if (!GASSettings.autoBackup || !GASSettings.gasUrl) return;
+    
+    const now = new Date();
+    const lastBackup = GASSettings.lastBackup ? new Date(GASSettings.lastBackup) : null;
+    const intervalMs = GASSettings.backupInterval * 60 * 60 * 1000;
+    
+    if (!lastBackup || (now - lastBackup) >= intervalMs) {
+      console.log("🔄 自動バックアップを実行中...");
+      performManualBackup().catch(error => {
+        console.error("自動バックアップ失敗:", error);
+      });
+    }
+  }
+  
+  // 1時間ごとにチェック
+  setInterval(checkAutoBackup, 60 * 60 * 1000);
+  
+  // 初回チェック（5秒後）
+  setTimeout(checkAutoBackup, 5000);
+}
+
+// 8. 初期化
+function initGASIntegration() {
+  function initialize() {
+    try {
+      setupGASUI();
+      enhanceExistingGASFunctions();
+      setupAutoBackup();
+      console.log("✅ GAS連携機能の初期化完了");
+    } catch (error) {
+      console.error("❌ GAS連携初期化エラー:", error);
+    }
+  }
+  
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(initialize, 1000);
+    });
+  } else {
+    setTimeout(initialize, 1000);
+  }
+}
 
 // GASConnectorインスタンス
 const gasConnector = new GASConnector();
