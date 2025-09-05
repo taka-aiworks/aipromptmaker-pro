@@ -4393,335 +4393,11 @@ window.showDebugInfo = showDebugInfo;
 
 // 見える改善：UIボタンとパネルを追加
 
-// 1. 全モードにプリセット保存・読み込みボタンを追加
-function addPresetButtons() {
-  console.log('🔘 プリセットボタンを追加中...');
-  
-  // 各モードのヘッダーにボタンを追加
-  const modes = [
-    { id: 'panelProduction', name: 'production', title: '📦 量産モード' },
-    { id: 'panelManga', name: 'manga', title: '🎨 漫画モード' },
-    { id: 'panelPlanner', name: 'planner', title: '📷 撮影モード' },
-    { id: 'panelLearning', name: 'learning', title: '🧠 学習モード' }
-  ];
-  
-  modes.forEach(mode => {
-    const panel = document.getElementById(mode.id);
-    if (!panel) return;
-    
-    const header = panel.querySelector('h2');
-    if (!header || header.querySelector('.preset-controls')) return;
-    
-    // プリセットコントロールを作成
-    const presetControls = document.createElement('div');
-    presetControls.className = 'preset-controls';
-    presetControls.style.cssText = `
-      display: inline-flex;
-      gap: 8px;
-      margin-left: 16px;
-      align-items: center;
-    `;
-    
-    presetControls.innerHTML = `
-      <button type="button" class="btn ghost small preset-save-btn" data-mode="${mode.name}">
-        💾 保存
-      </button>
-      <button type="button" class="btn ghost small preset-load-btn" data-mode="${mode.name}">
-        📁 読込
-      </button>
-      <select class="preset-select" data-mode="${mode.name}" style="padding: 4px 8px; font-size: 12px;">
-        <option value="">プリセット選択...</option>
-      </select>
-    `;
-    
-    header.appendChild(presetControls);
-    
-    // イベントリスナー追加
-    const saveBtn = presetControls.querySelector('.preset-save-btn');
-    const loadBtn = presetControls.querySelector('.preset-load-btn');
-    const select = presetControls.querySelector('.preset-select');
-    
-    saveBtn.addEventListener('click', () => openPresetSaveDialog(mode.name));
-    loadBtn.addEventListener('click', () => loadSelectedPreset(mode.name));
-    select.addEventListener('change', () => updatePresetSelect(mode.name));
-    
-    // プリセット一覧を更新
-    updatePresetList(mode.name);
-  });
-  
-  console.log('✅ プリセットボタン追加完了');
-}
+/* =========================================================
+   完全なプリセット機能システム（修正版）
+   ========================================================= */
 
-// 2. プリセット保存ダイアログ
-function openPresetSaveDialog(mode) {
-  const name = prompt(`${mode}モードのプリセット名を入力してください：`);
-  if (!name) return;
-  
-  // 現在の設定を収集
-  const settings = collectCurrentSettings(mode);
-  
-  // 保存
-  PresetManager.save(mode, name, settings);
-  updatePresetList(mode);
-  
-  toast(`✅ プリセット「${name}」を保存しました`);
-}
-
-// 3. 設定収集関数
-function collectCurrentSettings(mode) {
-  const settings = {};
-  
-  switch(mode) {
-    case 'production':
-      // 量産モードの設定収集
-      settings.clothingMode = document.querySelector('input[name="clothingMode"]:checked')?.value;
-      settings.expressionMode = document.querySelector('input[name="expressionMode"]:checked')?.value;
-      settings.selectedOutfits = getMany('p_outfit_top').concat(getMany('p_outfit_pants'));
-      settings.selectedExpressions = getMany('p_expr');
-      settings.selectedPoses = getMany('p_pose');
-      break;
-      
-    case 'manga':
-      // 漫画モードの設定収集
-      settings.charBase = document.querySelector('input[name="mangaCharBase"]:checked')?.value;
-      settings.useLoRA = document.getElementById('mangaUseLoRA')?.checked;
-      settings.loraTag = document.getElementById('mangaLoRATag')?.value;
-      break;
-      
-    case 'planner':
-      // 撮影モードの設定収集
-      settings.cameraAngle = getOne('pl_cameraAngle');
-      settings.lighting = getOne('pl_lightingType');
-      settings.background = getOne('pl_bg');
-      break;
-      
-    case 'learning':
-      // 学習モードの設定収集
-      settings.wearMode = document.querySelector('input[name="learnWearMode"]:checked')?.value;
-      settings.count = document.getElementById('countLearn')?.value;
-      break;
-  }
-  
-  return settings;
-}
-
-// 4. プリセット読み込み
-function loadSelectedPreset(mode) {
-  const select = document.querySelector(`.preset-select[data-mode="${mode}"]`);
-  const presetName = select?.value;
-  
-  if (!presetName) {
-    toast('プリセットを選択してください');
-    return;
-  }
-  
-  const preset = PresetManager.load(mode, presetName);
-  if (!preset) {
-    toast('プリセットの読み込みに失敗しました');
-    return;
-  }
-  
-  // 設定を適用
-  applySettings(mode, preset.data);
-  
-  toast(`✅ プリセット「${presetName}」を読み込みました`);
-}
-
-// 5. 設定適用関数
-function applySettings(mode, settings) {
-  switch(mode) {
-    case 'production':
-      if (settings.clothingMode) {
-        const radio = document.querySelector(`input[name="clothingMode"][value="${settings.clothingMode}"]`);
-        if (radio) radio.checked = true;
-      }
-      if (settings.expressionMode) {
-        const radio = document.querySelector(`input[name="expressionMode"][value="${settings.expressionMode}"]`);
-        if (radio) radio.checked = true;
-      }
-      break;
-      
-    case 'manga':
-      if (settings.charBase) {
-        const radio = document.querySelector(`input[name="mangaCharBase"][value="${settings.charBase}"]`);
-        if (radio) radio.checked = true;
-      }
-      if (settings.useLoRA !== undefined) {
-        const checkbox = document.getElementById('mangaUseLoRA');
-        if (checkbox) checkbox.checked = settings.useLoRA;
-      }
-      break;
-  }
-}
-
-// 6. プリセット一覧更新
-function updatePresetList(mode) {
-  const select = document.querySelector(`.preset-select[data-mode="${mode}"]`);
-  if (!select) return;
-  
-  const presets = PresetManager.list(mode);
-  
-  // オプションをクリア
-  select.innerHTML = '<option value="">プリセット選択...</option>';
-  
-  // プリセットを追加
-  presets.forEach(preset => {
-    const option = document.createElement('option');
-    option.value = preset.name;
-    option.textContent = `${preset.name} (${new Date(preset.created).toLocaleDateString()})`;
-    select.appendChild(option);
-  });
-}
-
-// 7. バックアップ・復元UIを設定タブに追加
-function addBackupUI() {
-  const settingsPanel = document.getElementById('panelSettings');
-  if (!settingsPanel) return;
-  
-  const backupPanel = document.createElement('div');
-  backupPanel.className = 'panel';
-  backupPanel.innerHTML = `
-    <h3>💾 バックアップ・復元</h3>
-    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-      <button id="backup-export" class="btn ok small">📤 バックアップエクスポート</button>
-      <label for="backup-import" class="btn ghost small">📥 バックアップインポート</label>
-      <input type="file" id="backup-import" accept=".json" style="display: none;">
-    </div>
-    <div class="note mini">
-      すべての設定、プリセット、履歴をバックアップできます
-    </div>
-  `;
-  
-  // 設定パネルの最初に追加
-  settingsPanel.insertBefore(backupPanel, settingsPanel.firstChild.nextSibling);
-  
-  // イベントリスナー
-  document.getElementById('backup-export').addEventListener('click', () => {
-    BackupManager.export();
-  });
-  
-  document.getElementById('backup-import').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      BackupManager.import(file);
-    }
-  });
-  
-  console.log('✅ バックアップUIを追加しました');
-}
-
-// 8. 履歴パネルを設定タブに追加
-function addHistoryUI() {
-  const settingsPanel = document.getElementById('panelSettings');
-  if (!settingsPanel) return;
-  
-  const historyPanel = document.createElement('div');
-  historyPanel.className = 'panel';
-  historyPanel.innerHTML = `
-    <h3>📜 使用履歴</h3>
-    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-      <button id="history-view" class="btn ghost small">📋 履歴表示</button>
-      <button id="history-clear" class="btn bad small">🗑️ 履歴クリア</button>
-    </div>
-    <div id="history-content" style="max-height: 200px; overflow-y: auto; display: none;">
-      <div class="note mini">履歴を読み込み中...</div>
-    </div>
-  `;
-  
-  settingsPanel.insertBefore(historyPanel, settingsPanel.children[1]);
-  
-  // イベントリスナー
-  document.getElementById('history-view').addEventListener('click', () => {
-    toggleHistoryView();
-  });
-  
-  document.getElementById('history-clear').addEventListener('click', () => {
-    if (confirm('使用履歴をすべて削除しますか？')) {
-      HistoryManager.clear();
-      updateHistoryView();
-    }
-  });
-  
-  console.log('✅ 履歴UIを追加しました');
-}
-
-// 9. 履歴表示切り替え
-function toggleHistoryView() {
-  const content = document.getElementById('history-content');
-  const btn = document.getElementById('history-view');
-  
-  if (content.style.display === 'none') {
-    content.style.display = 'block';
-    btn.textContent = '📋 履歴非表示';
-    updateHistoryView();
-  } else {
-    content.style.display = 'none';
-    btn.textContent = '📋 履歴表示';
-  }
-}
-
-// 10. 履歴表示更新
-function updateHistoryView() {
-  const content = document.getElementById('history-content');
-  if (!content) return;
-  
-  const history = HistoryManager.get();
-  
-  if (history.length === 0) {
-    content.innerHTML = '<div class="note mini">履歴がありません</div>';
-    return;
-  }
-  
-  content.innerHTML = history.slice(0, 20).map(entry => `
-    <div style="padding: 8px; border-bottom: 1px solid #444; font-size: 12px;">
-      <div style="color: #3b82f6; font-weight: 500;">${entry.mode}モード</div>
-      <div style="color: #ccc; margin: 4px 0;">${entry.prompt}</div>
-      <div style="color: #888; font-size: 11px;">${new Date(entry.timestamp).toLocaleString()}</div>
-    </div>
-  `).join('');
-}
-
-// 11. 初期化関数
-function initVisibleImprovements() {
-  console.log('🎨 見える改善機能を初期化中...');
-  
-  // DOM読み込み完了を待つ
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        addPresetButtons();
-        addBackupUI();
-        addHistoryUI();
-        addUniversalCopyButtons();
-      }, 1000);
-    });
-  } else {
-    setTimeout(() => {
-      addPresetButtons();
-      addBackupUI();
-      addHistoryUI();
-      addUniversalCopyButtons();
-    }, 1000);
-  }
-  
-  console.log('✅ 見える改善機能の初期化完了');
-}
-
-// グローバル関数として公開
-window.addPresetButtons = addPresetButtons;
-window.addBackupUI = addBackupUI;
-window.addHistoryUI = addHistoryUI;
-window.initVisibleImprovements = initVisibleImprovements;
-
-// 自動初期化
-initVisibleImprovements();
-
-
-// 設定タブUI修正コード
-
-// 完全なプリセットシステム修正版
-
-console.log('🔧 完全なプリセットシステムを読み込み中...');
+console.log('🚀 完全なプリセットシステムを読み込み中...');
 
 // 1. PresetManager定義（必須）
 const PresetManager = {
@@ -4812,7 +4488,6 @@ const HistoryManager = {
       
       history.unshift(entry);
       
-      // 最新100件まで保持
       if (history.length > 100) {
         history.splice(100);
       }
@@ -4860,7 +4535,6 @@ const BackupManager = {
         history: HistoryManager.get()
       };
       
-      // 設定データの収集
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('LPM_')) {
@@ -4868,7 +4542,6 @@ const BackupManager = {
         }
       }
       
-      // ダウンロード
       const blob = new Blob([JSON.stringify(backup, null, 2)], {
         type: 'application/json'
       });
@@ -4895,7 +4568,6 @@ const BackupManager = {
       try {
         const backup = JSON.parse(e.target.result);
         
-        // 設定データの復元
         if (backup.settings) {
           Object.entries(backup.settings).forEach(([key, value]) => {
             localStorage.setItem(key, value);
@@ -4916,7 +4588,7 @@ const BackupManager = {
   }
 };
 
-// 4. プリセットボタン追加（エラー修正版）
+// 4. プリセットボタン追加（修正版）
 function addPresetButtons() {
   console.log('🔘 プリセットボタン追加開始');
   
@@ -4940,13 +4612,11 @@ function addPresetButtons() {
       return;
     }
     
-    // 既存のプリセットコントロールをチェック
     if (header.querySelector('.preset-controls')) {
       console.log(`⚠️ プリセットコントロールは既に存在: ${mode.name}`);
       return;
     }
     
-    // プリセットコントロールを作成
     const presetControls = document.createElement('div');
     presetControls.className = 'preset-controls';
     presetControls.style.cssText = `
@@ -4966,14 +4636,16 @@ function addPresetButtons() {
       <select class="preset-select" data-mode="${mode.name}" style="padding: 4px 8px; font-size: 12px; max-width: 150px;">
         <option value="">プリセット選択...</option>
       </select>
+      <button type="button" class="btn bad small preset-delete-btn" data-mode="${mode.name}" style="font-size: 10px; padding: 2px 6px;">
+        🗑️
+      </button>
     `;
     
-    // ヘッダーに追加
     header.appendChild(presetControls);
     
-    // イベントリスナー追加
     const saveBtn = presetControls.querySelector('.preset-save-btn');
     const loadBtn = presetControls.querySelector('.preset-load-btn');
+    const deleteBtn = presetControls.querySelector('.preset-delete-btn');
     const select = presetControls.querySelector('.preset-select');
     
     if (saveBtn) {
@@ -4984,13 +4656,16 @@ function addPresetButtons() {
       loadBtn.addEventListener('click', () => loadSelectedPreset(mode.name));
     }
     
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => deleteSelectedPreset(mode.name));
+    }
+    
     if (select) {
       select.addEventListener('change', () => {
-        // 選択変更時の処理（必要に応じて）
+        updateDeleteButtonState(mode.name);
       });
     }
     
-    // プリセット一覧を更新
     updatePresetList(mode.name);
     
     console.log(`✅ プリセットボタン追加完了: ${mode.name}`);
@@ -5002,17 +4677,15 @@ function openPresetSaveDialog(mode) {
   const name = prompt(`${mode}モードのプリセット名を入力してください：`);
   if (!name || name.trim() === '') return;
   
-  // 現在の設定を収集
   const settings = collectCurrentSettings(mode);
   
-  // 保存
   const success = PresetManager.save(mode, name.trim(), settings);
   if (success) {
     updatePresetList(mode);
   }
 }
 
-// 6. 設定収集関数
+// 6. 設定収集関数（拡張版）
 function collectCurrentSettings(mode) {
   const settings = {};
   
@@ -5021,10 +4694,16 @@ function collectCurrentSettings(mode) {
       case 'production':
         settings.clothingMode = document.querySelector('input[name="clothingMode"]:checked')?.value || 'fixed';
         settings.expressionMode = document.querySelector('input[name="expressionMode"]:checked')?.value || 'fixed';
+        settings.seedMode = document.querySelector('input[name="seedMode"]:checked')?.value || 'fixed';
+        settings.count = document.getElementById('countProd')?.value || '50';
+        settings.fixedProd = document.getElementById('fixedProd')?.value || '';
+        settings.negProd = document.getElementById('p_neg')?.value || '';
+        
         if (typeof getMany === 'function') {
           settings.selectedOutfits = getMany('p_outfit_top').concat(getMany('p_outfit_pants'));
           settings.selectedExpressions = getMany('p_expr');
           settings.selectedPoses = getMany('p_pose');
+          settings.selectedBackgrounds = getMany('p_bg');
         }
         break;
         
@@ -5032,6 +4711,18 @@ function collectCurrentSettings(mode) {
         settings.charBase = document.querySelector('input[name="mangaCharBase"]:checked')?.value || 'B';
         settings.useLoRA = document.getElementById('mangaUseLoRA')?.checked || false;
         settings.loraTag = document.getElementById('mangaLoRATag')?.value || '';
+        settings.loraWeight = document.getElementById('mangaLoRAWeight')?.value || '0.8';
+        settings.nsfwEnabled = document.getElementById('mangaNSFWEnable')?.checked || false;
+        settings.secondCharEnabled = document.getElementById('mangaSecondCharEnable')?.checked || false;
+        settings.fixedManga = document.getElementById('fixedManga')?.value || '';
+        
+        // 選択された要素も保存
+        const mangaSelections = {};
+        ['mangaEmotionPrimary', 'mangaExpressions', 'mangaEffectManga', 'mangaPose'].forEach(id => {
+          const selected = document.querySelector(`input[name="${id}"]:checked`)?.value;
+          if (selected) mangaSelections[id] = selected;
+        });
+        settings.selections = mangaSelections;
         break;
         
       case 'planner':
@@ -5039,12 +4730,22 @@ function collectCurrentSettings(mode) {
           settings.cameraAngle = getOne('pl_cameraAngle');
           settings.lighting = getOne('pl_lightingType');
           settings.background = getOne('pl_bg');
+          settings.pose = getOne('pl_pose');
+          settings.expression = getOne('pl_expr');
         }
+        settings.fixedPlanner = document.getElementById('fixedPlanner')?.value || '';
+        settings.negPlanner = document.getElementById('negPlanner')?.value || '';
+        settings.useDefaultNeg = document.getElementById('pl_useDefaultNeg')?.checked || true;
         break;
         
       case 'learning':
         settings.wearMode = document.querySelector('input[name="learnWearMode"]:checked')?.value || 'basic';
         settings.count = document.getElementById('countLearn')?.value || '24';
+        settings.nsfwEnabled = document.getElementById('nsfwLearn')?.checked || false;
+        settings.nsfwLevel = document.querySelector('input[name="nsfwLevelLearn"]:checked')?.value || 'L1';
+        settings.fixedLearn = document.getElementById('fixedLearn')?.value || '';
+        settings.negLearn = document.getElementById('negLearn')?.value || '';
+        settings.useDefaultNeg = document.getElementById('useDefaultNeg')?.checked || true;
         break;
     }
   } catch (error) {
@@ -5054,80 +4755,333 @@ function collectCurrentSettings(mode) {
   return settings;
 }
 
-// 7. プリセット読み込み
+// 7. プリセット読み込み（修正版）
 function loadSelectedPreset(mode) {
-  const select = document.querySelector(`.preset-select[data-mode="${mode}"]`);
-  const presetName = select?.value;
+  console.log(`📁 プリセット読み込み開始: ${mode}`);
   
-  if (!presetName) {
+  const select = document.querySelector(`.preset-select[data-mode="${mode}"]`);
+  if (!select) {
+    console.error(`❌ セレクト要素が見つかりません: ${mode}`);
+    if (typeof toast === 'function') {
+      toast('プリセット選択ボックスが見つかりません');
+    }
+    return;
+  }
+  
+  const presetName = select.value;
+  console.log(`📋 選択されたプリセット: "${presetName}"`);
+  
+  if (!presetName || presetName.trim() === '') {
     if (typeof toast === 'function') {
       toast('プリセットを選択してください');
     }
+    select.style.border = '2px solid #f59e0b';
+    setTimeout(() => {
+      select.style.border = '';
+    }, 1000);
     return;
   }
   
   const preset = PresetManager.load(mode, presetName);
   if (!preset) {
+    console.error(`❌ プリセット読み込み失敗: ${mode} - ${presetName}`);
     if (typeof toast === 'function') {
-      toast('プリセットの読み込みに失敗しました');
+      toast(`プリセット「${presetName}」の読み込みに失敗しました`);
     }
     return;
   }
   
-  // 設定を適用
-  applySettings(mode, preset.data);
+  console.log(`✅ プリセットデータ取得成功:`, preset);
   
-  if (typeof toast === 'function') {
-    toast(`✅ プリセット「${presetName}」を読み込みました`);
+  try {
+    applySettingsAdvanced(mode, preset.data);
+    
+    if (typeof toast === 'function') {
+      toast(`✅ プリセット「${presetName}」を読み込みました`);
+    }
+    
+    const loadBtn = document.querySelector(`.preset-load-btn[data-mode="${mode}"]`);
+    if (loadBtn) {
+      const originalText = loadBtn.textContent;
+      loadBtn.textContent = '✅ 完了';
+      loadBtn.style.background = '#10b981';
+      setTimeout(() => {
+        loadBtn.textContent = originalText;
+        loadBtn.style.background = '';
+      }, 1500);
+    }
+    
+  } catch (error) {
+    console.error(`❌ 設定適用エラー:`, error);
+    if (typeof toast === 'function') {
+      toast('設定の適用に失敗しました');
+    }
   }
 }
 
-// 8. 設定適用関数
-function applySettings(mode, settings) {
+// 8. 設定適用関数（高度版）
+function applySettingsAdvanced(mode, settings) {
+  console.log(`🔧 設定適用開始: ${mode}`, settings);
+  
   try {
     switch(mode) {
       case 'production':
+        console.log('📦 量産モード設定適用');
+        
         if (settings.clothingMode) {
           const radio = document.querySelector(`input[name="clothingMode"][value="${settings.clothingMode}"]`);
-          if (radio) radio.checked = true;
+          if (radio) {
+            radio.checked = true;
+            console.log(`✅ 服装モード設定: ${settings.clothingMode}`);
+            
+            if (typeof toggleClothingMode === 'function') {
+              toggleClothingMode();
+            }
+          }
         }
+        
         if (settings.expressionMode) {
           const radio = document.querySelector(`input[name="expressionMode"][value="${settings.expressionMode}"]`);
+          if (radio) {
+            radio.checked = true;
+            console.log(`✅ 表情モード設定: ${settings.expressionMode}`);
+            
+            if (typeof toggleExpressionMode === 'function') {
+              toggleExpressionMode();
+            }
+          }
+        }
+        
+        if (settings.seedMode) {
+          const radio = document.querySelector(`input[name="seedMode"][value="${settings.seedMode}"]`);
           if (radio) radio.checked = true;
+        }
+        
+        if (settings.count) {
+          const countSelect = document.getElementById('countProd');
+          if (countSelect) countSelect.value = settings.count;
+        }
+        
+        if (settings.fixedProd) {
+          const fixedInput = document.getElementById('fixedProd');
+          if (fixedInput) fixedInput.value = settings.fixedProd;
+        }
+        
+        if (settings.negProd) {
+          const negInput = document.getElementById('p_neg');
+          if (negInput) negInput.value = settings.negProd;
+        }
+        
+        if (typeof updateProductionStatus === 'function') {
+          updateProductionStatus();
         }
         break;
         
       case 'manga':
+        console.log('🎨 漫画モード設定適用');
+        
         if (settings.charBase) {
           const radio = document.querySelector(`input[name="mangaCharBase"][value="${settings.charBase}"]`);
-          if (radio) radio.checked = true;
+          if (radio) {
+            radio.checked = true;
+            console.log(`✅ キャラ基礎設定: ${settings.charBase}`);
+          }
         }
+        
         if (settings.useLoRA !== undefined) {
           const checkbox = document.getElementById('mangaUseLoRA');
-          if (checkbox) checkbox.checked = settings.useLoRA;
+          if (checkbox) {
+            checkbox.checked = settings.useLoRA;
+            console.log(`✅ LoRA使用設定: ${settings.useLoRA}`);
+            
+            if (typeof toggleLoRASettings === 'function') {
+              toggleLoRASettings();
+            }
+          }
         }
+        
         if (settings.loraTag) {
           const input = document.getElementById('mangaLoRATag');
-          if (input) input.value = settings.loraTag;
+          if (input) {
+            input.value = settings.loraTag;
+            console.log(`✅ LoRAタグ設定: ${settings.loraTag}`);
+          }
+        }
+        
+        if (settings.loraWeight) {
+          const slider = document.getElementById('mangaLoRAWeight');
+          const display = document.getElementById('mangaLoRAWeightValue');
+          if (slider) slider.value = settings.loraWeight;
+          if (display) display.textContent = settings.loraWeight;
+        }
+        
+        if (settings.nsfwEnabled !== undefined) {
+          const checkbox = document.getElementById('mangaNSFWEnable');
+          if (checkbox) {
+            checkbox.checked = settings.nsfwEnabled;
+            if (typeof toggleMangaNSFWPanel === 'function') {
+              toggleMangaNSFWPanel();
+            }
+          }
+        }
+        
+        if (settings.secondCharEnabled !== undefined) {
+          const checkbox = document.getElementById('mangaSecondCharEnable');
+          if (checkbox) {
+            checkbox.checked = settings.secondCharEnabled;
+            if (typeof toggleSecondCharSettings === 'function') {
+              toggleSecondCharSettings();
+            }
+          }
+        }
+        
+        if (settings.fixedManga) {
+          const textarea = document.getElementById('fixedManga');
+          if (textarea) textarea.value = settings.fixedManga;
+        }
+        
+        // 選択状態の復元
+        if (settings.selections) {
+          Object.entries(settings.selections).forEach(([elementName, value]) => {
+            const radio = document.querySelector(`input[name="${elementName}"][value="${value}"]`);
+            if (radio) radio.checked = true;
+          });
+        }
+        
+        if (typeof updateMangaOutput === 'function') {
+          setTimeout(updateMangaOutput, 100);
         }
         break;
+        
+      case 'planner':
+        console.log('📷 撮影モード設定適用');
+        
+        const plannerSettings = ['cameraAngle', 'lighting', 'background', 'pose', 'expression'];
+        plannerSettings.forEach(setting => {
+          if (settings[setting]) {
+            const radio = document.querySelector(`input[name="pl_${setting}"][value="${settings[setting]}"]`);
+            if (radio) {
+              radio.checked = true;
+              console.log(`✅ ${setting}設定: ${settings[setting]}`);
+            }
+          }
+        });
+        
+        if (settings.fixedPlanner) {
+          const textarea = document.getElementById('fixedPlanner');
+          if (textarea) textarea.value = settings.fixedPlanner;
+        }
+        
+        if (settings.negPlanner) {
+          const textarea = document.getElementById('negPlanner');
+          if (textarea) textarea.value = settings.negPlanner;
+        }
+        
+        if (settings.useDefaultNeg !== undefined) {
+          const checkbox = document.getElementById('pl_useDefaultNeg');
+          if (checkbox) checkbox.checked = settings.useDefaultNeg;
+        }
+        break;
+        
+      case 'learning':
+        console.log('🧠 学習モード設定適用');
+        
+        if (settings.wearMode) {
+          const radio = document.querySelector(`input[name="learnWearMode"][value="${settings.wearMode}"]`);
+          if (radio) {
+            radio.checked = true;
+            console.log(`✅ 服装モード設定: ${settings.wearMode}`);
+          }
+        }
+        
+        if (settings.count) {
+          const select = document.getElementById('countLearn');
+          if (select) {
+            select.value = settings.count;
+            console.log(`✅ 生成数設定: ${settings.count}`);
+          }
+        }
+        
+        if (settings.nsfwEnabled !== undefined) {
+          const checkbox = document.getElementById('nsfwLearn');
+          if (checkbox) {
+            checkbox.checked = settings.nsfwEnabled;
+            const panel = document.getElementById('nsfwLearnPanel');
+            if (panel) panel.style.display = settings.nsfwEnabled ? '' : 'none';
+          }
+        }
+        
+        if (settings.nsfwLevel) {
+          const radio = document.querySelector(`input[name="nsfwLevelLearn"][value="${settings.nsfwLevel}"]`);
+          if (radio) radio.checked = true;
+        }
+        
+        if (settings.fixedLearn) {
+          const textarea = document.getElementById('fixedLearn');
+          if (textarea) textarea.value = settings.fixedLearn;
+        }
+        
+        if (settings.negLearn) {
+          const textarea = document.getElementById('negLearn');
+          if (textarea) textarea.value = settings.negLearn;
+        }
+        
+        if (settings.useDefaultNeg !== undefined) {
+          const checkbox = document.getElementById('useDefaultNeg');
+          if (checkbox) checkbox.checked = settings.useDefaultNeg;
+        }
+        break;
+        
+      default:
+        console.warn(`⚠️ 未対応のモード: ${mode}`);
     }
+    
+    console.log(`✅ ${mode}モード設定適用完了`);
+    
   } catch (error) {
-    console.error('❌ 設定適用エラー:', error);
+    console.error(`❌ ${mode}モード設定適用エラー:`, error);
+    throw error;
   }
 }
 
-// 9. プリセット一覧更新
+// 9. プリセット削除
+function deleteSelectedPreset(mode) {
+  const select = document.querySelector(`.preset-select[data-mode="${mode}"]`);
+  const presetName = select?.value;
+  
+  if (!presetName) {
+    toast('削除するプリセットを選択してください');
+    return;
+  }
+  
+  if (confirm(`プリセット「${presetName}」を削除しますか？`)) {
+    const success = PresetManager.delete(mode, presetName);
+    if (success) {
+      updatePresetList(mode);
+    }
+  }
+}
+
+// 10. 削除ボタンの状態更新
+function updateDeleteButtonState(mode) {
+  const select = document.querySelector(`.preset-select[data-mode="${mode}"]`);
+  const deleteBtn = document.querySelector(`.preset-delete-btn[data-mode="${mode}"]`);
+  
+  if (select && deleteBtn) {
+    deleteBtn.disabled = !select.value;
+    deleteBtn.style.opacity = select.value ? '1' : '0.5';
+  }
+}
+
+// 11. プリセット一覧更新
 function updatePresetList(mode) {
   const select = document.querySelector(`.preset-select[data-mode="${mode}"]`);
   if (!select) return;
   
   const presets = PresetManager.list(mode);
   
-  // オプションをクリア
   select.innerHTML = '<option value="">プリセット選択...</option>';
   
-  // プリセットを追加
   presets.forEach(preset => {
     const option = document.createElement('option');
     option.value = preset.name;
@@ -5135,27 +5089,441 @@ function updatePresetList(mode) {
     select.appendChild(option);
   });
   
+  updateDeleteButtonState(mode);
+  
   console.log(`✅ プリセット一覧更新: ${mode} (${presets.length}件)`);
 }
 
-// 10. 初期化関数
-function initCompletePresetSystem() {
-  console.log('🚀 完全なプリセットシステム初期化開始');
+// 12. バックアップUI追加
+function addBackupUI() {
+  const settingsPanel = document.getElementById('panelSettings');
+  if (!settingsPanel) return;
   
-  // DOM読み込み完了を待つ
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        addPresetButtons();
-      }, 1500);
-    });
-  } else {
-    setTimeout(() => {
-      addPresetButtons();
-    }, 1500);
+  const backupPanel = document.createElement('div');
+  backupPanel.className = 'panel';
+  backupPanel.innerHTML = `
+    <h3>💾 バックアップ・復元</h3>
+    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+      <button id="backup-export" class="btn ok small">📤 バックアップエクスポート</button>
+      <label for="backup-import" class="btn ghost small">📥 バックアップインポート</label>
+      <input type="file" id="backup-import" accept=".json" style="display: none;">
+    </div>
+    <div class="note mini">
+      すべての設定、プリセット、履歴をバックアップできます
+    </div>
+  `;
+  
+  settingsPanel.insertBefore(backupPanel, settingsPanel.firstChild.nextSibling);
+  
+  document.getElementById('backup-export')?.addEventListener('click', () => {
+    BackupManager.export();
+  });
+  
+  document.getElementById('backup-import')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      BackupManager.import(file);
+    }
+  });
+  
+  console.log('✅ バックアップUIを追加しました');
+}
+
+// 13. 履歴UI追加
+function addHistoryUI() {
+  const settingsPanel = document.getElementById('panelSettings');
+  if (!settingsPanel) return;
+  
+  const historyPanel = document.createElement('div');
+  historyPanel.className = 'panel';
+  historyPanel.innerHTML = `
+    <h3>📜 使用履歴</h3>
+    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+      <button id="history-view" class="btn ghost small">📋 履歴表示</button>
+      <button id="history-clear" class="btn bad small">🗑️ 履歴クリア</button>
+    </div>
+    <div id="history-content" style="max-height: 200px; overflow-y: auto; display: none;">
+      <div class="note mini">履歴を読み込み中...</div>
+    </div>
+  `;
+  
+  settingsPanel.insertBefore(historyPanel, settingsPanel.children[1]);
+  
+  document.getElementById('history-view')?.addEventListener('click', () => {
+    toggleHistoryView();
+  });
+  
+  document.getElementById('history-clear')?.addEventListener('click', () => {
+    if (confirm('使用履歴をすべて削除しますか？')) {
+      HistoryManager.clear();
+      updateHistoryView();
+    }
+  });
+  
+  console.log('✅ 履歴UIを追加しました');
+}
+
+// 14. 履歴表示切り替え
+function toggleHistoryView() {
+  const content = document.getElementById('history-content');
+  const btn = document.getElementById('history-view');
+  
+  if (content && btn) {
+    if (content.style.display === 'none') {
+      content.style.display = 'block';
+      btn.textContent = '📋 履歴非表示';
+      updateHistoryView();
+    } else {
+      content.style.display = 'none';
+      btn.textContent = '📋 履歴表示';
+    }
   }
+}
+
+// 15. 履歴表示更新
+function updateHistoryView() {
+  const content = document.getElementById('history-content');
+  if (!content) return;
   
-  console.log('✅ プリセットシステム初期化完了');
+  const history = HistoryManager.get();
+  
+  if (history.length === 0) {
+content.innerHTML = '<div class="note mini">履歴がありません</div>';
+   return;
+ }
+ 
+ content.innerHTML = history.slice(0, 20).map(entry => `
+   <div style="padding: 8px; border-bottom: 1px solid #444; font-size: 12px;">
+     <div style="color: #3b82f6; font-weight: 500;">${entry.mode}モード</div>
+     <div style="color: #ccc; margin: 4px 0;">${entry.prompt}</div>
+     <div style="color: #888; font-size: 11px;">${new Date(entry.timestamp).toLocaleString()}</div>
+   </div>
+ `).join('');
+}
+
+// 16. ユニバーサルコピーボタン追加
+function addUniversalCopyButtons() {
+ console.log('📋 ユニバーサルコピーボタンを追加中...');
+ 
+ const outputAreas = [
+   { mode: 'basic', selectors: ['#outLearnTestAll', '#outLearnTestPrompt', '#outLearnTestNeg', '#outLearnTestCaption'] },
+   { mode: 'manga', selectors: ['#outMangaAll', '#outMangaPrompt', '#outMangaNeg'] },
+   { mode: 'planner', selectors: ['#outPlannerAll', '#outPlannerPrompt', '#outPlannerNeg'] },
+   { mode: 'learning', selectors: ['#outLearnAll', '#outLearnPrompt', '#outLearnNeg'] },
+   { mode: 'production', selectors: ['#outProdAll', '#outProdPrompt', '#outProdNeg'] }
+ ];
+ 
+ outputAreas.forEach(area => {
+   area.selectors.forEach(selector => {
+     const outputElement = document.querySelector(selector);
+     if (!outputElement) return;
+     
+     const existingBtn = outputElement.parentNode?.querySelector('.universal-copy-btn');
+     if (existingBtn) return;
+     
+     const copyBtn = document.createElement('button');
+     copyBtn.className = 'btn ghost small universal-copy-btn';
+     copyBtn.textContent = '📋 コピー';
+     copyBtn.style.cssText = `
+       margin-top: 6px;
+       margin-left: 8px;
+       padding: 4px 8px;
+       font-size: 12px;
+       opacity: 0.8;
+       transition: opacity 0.2s ease;
+     `;
+     
+     copyBtn.addEventListener('click', () => {
+       const text = outputElement.textContent || '';
+       if (!text.trim()) {
+         if (typeof toast === 'function') {
+           toast('コピーする内容がありません');
+         }
+         return;
+       }
+       
+       navigator.clipboard?.writeText(text.trim())
+         .then(() => {
+           if (typeof toast === 'function') {
+             toast('コピーしました');
+           }
+           copyBtn.style.opacity = '1';
+           setTimeout(() => copyBtn.style.opacity = '0.8', 500);
+         })
+         .catch(() => {
+           const ta = document.createElement('textarea');
+           ta.value = text.trim();
+           document.body.appendChild(ta);
+           ta.select();
+           document.execCommand('copy');
+           ta.remove();
+           if (typeof toast === 'function') {
+             toast('コピーしました');
+           }
+         });
+     });
+     
+     copyBtn.addEventListener('mouseenter', () => {
+       copyBtn.style.opacity = '1';
+     });
+     
+     copyBtn.addEventListener('mouseleave', () => {
+       copyBtn.style.opacity = '0.8';
+     });
+     
+     outputElement.parentNode?.appendChild(copyBtn);
+   });
+ });
+ 
+ console.log('✅ ユニバーサルコピーボタン追加完了');
+}
+
+// 17. 初期化関数
+function initCompletePresetSystem() {
+ console.log('🚀 完全なプリセットシステム初期化開始');
+ 
+ if (document.readyState === 'loading') {
+   document.addEventListener('DOMContentLoaded', () => {
+     setTimeout(() => {
+       addPresetButtons();
+       addBackupUI();
+       addHistoryUI();
+       addUniversalCopyButtons();
+     }, 1500);
+   });
+ } else {
+   setTimeout(() => {
+     addPresetButtons();
+     addBackupUI();
+     addHistoryUI();
+     addUniversalCopyButtons();
+   }, 1500);
+ }
+ 
+ console.log('✅ プリセットシステム初期化完了');
+}
+
+// 18. クイックアクセス機能
+function addQuickAccessShortcuts() {
+ document.addEventListener('keydown', (e) => {
+   // Ctrl+S でプリセット保存
+   if (e.ctrlKey && e.key === 's') {
+     e.preventDefault();
+     const activeTab = document.querySelector('.tab.active');
+     if (activeTab) {
+       const mode = activeTab.dataset.mode;
+       if (['production', 'manga', 'planner', 'learning'].includes(mode)) {
+         openPresetSaveDialog(mode);
+       }
+     }
+   }
+   
+   // Ctrl+L でプリセット読み込み
+   if (e.ctrlKey && e.key === 'l') {
+     e.preventDefault();
+     const activeTab = document.querySelector('.tab.active');
+     if (activeTab) {
+       const mode = activeTab.dataset.mode;
+       if (['production', 'manga', 'planner', 'learning'].includes(mode)) {
+         const select = document.querySelector(`.preset-select[data-mode="${mode}"]`);
+         if (select && select.value) {
+           loadSelectedPreset(mode);
+         } else {
+           toast('プリセットを選択してください');
+         }
+       }
+     }
+   }
+ });
+ 
+ console.log('✅ キーボードショートカット追加: Ctrl+S(保存), Ctrl+L(読み込み)');
+}
+
+// 19. プリセット管理UI（詳細）
+function addAdvancedPresetManager() {
+ const settingsPanel = document.getElementById('panelSettings');
+ if (!settingsPanel) return;
+ 
+ const presetManagerPanel = document.createElement('div');
+ presetManagerPanel.className = 'panel';
+ presetManagerPanel.innerHTML = `
+   <h3>🎛️ プリセット管理</h3>
+   <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+     <button id="preset-manager-view" class="btn ghost small">📋 全プリセット表示</button>
+     <button id="preset-manager-export" class="btn ok small">📤 プリセットエクスポート</button>
+     <label for="preset-manager-import" class="btn ghost small">📥 プリセットインポート</label>
+     <input type="file" id="preset-manager-import" accept=".json" style="display: none;">
+   </div>
+   <div id="preset-manager-content" style="max-height: 300px; overflow-y: auto; display: none;">
+     <div class="note mini">プリセットを読み込み中...</div>
+   </div>
+ `;
+ 
+ settingsPanel.insertBefore(presetManagerPanel, settingsPanel.children[2]);
+ 
+ document.getElementById('preset-manager-view')?.addEventListener('click', () => {
+   togglePresetManagerView();
+ });
+ 
+ document.getElementById('preset-manager-export')?.addEventListener('click', () => {
+   exportAllPresets();
+ });
+ 
+ document.getElementById('preset-manager-import')?.addEventListener('change', (e) => {
+   const file = e.target.files[0];
+   if (file) {
+     importPresets(file);
+   }
+ });
+ 
+ console.log('✅ 高度なプリセット管理UIを追加しました');
+}
+
+// 20. プリセット管理表示切り替え
+function togglePresetManagerView() {
+ const content = document.getElementById('preset-manager-content');
+ const btn = document.getElementById('preset-manager-view');
+ 
+ if (content && btn) {
+   if (content.style.display === 'none') {
+     content.style.display = 'block';
+     btn.textContent = '📋 プリセット非表示';
+     updatePresetManagerView();
+   } else {
+     content.style.display = 'none';
+     btn.textContent = '📋 全プリセット表示';
+   }
+ }
+}
+
+// 21. プリセット管理表示更新
+function updatePresetManagerView() {
+ const content = document.getElementById('preset-manager-content');
+ if (!content) return;
+ 
+ const modes = ['production', 'manga', 'planner', 'learning'];
+ let html = '';
+ let totalPresets = 0;
+ 
+ modes.forEach(mode => {
+   const presets = PresetManager.list(mode);
+   totalPresets += presets.length;
+   
+   if (presets.length > 0) {
+     html += `<div style="margin-bottom: 16px;">
+       <h4 style="margin: 0 0 8px 0; color: #3b82f6;">${mode}モード (${presets.length}件)</h4>`;
+     
+     presets.forEach(preset => {
+       html += `
+         <div style="padding: 8px; border: 1px solid #444; border-radius: 4px; margin-bottom: 4px; background: rgba(0,0,0,0.2);">
+           <div style="display: flex; justify-content: space-between; align-items: center;">
+             <div>
+               <div style="font-weight: 500;">${preset.name}</div>
+               <div style="font-size: 11px; color: #888;">${new Date(preset.created).toLocaleString()}</div>
+             </div>
+             <div style="display: flex; gap: 4px;">
+               <button onclick="loadPresetById('${mode}', '${preset.name}')" class="btn ghost small" style="padding: 2px 6px; font-size: 10px;">読込</button>
+               <button onclick="deletePresetById('${mode}', '${preset.name}')" class="btn bad small" style="padding: 2px 6px; font-size: 10px;">削除</button>
+             </div>
+           </div>
+         </div>`;
+     });
+     
+     html += '</div>';
+   }
+ });
+ 
+ if (totalPresets === 0) {
+   content.innerHTML = '<div class="note mini">保存されたプリセットがありません</div>';
+ } else {
+   content.innerHTML = `<div style="margin-bottom: 12px; font-size: 12px; color: #888;">総計: ${totalPresets}件のプリセット</div>` + html;
+ }
+}
+
+// 22. プリセットID指定読み込み
+window.loadPresetById = function(mode, name) {
+ const preset = PresetManager.load(mode, name);
+ if (preset) {
+   // 該当タブに切り替え
+   const tab = document.querySelector(`.tab[data-mode="${mode}"]`);
+   if (tab) tab.click();
+   
+   setTimeout(() => {
+     applySettingsAdvanced(mode, preset.data);
+     toast(`✅ ${mode}モードのプリセット「${name}」を読み込みました`);
+   }, 200);
+ }
+};
+
+// 23. プリセットID指定削除
+window.deletePresetById = function(mode, name) {
+ if (confirm(`プリセット「${name}」(${mode}モード)を削除しますか？`)) {
+   const success = PresetManager.delete(mode, name);
+   if (success) {
+     updatePresetManagerView();
+     updatePresetList(mode);
+   }
+ }
+};
+
+// 24. 全プリセットエクスポート
+function exportAllPresets() {
+ const allPresets = {};
+ const modes = ['production', 'manga', 'planner', 'learning'];
+ 
+ modes.forEach(mode => {
+   allPresets[mode] = PresetManager.list(mode);
+ });
+ 
+ const exportData = {
+   version: '1.0',
+   timestamp: new Date().toISOString(),
+   presets: allPresets
+ };
+ 
+ const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+   type: 'application/json'
+ });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = `LPM_presets_${new Date().toISOString().split('T')[0]}.json`;
+ a.click();
+ URL.revokeObjectURL(url);
+ 
+ toast('全プリセットをエクスポートしました');
+}
+
+// 25. プリセットインポート
+function importPresets(file) {
+ const reader = new FileReader();
+ reader.onload = (e) => {
+   try {
+     const data = JSON.parse(e.target.result);
+     
+     if (data.presets) {
+       let importCount = 0;
+       Object.entries(data.presets).forEach(([mode, presets]) => {
+         presets.forEach(preset => {
+           PresetManager.save(mode, preset.name, preset.data);
+           importCount++;
+         });
+       });
+       
+       // 全てのプリセット一覧を更新
+       ['production', 'manga', 'planner', 'learning'].forEach(mode => {
+         updatePresetList(mode);
+       });
+       
+       updatePresetManagerView();
+       toast(`${importCount}件のプリセットをインポートしました`);
+     }
+   } catch (error) {
+     console.error('プリセットインポートエラー:', error);
+     toast('プリセットファイルの読み込みに失敗しました');
+   }
+ };
+ reader.readAsText(file);
 }
 
 // グローバル関数として公開
@@ -5165,128 +5533,46 @@ window.BackupManager = BackupManager;
 window.addPresetButtons = addPresetButtons;
 window.openPresetSaveDialog = openPresetSaveDialog;
 window.loadSelectedPreset = loadSelectedPreset;
+window.deleteSelectedPreset = deleteSelectedPreset;
 window.updatePresetList = updatePresetList;
 window.collectCurrentSettings = collectCurrentSettings;
-window.applySettings = applySettings;
+window.applySettingsAdvanced = applySettingsAdvanced;
+window.addUniversalCopyButtons = addUniversalCopyButtons;
 
 // 自動初期化
 initCompletePresetSystem();
+addQuickAccessShortcuts();
+
+setTimeout(() => {
+ addAdvancedPresetManager();
+}, 2000);
 
 console.log('🎯 完全なプリセットシステムを読み込みました');
-console.log('📖 利用可能な関数:');
-console.log('  - PresetManager.save(mode, name, data)');
-console.log('  - PresetManager.load(mode, name)');
-console.log('  - PresetManager.list(mode)');
-console.log('  - PresetManager.delete(mode, name)');
-console.log('  - BackupManager.export()');
-console.log('  - HistoryManager.get()');
+console.log('📖 利用可能な機能:');
+console.log('  - 💾 保存ボタン: 現在の設定をプリセットとして保存');
+console.log('  - 📁 読込ボタン: 選択したプリセットを読み込み');
+console.log('  - 🗑️ 削除ボタン: 選択したプリセットを削除');
+console.log('  - 📤 バックアップ: 全設定をエクスポート');
+console.log('  - 📥 復元: バックアップファイルから復元');
+console.log('  - ⌨️ ショートカット: Ctrl+S(保存), Ctrl+L(読み込み)');
+console.log('  - 📋 履歴: 使用履歴の表示・管理');
 
-// テスト用関数
+// デバッグ用関数
 window.testPresetSystem = function() {
-  console.log('🧪 プリセットシステムテスト開始');
-  
-  // テストデータ保存
-  const testResult = PresetManager.save('production', 'test_preset', {test: 'data'});
-  console.log('保存テスト:', testResult);
-  
-  // 一覧取得テスト
-  const list = PresetManager.list('production');
-  console.log('一覧テスト:', list);
-  
-  // 読み込みテスト
-  const loaded = PresetManager.load('production', 'test_preset');
-  console.log('読み込みテスト:', loaded);
-  
-  console.log('✅ テスト完了');
+ console.log('🧪 プリセットシステムテスト開始');
+ 
+ const testResult = PresetManager.save('production', 'test_preset', {test: 'data'});
+ console.log('保存テスト:', testResult);
+ 
+ const list = PresetManager.list('production');
+ console.log('一覧テスト:', list);
+ 
+ const loaded = PresetManager.load('production', 'test_preset');
+ console.log('読み込みテスト:', loaded);
+ 
+ console.log('✅ テスト完了');
 };
 
-
-
-// 🔧 修正コード: addUniversalCopyButtons関数の定義
-
-// 11. ユニバーサルコピーボタンの追加
-function addUniversalCopyButtons() {
-  console.log('📋 ユニバーサルコピーボタンを追加中...');
-  
-  // 全モードの出力エリアを対象
-  const outputAreas = [
-    { mode: 'basic', selectors: ['#outLearnTestAll', '#outLearnTestPrompt', '#outLearnTestNeg', '#outLearnTestCaption'] },
-    { mode: 'manga', selectors: ['#outMangaAll', '#outMangaPrompt', '#outMangaNeg'] },
-    { mode: 'planner', selectors: ['#outPlannerAll', '#outPlannerPrompt', '#outPlannerNeg'] },
-    { mode: 'learning', selectors: ['#outLearnAll', '#outLearnPrompt', '#outLearnNeg'] },
-    { mode: 'production', selectors: ['#outProdAll', '#outProdPrompt', '#outProdNeg'] }
-  ];
-  
-  outputAreas.forEach(area => {
-    area.selectors.forEach(selector => {
-      const outputElement = document.querySelector(selector);
-      if (!outputElement) return;
-      
-      // 既存のボタンがあるかチェック
-      const existingBtn = outputElement.parentNode?.querySelector('.universal-copy-btn');
-      if (existingBtn) return;
-      
-      // コピーボタンを作成
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'btn ghost small universal-copy-btn';
-      copyBtn.textContent = '📋 コピー';
-      copyBtn.style.cssText = `
-        margin-top: 6px;
-        margin-left: 8px;
-        padding: 4px 8px;
-        font-size: 12px;
-        opacity: 0.8;
-        transition: opacity 0.2s ease;
-      `;
-      
-      // コピー機能
-      copyBtn.addEventListener('click', () => {
-        const text = outputElement.textContent || '';
-        if (!text.trim()) {
-          if (typeof toast === 'function') {
-            toast('コピーする内容がありません');
-          }
-          return;
-        }
-        
-        navigator.clipboard?.writeText(text.trim())
-          .then(() => {
-            if (typeof toast === 'function') {
-              toast('コピーしました');
-            }
-            copyBtn.style.opacity = '1';
-            setTimeout(() => copyBtn.style.opacity = '0.8', 500);
-          })
-          .catch(() => {
-            // フォールバック
-            const ta = document.createElement('textarea');
-            ta.value = text.trim();
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            ta.remove();
-            if (typeof toast === 'function') {
-              toast('コピーしました');
-            }
-          });
-      });
-      
-      // ホバー効果
-      copyBtn.addEventListener('mouseenter', () => {
-        copyBtn.style.opacity = '1';
-      });
-      
-      copyBtn.addEventListener('mouseleave', () => {
-        copyBtn.style.opacity = '0.8';
-      });
-      
-      // 出力要素の隣に配置
-      outputElement.parentNode?.appendChild(copyBtn);
-    });
-  });
-  
-  console.log('✅ ユニバーサルコピーボタン追加完了');
-}
-
-// グローバル関数として公開
-window.addUniversalCopyButtons = addUniversalCopyButtons;
+/* =========================================================
+  プリセット機能システム完了
+  ========================================================= */
