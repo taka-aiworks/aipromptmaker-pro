@@ -553,10 +553,10 @@ window.DEFAULT_SFW_DICT = {
       ],
     "composition": [
       { "tag": "full body", "label": "全身" },
-      { "tag": "upper body", "label": "上半身" },
+      { "tag": "upper_body", "label": "上半身" },  // プリセット用
+      { "tag": "bust", "label": "バストアップ" },  // プリセット用
+      { "tag": "portrait", "label": "ポートレート" },  // プリセット用追加
       { "tag": "waist up", "label": "腰上" },
-      { "tag": "bust", "label": "バストアップ" },
-      { "tag": "portrait", "label": "ポートレート" },
       { "tag": "close-up", "label": "顔寄り" },
       { "tag": "extreme close-up", "label": "極端な寄り" },
     
@@ -603,7 +603,7 @@ window.DEFAULT_SFW_DICT = {
       { "tag": "neutral_expression", "label": "ニュートラル" },
       { "tag": "smiling",            "label": "笑顔/微笑み" },
       { "tag": "soft_smile",         "label": "微笑み（やわらか）" },
-      { "tag": "bright_smile",       "label": "満面の笑み" },
+      { "tag": "bright_smile", "label": "満面の笑み" },  // プリセット用追加
       { "tag": "big_smile",          "label": "満面の笑み（デフォルメ寄り）" },
       { "tag": "smiling_open_mouth", "label": "笑顔（口開き）" },
       { "tag": "laughing",           "label": "爆笑/笑っている" },
@@ -623,7 +623,9 @@ window.DEFAULT_SFW_DICT = {
     
       { "tag": "sad",                "label": "悲しみ" },
       { "tag": "crying",             "label": "泣き顔" },
-      { "tag": "teary_eyes",         "label": "涙目" },
+      { "tag": "teary_eyes", "label": "涙目" },  // プリセット用追加
+      { "tag": "sleepy_eyes", "label": "眠そうな表情" },  // プリセット用追加
+      { "tag": "furious", "label": "激怒の表情" },  // プリセット用追加
       { "tag": "comedic_crying",     "label": "ギャグ泣き（滝涙）" },
       { "tag": "crying_a_river",     "label": "洪水の涙" },
       { "tag": "despairing_expression", "label": "絶望顔" },
@@ -729,6 +731,7 @@ window.DEFAULT_SFW_DICT = {
     { "tag": "delighted", "label": "嬉しそう" },
     { "tag": "cheerful", "label": "陽気" },
     { "tag": "proud", "label": "誇らしい" },
+    { "tag": "relieved", "label": "安堵" },  // 追加
     { "tag": "furious", "label": "激怒" },
     { "tag": "annoyed", "label": "苛立ち" },
     { "tag": "tearful", "label": "涙ぐむ" },
@@ -743,8 +746,14 @@ window.DEFAULT_SFW_DICT = {
     { "tag": "mouth_closed", "label": "口を閉じる" },
     { "tag": "slight_open_mouth", "label": "口を少し開ける" },
     { "tag": "open_mouth", "label": "口を開ける" },
+    { "tag": "slight_smile", "label": "微笑み" },  // プリセット用追加
+    { "tag": "grin", "label": "歯を見せて笑う" },  // プリセット用追加
+    { "tag": "wide_open_mouth", "label": "大口を開ける" },  // プリセット用追加
+    { "tag": "yawning", "label": "あくび口" },  // プリセット用追加
+    { "tag": "surprised_o", "label": "驚きのO字口" },  // プリセット用追加
+    { "tag": "pouting_mouth", "label": "むくれ口（への字）" },  // プリセット用追加
+    { "tag": "teeth_grit", "label": "歯を食いしばる" },  // プリセット用追加
     { "tag": "smirk", "label": "ニヤリ" },
-    { "tag": "grin", "label": "歯を見せて笑う" },
     { "tag": "tongue_out_small", "label": "舌を少し出す" },
     { "tag": "biting_lip_light", "label": "軽く唇を噛む" },
     { "tag": "shouting", "label": "叫ぶ" },
@@ -771,7 +780,12 @@ window.DEFAULT_SFW_DICT = {
     { "tag": "eyes_half_closed", "label": "半目" },
     { "tag": "eyes_closed", "label": "目を閉じる" },
     { "tag": "teary", "label": "うるんだ目" },
+    { "tag": "teary_filled_eyes", "label": "涙でいっぱいの目" },  // プリセット用追加
     { "tag": "widened_eyes", "label": "見開く" },
+    { "tag": "sparkling_eyes", "label": "キラキラ目" },  // プリセット用追加
+    { "tag": "sleepy_drowsy_eyes", "label": "眠そうな目" },  // プリセット用追加
+    { "tag": "angry_vein_eyes", "label": "怒り目（血管浮き）" },  // プリセット用追加
+    { "tag": "shy_hidden_eyes", "label": "恥ずかしげに隠れた目" },  // プリセット用追加
     { "tag": "wink_left", "label": "左ウインク" },
     { "tag": "wink_right", "label": "右ウインク" },
     { "tag": "blank_stare", "label": "虚ろな目" },
@@ -809,9 +823,15 @@ window.DEFAULT_SFW_DICT = {
   ],
 
     "gaze": [
-    { "tag": "at_viewer", "label": "視線こちら" },
-    { "tag": "away", "label": "視線そらす" },
-    { "tag": "down", "label": "下を見る" },
+    { "tag": "at_viewer", "label": "視線こちら" },  // プリセット用
+    { "tag": "away", "label": "視線そらす" },  // プリセット用
+    { "tag": "down", "label": "下を見る" },  // プリセット用
+    { "tag": "gentle_down", "label": "優しく下を見る" },  // プリセット用追加
+    { "tag": "glaring", "label": "睨みつける" },  // プリセット用追加
+    { "tag": "averted_quick", "label": "サッと視線を逸らす" },  // プリセット用追加
+    { "tag": "downcast_glance", "label": "伏し目がち" },  // プリセット用追加
+    { "tag": "side_glance_shy", "label": "横目（恥ずかしげ）" },  // プリセット用追加
+    { "tag": "half_closed_down", "label": "半目で下を見る" },  // プリセット用追加
     { "tag": "up", "label": "上を見る" },
     { "tag": "to_side", "label": "横を見る" },
     { "tag": "side_glance_shy",     "label": "横目（恥ずかしげ）" },
@@ -837,18 +857,22 @@ window.DEFAULT_SFW_DICT = {
   ],
 
   "pose_manga": [
-    { "tag": "standing",              "label": "立ち" },
-    { "tag": "sitting",               "label": "座り" },
+    { "tag": "standing", "label": "立ち" },  // プリセット用
+    { "tag": "sitting", "label": "座り" },  // プリセット用
+    { "tag": "jumping", "label": "跳ぶ" },  // プリセット用追加
+    { "tag": "kneeling", "label": "ひざまずく" },  // プリセット用追加
+    { "tag": "stumbling", "label": "よろける" },  // プリセット用追加
+    { "tag": "stretching", "label": "伸びをする" },  // プリセット用追加
+    { "tag": "lying_supine", "label": "仰向けに寝る" },  // プリセット用追加
+    { "tag": "lying_prone", "label": "うつ伏せに寝る" },  // プリセット用追加
+    { "tag": "lying_side", "label": "横向き寝" },  // プリセット用追加
+    { "tag": "on_all_fours", "label": "四つん這い" },  // プリセット用追加
     { "tag": "walking",               "label": "歩く" },
     { "tag": "running",               "label": "走る" },
-    { "tag": "jumping",               "label": "跳ぶ" },
     { "tag": "crouching",             "label": "しゃがむ" },
     { "tag": "kneeling",              "label": "ひざまずく" },
     { "tag": "seiza",                 "label": "正座" },
     { "tag": "delinquent_squat",      "label": "ヤンキー座り" },
-    { "tag": "lying_supine",          "label": "仰向けに寝る" },
-    { "tag": "lying_prone",           "label": "うつ伏せに寝る" },
-    { "tag": "on_all_fours",          "label": "四つん這い" },
     { "tag": "stretching",            "label": "伸びをする" },
     { "tag": "tiptoeing",             "label": "つま先立ち" },
     { "tag": "sneaking",              "label": "こそこそ歩き" },
@@ -913,6 +937,15 @@ window.DEFAULT_SFW_DICT = {
     { "tag": "handstand", "label": "逆立ち" }
   ],
   "hand_gesture": [
+    { "tag": "peace_sign", "label": "ピースサイン" },  // プリセット用
+    { "tag": "raised_fist", "label": "拳を突き上げる" },  // プリセット用追加
+    { "tag": "arms_crossed", "label": "腕組み" },  // プリセット用追加
+    { "tag": "hands_on_cheeks", "label": "頬に手" },  // プリセット用追加
+    { "tag": "hands_on_head", "label": "頭を押さえる" },  // プリセット用追加
+    { "tag": "wiping_tears", "label": "涙を拭う" },  // プリセット用追加
+    { "tag": "covering_eyes", "label": "目を覆う" },  // プリセット用追加
+    { "tag": "hands_together_chest", "label": "胸の前で手を組む" },  // プリセット用追加
+    { "tag": "clenched_fist", "label": "拳を握る" },  // プリセット用追加
     { "tag": "holding_smartphone", "label": "スマホを持つ" },
     { "tag": "holding_book",       "label": "本を持つ/読む" },
     { "tag": "holding_food",       "label": "食べ物を持つ" },
@@ -935,7 +968,6 @@ window.DEFAULT_SFW_DICT = {
     { "tag": "hands_together_chest","label": "胸の前で手を組む" },
 
     { "tag": "waving",             "label": "手を振る" },
-    { "tag": "peace_sign",         "label": "ピースサイン" },
     { "tag": "thumbs_up",          "label": "サムズアップ" },
     { "tag": "ok_sign",            "label": "OKサイン" },
     { "tag": "finger_heart",       "label": "指ハート" },
@@ -1026,16 +1058,19 @@ window.DEFAULT_SFW_DICT = {
   ],
 
   "effect_manga": [
+    { "tag": "blush", "label": "頬染め" },  // プリセット用追加
+    { "tag": "teardrops", "label": "涙エフェクト" },  // プリセット用追加
+    { "tag": "anger_mark", "label": "怒りマーク" },  // プリセット用追加
+    { "tag": "surprise_mark", "label": "ビックリマーク（！）" },  // プリセット用追加
+    { "tag": "zzz_sleep", "label": "Zzz（睡眠）" },  // プリセット用追加
     { "tag": "speed_lines", "label": "スピード線" },
     { "tag": "impact_lines", "label": "集中線" },
     { "tag": "sweat_drop", "label": "冷や汗マーク" },
     { "tag": "anger_mark", "label": "怒りマーク" },
-    { "tag": "blush", "label": "頬染め" },
     { "tag": "vein_bulge", "label": "血管浮き" },
     { "tag": "teardrops", "label": "涙エフェクト" },
     { "tag": "motion_blur", "label": "モーションブラー" },
     { "tag": "shock_lines",        "label": "ショック線（ギザギザ）" },
-    { "tag": "surprise_mark",      "label": "ビックリマーク（！）" },
     { "tag": "question_mark",      "label": "ハテナマーク（？）" },
     { "tag": "idea_lightbulb",     "label": "電球アイデア" },
     { "tag": "anger_flame",        "label": "怒りの炎" },
@@ -1050,7 +1085,6 @@ window.DEFAULT_SFW_DICT = {
     { "tag": "explosion_cartoon",  "label": "ギャグ爆発" },
     { "tag": "heart_symbols",      "label": "ハートマーク演出" },
     { "tag": "skull_symbol",       "label": "ドクロマーク" },
-    { "tag": "zzz_sleep",          "label": "Zzz（睡眠）" },
     { "tag": "sfx_bang",           "label": "擬音：バン！" },
     { "tag": "sfx_sweatdrop_big",  "label": "巨大冷や汗" },
     { "tag": "background_shatter", "label": "背景割れ演出" }
