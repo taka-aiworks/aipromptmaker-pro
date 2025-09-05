@@ -1669,303 +1669,461 @@
   </div>
 </section>
 
-    <!-- 量産モード（従来どおり） -->
-    <section id="panelProduction" class="card" hidden>
-      <h2>量産モード（LoRA完成後）
-        <span class="badge ok">多様性重視</span><span class="badge">アクセ3枠</span><span class="badge">18禁は手動選択のみ</span>
-      </h2>
-        <div class="note mini" style="margin:6px 0">
-          量産では服の色は基本色1色をベースにし、バリエーションを持たせたい項目だけチェックを増やすのがおすすめです。<br>
-          すべての要素を一度に揺らすと組み合わせがバラけすぎて安定しないため、他の部分は固定にしておくと安定した量産ができます。<br>
+<!-- 量産モード改善版 - わかりやすい設定システム -->
+<section id="panelProduction" class="card" hidden>
+  <div class="production-header">
+    <h2>📦 量産モード（LoRA完成後）
+      <span class="badge ok">多様性重視</span>
+      <span class="badge">簡単設定</span>
+    </h2>
+    
+    <!-- 🆕 使い方ガイド -->
+    <div class="production-guide">
+      <details>
+        <summary><span class="caret">▶</span> 💡 量産モードの使い方ガイド（初回必読）</summary>
+        <div class="guide-content">
+          <div class="guide-cards">
+            <div class="guide-card">
+              <h4>🎯 基本方針</h4>
+              <ul>
+                <li><strong>色は1色固定</strong>が安定します</li>
+                <li><strong>1-2要素だけ変更</strong>して組み合わせを抑制</li>
+                <li>全要素を同時に変更すると不安定になります</li>
+              </ul>
+            </div>
+            <div class="guide-card">
+              <h4>👕 服装重視パターン</h4>
+              <ul>
+                <li>服装：<span class="vary">複数選択</span></li>
+                <li>ポーズ・表情：<span class="fixed">1つ固定</span></li>
+                <li>背景：<span class="fixed">1つ固定</span></li>
+              </ul>
+            </div>
+            <div class="guide-card">
+              <h4>🎭 表情重視パターン</h4>
+              <ul>
+                <li>服装：<span class="fixed">1つ固定</span></li>
+                <li>ポーズ・表情：<span class="vary">複数選択</span></li>
+                <li>背景：<span class="fixed">1つ固定</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 🆕 クイック設定プリセット -->
+  <div class="production-presets">
+    <h3>⚡ クイック設定</h3>
+    <div class="preset-buttons">
+      <button type="button" class="btn preset-btn" data-preset="clothing">
+        👕 服装バリエーション<br>
+        <small>服だけ変更、他は固定</small>
+      </button>
+      <button type="button" class="btn preset-btn" data-preset="expression">
+        🎭 表情バリエーション<br>
+        <small>表情・ポーズ変更、服固定</small>
+      </button>
+      <button type="button" class="btn preset-btn" data-preset="mixed">
+        🎨 ミックス<br>
+        <small>服・表情両方変更</small>
+      </button>
+      <button type="button" class="btn preset-btn" data-preset="custom">
+        ⚙️ カスタム<br>
+        <small>自分で詳細設定</small>
+      </button>
+    </div>
+  </div>
+
+  <!-- 🆕 現在の設定状況表示 -->
+  <div class="production-status">
+    <div class="status-cards">
+      <div class="status-card">
+        <h4>🔄 変更する要素</h4>
+        <div id="vary-elements" class="status-content">未設定</div>
+      </div>
+      <div class="status-card">
+        <h4>📌 固定する要素</h4>
+        <div id="fixed-elements" class="status-content">未設定</div>
+      </div>
+      <div class="status-card">
+        <h4>📊 予想組み合わせ数</h4>
+        <div id="combo-count" class="status-content">計算中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 詳細設定エリア（プリセット選択後に表示） -->
+  <div id="production-details" class="production-details" style="display: none;">
+    
+    <!-- 服装設定 -->
+    <details class="production-section">
+      <summary><span class="caret">▼</span> 服装設定</summary>
+      <div class="section-content">
+        
+        <!-- 🆕 服装モード選択 -->
+        <div class="clothing-mode">
+          <label class="mode-card">
+            <input type="radio" name="clothingMode" value="fixed" checked>
+            <div class="mode-content">
+              <h4>📌 固定（推奨）</h4>
+              <p>基本情報の服装をそのまま使用</p>
+            </div>
+          </label>
+          <label class="mode-card">
+            <input type="radio" name="clothingMode" value="vary">
+            <div class="mode-content">
+              <h4>🔄 バリエーション</h4>
+              <p>複数の服装から選択</p>
+            </div>
+          </label>
         </div>
 
-<!-- 服 / 背景 / 表情：3カラムだけでまず閉じる -->
-<div class="grid g3">
-  <div class="panel">
-    <h3>服（カテゴリ別 / 複数可）</h3>
+        <!-- 服装バリエーション設定（vary選択時のみ表示） -->
+        <div id="clothing-vary-settings" style="display: none;">
+          <div class="row mini" style="gap:10px;margin:6px 0 8px">
+            <label class="inline">
+              <input type="checkbox" id="allowBottomSwap">
+              「ボトムス ↔ スカート」置換を許可
+            </label>
+          </div>
 
-    <div class="row mini" style="gap:10px;margin:0 0 8px">
-      <label class="inline"><input type="checkbox" id="allowBottomSwap"> 「ボトムス ↔ スカート」置換を許可</label>
-      <span class="mini">※ どちらか未選択時にもう一方から補完する想定</span>
-    </div>
-
-    <div class="grid g2">
-      <div class="panel">
-        <h4 style="margin:0 0 6px">トップス（複数可）</h4>
-        <div id="p_outfit_top" class="scroller"></div>
-      </div>
-      <div class="panel">
-        <h4 style="margin:0 0 6px">ボトムス（ズボン・複数可）</h4>
-        <div id="p_outfit_pants" class="scroller"></div>
-      </div>
-      <div class="panel">
-        <h4 style="margin:0 0 6px">スカート（複数可）</h4>
-        <div id="p_outfit_skirt" class="scroller"></div>
-      </div>
-      <div class="panel">
-        <h4 style="margin:0 0 6px">ワンピース（複数可）</h4>
-        <div id="p_outfit_dress" class="scroller"></div>
-        <div class="mini">※ ワンピース採用行は下カラー無効</div>
-      </div>
-      <div class="panel">
-        <h4 style="margin:0 0 6px">靴（複数可）</h4>
-        <div id="p_outfit_shoes" class="scroller"></div>
-      </div>
-    </div>
-  </div>
-</div> <!-- ←ここで .grid g3 を閉じる -->
-      
-<!-- === 服カラー（量産の基本色）: 置き換え開始 === -->
-<div class="card" id="prodColorCard" style="margin-top:10px">
-  <h4 style="margin:0 0 6px">服カラー（量産の基本色）</h4>
-  <div class="mini">指定した色タグを各行に付与します。ワンピース採用行では下カラーは自動で無効。</div>
-  <!-- 量産の使い方ノート -->
-  <div class="note mini" style="margin-top:6px">
-    量産では服の色は基本色1色をベースにし、バリエーションを持たせたい項目だけチェックを増やすのがおすすめです。
-    すべてを同時に揺らすと組み合わせがバラけて不安定になるため、他の要素は固定>にしてください。
-  </div>
-
-  <div class="grid g3" style="margin-top:8px">
-    <!-- トップス -->
-    <div class="panel" id="panel_p_top">
-      <div class="row mini">
-        <label class="inline"><input type="checkbox" id="p_use_top"> トップス色を使う</label>
-      </div>
-      <div class="wheel-box">
-        <div id="wheel_p_top" class="wheel"></div><div id="thumb_p_top" class="thumb"></div>
-      </div>
-      <div class="row mini">
-        S:<input id="sat_p_top" type="range" min="0" max="100" value="80">
-        L:<input id="lit_p_top" type="range" min="0" max="100" value="55">
-      </div>
-      <!-- 色タグ行（重なり防止のためflex＋wrap） -->
-      <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
-        <div id="sw_p_top" class="swatch"></div>
-        <span>色タグ: <code class="tag" id="tag_p_top">—</code></span>
-      </div>
-    </div>
-
-    <!-- ボトムス（順序と重なりを修正：SL → 色タグ → 注意書き） -->
-    <div class="panel" id="panel_p_bottom">
-      <div class="row mini">
-        <label class="inline"><input type="checkbox" id="p_use_bottom"> 下カラーを使う</label>
-      </div>
-      <div class="wheel-box">
-        <div id="wheel_p_bottom" class="wheel"></div><div id="thumb_p_bottom" class="thumb"></div>
-      </div>
-      <div class="row mini">
-        S:<input id="sat_p_bottom" type="range" min="0" max="100" value="70">
-        L:<input id="lit_p_bottom" type="range" min="0" max="100" value="50">
-      </div>
-      <!-- 色タグ行（flex-wrapで折り返し、被りを防止） -->
-      <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
-        <div id="sw_p_bottom" class="swatch"></div>
-        <span>色タグ: <code class="tag" id="tag_p_bottom">—</code></span>
-      </div>
-      <!-- 注意書きは右寄せ＆独立行に -->
-      <div class="mini" style="text-align:right;margin-top:4px;display:block;clear:both">
-        ※ ワンピース選択時は自動で無効化されます
-      </div>
-    </div>
-
-    <!-- 靴 -->
-    <div class="panel" id="panel_p_shoes">
-      <div class="row mini">
-        <label class="inline"><input type="checkbox" id="p_use_shoes"> 靴色を使う</label>
-      </div>
-      <div class="wheel-box">
-        <div id="wheel_p_shoes" class="wheel"></div><div id="thumb_p_shoes" class="thumb"></div>
-      </div>
-      <div class="row mini">
-        S:<input id="sat_p_shoes" type="range" min="0" max="100" value="0">
-        L:<input id="lit_p_shoes" type="range" min="0" max="100" value="30">
-      </div>
-      <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
-        <div id="sw_p_shoes" class="swatch"></div>
-        <span>色タグ: <code class="tag" id="tag_p_shoes">—</code></span>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- === 服カラー（量産の基本色）: 置き換え終了 === -->
-
-<!-- === アクセ（3スロット・色指定）: 置き換え開始 === -->
-<div class="card" id="accCard" style="margin-top:10px">
-  <h3 style="margin:0 0 6px">アクセ（3スロット・色指定）</h3>
-  <div class="grid g3">
-    <div class="panel">
-      <div class="mini">アクセ A</div>
-      <select id="p_accA"></select>
-      <div class="wheel-box" style="margin-top:6px">
-        <div id="wheel_accA" class="wheel"></div><div id="thumb_accA" class="thumb"></div>
-      </div>
-      <div class="row mini">S:<input id="sat_accA" type="range" min="0" max="100" value="80">
-        L:<input id="lit_accA" type="range" min="0" max="100" value="50"></div>
-      <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <div id="sw_accA" class="swatch"></div>
-        <span>色タグ: <code class="tag" id="tag_accA">red</code></span>
-      </div>
-    </div>
-
-    <details>
-      <summary class="mini"><span class="caret">▶</span> アクセ B</summary>
-      <div class="panel" style="margin-top:6px">
-        <select id="p_accB"></select>
-        <div class="wheel-box" style="margin-top:6px">
-          <div id="wheel_accB" class="wheel"></div><div id="thumb_accB" class="thumb"></div>
+          <div class="grid g2">
+            <div class="panel">
+              <h4>トップス</h4>
+              <div id="p_outfit_top" class="scroller"></div>
+            </div>
+            <div class="panel">
+              <h4>ボトムス</h4>
+              <div id="p_outfit_pants" class="scroller"></div>
+            </div>
+            <div class="panel">
+              <h4>スカート</h4>
+              <div id="p_outfit_skirt" class="scroller"></div>
+            </div>
+            <div class="panel">
+              <h4>ワンピース</h4>
+              <div id="p_outfit_dress" class="scroller"></div>
+            </div>
+            <div class="panel">
+              <h4>靴</h4>
+              <div id="p_outfit_shoes" class="scroller"></div>
+            </div>
+          </div>
         </div>
-        <div class="row mini">S:<input id="sat_accB" type="range" min="0" max="100" value="80">
-          L:<input id="lit_accB" type="range" min="0" max="100" value="50"></div>
-        <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <div id="sw_accB" class="swatch"></div>
-          <span>色タグ: <code class="tag" id="tag_accB">blue</code></span>
+
+        <!-- 服の色設定 -->
+        <div class="color-mode">
+          <h4>服の色</h4>
+          <div class="grid g3">
+            <div class="panel">
+              <label class="inline">
+                <input type="checkbox" id="p_use_top" checked>
+                トップス色を使う
+              </label>
+              <div class="wheel-box">
+                <div id="wheel_p_top" class="wheel"></div>
+                <div id="thumb_p_top" class="thumb"></div>
+              </div>
+              <div class="row mini">
+                S:<input id="sat_p_top" type="range" min="0" max="100" value="80">
+                L:<input id="lit_p_top" type="range" min="0" max="100" value="55">
+              </div>
+              <div class="row mini">
+                <div id="sw_p_top" class="swatch"></div>
+                <span>色: <code class="tag" id="tag_p_top">—</code></span>
+              </div>
+            </div>
+            <div class="panel">
+              <label class="inline">
+                <input type="checkbox" id="p_use_bottom" checked>
+                ボトムス色を使う
+              </label>
+              <div class="wheel-box">
+                <div id="wheel_p_bottom" class="wheel"></div>
+                <div id="thumb_p_bottom" class="thumb"></div>
+              </div>
+              <div class="row mini">
+                S:<input id="sat_p_bottom" type="range" min="0" max="100" value="70">
+                L:<input id="lit_p_bottom" type="range" min="0" max="100" value="50">
+              </div>
+              <div class="row mini">
+                <div id="sw_p_bottom" class="swatch"></div>
+                <span>色: <code class="tag" id="tag_p_bottom">—</code></span>
+              </div>
+            </div>
+            <div class="panel">
+              <label class="inline">
+                <input type="checkbox" id="p_use_shoes">
+                靴色を使う
+              </label>
+              <div class="wheel-box">
+                <div id="wheel_p_shoes" class="wheel"></div>
+                <div id="thumb_p_shoes" class="thumb"></div>
+              </div>
+              <div class="row mini">
+                S:<input id="sat_p_shoes" type="range" min="0" max="100" value="0">
+                L:<input id="lit_p_shoes" type="range" min="0" max="100" value="30">
+              </div>
+              <div class="row mini">
+                <div id="sw_p_shoes" class="swatch"></div>
+                <span>色: <code class="tag" id="tag_p_shoes">—</code></span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </details>
 
-    <details>
-      <summary class="mini"><span class="caret">▶</span> アクセ C</summary>
-      <div class="panel" style="margin-top:6px">
-        <select id="p_accC"></select>
-        <div class="wheel-box" style="margin-top:6px">
-          <div id="wheel_accC" class="wheel"></div><div id="thumb_accC" class="thumb"></div>
+    <!-- 表情・ポーズ設定 -->
+    <details class="production-section">
+      <summary><span class="caret">▼</span> 表情・ポーズ設定</summary>
+      <div class="section-content">
+        
+        <!-- 🆕 表情モード選択 -->
+        <div class="expression-mode">
+          <label class="mode-card">
+            <input type="radio" name="expressionMode" value="fixed" checked>
+            <div class="mode-content">
+              <h4>📌 固定</h4>
+              <p>1つの表情・ポーズで統一</p>
+            </div>
+          </label>
+          <label class="mode-card">
+            <input type="radio" name="expressionMode" value="vary">
+            <div class="mode-content">
+              <h4>🔄 バリエーション</h4>
+              <p>複数の表情・ポーズから選択</p>
+            </div>
+          </label>
         </div>
-        <div class="row mini">S:<input id="sat_accC" type="range" min="0" max="100" value="80">
-          L:<input id="lit_accC" type="range" min="0" max="100" value="50"></div>
-        <div class="row mini" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <div id="sw_accC" class="swatch"></div>
-          <span>色タグ: <code class="tag" id="tag_accC">green</code></span>
+
+        <!-- 表情バリエーション設定 -->
+        <div id="expression-vary-settings" style="display: none;">
+          <div class="grid g2">
+            <div class="panel">
+              <h4>表情</h4>
+              <div id="p_expr" class="scroller"></div>
+            </div>
+            <div class="panel">
+              <h4>ポーズ</h4>
+              <div id="p_pose" class="scroller"></div>
+            </div>
+          </div>
         </div>
       </div>
     </details>
-  </div>
-</div>
-<!-- === アクセ: 置き換え終了 === -->
-  <div class="mini" style="margin-top:6px">※ 未選択スロットは無視</div>
-<div class="panel">
-  <h3>背景（複数可）</h3>
-  <div id="p_bg" class="scroller"></div>
 
-  <h3 style="margin-top:10px">ポーズ（複数可）</h3>
-  <div id="p_pose" class="scroller"></div>
-
-  <!-- 追加：構図（複数可） -->
-  <h3 style="margin-top:10px">構図（複数可）</h3>
-  <div id="p_comp" class="scroller"></div>
-
-  <!-- 追加：表情（複数可） -->
-  <h3 style="margin-top:10px">表情（複数可）</h3>
-  <div id="p_expr" class="scroller"></div>
-</div>
-
-<div class="panel">
-  <h3>18禁</h3>
-  <div class="row">
-    <label class="inline"><input id="nsfwProd" type="checkbox"> 18禁ON</label>
-    <span class="mini">（選んだもののみ使用）</span>
-  </div>
-  <div id="nsfwProdPanel" style="display:none">
-    <div class="row mini" style="margin-top:6px">
-      <b>レベル上限</b>
-      <label class="inline"><input type="radio" name="nsfwLevelProd" value="L1" checked>R-15</label>
-      <label class="inline"><input type="radio" name="nsfwLevelProd" value="L2">R-18</label>
-      <label class="inline"><input type="radio" name="nsfwLevelProd" value="L3">R-18G</label>
-    </div>
-    <div class="grid g3" style="margin-top:6px">
-      <div class="note mini" style="margin:6px 0">
-        ※表情や衣装が被った場合NSFWで選んだものが優先されます。<br>
-        追加で色を指定したい場合は単語モードを参照して追加してください。<br>
+    <!-- 背景・構図設定 -->
+    <details class="production-section">
+      <summary><span class="caret">▼</span> 背景・構図設定</summary>
+      <div class="section-content">
+        <div class="grid g2">
+          <div class="panel">
+            <h4>背景</h4>
+            <div id="p_bg" class="scroller"></div>
+          </div>
+          <div class="panel">
+            <h4>構図</h4>
+            <div id="p_comp" class="scroller"></div>
+          </div>
+        </div>
       </div>
-      <div class="mini" style="margin-top:6px">
-        ※ 露出・下着・衣装は競合しやすいため、同時に複数を選ぶと出力が崩れる可能性があります。<br>
-        なるべく1カテゴリのみを使用してください。<br>
+    </details>
+
+    <!-- アクセサリー設定 -->
+    <details class="production-section">
+      <summary><span class="caret">▼</span> アクセサリー設定（3スロット）</summary>
+      <div class="section-content">
+        <div class="grid g3">
+          <div class="panel">
+            <h4>アクセ A</h4>
+            <select id="p_accA">
+              <option value="">（未選択）</option>
+            </select>
+            <div class="wheel-box">
+              <div id="wheel_accA" class="wheel"></div>
+              <div id="thumb_accA" class="thumb"></div>
+            </div>
+            <div class="row mini">
+              S:<input id="sat_accA" type="range" min="0" max="100" value="80">
+              L:<input id="lit_accA" type="range" min="0" max="100" value="50">
+            </div>
+            <div class="row mini">
+              <div id="sw_accA" class="swatch"></div>
+              <span>色: <code class="tag" id="tag_accA">red</code></span>
+            </div>
+          </div>
+          <div class="panel">
+            <h4>アクセ B</h4>
+            <select id="p_accB">
+              <option value="">（未選択）</option>
+            </select>
+            <div class="wheel-box">
+              <div id="wheel_accB" class="wheel"></div>
+              <div id="thumb_accB" class="thumb"></div>
+            </div>
+            <div class="row mini">
+              S:<input id="sat_accB" type="range" min="0" max="100" value="80">
+              L:<input id="lit_accB" type="range" min="0" max="100" value="50">
+            </div>
+            <div class="row mini">
+              <div id="sw_accB" class="swatch"></div>
+              <span>色: <code class="tag" id="tag_accB">blue</code></span>
+            </div>
+          </div>
+          <div class="panel">
+            <h4>アクセ C</h4>
+            <select id="p_accC">
+              <option value="">（未選択）</option>
+            </select>
+            <div class="wheel-box">
+              <div id="wheel_accC" class="wheel"></div>
+              <div id="thumb_accC" class="thumb"></div>
+            </div>
+            <div class="row mini">
+              S:<input id="sat_accC" type="range" min="0" max="100" value="80">
+              L:<input id="lit_accC" type="range" min="0" max="100" value="50">
+            </div>
+            <div class="row mini">
+              <div id="sw_accC" class="swatch"></div>
+              <span>色: <code class="tag" id="tag_accC">green</code></span>
+            </div>
+          </div>
+        </div>
       </div>
-      <!-- 先頭に：露出／下着／衣装 -->
-      <div><b class="mini">露出</b><div id="nsfwP_expo" class="scroller"></div></div>
-      <div><b class="mini">下着</b><div id="nsfwP_underwear" class="scroller"></div></div>
-      <div><b class="mini">衣装</b><div id="nsfwP_outfit" class="scroller"></div></div>
+    </details>
 
-      <!-- 以降そのまま -->
-      <div><b class="mini">表情</b><div id="nsfwP_expr" class="scroller"></div></div>
-      <div><b class="mini">シチュ</b><div id="nsfwP_situ" class="scroller"></div></div>
-      <div><b class="mini">ライティング</b><div id="nsfwP_light" class="scroller"></div></div>
-      <div><b class="mini">ポーズ</b><div id="nsfwP_pose" class="scroller"></div></div>
-      <div><b class="mini">アクセ</b><div id="nsfwP_acc" class="scroller"></div></div>
-      <div><b class="mini">身体</b><div id="nsfwP_body" class="scroller"></div></div>
-      <div><b class="mini">乳首</b><div id="nsfwP_nipple" class="scroller"></div></div>
-    </div>
-  </div>
-</div>
-
-<div class="grid g2">
-  <div class="panel">
-    <h3>固定タグ / ネガティブ</h3>
-    <label>固定タグ（先頭に付与）</label>
-    <textarea id="fixedProd" rows="3" placeholder="※タグを追加したい場合はここに入力"></textarea>
-    <label style="margin-top:10px">ネガティブ（量産用）</label>
-    <textarea id="p_neg" rows="3" placeholder="※ 共通ネガに加えて、量産時のみ追加したい内容があれば入力"></textarea>
-  </div>
-
-  <div class="panel">
-    <h3>出力設定</h3>
-    <div class="row">
-      <label class="inline"><input type="radio" name="seedMode" value="fixed" checked> seed固定</label>
-      <label class="inline"><input type="radio" name="seedMode" value="vary"> 行ごとに微差seed</label>
-    </div>
-    <div class="row mini"><div><b>Seedの説明</b></div>
-      <div>固定＝全行同じ / 微差＝行ごとに少し揺らぎ</div>
-    </div>
-    <div class="row" style="margin-top:6px">
-      <label>件数</label>
-      <select id="countProd" class="btn small" style="background:#1d2432;color:#e6eeff">
-        <option>20</option><option>30</option><option selected>50</option>
-      </select>
-      <label class="inline mini">出力フォーマット
-        <select id="fmtProd">
-          <option value="a1111" selected>Web UI（汎用）</option>
-          <option value="invoke">InvokeAI（CLI）</option>
-          <option value="comfy">ComfyUI（テキスト）</option>
-          <option value="sdnext">SD.Next（dream.py）</option>
-          <option value="nai">NovelAI</option>
-        </select>
-      </label>
-    </div>
-  </div>
-</div>
-      <div class="card">
+    <!-- NSFW設定 -->
+    <details class="production-section">
+      <summary><span class="caret">▼</span> 18禁設定（任意）</summary>
+      <div class="section-content">
         <div class="row">
-          <button id="btnGenProd" class="btn ok">量産セット生成</button>
-          <span style="flex:1"></span>
-          <button id="btnCsvProd" class="btn ghost" title="量産セットをCSVでローカル保存">ローカル保存（CSV）</button>
-          <button id="btnCloudProd" class="btn ghost" title="量産セットをクラウドへ保存">クラウド保存（CSV）</button>
+          <label class="inline">
+            <input id="nsfwProd" type="checkbox">
+            18禁ON
+          </label>
+          <span class="mini">（選んだもののみ使用）</span>
         </div>
-        <div class="grid g1" style="margin-top:10px">
-        <!-- テキスト（上） -->
-        <div>
-          <h3>コピー用（テキスト）</h3>
-          <div class="mini" style="margin:.25rem 0 .35rem">全部</div>
-          <div class="out" id="outProdAll"></div>
-          <button id="btnCopyProdAll" class="btn ghost small" style="margin-top:6px">全部をコピー</button>
-      
-          <div class="mini" style="margin:.75rem 0 .35rem">Promptのみ</div>
-          <div class="out" id="outProdPrompt"></div>
-          <button id="btnCopyProdPrompt" class="btn ghost small" style="margin-top:6px">Promptだけコピー</button>
-      
-          <div class="mini" style="margin:.75rem 0 .35rem">Negativeのみ</div>
-          <div class="out" id="outProdNeg"></div>
-          <button id="btnCopyProdNeg" class="btn ghost small" style="margin-top:6px">Negativeだけコピー</button>
-        </div>
-      
-        <!-- テーブル（下） -->
-        <div style="margin-top:12px">
-          <h3>テーブル表示</h3>
-          <table class="table" id="tblProd">
-            <thead><tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr></thead>
-            <tbody></tbody>
-          </table>
+        <div id="nsfwProdPanel" style="display:none">
+          <div class="row mini">
+            <b>レベル上限</b>
+            <label class="inline">
+              <input type="radio" name="nsfwLevelProd" value="L1" checked>
+              R-15
+            </label>
+            <label class="inline">
+              <input type="radio" name="nsfwLevelProd" value="L2">
+              R-18
+            </label>
+            <label class="inline">
+              <input type="radio" name="nsfwLevelProd" value="L3">
+              R-18G
+            </label>
+          </div>
+          <div class="grid g3">
+            <div><b class="mini">露出</b><div id="nsfwP_expo" class="scroller"></div></div>
+            <div><b class="mini">下着</b><div id="nsfwP_underwear" class="scroller"></div></div>
+            <div><b class="mini">衣装</b><div id="nsfwP_outfit" class="scroller"></div></div>
+            <div><b class="mini">表情</b><div id="nsfwP_expr" class="scroller"></div></div>
+            <div><b class="mini">シチュ</b><div id="nsfwP_situ" class="scroller"></div></div>
+            <div><b class="mini">ライティング</b><div id="nsfwP_light" class="scroller"></div></div>
+            <div><b class="mini">ポーズ</b><div id="nsfwP_pose" class="scroller"></div></div>
+            <div><b class="mini">アクセ</b><div id="nsfwP_acc" class="scroller"></div></div>
+            <div><b class="mini">身体</b><div id="nsfwP_body" class="scroller"></div></div>
+            <div><b class="mini">乳首</b><div id="nsfwP_nipple" class="scroller"></div></div>
+          </div>
         </div>
       </div>
-    </section>
+    </details>
+
+    <!-- 出力設定 -->
+    <details class="production-section" open>
+      <summary><span class="caret">▼</span> 出力設定</summary>
+      <div class="section-content">
+        <div class="grid g2">
+          <div class="panel">
+            <h4>固定タグ・ネガティブ</h4>
+            <label>固定タグ（先頭に付与）</label>
+            <textarea id="fixedProd" rows="3" placeholder="※タグを追加したい場合はここに入力"></textarea>
+            <label>ネガティブ（量産用）</label>
+            <textarea id="p_neg" rows="3" placeholder="※ 共通ネガに加えて、量産時のみ追加したい内容があれば入力"></textarea>
+          </div>
+          <div class="panel">
+            <h4>生成設定</h4>
+            <div class="row">
+              <label class="inline">
+                <input type="radio" name="seedMode" value="fixed" checked>
+                seed固定
+              </label>
+              <label class="inline">
+                <input type="radio" name="seedMode" value="vary">
+                行ごとに微差seed
+              </label>
+            </div>
+            <div class="row">
+              <label>件数</label>
+              <select id="countProd">
+                <option>20</option>
+                <option>30</option>
+                <option selected>50</option>
+              </select>
+            </div>
+            <div class="row">
+              <label class="inline mini">出力フォーマット</label>
+              <select id="fmtProd">
+                <option value="a1111" selected>Web UI（汎用）</option>
+                <option value="invoke">InvokeAI（CLI）</option>
+                <option value="comfy">ComfyUI（テキスト）</option>
+                <option value="sdnext">SD.Next（dream.py）</option>
+                <option value="nai">NovelAI</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 生成ボタンエリア -->
+  <div class="production-generate">
+    <div class="row">
+      <button id="btnGenProd" class="btn ok large">🚀 量産セット生成</button>
+      <div style="flex: 1;"></div>
+      <button id="btnCsvProd" class="btn ghost">ローカル保存（CSV）</button>
+      <button id="btnCloudProd" class="btn ghost">クラウド保存（CSV）</button>
+    </div>
+  </div>
+
+  <!-- 出力エリア -->
+  <div class="production-output">
+    <div class="grid g1">
+      <div>
+        <h3>生成結果</h3>
+        <div class="mini">全部</div>
+        <div class="out" id="outProdAll"></div>
+        <button id="btnCopyProdAll" class="btn ghost small">全部をコピー</button>
+
+        <div class="mini">Promptのみ</div>
+        <div class="out" id="outProdPrompt"></div>
+        <button id="btnCopyProdPrompt" class="btn ghost small">Promptだけコピー</button>
+
+        <div class="mini">Negativeのみ</div>
+        <div class="out" id="outProdNeg"></div>
+        <button id="btnCopyProdNeg" class="btn ghost small">Negativeだけコピー</button>
+      </div>
+
+      <div>
+        <h3>テーブル表示</h3>
+        <table class="table" id="tblProd">
+          <thead><tr><th>#</th><th>seed</th><th>prompt</th><th>negative</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
 
     <!-- 設定タブ（そのまま） -->
     <section id="panelSettings" class="card" hidden>
