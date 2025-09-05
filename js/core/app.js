@@ -4383,7 +4383,330 @@ window.forceRenderAll = forceRenderAll;
 window.fullProductionRecovery = fullProductionRecovery;
 window.showDebugInfo = showDebugInfo;
 
-console.log('🔧 グローバル辞書修復ツールを読み込みました');
-console.log('📖 使用方法:');
-console.log('  1. showDebugInfo() でデバッグ情報確認');
-console.log('  2. fullProductionRecovery() で完全復旧');
+
+
+
+
+
+
+// 🔥 最優先改善項目
+
+// 1. 全モード統一：ワンクリックコピー機能
+function addUniversalCopyButtons() {
+  const copyButtons = document.querySelectorAll('.btn.ghost.small');
+  copyButtons.forEach(btn => {
+    if (btn.textContent.includes('コピー')) {
+      btn.addEventListener('click', () => {
+        // 成功フィードバックの統一
+        btn.style.backgroundColor = '#10b981';
+        btn.textContent = '✓ コピー済み';
+        setTimeout(() => {
+          btn.style.backgroundColor = '';
+          btn.textContent = btn.textContent.replace('✓ コピー済み', 'コピー');
+        }, 1500);
+      });
+    }
+  });
+}
+
+// 2. プリセット保存・読み込み（全モード対応）
+const PresetManager = {
+  save: function(mode, name, data) {
+    const key = `LPM_PRESET_${mode}_${name}`;
+    localStorage.setItem(key, JSON.stringify({
+      name,
+      mode,
+      data,
+      created: new Date().toISOString()
+    }));
+    toast(`プリセット「${name}」を保存しました`);
+  },
+  
+  load: function(mode, name) {
+    const key = `LPM_PRESET_${mode}_${name}`;
+    const preset = localStorage.getItem(key);
+    return preset ? JSON.parse(preset) : null;
+  },
+  
+  list: function(mode) {
+    const presets = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith(`LPM_PRESET_${mode}_`)) {
+        const preset = JSON.parse(localStorage.getItem(key));
+        presets.push(preset);
+      }
+    }
+    return presets.sort((a, b) => new Date(b.created) - new Date(a.created));
+  },
+  
+  delete: function(mode, name) {
+    const key = `LPM_PRESET_${mode}_${name}`;
+    localStorage.removeItem(key);
+    toast(`プリセット「${name}」を削除しました`);
+  }
+};
+
+// 3. 使用履歴管理
+const HistoryManager = {
+  add: function(mode, prompt, settings) {
+    const history = this.get();
+    const entry = {
+      id: Date.now(),
+      mode,
+      prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
+      settings,
+      timestamp: new Date().toISOString()
+    };
+    
+    history.unshift(entry);
+    
+    // 最新100件まで保持
+    if (history.length > 100) {
+      history.splice(100);
+    }
+    
+    localStorage.setItem('LPM_HISTORY', JSON.stringify(history));
+  },
+  
+  get: function() {
+    const history = localStorage.getItem('LPM_HISTORY');
+    return history ? JSON.parse(history) : [];
+  },
+  
+  clear: function() {
+    localStorage.removeItem('LPM_HISTORY');
+    toast('履歴をクリアしました');
+  }
+};
+
+// 4. バックアップ・復元機能
+const BackupManager = {
+  export: function() {
+    const backup = {
+      version: '1.0',
+      timestamp: new Date().toISOString(),
+      settings: {},
+      presets: {},
+      history: HistoryManager.get()
+    };
+    
+    // 設定データの収集
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith('LPM_')) {
+        backup.settings[key] = localStorage.getItem(key);
+      }
+    }
+    
+    // ダウンロード
+    const blob = new Blob([JSON.stringify(backup, null, 2)], {
+      type: 'application/json'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `LPM_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast('バックアップをダウンロードしました');
+  },
+  
+  import: function(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const backup = JSON.parse(e.target.result);
+        
+        // 設定データの復元
+        Object.entries(backup.settings).forEach(([key, value]) => {
+          localStorage.setItem(key, value);
+        });
+        
+        toast('バックアップを復元しました。ページを再読み込みしてください。');
+      } catch (error) {
+        toast('バックアップファイルの読み込みに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+  }
+};
+
+// 5. 漫画モード検索の大幅改善
+const MangaSearchImproved = {
+  init: function() {
+    const searchInput = document.getElementById('manga-search-input');
+    const resultsArea = document.getElementById('manga-search-results');
+    
+    if (!searchInput || !resultsArea) return;
+    
+    let searchTimeout;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        this.performSearch(e.target.value.trim());
+      }, 300);
+    });
+  },
+  
+  performSearch: function(query) {
+    if (!query) {
+      this.hideResults();
+      return;
+    }
+    
+    const results = this.searchAllCategories(query);
+    this.displayResults(results, query);
+  },
+  
+  searchAllCategories: function(query) {
+    const categories = [
+      'mangaEmotionPrimary', 'mangaExpressions', 'mangaPose', 
+      'mangaHandGesture', 'mangaMovementAction', 'mangaPropsLight',
+      'mangaBackground', 'mangaLighting', 'mangaArtStyle'
+    ];
+    
+    const results = [];
+    const searchLower = query.toLowerCase();
+    
+    categories.forEach(categoryId => {
+      const container = document.getElementById(categoryId);
+      if (!container) return;
+      
+      const items = container.querySelectorAll('.chip');
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(searchLower)) {
+          results.push({
+            category: categoryId,
+            element: item,
+            text: item.textContent.trim(),
+            relevance: this.calculateRelevance(text, searchLower)
+          });
+        }
+      });
+    });
+    
+    return results.sort((a, b) => b.relevance - a.relevance);
+  },
+  
+  calculateRelevance: function(text, query) {
+    if (text.startsWith(query)) return 100;
+    if (text.includes(query)) return 50;
+    return 10;
+  },
+  
+  displayResults: function(results, query) {
+    const resultsArea = document.getElementById('manga-search-results');
+    const resultsContent = document.getElementById('manga-search-results-content');
+    const resultsCount = document.getElementById('manga-results-count');
+    
+    if (!resultsArea || !resultsContent || !resultsCount) return;
+    
+    resultsCount.textContent = results.length;
+    
+    if (results.length === 0) {
+      resultsContent.innerHTML = `
+        <div class="no-results">
+          「${query}」の検索結果がありません
+        </div>`;
+    } else {
+      resultsContent.innerHTML = results.map(result => `
+        <div class="search-result-item" data-category="${result.category}">
+          <span class="result-text">${this.highlightQuery(result.text, query)}</span>
+          <span class="result-category">${this.getCategoryLabel(result.category)}</span>
+        </div>
+      `).join('');
+      
+      // クリックイベント
+      resultsContent.addEventListener('click', (e) => {
+        const item = e.target.closest('.search-result-item');
+        if (item) {
+          this.selectSearchResult(item);
+        }
+      });
+    }
+    
+    resultsArea.style.display = 'block';
+  },
+  
+  highlightQuery: function(text, query) {
+    const regex = new RegExp(`(${query})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+  },
+  
+  getCategoryLabel: function(categoryId) {
+    const labels = {
+      'mangaEmotionPrimary': '基本感情',
+      'mangaExpressions': '表情',
+      'mangaPose': 'ポーズ',
+      'mangaHandGesture': '手のジェスチャー',
+      'mangaMovementAction': '動作',
+      'mangaPropsLight': '小物',
+      'mangaBackground': '背景',
+      'mangaLighting': 'ライティング',
+      'mangaArtStyle': '画風'
+    };
+    return labels[categoryId] || categoryId;
+  },
+  
+  selectSearchResult: function(item) {
+    const category = item.dataset.category;
+    const text = item.querySelector('.result-text').textContent;
+    
+    // 該当するチェックボックス/ラジオボタンを選択
+    const container = document.getElementById(category);
+    if (container) {
+      const inputs = container.querySelectorAll('input');
+      inputs.forEach(input => {
+        const label = input.closest('label');
+        if (label && label.textContent.includes(text)) {
+          if (input.type === 'radio') {
+            // ラジオボタンの場合、同じnameの他をクリア
+            const others = document.querySelectorAll(`input[name="${input.name}"]`);
+            others.forEach(other => other.checked = false);
+          }
+          input.checked = true;
+          
+          // 視覚的フィードバック
+          label.style.backgroundColor = '#3b82f6';
+          setTimeout(() => {
+            label.style.backgroundColor = '';
+          }, 1000);
+          
+          // スクロールして表示
+          label.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    }
+    
+    this.hideResults();
+    toast(`「${text}」を選択しました`);
+  },
+  
+  hideResults: function() {
+    const resultsArea = document.getElementById('manga-search-results');
+    if (resultsArea) {
+      resultsArea.style.display = 'none';
+    }
+  }
+};
+
+// グローバル関数として公開
+window.PresetManager = PresetManager;
+window.HistoryManager = HistoryManager;
+window.BackupManager = BackupManager;
+window.MangaSearchImproved = MangaSearchImproved;
+window.addUniversalCopyButtons = addUniversalCopyButtons;
+
+console.log('🔥 最優先改善機能を読み込みました');
+console.log('📖 追加機能:');
+console.log('  - プリセット保存・読み込み');
+console.log('  - 使用履歴管理');
+console.log('  - バックアップ・復元');
+console.log('  - 漫画モード高度検索');
+console.log('  - 統一コピーフィードバック');
+
+
+
