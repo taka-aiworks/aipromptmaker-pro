@@ -1098,16 +1098,7 @@ window.initPlannerItems = function() {
     return;
   }
   
-  // デバッグ用ログ
-  console.log('撮影モード辞書確認:', {
-    camera_angle: SFW_DICT.camera_angle,
-    focal_length: SFW_DICT.focal_length,
-    depth_of_field: SFW_DICT.depth_of_field,
-    photo_technique: SFW_DICT.photo_technique,
-    lighting_type: SFW_DICT.lighting_type,
-    light_direction: SFW_DICT.light_direction,
-    time_of_day: SFW_DICT.time_of_day
-  });
+
   
   // 撮影モード用のラジオボタンリスト初期化
   radioList($("#pl_bg"), SFW_DICT.background, "pl_bg", {checkFirst: false});
@@ -3504,29 +3495,22 @@ window.initWordModeFixed = function() {
   
   if (window.DEFAULT_SFW_DICT) {
     sfwDict = window.DEFAULT_SFW_DICT.SFW || window.DEFAULT_SFW_DICT;
-    console.log('DEFAULT_SFW_DICT から取得');
   } else if (window.SFW) {
     sfwDict = window.SFW;
-    console.log('window.SFW から取得');
   }
   
   if (window.DEFAULT_NSFW_DICT) {
     nsfwDict = window.DEFAULT_NSFW_DICT.NSFW || window.DEFAULT_NSFW_DICT;
-    console.log('DEFAULT_NSFW_DICT から取得');
   } else if (window.NSFW) {
     nsfwDict = window.NSFW;
-    console.log('window.NSFW から取得');
   }
   
   if (!sfwDict || !nsfwDict) {
-    console.error('辞書データが見つかりません');
-    console.log('SFW:', !!sfwDict, 'NSFW:', !!nsfwDict);
     return 0;
   }
   
   // 既存コンテナをクリア
   const containers = document.querySelectorAll('#panelWordMode .wm-items');
-  console.log(`${containers.length}個のコンテナをクリア`);
   containers.forEach(container => container.innerHTML = '');
   
   let totalItems = 0;
@@ -3713,7 +3697,6 @@ window.initAllEvents = function() {
 
 // 9. メインのinitWordMode関数
 window.initWordMode = function() {
-  console.log('=== initWordMode呼び出し（エラー修正版） ===');
   
   // 初期化実行
   const result = window.initWordModeFixed();
@@ -3726,13 +3709,11 @@ window.initWordMode = function() {
     window.moveCategoriesToBottom();
   }, 1000);
   
-  console.log(`initWordMode完了: ${result}件のタグを読み込み`);
   
   return result;
 };
 
 // 10. 即座に実行
-console.log('単語モード エラー修正版 適用完了');
 
 if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NSFW_DICT)) {
   setTimeout(() => {
@@ -3770,7 +3751,6 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
 (function() {
   'use strict';
   
-  console.log('🚀 量産モードプリセットシステム初期化開始');
   
   // 量産モード専用の変数（競合回避）
   window.productionCurrentPreset = null;
@@ -3805,15 +3785,12 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
   
   // 初期化関数
   function initProductionPresets() {
-    console.log('📋 量産モードプリセット初期化');
     
     // プリセットボタンのイベント設定
     const presetButtons = document.querySelectorAll('#panelProduction .preset-btn');
-    console.log(`🔘 プリセットボタン発見: ${presetButtons.length}個`);
     
     presetButtons.forEach((btn, index) => {
       const preset = btn.dataset.preset;
-      console.log(`🔘 ボタン${index + 1}: ${preset}`);
       
       // 既存のイベントリスナーを削除
       const newBtn = btn.cloneNode(true);
@@ -3821,7 +3798,6 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
       
       newBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        console.log(`✨ プリセット選択: ${preset}`);
         applyProductionPreset(preset);
         
         // ボタンの見た目を更新
@@ -4185,22 +4161,17 @@ console.log('✅ 量産モードプリセット修正版を読み込みました
 
 // 1. 辞書データの正しい設定
 function fixGlobalDictionaries() {
-  console.log('🔧 グローバル辞書変数修正開始');
   
   // DEFAULT_SFW_DICT から window.SFW に設定
   if (window.DEFAULT_SFW_DICT) {
-    console.log('📚 DEFAULT_SFW_DICT構造:', Object.keys(window.DEFAULT_SFW_DICT));
     
     // SFWネストを確認
     if (window.DEFAULT_SFW_DICT.SFW) {
       window.SFW = window.DEFAULT_SFW_DICT.SFW;
-      console.log('✅ window.SFW = DEFAULT_SFW_DICT.SFW に設定');
     } else {
       window.SFW = window.DEFAULT_SFW_DICT;
-      console.log('✅ window.SFW = DEFAULT_SFW_DICT に設定');
     }
     
-    console.log('📊 SFWキー:', Object.keys(window.SFW));
     Object.entries(window.SFW).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         console.log(`  - ${key}: ${value.length}件`);
@@ -4229,7 +4200,6 @@ function fixGlobalDictionaries() {
     });
   }
   
-  console.log('✅ グローバル辞書変数修正完了');
 }
 
 // 2. 量産モード用データ再構築
@@ -4410,7 +4380,7 @@ window.showDebugInfo = showDebugInfo;
    完全なプリセット機能システム（修正版）
    ========================================================= */
 
-console.log('🚀 完全なプリセットシステムを読み込み中...');
+
 
 // 1. PresetManager定義（必須）
 const PresetManager = {
@@ -4603,7 +4573,6 @@ const BackupManager = {
 
 // 4. プリセットボタン追加（修正版）
 function addPresetButtons() {
-  console.log('🔘 プリセットボタン追加開始');
   
   const modes = [
     { id: 'panelProduction', name: 'production', title: '📦 量産モード' },
@@ -5104,7 +5073,6 @@ function updatePresetList(mode) {
   
   updateDeleteButtonState(mode);
   
-  console.log(`✅ プリセット一覧更新: ${mode} (${presets.length}件)`);
 }
 
 // 12. バックアップUI追加
@@ -5560,30 +5528,15 @@ setTimeout(() => {
  addAdvancedPresetManager();
 }, 2000);
 
-console.log('🎯 完全なプリセットシステムを読み込みました');
-console.log('📖 利用可能な機能:');
-console.log('  - 💾 保存ボタン: 現在の設定をプリセットとして保存');
-console.log('  - 📁 読込ボタン: 選択したプリセットを読み込み');
-console.log('  - 🗑️ 削除ボタン: 選択したプリセットを削除');
-console.log('  - 📤 バックアップ: 全設定をエクスポート');
-console.log('  - 📥 復元: バックアップファイルから復元');
-console.log('  - ⌨️ ショートカット: Ctrl+S(保存), Ctrl+L(読み込み)');
-console.log('  - 📋 履歴: 使用履歴の表示・管理');
 
 // デバッグ用関数
 window.testPresetSystem = function() {
- console.log('🧪 プリセットシステムテスト開始');
  
  const testResult = PresetManager.save('production', 'test_preset', {test: 'data'});
- console.log('保存テスト:', testResult);
  
  const list = PresetManager.list('production');
- console.log('一覧テスト:', list);
  
  const loaded = PresetManager.load('production', 'test_preset');
- console.log('読み込みテスト:', loaded);
- 
- console.log('✅ テスト完了');
 };
 
 
@@ -5636,7 +5589,6 @@ function adjustPresetControlsLayout() {
   `;
   document.head.appendChild(style);
   
-  console.log('✅ プリセットコントロールレイアウト調整完了');
 }
 
 // プリセットボタン追加時にレイアウト調整も実行
@@ -5652,782 +5604,4 @@ window.addPresetButtons = function() {
 
 // 既に実行済みの場合は即座に調整
 setTimeout(adjustPresetControlsLayout, 500);
-
-/* =========================================================
-  プリセット機能システム完了
-  ========================================================= */
-
-/* =========================================================
-   追加機能セット：即生成・履歴・お気に入り・比較・テンプレート
-   ========================================================= */
-
-/* console.log('🚀 追加機能セットを読み込み中...');
-
-// 1. ⚡ ワンクリック生成ボタン
-function addQuickGenerateButtons() {
-  console.log('⚡ ワンクリック生成ボタンを追加中...');
-  
-  const modes = [
-    { id: 'panelProduction', name: 'production', generateFunc: 'btnGenProd' },
-    { id: 'panelManga', name: 'manga', generateFunc: 'btnMangaGenerate' },
-    { id: 'panelPlanner', name: 'planner', generateFunc: 'btnPlanOne' },
-    { id: 'panelLearning', name: 'learning', generateFunc: 'btnBatchLearn' }
-  ];
-  
-  modes.forEach(mode => {
-    const panel = document.getElementById(mode.id);
-    if (!panel) return;
-    
-    const header = panel.querySelector('h2');
-    if (!header || header.querySelector('.quick-generate-btn')) return;
-    
-    // ⚡ボタンを作成
-    const quickBtn = document.createElement('button');
-    quickBtn.className = 'btn ok small quick-generate-btn';
-    quickBtn.innerHTML = '⚡ 即生成';
-    quickBtn.style.cssText = `
-      margin-left: 8px;
-      padding: 4px 8px;
-      font-size: 11px;
-      background: linear-gradient(45deg, #f59e0b, #d97706);
-      border: none;
-      color: white;
-      font-weight: bold;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    `;
-    
-    // クリックイベント
-    quickBtn.addEventListener('click', () => {
-      const originalBtn = document.getElementById(mode.generateFunc);
-      if (originalBtn) {
-        originalBtn.click();
-        
-        // 視覚フィードバック
-        quickBtn.style.transform = 'scale(0.95)';
-        quickBtn.innerHTML = '⚡ 生成中...';
-        setTimeout(() => {
-          quickBtn.style.transform = 'scale(1)';
-          quickBtn.innerHTML = '⚡ 即生成';
-        }, 500);
-        
-        // 履歴に記録
-        setTimeout(() => {
-          const prompt = getGeneratedPrompt(mode.name);
-          if (prompt) {
-            PromptHistory.add(mode.name, prompt);
-          }
-        }, 1000);
-      }
-    });
-    
-    // ホバー効果
-    quickBtn.addEventListener('mouseenter', () => {
-      quickBtn.style.background = 'linear-gradient(45deg, #d97706, #b45309)';
-    });
-    
-    quickBtn.addEventListener('mouseleave', () => {
-      quickBtn.style.background = 'linear-gradient(45deg, #f59e0b, #d97706)';
-    });
-    
-    header.appendChild(quickBtn);
-  });
-  
-  console.log('✅ ワンクリック生成ボタン追加完了');
-}
-
-// 2. 📜 プロンプト履歴機能
-const PromptHistory = {
-  add: function(mode, prompt) {
-    try {
-      const history = this.get();
-      const entry = {
-        id: Date.now(),
-        mode,
-        prompt: prompt.substring(0, 500),
-        fullPrompt: prompt,
-        timestamp: new Date().toISOString(),
-        favorite: false
-      };
-      
-      history.unshift(entry);
-      
-      // 最新50件まで保持
-      if (history.length > 50) {
-        history.splice(50);
-      }
-      
-      localStorage.setItem('LPM_PROMPT_HISTORY', JSON.stringify(history));
-      console.log(`📜 プロンプト履歴追加: ${mode}`);
-      return true;
-    } catch (error) {
-      console.error('❌ プロンプト履歴追加エラー:', error);
-      return false;
-    }
-  },
-  
-  get: function() {
-    try {
-      const history = localStorage.getItem('LPM_PROMPT_HISTORY');
-      return history ? JSON.parse(history) : [];
-    } catch (error) {
-      console.error('❌ プロンプト履歴取得エラー:', error);
-      return [];
-    }
-  },
-  
-  clear: function() {
-    try {
-      localStorage.removeItem('LPM_PROMPT_HISTORY');
-      return true;
-    } catch (error) {
-      console.error('❌ プロンプト履歴クリアエラー:', error);
-      return false;
-    }
-  },
-  
-  toggleFavorite: function(id) {
-    try {
-      const history = this.get();
-      const entry = history.find(h => h.id === id);
-      if (entry) {
-        entry.favorite = !entry.favorite;
-        localStorage.setItem('LPM_PROMPT_HISTORY', JSON.stringify(history));
-        return entry.favorite;
-      }
-      return false;
-    } catch (error) {
-      console.error('❌ お気に入り切り替えエラー:', error);
-      return false;
-    }
-  }
-};
-
-// 3. ⭐ お気に入り機能
-function addFavoriteSystem() {
-  console.log('⭐ お気に入りシステムを追加中...');
-  
-  const modes = [
-    { id: 'panelProduction', name: 'production' },
-    { id: 'panelManga', name: 'manga' },
-    { id: 'panelPlanner', name: 'planner' },
-    { id: 'panelLearning', name: 'learning' }
-  ];
-  
-  modes.forEach(mode => {
-    const panel = document.getElementById(mode.id);
-    if (!panel) return;
-    
-    const header = panel.querySelector('h2');
-    if (!header || header.querySelector('.favorite-btn')) return;
-    
-    // お気に入りボタン
-    const favoriteBtn = document.createElement('button');
-    favoriteBtn.className = 'btn ghost small favorite-btn';
-    favoriteBtn.innerHTML = '⭐ お気に入り';
-    favoriteBtn.style.cssText = `
-      margin-left: 8px;
-      padding: 4px 8px;
-      font-size: 11px;
-      color: #fbbf24;
-      border-color: #fbbf24;
-    `;
-    
-    favoriteBtn.addEventListener('click', () => {
-      const settings = collectCurrentSettings(mode.name);
-      const name = prompt(`お気に入り設定の名前を入力してください：`);
-      if (name) {
-        FavoriteManager.add(mode.name, name, settings);
-        updateFavoriteDropdown(mode.name);
-      }
-    });
-    
-    header.appendChild(favoriteBtn);
-    
-    // お気に入りドロップダウン
-    const favoriteDropdown = document.createElement('select');
-    favoriteDropdown.className = 'favorite-dropdown';
-    favoriteDropdown.style.cssText = `
-      margin-left: 4px;
-      padding: 3px 6px;
-      font-size: 11px;
-      background: rgba(251, 191, 36, 0.1);
-      border: 1px solid #fbbf24;
-      color: #fbbf24;
-      border-radius: 4px;
-    `;
-    
-    favoriteDropdown.innerHTML = '<option value="">★ 選択...</option>';
-    
-    favoriteDropdown.addEventListener('change', (e) => {
-      if (e.target.value) {
-        const favorite = FavoriteManager.get(mode.name, e.target.value);
-        if (favorite) {
-          applySettingsAdvanced(mode.name, favorite.settings);
-          toast(`⭐ お気に入り「${favorite.name}」を適用しました`);
-        }
-        e.target.value = '';
-      }
-    });
-    
-    header.appendChild(favoriteDropdown);
-    updateFavoriteDropdown(mode.name);
-  });
-  
-  console.log('✅ お気に入りシステム追加完了');
-}
-
-// お気に入り管理
-const FavoriteManager = {
-  add: function(mode, name, settings) {
-    try {
-      const favorites = this.getAll();
-      if (!favorites[mode]) favorites[mode] = [];
-      
-      const favorite = {
-        name,
-        settings,
-        created: new Date().toISOString()
-      };
-      
-      favorites[mode].push(favorite);
-      localStorage.setItem('LPM_FAVORITES', JSON.stringify(favorites));
-      
-      toast(`⭐ 「${name}」をお気に入りに追加しました`);
-      return true;
-    } catch (error) {
-      console.error('❌ お気に入り追加エラー:', error);
-      return false;
-    }
-  },
-  
-  get: function(mode, name) {
-    try {
-      const favorites = this.getAll();
-      return favorites[mode]?.find(f => f.name === name) || null;
-    } catch (error) {
-      console.error('❌ お気に入り取得エラー:', error);
-      return null;
-    }
-  },
-  
-  getAll: function() {
-    try {
-      const favorites = localStorage.getItem('LPM_FAVORITES');
-      return favorites ? JSON.parse(favorites) : {};
-    } catch (error) {
-      console.error('❌ お気に入り一覧取得エラー:', error);
-      return {};
-    }
-  },
-  
-  list: function(mode) {
-    try {
-      const favorites = this.getAll();
-      return favorites[mode] || [];
-    } catch (error) {
-      console.error('❌ お気に入りリスト取得エラー:', error);
-      return [];
-    }
-  }
-};
-
-// お気に入りドロップダウン更新
-function updateFavoriteDropdown(mode) {
-  const dropdown = document.querySelector(`#panel${mode.charAt(0).toUpperCase() + mode.slice(1)} .favorite-dropdown`);
-  if (!dropdown) return;
-  
-  const favorites = FavoriteManager.list(mode);
-  dropdown.innerHTML = '<option value="">★ 選択...</option>';
-  
-  favorites.forEach(favorite => {
-    const option = document.createElement('option');
-    option.value = favorite.name;
-    option.textContent = `⭐ ${favorite.name}`;
-    dropdown.appendChild(option);
-  });
-}
-
-// 4. 📊 設定比較機能
-function addSettingsComparison() {
-  console.log('📊 設定比較機能を追加中...');
-  
-  const settingsPanel = document.getElementById('panelSettings');
-  if (!settingsPanel) return;
-  
-  const comparisonPanel = document.createElement('div');
-  comparisonPanel.className = 'panel';
-  comparisonPanel.innerHTML = `
-    <h3>📊 設定比較</h3>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-      <div>
-        <label>比較元</label>
-        <select id="comparison-source" style="width: 100%; padding: 4px;">
-          <option value="">プリセット選択...</option>
-        </select>
-      </div>
-      <div>
-        <label>比較先</label>
-        <select id="comparison-target" style="width: 100%; padding: 4px;">
-          <option value="">プリセット選択...</option>
-        </select>
-      </div>
-    </div>
-    <button id="compare-presets" class="btn ok small">📊 比較実行</button>
-    <div id="comparison-result" style="margin-top: 12px; display: none;">
-      <h4>比較結果</h4>
-      <div id="comparison-content" style="max-height: 300px; overflow-y: auto; font-size: 12px;"></div>
-    </div>
-  `;
-  
-  settingsPanel.appendChild(comparisonPanel);
-  
-  // プリセット一覧を更新
-  updateComparisonDropdowns();
-  
-  // 比較実行
-  document.getElementById('compare-presets')?.addEventListener('click', () => {
-    executeComparison();
-  });
-  
-  console.log('✅ 設定比較機能追加完了');
-}
-
-// 比較ドロップダウン更新
-function updateComparisonDropdowns() {
-  const sourceSelect = document.getElementById('comparison-source');
-  const targetSelect = document.getElementById('comparison-target');
-  
-  if (!sourceSelect || !targetSelect) return;
-  
-  sourceSelect.innerHTML = '<option value="">プリセット選択...</option>';
-  targetSelect.innerHTML = '<option value="">プリセット選択...</option>';
-  
-  const modes = ['production', 'manga', 'planner', 'learning'];
-  modes.forEach(mode => {
-    const presets = PresetManager.list(mode);
-    presets.forEach(preset => {
-      const optionText = `${mode} - ${preset.name}`;
-      const optionValue = `${mode}:${preset.name}`;
-      
-      const sourceOption = new Option(optionText, optionValue);
-      const targetOption = new Option(optionText, optionValue);
-      
-      sourceSelect.add(sourceOption);
-      targetSelect.add(targetOption);
-    });
-  });
-}
-
-// 比較実行
-function executeComparison() {
-  const sourceValue = document.getElementById('comparison-source')?.value;
-  const targetValue = document.getElementById('comparison-target')?.value;
-  
-  if (!sourceValue || !targetValue) {
-    toast('比較するプリセットを2つ選択してください');
-    return;
-  }
-  
-  const [sourceMode, sourceName] = sourceValue.split(':');
-  const [targetMode, targetName] = targetValue.split(':');
-  
-  const sourcePreset = PresetManager.load(sourceMode, sourceName);
-  const targetPreset = PresetManager.load(targetMode, targetName);
-  
-  if (!sourcePreset || !targetPreset) {
-    toast('プリセットの読み込みに失敗しました');
-    return;
-  }
-  
-  const comparisonResult = compareSettings(sourcePreset, targetPreset);
-  displayComparisonResult(comparisonResult, sourcePreset, targetPreset);
-}
-
-// 設定比較
-function compareSettings(preset1, preset2) {
-  const differences = [];
-  const allKeys = new Set([
-    ...Object.keys(preset1.data || {}),
-    ...Object.keys(preset2.data || {})
-  ]);
-  
-  allKeys.forEach(key => {
-    const value1 = preset1.data[key];
-    const value2 = preset2.data[key];
-    
-    if (JSON.stringify(value1) !== JSON.stringify(value2)) {
-      differences.push({
-        key,
-        value1: value1 || '（未設定）',
-        value2: value2 || '（未設定）'
-      });
-    }
-  });
-  
-  return differences;
-}
-
-// 比較結果表示
-function displayComparisonResult(differences, preset1, preset2) {
-  const resultDiv = document.getElementById('comparison-result');
-  const contentDiv = document.getElementById('comparison-content');
-  
-  if (!resultDiv || !contentDiv) return;
-  
-  if (differences.length === 0) {
-    contentDiv.innerHTML = '<div style="color: #10b981; text-align: center; padding: 20px;">✅ 設定に違いはありません</div>';
-  } else {
-    let html = `
-      <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-          <tr style="background: rgba(59, 130, 246, 0.1);">
-            <th style="padding: 8px; border: 1px solid #444;">設定項目</th>
-            <th style="padding: 8px; border: 1px solid #444;">${preset1.name}</th>
-            <th style="padding: 8px; border: 1px solid #444;">${preset2.name}</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-    
-    differences.forEach(diff => {
-      html += `
-        <tr>
-          <td style="padding: 8px; border: 1px solid #444; font-weight: 500;">${diff.key}</td>
-          <td style="padding: 8px; border: 1px solid #444; background: rgba(239, 68, 68, 0.1);">${JSON.stringify(diff.value1).substring(0, 50)}</td>
-          <td style="padding: 8px; border: 1px solid #444; background: rgba(34, 197, 94, 0.1);">${JSON.stringify(diff.value2).substring(0, 50)}</td>
-        </tr>
-      `;
-    });
-    
-    html += '</tbody></table>';
-    contentDiv.innerHTML = html;
-  }
-  
-  resultDiv.style.display = 'block';
-  toast(`📊 ${differences.length}件の違いが見つかりました`);
-}
-
-// 6. 📋 設定テンプレート
-function addSettingsTemplates() {
-  console.log('📋 設定テンプレートを追加中...');
-  
-  const templates = {
-    production: [
-      {
-        name: '🌸 日常系',
-        description: '日常的なシーンに適した設定',
-        settings: {
-          clothingMode: 'fixed',
-          expressionMode: 'vary',
-          seedMode: 'vary',
-          count: '30'
-        }
-      },
-      {
-        name: '⚔️ バトル系',
-        description: 'アクション・戦闘シーンに適した設定',
-        settings: {
-          clothingMode: 'vary',
-          expressionMode: 'vary',
-          seedMode: 'vary',
-          count: '50'
-        }
-      },
-      {
-        name: '✨ ファンタジー系',
-        description: 'ファンタジー世界観に適した設定',
-        settings: {
-          clothingMode: 'vary',
-          expressionMode: 'fixed',
-          seedMode: 'fixed',
-          count: '20'
-        }
-      }
-    ],
-    manga: [
-      {
-        name: '😊 日常漫画',
-        description: '日常系漫画に適した設定',
-        settings: {
-          charBase: 'B',
-          useLoRA: false,
-          nsfwEnabled: false
-        }
-      },
-      {
-        name: '💕 恋愛漫画',
-        description: 'ラブコメ・恋愛シーンに適した設定',
-        settings: {
-          charBase: 'B',
-          useLoRA: true,
-          secondCharEnabled: true
-        }
-      },
-      {
-        name: '🔥 アクション漫画',
-        description: 'バトル・アクションシーンに適した設定',
-        settings: {
-          charBase: 'B',
-          useLoRA: false,
-          nsfwEnabled: false
-        }
-      }
-    ]
-  };
-  
-  // 各モードにテンプレートボタンを追加
-  Object.entries(templates).forEach(([mode, modeTemplates]) => {
-    const panel = document.getElementById(`panel${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
-    if (!panel) return;
-    
-    const header = panel.querySelector('h2');
-    if (!header || header.querySelector('.template-btn')) return;
-    
-    // テンプレートボタン
-    const templateBtn = document.createElement('button');
-    templateBtn.className = 'btn ghost small template-btn';
-    templateBtn.innerHTML = '📋 テンプレート';
-    templateBtn.style.cssText = `
-      margin-left: 8px;
-      padding: 4px 8px;
-      font-size: 11px;
-      color: #8b5cf6;
-      border-color: #8b5cf6;
-    `;
-    
-    // テンプレートドロップダウン
-    const templateDropdown = document.createElement('select');
-    templateDropdown.className = 'template-dropdown';
-    templateDropdown.style.cssText = `
-      margin-left: 4px;
-      padding: 3px 6px;
-      font-size: 11px;
-      background: rgba(139, 92, 246, 0.1);
-      border: 1px solid #8b5cf6;
-      color: #8b5cf6;
-      border-radius: 4px;
-    `;
-    
-    templateDropdown.innerHTML = '<option value="">📋 選択...</option>';
-    
-    modeTemplates.forEach((template, index) => {
-      const option = document.createElement('option');
-      option.value = index;
-      option.textContent = template.name;
-      option.title = template.description;
-      templateDropdown.appendChild(option);
-    });
-    
-    templateDropdown.addEventListener('change', (e) => {
-      if (e.target.value !== '') {
-        const template = modeTemplates[parseInt(e.target.value)];
-        if (template) {
-          applySettingsAdvanced(mode, template.settings);
-          toast(`📋 テンプレート「${template.name}」を適用しました`);
-        }
-        e.target.value = '';
-      }
-    });
-    
-    header.appendChild(templateBtn);
-    header.appendChild(templateDropdown);
-  });
-  
-  console.log('✅ 設定テンプレート追加完了');
-}
-
-// 生成されたプロンプトを取得
-function getGeneratedPrompt(mode) {
-  const outputSelectors = {
-    production: '#outProdPrompt',
-    manga: '#outMangaPrompt', 
-    planner: '#outPlannerPrompt',
-    learning: '#outLearnPrompt'
-  };
-  
-  const selector = outputSelectors[mode];
-  if (selector) {
-    const element = document.querySelector(selector);
-    return element ? element.textContent.trim() : '';
-  }
-  return '';
-}
-
-// プロンプト履歴UI追加
-function addPromptHistoryUI() {
-  const settingsPanel = document.getElementById('panelSettings');
-  if (!settingsPanel) return;
-  
-  const historyPanel = document.createElement('div');
-  historyPanel.className = 'panel';
-  historyPanel.innerHTML = `
-    <h3>📜 プロンプト履歴</h3>
-    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-      <button id="prompt-history-view" class="btn ghost small">📋 履歴表示</button>
-      <button id="prompt-history-clear" class="btn bad small">🗑️ 履歴クリア</button>
-      <button id="prompt-history-export" class="btn ok small">📤 履歴エクスポート</button>
-    </div>
-    <div id="prompt-history-content" style="max-height: 400px; overflow-y: auto; display: none;">
-      <div class="note mini">履歴を読み込み中...</div>
-    </div>
-  `;
-  
-  settingsPanel.appendChild(historyPanel);
-  
-  // イベントリスナー
-  document.getElementById('prompt-history-view')?.addEventListener('click', () => {
-    togglePromptHistoryView();
-  });
-  
-  document.getElementById('prompt-history-clear')?.addEventListener('click', () => {
-    if (confirm('プロンプト履歴をすべて削除しますか？')) {
-      PromptHistory.clear();
-      updatePromptHistoryView();
-      toast('プロンプト履歴をクリアしました');
-    }
-  });
-  
-  document.getElementById('prompt-history-export')?.addEventListener('click', () => {
-    exportPromptHistory();
-  });
-  
-  console.log('✅ プロンプト履歴UI追加完了');
-}
-
-// プロンプト履歴表示切り替え
-function togglePromptHistoryView() {
-  const content = document.getElementById('prompt-history-content');
-  const btn = document.getElementById('prompt-history-view');
-  
-  if (content && btn) {
-    if (content.style.display === 'none') {
-      content.style.display = 'block';
-      btn.textContent = '📋 履歴非表示';
-      updatePromptHistoryView();
-    } else {
-      content.style.display = 'none';
-      btn.textContent = '📋 履歴表示';
-    }
-  }
-}
-
-// プロンプト履歴表示更新
-function updatePromptHistoryView() {
-  const content = document.getElementById('prompt-history-content');
-  if (!content) return;
-  
-  const history = PromptHistory.get();
-  
-  if (history.length === 0) {
-    content.innerHTML = '<div class="note mini">プロンプト履歴がありません</div>';
-    return;
-  }
-  
-  content.innerHTML = history.map(entry => `
-    <div style="padding: 8px; border: 1px solid #444; border-radius: 4px; margin-bottom: 8px; background: rgba(0,0,0,0.2);">
-      <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 4px;">
-        <div style="color: #3b82f6; font-weight: 500; font-size: 12px;">${entry.mode}モード</div>
-        <div style="font-size: 10px; color: #888;">${new Date(entry.timestamp).toLocaleString()}</div>
-      </div>
-      <div style="color: #ccc; font-size: 11px; margin: 4px 0; max-height: 60px; overflow: hidden;">${entry.prompt}</div>
-      <div style="display: flex; gap: 4px;">
-        <button onclick="copyPromptFromHistory('${entry.id}')" class="btn ghost small" style="padding: 2px 6px; font-size: 10px;">📋 コピー</button>
-        <button onclick="togglePromptFavorite(${entry.id})" class="btn ghost small" style="padding: 2px 6px; font-size: 10px; color: ${entry.favorite ? '#fbbf24' : '#666'};">
-          ${entry.favorite ? '⭐' : '☆'}
-        </button>
-      </div>
-    </div>
-  `).join('');
-}
-
-// プロンプト履歴からコピー
-window.copyPromptFromHistory = function(id) {
-  const history = PromptHistory.get();
-  const entry = history.find(h => h.id == id);
-  if (entry) {
-    navigator.clipboard.writeText(entry.fullPrompt || entry.prompt);
-    toast('プロンプトをコピーしました');
-  }
-};
-
-// プロンプトお気に入り切り替え
-window.togglePromptFavorite = function(id) {
-  const isFavorite = PromptHistory.toggleFavorite(id);
-  updatePromptHistoryView();
-  toast(isFavorite ? '⭐ お気に入りに追加' : '☆ お気に入りから削除');
-};
-
-// プロンプト履歴エクスポート
-function exportPromptHistory() {
-  const history = PromptHistory.get();
-  const exportData = {
-    version: '1.0',
-    timestamp: new Date().toISOString(),
-    history: history
-  };
-  
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-    type: 'application/json'
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `LPM_prompt_history_${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  
-  toast('プロンプト履歴をエクスポートしました');
-}
-
-// 統合初期化
-function initAdvancedFeatures() {
-  console.log('🚀 高度な機能を初期化中...');
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        addQuickGenerateButtons();
-        addFavoriteSystem();
-        addSettingsComparison();
-        addSettingsTemplates();
-        addPromptHistoryUI();
-      }, 2000);
-    });
-  } else {
-    setTimeout(() => {
-      addQuickGenerateButtons();
-      addFavoriteSystem();
-      addSettingsComparison();
-      addSettingsTemplates();
-      addPromptHistoryUI();
-    }, 2000);
-  }
-  
-  console.log('✅ 高度な機能初期化完了');
-}
-
-// グローバル関数として公開
-window.PromptHistory = PromptHistory;
-window.FavoriteManager = FavoriteManager;
-window.addQuickGenerateButtons = addQuickGenerateButtons;
-window.addFavoriteSystem = addFavoriteSystem;
-window.addSettingsComparison = addSettingsComparison;
-window.addSettingsTemplates = addSettingsTemplates;
-
-// 自動初期化
-initAdvancedFeatures();
-
-console.log('🎯 追加機能セット完了！');
-console.log('📖 新機能:');
-console.log('  - ⚡ 即生成: ワンクリックでプロンプト生成');
-console.log('  - 📜 プロンプト履歴: 生成したプロンプトを自動保存');
-console.log('  - ⭐ お気に入り: よく使う設定を素早くアクセス');
-console.log('  - 📊 設定比較: プリセット同士の違いを表形式で比較');
-console.log('  - 📋 テンプレート: 日常系・バトル系などの基本設定');　*/
-
-/* =========================================================
-   追加機能セット完了
-   ========================================================= */
-
-
 
