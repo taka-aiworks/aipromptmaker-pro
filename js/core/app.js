@@ -3035,6 +3035,7 @@ if (typeof window.toast !== 'function') {
 }
 
 // 2. 正確なマッピングテーブル
+// 2. 正確なマッピングテーブル（新項目追加版）
 const MAPPING_TABLE = {
   SFW: {
     'age': 'age',
@@ -3042,14 +3043,14 @@ const MAPPING_TABLE = {
     'body_type': 'body-type',
     'height': 'height',
     'worldview': 'worldview',
-    'speech_tone': 'speech-tone',  // ← 追加
+    'speech_tone': 'speech-tone',
     'hair_style': 'hair-style',
     'hair_length': 'hair-length',
     'bangs_style': 'bangs-style',
     'eyes': 'eyes',
     'face': 'face',
     'skin_features': 'skin-features',
-    'skin_body': 'skin-body',  // ← 追加
+    'skin_body': 'skin-body',
     'outfit': 'outfit-sfw',
     'accessories': 'accessories',
     'pose': 'pose',
@@ -3070,7 +3071,7 @@ const MAPPING_TABLE = {
     'props_light': 'props-light',
     'effect_manga': 'effect-manga',
     'colors': 'color',
-    // ★★★ 撮影モード専用要素を追加 ★★★
+    // 撮影モード専用要素
     'camera_angle': 'camera-angle',
     'focal_length': 'focal-length',
     'depth_of_field': 'depth-of-field',
@@ -3078,7 +3079,12 @@ const MAPPING_TABLE = {
     'lighting_type': 'lighting-type',
     'light_direction': 'light-direction',
     'time_of_day': 'time-of-day',
-    // ネガティブ関連は単語モードでは使用しないため除外
+    
+    // 🆕 新規追加項目
+    'occupation': 'occupation',
+    'relationship': 'relationship',
+    'physical_state': 'physical-state',
+    'season_weather': 'season-weather'
   },
   NSFW: {
     'expression': 'expression-nsfw',
@@ -3093,10 +3099,14 @@ const MAPPING_TABLE = {
     'nipple': 'nipple-nsfw',
     'action': 'action-nsfw',
     'action2': 'action2-nsfw',
-    'participants': 'participants'
+    'participants': 'participants',
+    
+    // 🆕 新規追加項目
+    'interaction_nsfw': 'interaction-nsfw',
+    'background_nsfw': 'background-nsfw',
+    'emotion_nsfw': 'emotion-nsfw'
   }
 };
-
 // 3. テーブル操作機能
 window.addToOutputTable = function(en, jp) {
   console.log('addToOutputTable呼び出し:', en, jp);
