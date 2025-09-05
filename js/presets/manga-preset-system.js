@@ -363,6 +363,7 @@ class MangaPresetSystem {
   }
 
   // 設定詳細を抽出するメソッド
+ // 設定詳細を抽出するメソッド（日本語対応版）
   extractSettingsDetails(settings) {
     const categoryNames = {
       'mangaEmotionPrimary': '基本感情',
@@ -395,22 +396,132 @@ class MangaPresetSystem {
       'mangaNSFWNipples': 'NSFW乳首'
     };
 
+    // 値の日本語マッピング
+    const valueNames = {
+      // 基本感情
+      'joy': '喜び',
+      'sadness': '悲しみ',
+      'anger': '怒り',
+      'embarrassment': '恥ずかしさ',
+      'surprise': '驚き',
+      'sleepiness': '眠気',
+      'calm': '穏やか',
+      'fear': '恐怖',
+      'love': '愛',
+      
+      // 詳細感情
+      'delighted': '喜悦',
+      'cheerful': '陽気',
+      'tearful': '涙ぐましい',
+      'sobbing': '号泣',
+      'annoyed': 'イライラ',
+      'furious': '激怒',
+      'bashful': '恥ずかしがり',
+      'shocked': 'ショック',
+      'relieved': '安心',
+      
+      // 表情
+      'bright_smile': '明るい笑顔',
+      'smiling_open_mouth': '口を開けて笑う',
+      'soft_smile': '優しい微笑み',
+      'teary_eyes': '涙目',
+      'crying': '泣き顔',
+      'pouting': 'ふくれっ面',
+      'furious': '激怒の表情',
+      'embarrassed_face': '恥ずかしい顔',
+      'blushing': '赤面',
+      'surprised': '驚いた顔',
+      'sleepy_eyes': '眠そうな目',
+      
+      // 目の状態
+      'sparkling_eyes': 'キラキラした目',
+      'eyes_open': '目を開けた',
+      'eyes_half_closed': '半目',
+      'teary': '涙目',
+      'teary_filled_eyes': '涙でいっぱいの目',
+      'narrowed_eyes': '細い目',
+      'angry_vein_eyes': '青筋の立った目',
+      'shy_hidden_eyes': '恥ずかしそうに隠れた目',
+      'widened_eyes': '見開いた目',
+      'sleepy_drowsy_eyes': '眠そうでうとうとした目',
+      
+      // 視線
+      'at_viewer': '見つめる',
+      'down': '下を向く',
+      'away': 'そっぽを向く',
+      'gentle_down': '優しく下を見る',
+      'downcast_glance': '伏し目がち',
+      'glaring': '睨む',
+      'averted_quick': 'さっと目をそらす',
+      'side_glance_shy': '恥ずかしそうに横目',
+      'half_closed_down': '半目で下を向く',
+      
+      // 口の状態
+      'grin': 'にっこり',
+      'wide_open_mouth': '大きく開いた口',
+      'slight_smile': 'かすかな微笑み',
+      'slight_open_mouth': 'わずかに開いた口',
+      'open_mouth': '開いた口',
+      'pouting_mouth': 'ふくれた口',
+      'teeth_grit': '歯を食いしばる',
+      'mouth_closed': '口を閉じた',
+      'surprised_o': '驚きの「お」の口',
+      'yawning': 'あくび',
+      
+      // ポーズ
+      'standing': '立っている',
+      'jumping': 'ジャンプ',
+      'sitting': '座っている',
+      'kneeling': '膝をつく',
+      'stumbling': 'よろめく',
+      'stretching': '伸びをする',
+      
+      // 手の動作
+      'peace_sign': 'ピースサイン',
+      'raised_fist': '拳を上げる',
+      'hands_together_chest': '胸の前で手を合わせる',
+      'wiping_tears': '涙を拭く',
+      'covering_eyes': '目を覆う',
+      'arms_crossed': '腕組み',
+      'clenched_fist': '握りしめた拳',
+      'hands_on_cheeks': '頬に手を当てる',
+      'covering_face': '顔を覆う',
+      'hands_on_head': '頭に手を置く',
+      
+      // 動き
+      'arm_swing': '腕を振る',
+      
+      // 構図
+      'upper_body': '上半身',
+      'full_body': '全身',
+      'bust': 'バストアップ',
+      'portrait': 'ポートレート',
+      
+      // エフェクト
+      'blush': '赤面',
+      'teardrops': '涙のしずく',
+      'anger_mark': '怒りマーク',
+      'surprise_mark': '驚きマーク',
+      'zzz_sleep': 'ZZZ（眠気）'
+    };
+
     const details = [];
     
     Object.entries(settings || {}).forEach(([key, value]) => {
       if (value && value.trim() !== '') {
         const categoryName = categoryNames[key] || key;
-        const displayValue = value.replace(/_/g, ' ');
+        const englishValue = value.replace(/_/g, ' ');
+        const japaneseValue = valueNames[value] || englishValue;
+        
         details.push({
           category: categoryName,
-          value: displayValue
+          value: `${japaneseValue}（${englishValue}）`
         });
       }
     });
 
     return details;
   }
-
   // 詳細非表示メソッド
   hidePresetDetails() {
     const detailsElement = document.getElementById('presetDetails');
