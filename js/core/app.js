@@ -3633,11 +3633,12 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
 
 
 
-// 量産モード改善版JavaScript
+// 量産モード改善版JavaScript（エラー修正）
 (function() {
   'use strict';
   
-  let currentPreset = null;
+  // グローバルスコープに移動
+  window.currentPreset = null;
   
   // プリセット設定
   const PRESETS = {
@@ -3698,7 +3699,7 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     const preset = PRESETS[presetName];
     if (!preset) return;
     
-    currentPreset = presetName;
+    window.currentPreset = presetName; // ← window.currentPresetに変更
     
     // 服装モード設定
     const clothingRadio = document.querySelector(`input[name="clothingMode"][value="${preset.clothing}"]`);
@@ -3931,21 +3932,6 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     return total;
   }
   
-  // 推奨アドバイスの表示
-  function showAdvice() {
-    const totalCombos = parseInt(document.getElementById('combo-count')?.textContent) || 0;
-    
-    if (totalCombos > 100) {
-      if (typeof toast === 'function') {
-        toast('⚠️ 組み合わせが多すぎます。一部要素を固定することをお勧めします。', 'warning');
-      }
-    } else if (totalCombos > 50) {
-      if (typeof toast === 'function') {
-        toast('💡 組み合わせがやや多めです。安定性を重視する場合は要素を減らしてください。', 'info');
-      }
-    }
-  }
-  
   // グローバル関数として公開
   window.initProductionModeImproved = initProductionModeImproved;
   window.applyProductionPreset = applyPreset;
@@ -3964,7 +3950,7 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
   
 })();
 
-// 既存の量産モード生成機能との統合
+// 修正版：enhancedBuildBatchProduction関数
 function enhancedBuildBatchProduction(n) {
   // 現在の設定を考慮した生成ロジック
   const clothingMode = document.querySelector('input[name="clothingMode"]:checked')?.value || 'fixed';
@@ -3973,7 +3959,7 @@ function enhancedBuildBatchProduction(n) {
   console.log('Enhanced Production:', {
     clothingMode,
     expressionMode,
-    preset: currentPreset,
+    preset: window.currentPreset, // ← window.currentPresetに変更
     count: n
   });
   
@@ -3986,7 +3972,7 @@ function enhancedBuildBatchProduction(n) {
   }
 }
 
-// 既存のイベントリスナーとの統合
+// 既存のイベントリスナーとの統合（修正版）
 document.addEventListener('DOMContentLoaded', () => {
   // 既存の生成ボタンのイベントリスナーを拡張
   setTimeout(() => {
@@ -4009,16 +3995,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof toast === 'function') {
           toast('✅ 量産セット生成完了');
         }
-        
-        // 生成後のアドバイス表示
-        setTimeout(() => {
-          if (typeof window.showProductionAdvice === 'function') {
-            window.showProductionAdvice();
-          }
-        }, 500);
       });
     }
   }, 1000);
 });
 
-console.log('✅ 量産モード改善版を読み込みました');
+console.log('✅ 量産モードエラー修正版を読み込みました');
