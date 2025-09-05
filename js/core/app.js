@@ -3391,23 +3391,38 @@ window.initWordModeFixed = function() {
   
   let totalItems = 0;
   
-  // SFW辞書の処理
-  console.log('--- SFW辞書処理開始 ---');
-  Object.entries(sfwDict).forEach(([dictKey, items]) => {
-    if (!Array.isArray(items) || items.length === 0) return;
-    
-    const htmlId = MAPPING_TABLE.SFW[dictKey];
-    if (!htmlId) {
+  // SFW辞書の処理部分を修正
+Object.entries(sfwDict).forEach(([dictKey, items]) => {
+  if (!Array.isArray(items) || items.length === 0) return;
+  
+  const htmlId = MAPPING_TABLE.SFW[dictKey];
+  if (!htmlId) {
+    // ★★★ 単語モードで使用しない要素は警告を出さない ★★★
+    const ignoreKeys = [
+      'speech_tone', 'skin_body', 'negative_presets', 'negative_categories', 
+      'negative_quick_presets', 'camera_angle', 'focal_length', 'depth_of_field', 
+      'photo_technique', 'lighting_type', 'light_direction', 'time_of_day'
+    ];
+    if (!ignoreKeys.includes(dictKey)) {
       console.warn(`SFWマッピング未定義: ${dictKey}`);
-      return;
     }
-    
-    const container = document.getElementById(`wm-items-${htmlId}`);
-    if (!container) {
+    return;
+  }
+  
+  const container = document.getElementById(`wm-items-${htmlId}`);
+  if (!container) {
+    // ★★★ 単語モードで使用しない要素は警告を出さない ★★★
+    const ignoreHtmlIds = [
+      'speech-tone', 'skin-body', 'camera-angle', 'focal-length', 
+      'depth-of-field', 'photo-technique', 'lighting-type', 
+      'light-direction', 'time-of-day'
+    ];
+    if (!ignoreHtmlIds.includes(htmlId)) {
       console.warn(`コンテナ未発見: wm-items-${htmlId}`);
-      return;
     }
-    
+    return;
+  }
+
     const validItems = items.filter(item => {
       if (!item) return false;
       if (typeof item === 'string') return item.trim() !== '';
