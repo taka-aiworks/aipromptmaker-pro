@@ -597,32 +597,6 @@ function populateMangaOptions() {
   const SFW = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
   const NSFW = window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW;
   
- // console.log('辞書データの詳細確認:', {
- //   'window.DEFAULT_SFW_DICT': window.DEFAULT_SFW_DICT,
- //   'window.DEFAULT_NSFW_DICT': window.DEFAULT_NSFW_DICT,
- //   'SFW取得結果': SFW,
- //   'NSFW取得結果': NSFW,
- //   'SFW存在': !!SFW,
- //   'NSFW存在': !!NSFW
- // });
-  
- // if (!SFW || !NSFW) {
- //   console.error('辞書データが取得できません:', {
- //    'DEFAULT_SFW_DICT構造': window.DEFAULT_SFW_DICT,
- //     'DEFAULT_NSFW_DICT構造': window.DEFAULT_NSFW_DICT,
- //     'SFW_keys': SFW ? Object.keys(SFW) : 'null',
- //     'NSFW_keys': NSFW ? Object.keys(NSFW) : 'null'
- //   });
- //   return;
- // }
-  
- // console.log('漫画モード選択肢を設定中...', {
- //   SFW_keys: Object.keys(SFW),
- //   NSFW_keys: Object.keys(NSFW),
- //   'emotion_primary_sample': SFW.emotion_primary?.slice(0, 3),
- //   'expression_sample': NSFW.expression?.slice(0, 3)
- // });
-  
   // SFWオプションの設定（エラーハンドリング付き）
   try {
     populateRadioOptions('mangaEmotionPrimary', SFW.emotion_primary || []);
@@ -649,6 +623,12 @@ function populateMangaOptions() {
     populateRadioOptions('mangaBackground', SFW.background || []);
     populateRadioOptions('mangaLighting', SFW.lighting || []);
     populateRadioOptions('mangaArtStyle', SFW.art_style || []);
+
+    // 🆕 新規追加項目
+    populateCheckboxOptions('mangaRelationship', SFW.relationship || []);
+    populateCheckboxOptions('mangaPhysicalState', SFW.physical_state || []);
+    populateRadioOptions('mangaOccupation', SFW.occupation || []);
+    populateRadioOptions('mangaSeasonWeather', SFW.season_weather || []);
     
   //  console.log('SFW選択肢設定完了');
   } catch (error) {
@@ -672,6 +652,11 @@ function populateMangaOptions() {
     populateRadioOptions('mangaNSFWParticipants', NSFW.participants || []);
     // 🆕 射精・体液系アクション
     populateCheckboxOptions('mangaNSFWAction2', NSFW.action2 || []);
+
+    // 🆕 新規追加項目
+    populateRadioOptions('mangaNSFWInteraction', NSFW.interaction_nsfw || []);
+    populateRadioOptions('mangaNSFWBackground', NSFW.background_nsfw || []);
+    populateRadioOptions('mangaNSFWEmotion', NSFW.emotion_nsfw || []);
     
   //  console.log('NSFW選択肢設定完了');
   } catch (error) {
@@ -1176,6 +1161,10 @@ function generateMangaPrompt() {
     
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaHandGesture'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaMovementAction'));
+    // 🆕 新規追加項目
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaRelationship'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaPhysicalState'));
+    
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaComposition'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaView'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaCameraView'));
@@ -1184,6 +1173,9 @@ function generateMangaPrompt() {
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaBackground'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaLighting'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaArtStyle'));
+    // 🆕 新規追加項目（任意項目）
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaOccupation'));
+    addedTags.push(...addSelectedValuesSafe(tags, 'mangaSeasonWeather'));
     
     console.log('✅ 漫画パラメータ追加タグ:', addedTags);
   } else {
@@ -1205,6 +1197,11 @@ function generateMangaPrompt() {
     // 🆕 新カテゴリ追加
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWParticipants'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWAction2'));
+
+    // 🆕 新規追加項目
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWInteraction'));
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWBackground'));
+    nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWEmotion'));
       
     console.log('🔞 NSFW追加タグ:', nsfwTags);
   }
@@ -2217,7 +2214,15 @@ const MANGA_CATEGORY_NAMES = {
   'mangaNSFWBody': '身体特徴',
   'mangaNSFWNipples': '乳首表現',
   'mangaNSFWUnderwear': '下着状態',
-  'mangaNSFWParticipants': '人数・構成'
+  'mangaNSFWParticipants': '人数・構成',
+  // 🆕 新規追加項目
+  'mangaRelationship': '関係性・相互作用',
+  'mangaPhysicalState': '身体状態・体調',
+  'mangaOccupation': '職業・役職',
+  'mangaSeasonWeather': '季節・天候',
+  'mangaNSFWInteraction': 'NSFWインタラクション',
+  'mangaNSFWBackground': 'NSFW背景',
+  'mangaNSFWEmotion': 'NSFW感情'
 };
 
 
