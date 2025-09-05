@@ -3629,3 +3629,392 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
   
   setTimeout(waitForDicts, 1000);
 }
+
+
+
+
+// 量産モード改善版JavaScript
+(function() {
+  'use strict';
+  
+  let currentPreset = null;
+  
+  // プリセット設定
+  const PRESETS = {
+    clothing: {
+      name: '服装バリエーション',
+      clothing: 'vary',
+      expression: 'fixed',
+      description: '服装を変更、表情・ポーズは固定'
+    },
+    expression: {
+      name: '表情バリエーション', 
+      clothing: 'fixed',
+      expression: 'vary',
+      description: '表情・ポーズを変更、服装は固定'
+    },
+    mixed: {
+      name: 'ミックス',
+      clothing: 'vary',
+      expression: 'vary',
+      description: '服装・表情両方を変更'
+    },
+    custom: {
+      name: 'カスタム',
+      clothing: 'fixed',
+      expression: 'fixed',
+      description: '自分で詳細設定'
+    }
+  };
+  
+  // 初期化
+  function initProductionModeImproved() {
+    bindPresetButtons();
+    bindModeToggles();
+    bindRealtimeUpdates();
+    updateStatus();
+  }
+  
+  // プリセットボタンの設定
+  function bindPresetButtons() {
+    const presetButtons = document.querySelectorAll('.preset-btn');
+    presetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = btn.dataset.preset;
+        applyPreset(preset);
+        
+        // ボタンの見た目を更新
+        presetButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // 詳細設定を表示
+        document.getElementById('production-details').style.display = 'block';
+      });
+    });
+  }
+  
+  // プリセットの適用
+  function applyPreset(presetName) {
+    const preset = PRESETS[presetName];
+    if (!preset) return;
+    
+    currentPreset = presetName;
+    
+    // 服装モード設定
+    const clothingRadio = document.querySelector(`input[name="clothingMode"][value="${preset.clothing}"]`);
+    if (clothingRadio) {
+      clothingRadio.checked = true;
+      toggleClothingMode();
+    }
+    
+    // 表情モード設定
+    const expressionRadio = document.querySelector(`input[name="expressionMode"][value="${preset.expression}"]`);
+    if (expressionRadio) {
+      expressionRadio.checked = true;
+      toggleExpressionMode();
+    }
+    
+    updateStatus();
+    
+    if (typeof toast === 'function') {
+      toast(`${preset.name}プリセットを適用しました`);
+    }
+  }
+  
+  // モード切り替えの設定
+  function bindModeToggles() {
+    // 服装モード
+    document.querySelectorAll('input[name="clothingMode"]').forEach(radio => {
+      radio.addEventListener('change', toggleClothingMode);
+    });
+    
+    // 表情モード
+    document.querySelectorAll('input[name="expressionMode"]').forEach(radio => {
+      radio.addEventListener('change', toggleExpressionMode);
+    });
+  }
+  
+  // 服装モードの切り替え
+  function toggleClothingMode() {
+    const isVary = document.querySelector('input[name="clothingMode"]:checked')?.value === 'vary';
+    const varySettings = document.getElementById('clothing-vary-settings');
+    if (varySettings) {
+      varySettings.style.display = isVary ? 'block' : 'none';
+    }
+    updateStatus();
+  }
+  
+  // 表情モードの切り替え
+  function toggleExpressionMode() {
+    const isVary = document.querySelector('input[name="expressionMode"]:checked')?.value === 'vary';
+    const varySettings = document.getElementById('expression-vary-settings');
+    if (varySettings) {
+      varySettings.style.display = isVary ? 'block' : 'none';
+    }
+    updateStatus();
+  }
+  
+  // リアルタイム更新の設定
+  function bindRealtimeUpdates() {
+    const productionPanel = document.getElementById('panelProduction');
+    if (!productionPanel) return;
+    
+    // 全ての入力要素の変更を監視
+    productionPanel.addEventListener('change', updateStatus);
+    productionPanel.addEventListener('input', updateStatus);
+  }
+  
+  // 状況表示の更新
+  function updateStatus() {
+    updateVaryElements();
+    updateFixedElements();
+    updateComboCount();
+  }
+  
+  // 変更要素の表示更新
+  function updateVaryElements() {
+    const varyList = [];
+    
+    // 服装
+    const clothingMode = document.querySelector('input[name="clothingMode"]:checked')?.value;
+    if (clothingMode === 'vary') {
+      const clothingCount = getSelectedCount(['p_outfit_top', 'p_outfit_pants', 'p_outfit_skirt', 'p_outfit_dress', 'p_outfit_shoes']);
+      if (clothingCount > 0) {
+        varyList.push(`服装(${clothingCount}種類)`);
+      }
+    }
+    
+    // 表情・ポーズ
+    const expressionMode = document.querySelector('input[name="expressionMode"]:checked')?.value;
+    if (expressionMode === 'vary') {
+      const exprCount = getSelectedCount(['p_expr']);
+      const poseCount = getSelectedCount(['p_pose']);
+      if (exprCount > 0) varyList.push(`表情(${exprCount}種類)`);
+      if (poseCount > 0) varyList.push(`ポーズ(${poseCount}種類)`);
+    }
+    
+    // 背景・構図
+    const bgCount = getSelectedCount(['p_bg']);
+    const compCount = getSelectedCount(['p_comp']);
+    if (bgCount > 1) varyList.push(`背景(${bgCount}種類)`);
+    if (compCount > 1) varyList.push(`構図(${compCount}種類)`);
+    
+    // アクセサリー
+    const accList = [];
+    ['p_accA', 'p_accB', 'p_accC'].forEach(id => {
+      const select = document.getElementById(id);
+      if (select && select.value) {
+        accList.push(select.options[select.selectedIndex].text);
+      }
+    });
+    if (accList.length > 0) {
+      varyList.push(`アクセ(${accList.join(', ')})`);
+    }
+    
+    const varyElement = document.getElementById('vary-elements');
+    if (varyElement) {
+      varyElement.textContent = varyList.length > 0 ? varyList.join(' × ') : '変更なし（基本情報のみ）';
+      varyElement.style.color = varyList.length > 0 ? '#f59e0b' : '#6b7280';
+    }
+  }
+  
+  // 固定要素の表示更新
+  function updateFixedElements() {
+    const fixedList = [];
+    
+    // 服装
+    const clothingMode = document.querySelector('input[name="clothingMode"]:checked')?.value;
+    if (clothingMode === 'fixed') {
+      fixedList.push('服装（基本情報）');
+    }
+    
+    // 表情・ポーズ
+    const expressionMode = document.querySelector('input[name="expressionMode"]:checked')?.value;
+    if (expressionMode === 'fixed') {
+      fixedList.push('表情・ポーズ');
+    }
+    
+    // 背景・構図（選択数が1以下）
+    const bgCount = getSelectedCount(['p_bg']);
+    const compCount = getSelectedCount(['p_comp']);
+    if (bgCount <= 1) fixedList.push('背景');
+    if (compCount <= 1) fixedList.push('構図');
+    
+    // 色設定
+    const colorList = [];
+    if (document.getElementById('p_use_top')?.checked) colorList.push('トップス色');
+    if (document.getElementById('p_use_bottom')?.checked) colorList.push('ボトムス色');
+    if (document.getElementById('p_use_shoes')?.checked) colorList.push('靴色');
+    if (colorList.length > 0) {
+      fixedList.push(`色設定(${colorList.join(', ')})`);
+    }
+    
+    const fixedElement = document.getElementById('fixed-elements');
+    if (fixedElement) {
+      fixedElement.textContent = fixedList.length > 0 ? fixedList.join(' + ') : '固定なし';
+      fixedElement.style.color = fixedList.length > 0 ? '#10b981' : '#6b7280';
+    }
+  }
+  
+  // 組み合わせ数の計算
+  function updateComboCount() {
+    let totalCombos = 1;
+    let factors = [];
+    
+    // 服装の組み合わせ
+    const clothingMode = document.querySelector('input[name="clothingMode"]:checked')?.value;
+    if (clothingMode === 'vary') {
+      const clothingCount = getSelectedCount(['p_outfit_top', 'p_outfit_pants', 'p_outfit_skirt', 'p_outfit_dress', 'p_outfit_shoes']);
+      if (clothingCount > 0) {
+        totalCombos *= clothingCount;
+        factors.push(`服装×${clothingCount}`);
+      }
+    }
+    
+    // 表情・ポーズの組み合わせ
+    const expressionMode = document.querySelector('input[name="expressionMode"]:checked')?.value;
+    if (expressionMode === 'vary') {
+      const exprCount = getSelectedCount(['p_expr']);
+      const poseCount = getSelectedCount(['p_pose']);
+      if (exprCount > 0) {
+        totalCombos *= exprCount;
+        factors.push(`表情×${exprCount}`);
+      }
+      if (poseCount > 0) {
+        totalCombos *= poseCount;
+        factors.push(`ポーズ×${poseCount}`);
+      }
+    }
+    
+    // 背景・構図
+    const bgCount = getSelectedCount(['p_bg']);
+    const compCount = getSelectedCount(['p_comp']);
+    if (bgCount > 1) {
+      totalCombos *= bgCount;
+      factors.push(`背景×${bgCount}`);
+    }
+    if (compCount > 1) {
+      totalCombos *= compCount;
+      factors.push(`構図×${compCount}`);
+    }
+    
+    const comboElement = document.getElementById('combo-count');
+    if (comboElement) {
+      let displayText = `${totalCombos}通り`;
+      if (factors.length > 0) {
+        displayText += ` (${factors.join(' × ')})`;
+      }
+      
+      comboElement.textContent = displayText;
+      
+      // 色分け
+      if (totalCombos <= 20) {
+        comboElement.style.color = '#10b981'; // 緑（適正）
+      } else if (totalCombos <= 50) {
+        comboElement.style.color = '#f59e0b'; // 黄（注意）
+      } else {
+        comboElement.style.color = '#ef4444'; // 赤（多すぎ）
+      }
+    }
+  }
+  
+  // 選択数のカウント
+  function getSelectedCount(containerIds) {
+    let total = 0;
+    containerIds.forEach(id => {
+      const container = document.getElementById(id);
+      if (container) {
+        const checked = container.querySelectorAll('input:checked');
+        total += checked.length;
+      }
+    });
+    return total;
+  }
+  
+  // 推奨アドバイスの表示
+  function showAdvice() {
+    const totalCombos = parseInt(document.getElementById('combo-count')?.textContent) || 0;
+    
+    if (totalCombos > 100) {
+      if (typeof toast === 'function') {
+        toast('⚠️ 組み合わせが多すぎます。一部要素を固定することをお勧めします。', 'warning');
+      }
+    } else if (totalCombos > 50) {
+      if (typeof toast === 'function') {
+        toast('💡 組み合わせがやや多めです。安定性を重視する場合は要素を減らしてください。', 'info');
+      }
+    }
+  }
+  
+  // グローバル関数として公開
+  window.initProductionModeImproved = initProductionModeImproved;
+  window.applyProductionPreset = applyPreset;
+  
+  // DOM読み込み完了後に初期化
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initProductionModeImproved, 100);
+  });
+  
+  // タブ切り替え時の初期化
+  document.addEventListener('click', (e) => {
+    if (e.target.matches('.tab[data-mode="production"]')) {
+      setTimeout(initProductionModeImproved, 200);
+    }
+  });
+  
+})();
+
+// 既存の量産モード生成機能との統合
+function enhancedBuildBatchProduction(n) {
+  // 現在の設定を考慮した生成ロジック
+  const clothingMode = document.querySelector('input[name="clothingMode"]:checked')?.value || 'fixed';
+  const expressionMode = document.querySelector('input[name="expressionMode"]:checked')?.value || 'fixed';
+  
+  console.log('Enhanced Production:', {
+    clothingMode,
+    expressionMode,
+    preset: currentPreset,
+    count: n
+  });
+  
+  // 既存のbuildBatchProduction関数を呼び出し
+  if (typeof buildBatchProduction === 'function') {
+    return buildBatchProduction(n);
+  } else {
+    console.warn('buildBatchProduction関数が見つかりません');
+    return [];
+  }
+}
+
+// 既存のイベントリスナーとの統合
+document.addEventListener('DOMContentLoaded', () => {
+  // 既存の生成ボタンのイベントリスナーを拡張
+  setTimeout(() => {
+    const btnGenProd = document.getElementById('btnGenProd');
+    if (btnGenProd) {
+      // 既存のイベントリスナーを削除して新しいものに置換
+      const newBtn = btnGenProd.cloneNode(true);
+      btnGenProd.parentNode.replaceChild(newBtn, btnGenProd);
+      
+      newBtn.addEventListener('click', () => {
+        const cnt = parseInt(document.getElementById('countProd')?.value, 10) || 50;
+        const rows = enhancedBuildBatchProduction(cnt);
+        
+        if (typeof renderLearnTableTo === 'function') {
+          renderLearnTableTo("#tblProd tbody", rows);
+        }
+        if (typeof renderTextTriplet === 'function') {
+          renderTextTriplet('outProd', rows, 'fmtProd');
+        }
+        if (typeof toast === 'function') {
+          toast('✅ 量産セット生成完了');
+        }
+        
+        // 生成後のアドバイス表示
+        setTimeout(showAdvice, 500);
+      });
+    }
+  }, 1000);
+});
+
+console.log('✅ 量産モード改善版を読み込みました');
