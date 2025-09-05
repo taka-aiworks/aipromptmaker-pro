@@ -1057,7 +1057,24 @@ MangaPresetEnhancement.prototype.applyCustomPreset = function(customPreset) {
       customPreset.basePreset.type
     );
     
+    // カスタムプリセットの実際の設定を表示
+    const settingsDetails = mangaPresetSystem.getSettingsDetails(customPreset.settings);
     const customCount = Object.keys(customPreset.customizations || {}).length;
+    
+    const settingsHtml = settingsDetails.length > 0 ? `
+      <div style="margin-bottom: 8px;">
+        <strong>📋 保存された設定:</strong>
+        <div style="margin-top: 4px;">
+          ${settingsDetails.map(detail => 
+            `<div style="margin: 2px 0; font-size: 11px;">
+              <span style="color: var(--brand); font-weight: bold;">${detail.category}:</span> 
+              <span class="preset-tag">${detail.value}</span>
+            </div>`
+          ).join('')}
+        </div>
+      </div>
+    ` : '';
+    
     const customInfo = customCount > 0 ? 
       `<div style="margin-top: 8px; padding: 6px; background: rgba(106,161,255,0.1); border-radius: 4px; font-size: 11px;">
         💾 <strong>保存済みカスタムプリセット</strong><br>
@@ -1067,6 +1084,7 @@ MangaPresetEnhancement.prototype.applyCustomPreset = function(customPreset) {
     detailsContent.innerHTML = `
       <div style="margin-bottom: 6px; font-weight: bold;">💾 ${customPreset.name}</div>
       <div style="margin-bottom: 8px; color: var(--muted);">${customPreset.description}</div>
+      ${settingsHtml}
       ${customInfo}
     `;
     
