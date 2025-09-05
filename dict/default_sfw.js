@@ -1112,6 +1112,111 @@ window.DEFAULT_SFW_DICT = {
     "tags": ["bad hands", "bad anatomy", "blurry", "low quality", "text", "3D", "realistic", "photorealistic", "bad composition"],
     "description": "漫画・アニメ調に特化したセット"
   }
+],
+    // 既存のSFWオブジェクト内に以下を追加
+
+"camera_angle": [
+  { "tag": "eye level", "label": "アイレベル" },
+  { "tag": "high angle", "label": "ハイアングル（見下ろし）" },
+  { "tag": "low angle", "label": "ローアングル（見上げ）" },
+  { "tag": "bird's eye view", "label": "俯瞰（真上から）" },
+  { "tag": "worm's eye view", "label": "煽り（真下から）" },
+  { "tag": "dutch angle", "label": "ダッチアングル（斜め）" },
+  { "tag": "over the shoulder", "label": "肩越しアングル" },
+  { "tag": "close-up angle", "label": "クローズアップアングル" },
+  { "tag": "profile angle", "label": "プロファイルアングル" },
+  { "tag": "three-quarter angle", "label": "斜め正面アングル" }
+],
+
+"focal_length": [
+  { "tag": "wide angle lens", "label": "広角レンズ" },
+  { "tag": "ultra wide angle", "label": "超広角レンズ" },
+  { "tag": "standard lens", "label": "標準レンズ" },
+  { "tag": "telephoto lens", "label": "望遠レンズ" },
+  { "tag": "macro lens", "label": "マクロレンズ" },
+  { "tag": "fisheye lens", "label": "魚眼レンズ" },
+  { "tag": "portrait lens", "label": "ポートレートレンズ" },
+  { "tag": "50mm lens", "label": "50mm標準" },
+  { "tag": "85mm lens", "label": "85mmポートレート" },
+  { "tag": "24mm lens", "label": "24mm広角" }
+],
+
+"depth_of_field": [
+  { "tag": "shallow depth of field", "label": "浅い被写界深度" },
+  { "tag": "deep depth of field", "label": "深い被写界深度" },
+  { "tag": "bokeh", "label": "美しいボケ" },
+  { "tag": "background blur", "label": "背景ボケ" },
+  { "tag": "foreground blur", "label": "前景ボケ" },
+  { "tag": "sharp focus", "label": "全体にピント" },
+  { "tag": "selective focus", "label": "部分フォーカス" },
+  { "tag": "tilt-shift effect", "label": "チルトシフト効果" },
+  { "tag": "rack focus", "label": "フォーカス送り" },
+  { "tag": "soft focus", "label": "ソフトフォーカス" }
+],
+
+"photo_technique": [
+  { "tag": "HDR photography", "label": "HDR撮影" },
+  { "tag": "long exposure", "label": "長時間露光" },
+  { "tag": "motion blur", "label": "モーションブラー" },
+  { "tag": "freeze motion", "label": "動き止め" },
+  { "tag": "double exposure", "label": "多重露光" },
+  { "tag": "silhouette shot", "label": "シルエット撮影" },
+  { "tag": "contre-jour", "label": "逆光撮影" },
+  { "tag": "high contrast", "label": "ハイコントラスト" },
+  { "tag": "low key lighting", "label": "ローキー" },
+  { "tag": "high key lighting", "label": "ハイキー" },
+  { "tag": "black and white", "label": "モノクロ" },
+  { "tag": "vintage filter", "label": "ヴィンテージフィルター" },
+  { "tag": "film grain", "label": "フィルムグレイン" },
+  { "tag": "cross processing", "label": "クロスプロセス" }
+],
+
+"lighting_type": [
+  { "tag": "studio lighting", "label": "スタジオ照明" },
+  { "tag": "natural light", "label": "自然光" },
+  { "tag": "window light", "label": "窓からの光" },
+  { "tag": "softbox lighting", "label": "ソフトボックス" },
+  { "tag": "umbrella lighting", "label": "アンブレラ照明" },
+  { "tag": "ring light", "label": "リングライト" },
+  { "tag": "key light", "label": "キーライト" },
+  { "tag": "fill light", "label": "フィルライト" },
+  { "tag": "hair light", "label": "ヘアライト" },
+  { "tag": "background light", "label": "背景ライト" },
+  { "tag": "practical lighting", "label": "実用照明" },
+  { "tag": "neon lighting", "label": "ネオン照明" },
+  { "tag": "candlelight", "label": "キャンドルライト" },
+  { "tag": "firelight", "label": "暖炉の光" }
+],
+
+"light_direction": [
+  { "tag": "front lighting", "label": "正面光" },
+  { "tag": "side lighting", "label": "サイド光" },
+  { "tag": "back lighting", "label": "逆光" },
+  { "tag": "top lighting", "label": "トップライト" },
+  { "tag": "bottom lighting", "label": "下からの光" },
+  { "tag": "rim lighting", "label": "リムライト" },
+  { "tag": "split lighting", "label": "スプリットライト" },
+  { "tag": "rembrandt lighting", "label": "レンブラントライト" },
+  { "tag": "butterfly lighting", "label": "バタフライライト" },
+  { "tag": "clamshell lighting", "label": "クラムシェルライト" },
+  { "tag": "edge lighting", "label": "エッジライト" },
+  { "tag": "silhouette lighting", "label": "シルエットライト" }
+],
+
+"time_of_day": [
+  { "tag": "golden hour", "label": "ゴールデンアワー" },
+  { "tag": "blue hour", "label": "ブルーアワー" },
+  { "tag": "sunset lighting", "label": "夕日の光" },
+  { "tag": "sunrise lighting", "label": "朝日の光" },
+  { "tag": "midday sun", "label": "真昼の太陽" },
+  { "tag": "overcast day", "label": "曇りの日" },
+  { "tag": "stormy weather", "label": "嵐の天気" },
+  { "tag": "moonlight", "label": "月光" },
+  { "tag": "starlight", "label": "星明かり" },
+  { "tag": "dawn light", "label": "黎明の光" },
+  { "tag": "dusk light", "label": "黄昏の光" },
+  { "tag": "indoor daylight", "label": "室内の昼光" },
+  { "tag": "artificial night", "label": "人工夜景" }
 ]
   }
 };
