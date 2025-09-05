@@ -1298,14 +1298,14 @@ function addSelectedValuesSafe(tags, containerId) {
   const container = document.getElementById(containerId);
   const added = [];
   
-  console.log(`🔍 ${containerId} 要素チェック開始`);
+  //console.log(`🔍 ${containerId} 要素チェック開始`);
   
   if (!container) {
     console.warn(`❌ コンテナが見つかりません: ${containerId}`);
     return added;
   }
   
-  console.log(`✅ ${containerId} コンテナ確認OK`);
+  //console.log(`✅ ${containerId} コンテナ確認OK`);
   
   // ラジオボタンとチェックボックス両方に対応
   const allInputs = container.querySelectorAll('input');
@@ -1336,11 +1336,11 @@ function addSelectedValuesSafe(tags, containerId) {
     }
   });
   
-  if (added.length > 0) {
-    console.log(`✅ ${containerId} 追加成功:`, added);
-  } else {
-    console.log(`📝 ${containerId}: 選択なし (全${allInputs.length}要素中、選択済み${selectedInputs.length}要素)`);
-  }
+ // if (added.length > 0) {
+ //   console.log(`✅ ${containerId} 追加成功:`, added);
+ // } else {
+ //   console.log(`📝 ${containerId}: 選択なし (全${allInputs.length}要素中、選択済み${selectedInputs.length}要素)`);
+ // }
   
   return added;
 }
@@ -1364,7 +1364,7 @@ function addBasicInfoTagsSafe(tags) {
       if (gender) tags.push(gender);
       if (body) tags.push(body);
       if (height) tags.push(height);
-      console.log('👤 基本情報タグ追加:', { age, gender, body, height });
+   //   console.log('👤 基本情報タグ追加:', { age, gender, body, height });
     } else {
       console.log('⚠️ getBFValue関数が利用できません - 基本情報タグをスキップ');
     }
@@ -1380,7 +1380,7 @@ function addBasicInfoTagsSafe(tags) {
       if (hairLength) tags.push(hairLength);
       if (bangsStyle) tags.push(bangsStyle);
       if (skinFeatures) tags.push(skinFeatures);
-      console.log('💄 スタイルタグ追加:', { hairStyle, eyeShape, hairLength, bangsStyle, skinFeatures });
+   //   console.log('💄 スタイルタグ追加:', { hairStyle, eyeShape, hairLength, bangsStyle, skinFeatures });
     }
     
     // 色タグ（基本情報タブの色ピッカーから）
@@ -1396,7 +1396,7 @@ function addBasicInfoTagsSafe(tags) {
     if (eyeColor) tags.push(eyeColor);
     if (skinColor) tags.push(skinColor);
     
-    console.log('🎨 色タグ追加:', { hairColor, eyeColor, skinColor });
+   // console.log('🎨 色タグ追加:', { hairColor, eyeColor, skinColor });
     
     // ★★★ 【追加】基本情報のアクセサリー処理 ★★★
     const charAccSel = document.getElementById("characterAccessory");
@@ -1404,10 +1404,10 @@ function addBasicInfoTagsSafe(tags) {
     if (charAccSel && charAccSel.value) {
       if (charAccColor && charAccColor !== "—") {
         tags.push(`${charAccColor} ${charAccSel.value}`);
-        console.log('💎 基本アクセサリー追加（色付き）:', `${charAccColor} ${charAccSel.value}`);
+    //    console.log('💎 基本アクセサリー追加（色付き）:', `${charAccColor} ${charAccSel.value}`);
       } else {
         tags.push(charAccSel.value);
-        console.log('💎 基本アクセサリー追加:', charAccSel.value);
+    //    console.log('💎 基本アクセサリー追加:', charAccSel.value);
       }
     }
     
