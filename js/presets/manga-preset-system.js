@@ -369,8 +369,7 @@ class MangaPresetSystem {
     console.log(`📋 プリセット詳細表示: ${presetData.name} - ${settingsDetails.length}項目`);
   }
 
-  // 設定詳細を抽出するメソッド
- // 設定詳細を抽出するメソッド（日本語対応版）
+  // 設定詳細を抽出するメソッド（エラー修正版）
   extractSettingsDetails(settings) {
     const categoryNames = {
       'mangaEmotionPrimary': '基本感情',
@@ -515,10 +514,12 @@ class MangaPresetSystem {
     const details = [];
     
     Object.entries(settings || {}).forEach(([key, value]) => {
-      if (value && value.trim() !== '') {
+      // 値の型チェックを追加
+      if (value && (typeof value === 'string' || typeof value === 'number') && String(value).trim() !== '') {
         const categoryName = categoryNames[key] || key;
-        const englishValue = value.replace(/_/g, ' ');
-        const japaneseValue = valueNames[value] || englishValue;
+        const stringValue = String(value);
+        const englishValue = stringValue.replace(/_/g, ' ');
+        const japaneseValue = valueNames[stringValue] || englishValue;
         
         details.push({
           category: categoryName,
@@ -529,6 +530,7 @@ class MangaPresetSystem {
 
     return details;
   }
+  
   // 詳細非表示メソッド
   hidePresetDetails() {
     const detailsElement = document.getElementById('presetDetails');
