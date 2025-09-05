@@ -4048,205 +4048,226 @@ console.log('✅ 量産モードプリセット修正版を読み込みました
 
 
 
-// 不足設定の確認と修正コード
+// 辞書データ修復コード
 
-// 1. 量産モード色ピッカー強制初期化
-function forceInitProductionColors() {
-  console.log('🎨 量産モード色ピッカー強制初期化');
+// 1. 辞書の強制再読み込み
+async function forceReloadDictionaries() {
+  console.log('📚 辞書データ強制再読み込み開始');
   
-  setTimeout(() => {
-    if (typeof initProductionColorWheels === 'function') {
-      initProductionColorWheels();
-      console.log('✅ 量産モード色ピッカー初期化完了');
-    } else {
-      console.warn('❌ initProductionColorWheels関数が見つかりません');
+  try {
+    // 埋め込み辞書の確認
+    if (window.DEFAULT_SFW_DICT) {
+      console.log('✅ DEFAULT_SFW_DICT発見:', Object.keys(window.DEFAULT_SFW_DICT));
+      window.SFW = window.DEFAULT_SFW_DICT.SFW || window.DEFAULT_SFW_DICT;
     }
-  }, 100);
-}
-
-// 2. データ確認関数
-function checkProductionData() {
-  console.log('📊 量産モードデータ確認開始');
-  
-  // SFW辞書の確認
-  const sfwChecks = [
-    'expressions', 'pose', 'background', 'composition', 'outfit'
-  ];
-  
-  sfwChecks.forEach(key => {
-    const data = window.SFW?.[key];
-    if (data && Array.isArray(data)) {
-      console.log(`✅ SFW.${key}: ${data.length}件`);
-    } else {
-      console.warn(`❌ SFW.${key}: データなし`);
+    
+    if (window.DEFAULT_NSFW_DICT) {
+      console.log('✅ DEFAULT_NSFW_DICT発見:', Object.keys(window.DEFAULT_NSFW_DICT));
+      window.NSFW = window.DEFAULT_NSFW_DICT.NSFW || window.DEFAULT_NSFW_DICT;
     }
-  });
-  
-  // NSFW辞書の確認
-  const nsfwChecks = [
-    'expression', 'pose', 'exposure', 'outfit', 'situation'
-  ];
-  
-  nsfwChecks.forEach(key => {
-    const data = window.NSFW?.[key];
-    if (data && Array.isArray(data)) {
-      console.log(`✅ NSFW.${key}: ${data.length}件`);
-    } else {
-      console.warn(`❌ NSFW.${key}: データなし`);
+    
+    // 既存のmerge関数を使用
+    if (typeof mergeIntoSFW === 'function' && window.DEFAULT_SFW_DICT) {
+      mergeIntoSFW(window.DEFAULT_SFW_DICT);
+      console.log('✅ SFW辞書マージ完了');
     }
-  });
-}
-
-// 3. UI要素の存在確認
-function checkProductionUI() {
-  console.log('🖥️ 量産モードUI確認開始');
-  
-  const requiredElements = [
-    'production-details',
-    'clothing-vary-settings', 
-    'expression-vary-settings',
-    'p_outfit_top', 'p_outfit_pants', 'p_outfit_skirt', 'p_outfit_dress',
-    'p_expr', 'p_pose', 'p_bg', 'p_comp',
-    'wheel_p_top', 'wheel_p_bottom', 'wheel_p_shoes'
-  ];
-  
-  const missing = [];
-  const found = [];
-  
-  requiredElements.forEach(id => {
-    const element = document.getElementById(id);
-    if (element) {
-      found.push(id);
-    } else {
-      missing.push(id);
+    
+    if (typeof mergeIntoNSFW === 'function' && window.DEFAULT_NSFW_DICT) {
+      mergeIntoNSFW(window.DEFAULT_NSFW_DICT);
+      console.log('✅ NSFW辞書マージ完了');
     }
-  });
-  
-  console.log(`✅ 発見: ${found.length}個`, found);
-  if (missing.length > 0) {
-    console.warn(`❌ 不足: ${missing.length}個`, missing);
-  }
-  
-  return { found, missing };
-}
-
-// 4. 量産モード完全初期化関数
-function completeProductionInit() {
-  console.log('🚀 量産モード完全初期化開始');
-  
-  // 1. データ確認
-  checkProductionData();
-  
-  // 2. UI確認
-  const uiCheck = checkProductionUI();
-  
-  // 3. 色ピッカー初期化
-  forceInitProductionColors();
-  
-  // 4. プリセット初期化
-  if (typeof window.initProductionPresets === 'function') {
-    window.initProductionPresets();
-  }
-  
-  // 5. 既存の量産モード初期化
-  if (typeof window.initProductionModeImproved === 'function') {
-    window.initProductionModeImproved();
-  }
-  
-  console.log('✅ 量産モード完全初期化完了');
-  return uiCheck;
-}
-
-// 5. タブ切り替え時の確実な初期化
-function setupProductionTabInit() {
-  const productionTab = document.querySelector('.tab[data-mode="production"]');
-  if (productionTab) {
-    productionTab.addEventListener('click', () => {
-      console.log('📋 量産モードタブクリック検出');
-      setTimeout(() => {
-        completeProductionInit();
-      }, 300);
-    });
-    console.log('✅ 量産モードタブイベント設定完了');
-  } else {
-    console.warn('❌ 量産モードタブが見つかりません');
+    
+    // レンダリング実行
+    if (typeof renderSFW === 'function') {
+      renderSFW();
+      console.log('✅ SFWレンダリング完了');
+    }
+    
+    if (typeof renderNSFWProduction === 'function') {
+      renderNSFWProduction();
+      console.log('✅ NSFW量産レンダリング完了');
+    }
+    
+    console.log('✅ 辞書再読み込み完了');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ 辞書再読み込みエラー:', error);
+    return false;
   }
 }
 
-// 6. 量産モード状況レポート
-function generateProductionReport() {
-  console.log('📋 量産モード状況レポート生成');
+// 2. 辞書データの詳細診断
+function diagnoseDictionaries() {
+  console.log('🔍 辞書データ詳細診断');
   
-  const report = {
-    timestamp: new Date().toLocaleString(),
-    ui: checkProductionUI(),
-    preset: window.productionCurrentPreset || 'なし',
-    modes: {
-      clothing: document.querySelector('#panelProduction input[name="clothingMode"]:checked')?.value || '未設定',
-      expression: document.querySelector('#panelProduction input[name="expressionMode"]:checked')?.value || '未設定'
-    },
-    colorWheels: {
-      top: !!window.getPTopColor,
-      bottom: !!window.getPBottomColor,
-      shoes: !!window.getPShoesColor
-    },
-    dataAvailable: {
-      sfw: !!(window.SFW?.expressions?.length),
-      nsfw: !!(window.NSFW?.expression?.length)
-    }
+  const diagnosis = {
+    embeddedSFW: !!window.DEFAULT_SFW_DICT,
+    embeddedNSFW: !!window.DEFAULT_NSFW_DICT,
+    globalSFW: !!window.SFW,
+    globalNSFW: !!window.NSFW,
+    sfwKeys: window.SFW ? Object.keys(window.SFW) : [],
+    nsfwKeys: window.NSFW ? Object.keys(window.NSFW) : [],
+    sfwCounts: {},
+    nsfwCounts: {}
   };
   
-  console.table(report);
-  return report;
-}
-
-// 7. 緊急修復関数
-function emergencyProductionFix() {
-  console.log('🚨 量産モード緊急修復開始');
-  
-  // プリセットボタンの強制再設定
-  const presetButtons = document.querySelectorAll('#panelProduction .preset-btn');
-  presetButtons.forEach(btn => {
-    const preset = btn.dataset.preset;
-    if (preset && !btn.onclick) {
-      btn.addEventListener('click', () => {
-        window.productionCurrentPreset = preset;
-        console.log(`🎯 緊急プリセット設定: ${preset}`);
-      });
-    }
-  });
-  
-  // 色ピッカーの強制初期化
-  if (typeof initProductionColorWheels === 'function') {
-    initProductionColorWheels();
+  // SFWデータカウント
+  if (window.SFW) {
+    Object.entries(window.SFW).forEach(([key, value]) => {
+      diagnosis.sfwCounts[key] = Array.isArray(value) ? value.length : typeof value;
+    });
   }
   
-  console.log('✅ 緊急修復完了');
+  // NSFWデータカウント
+  if (window.NSFW) {
+    Object.entries(window.NSFW).forEach(([key, value]) => {
+      diagnosis.nsfwCounts[key] = Array.isArray(value) ? value.length : typeof value;
+    });
+  }
+  
+  console.table(diagnosis);
+  return diagnosis;
+}
+
+// 3. 緊急フォールバック辞書
+function createFallbackDictionaries() {
+  console.log('🚨 緊急フォールバック辞書作成');
+  
+  // 最小限のSFW辞書
+  if (!window.SFW || Object.keys(window.SFW).length === 0) {
+    window.SFW = {
+      expressions: [
+        { tag: "neutral expression", label: "無表情" },
+        { tag: "smiling", label: "笑顔" },
+        { tag: "serious", label: "真剣" },
+        { tag: "happy", label: "嬉しい" },
+        { tag: "sad", label: "悲しい" }
+      ],
+      pose: [
+        { tag: "standing", label: "立っている" },
+        { tag: "sitting", label: "座っている" },
+        { tag: "arms at sides", label: "腕を下ろして" },
+        { tag: "hand on hip", label: "腰に手を当てて" }
+      ],
+      background: [
+        { tag: "white background", label: "白背景" },
+        { tag: "plain background", label: "シンプル背景" },
+        { tag: "studio background", label: "スタジオ背景" }
+      ],
+      composition: [
+        { tag: "portrait", label: "ポートレート" },
+        { tag: "bust", label: "バストアップ" },
+        { tag: "waist up", label: "ウエストアップ" },
+        { tag: "full body", label: "全身" }
+      ],
+      outfit: [
+        { tag: "t-shirt", label: "Tシャツ", cat: "top" },
+        { tag: "jeans", label: "ジーンズ", cat: "pants" },
+        { tag: "skirt", label: "スカート", cat: "skirt" },
+        { tag: "dress", label: "ワンピース", cat: "dress" },
+        { tag: "sneakers", label: "スニーカー", cat: "shoes" }
+      ]
+    };
+    console.log('✅ フォールバックSFW辞書作成完了');
+  }
+  
+  // 最小限のNSFW辞書
+  if (!window.NSFW || Object.keys(window.NSFW).length === 0) {
+    window.NSFW = {
+      expression: [
+        { tag: "blushing", label: "頬を赤らめて", level: "L1" },
+        { tag: "seductive", label: "誘惑的", level: "L2" }
+      ],
+      pose: [
+        { tag: "sitting suggestively", label: "誘惑的に座って", level: "L1" }
+      ],
+      exposure: [
+        { tag: "cleavage", label: "胸元", level: "L1" }
+      ],
+      outfit: [
+        { tag: "bikini", label: "ビキニ", level: "L1" }
+      ],
+      situation: [
+        { tag: "beach", label: "ビーチ", level: "L1" }
+      ]
+    };
+    console.log('✅ フォールバックNSFW辞書作成完了');
+  }
+}
+
+// 4. 完全修復関数
+async function completeRepair() {
+  console.log('🔧 完全修復開始');
+  
+  // 1. 診断
+  const diagnosis = diagnoseDictionaries();
+  
+  // 2. 辞書が空の場合はフォールバック作成
+  if (diagnosis.sfwKeys.length === 0 || diagnosis.nsfwKeys.length === 0) {
+    createFallbackDictionaries();
+  }
+  
+  // 3. 強制再読み込み
+  await forceReloadDictionaries();
+  
+  // 4. 量産モード再初期化
+  if (typeof completeProductionInit === 'function') {
+    setTimeout(() => {
+      completeProductionInit();
+    }, 500);
+  }
+  
+  // 5. 最終確認
+  setTimeout(() => {
+    checkProductionData();
+    console.log('🎉 修復完了！量産モードを確認してください');
+  }, 1000);
+}
+
+// 5. 辞書ファイル直接ロード (最後の手段)
+async function loadDictionariesDirectly() {
+  console.log('📁 辞書ファイル直接ロード試行');
+  
+  try {
+    // SFWファイルの読み込み試行
+    try {
+      const sfwResponse = await fetch('dict/default_sfw.json');
+      if (sfwResponse.ok) {
+        const sfwData = await sfwResponse.json();
+        mergeIntoSFW(sfwData);
+        console.log('✅ SFWファイル読み込み成功');
+      }
+    } catch (e) {
+      console.warn('⚠️ SFWファイル読み込み失敗:', e.message);
+    }
+    
+    // NSFWファイルの読み込み試行
+    try {
+      const nsfwResponse = await fetch('dict/default_nsfw.json');
+      if (nsfwResponse.ok) {
+        const nsfwData = await nsfwResponse.json();
+        mergeIntoNSFW(nsfwData);
+        console.log('✅ NSFWファイル読み込み成功');
+      }
+    } catch (e) {
+      console.warn('⚠️ NSFWファイル読み込み失敗:', e.message);
+    }
+    
+  } catch (error) {
+    console.error('❌ 直接ロードエラー:', error);
+  }
 }
 
 // グローバル関数として公開
-window.checkProductionData = checkProductionData;
-window.checkProductionUI = checkProductionUI;
-window.completeProductionInit = completeProductionInit;
-window.generateProductionReport = generateProductionReport;
-window.emergencyProductionFix = emergencyProductionFix;
+window.forceReloadDictionaries = forceReloadDictionaries;
+window.diagnoseDictionaries = diagnoseDictionaries;
+window.createFallbackDictionaries = createFallbackDictionaries;
+window.completeRepair = completeRepair;
+window.loadDictionariesDirectly = loadDictionariesDirectly;
 
-// 初期化実行
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    setupProductionTabInit();
-    
-    // 既に量産モードが表示されている場合
-    if (!document.getElementById('panelProduction')?.hidden) {
-      completeProductionInit();
-    }
-  }, 1000);
-});
-
-console.log('🔧 量産モード診断ツールを読み込みました');
+console.log('🔧 辞書修復ツールを読み込みました');
 console.log('📖 使用方法:');
-console.log('  - generateProductionReport() で状況確認');
-console.log('  - emergencyProductionFix() で緊急修復');
-console.log('  - completeProductionInit() で完全初期化');
-
-
+console.log('  1. diagnoseDictionaries() で問題診断');
+console.log('  2. completeRepair() で自動修復');
+console.log('  3. loadDictionariesDirectly() で直接ロード');
