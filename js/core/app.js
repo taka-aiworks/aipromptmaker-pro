@@ -3035,7 +3035,7 @@ if (typeof window.toast !== 'function') {
 }
 
 // 2. 正確なマッピングテーブル
-// 2. 正確なマッピングテーブル（新項目追加版）
+// app.js内のMAPPING_TABLE（3255行目付近）を以下に置き換え
 const MAPPING_TABLE = {
   SFW: {
     'age': 'age',
@@ -3104,9 +3104,12 @@ const MAPPING_TABLE = {
     // 🆕 新規追加項目
     'interaction_nsfw': 'interaction-nsfw',
     'background_nsfw': 'background-nsfw',
-    'emotion_nsfw': 'emotion-nsfw'
+    'emotion_nsfw': 'emotion-nsfw',
+    'timing_nsfw': 'timing-nsfw',
+    'occupation_nsfw': 'occupation-nsfw'
   }
 };
+
 // 3. テーブル操作機能
 window.addToOutputTable = function(en, jp) {
   console.log('addToOutputTable呼び出し:', en, jp);
