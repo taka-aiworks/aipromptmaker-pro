@@ -552,7 +552,7 @@ window.DEFAULT_SFW_DICT = {
         { "tag": "pole_dance_crouch_side", "label": "ポールダンス＋蹲踞＋脇見せ" }
       ],
     "composition": [
-      { "tag": "full body", "label": "全身" },
+      { "tag": "full_body", "label": "全身" },
       { "tag": "upper_body", "label": "上半身" },  // プリセット用
       { "tag": "bust", "label": "バストアップ" },  // プリセット用
       { "tag": "portrait", "label": "ポートレート" },  // プリセット用追加
