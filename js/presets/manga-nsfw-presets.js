@@ -1,4 +1,4 @@
-// 漫画モードNSFWプリセット（シチュエーション別）
+// 修正版NSFW プリセット（実際のDOM値に基づく）
 const MANGA_NSFW_PRESETS = {
   // 💕 ロマンチック・甘い系
   romantic_sweet: {
@@ -26,8 +26,8 @@ const MANGA_NSFW_PRESETS = {
       mangaNSFWExpo: "see_through",
       mangaNSFWSitu: "in_bed_sheets",
       mangaNSFWLight: "window_glow",
-      mangaNSFWPose: "lying_side",
-      mangaComposition: "full_body"
+      mangaNSFWPose: "lying_down",
+      mangaComposition: "upper_body"
     }
   },
 
@@ -39,12 +39,12 @@ const MANGA_NSFW_PRESETS = {
     settings: {
       mangaNSFWEnable: true,
       mangaNSFWExpr: "flushed",
-      mangaNSFWExpo: "towel_wrap",
+      mangaNSFWExpo: "wet_clothes",
       mangaNSFWSitu: "after_shower",
-      mangaNSFWLight: "soft_lighting",
+      mangaNSFWLight: "softbox",
       mangaNSFWPose: "standing",
-      mangaNSFWUnderwear: "towel_only",
-      mangaComposition: "full_body"
+      mangaNSFWUnderwear: "lingerie_white",
+      mangaComposition: "upper_body"
     }
   },
 
@@ -54,13 +54,13 @@ const MANGA_NSFW_PRESETS = {
     level: "L1",
     settings: {
       mangaNSFWEnable: true,
-      mangaNSFWExpr: "bright_smile",
-      mangaNSFWExpo: "bikini_style",
+      mangaNSFWExpr: "shy_smile",
+      mangaNSFWExpo: "leggy",
       mangaNSFWSitu: "beach",
       mangaNSFWLight: "golden_hour",
       mangaNSFWPose: "standing",
       mangaNSFWOutfit: "bikini",
-      mangaComposition: "full_body"
+      mangaComposition: "upper_body"
     }
   },
 
@@ -72,12 +72,12 @@ const MANGA_NSFW_PRESETS = {
     settings: {
       mangaNSFWEnable: true,
       mangaNSFWExpr: "seductive_smile",
-      mangaNSFWExpo: "lingerie_peek",
+      mangaNSFWExpo: "cleavage_window",
       mangaNSFWSitu: "bedroom",
       mangaNSFWLight: "moody_bedroom",
-      mangaNSFWPose: "lying_supine",
+      mangaNSFWPose: "lying_down",
       mangaNSFWUnderwear: "lingerie_black",
-      mangaComposition: "full_body"
+      mangaComposition: "upper_body"
     }
   },
 
@@ -87,11 +87,11 @@ const MANGA_NSFW_PRESETS = {
     level: "L1",
     settings: {
       mangaNSFWEnable: true,
-      mangaNSFWExpr: "sleepy_seductive",
-      mangaNSFWExpo: "see_through_nightgown",
+      mangaNSFWExpr: "bashful_smile",
+      mangaNSFWExpo: "see_through",
       mangaNSFWSitu: "bedroom",
-      mangaNSFWLight: "moonlight",
-      mangaNSFWPose: "sitting_edge",
+      mangaNSFWLight: "candlelight",
+      mangaNSFWPose: "sitting",
       mangaNSFWOutfit: "negligee",
       mangaComposition: "upper_body"
     }
@@ -109,8 +109,8 @@ const MANGA_NSFW_PRESETS = {
       mangaNSFWSitu: "stage_performance",
       mangaNSFWLight: "spotlight",
       mangaNSFWPose: "arched_back",
-      mangaNSFWOutfit: "glamour_dress",
-      mangaComposition: "full_body"
+      mangaNSFWOutfit: "stripper_outfit",
+      mangaComposition: "upper_body"
     }
   },
 
@@ -120,13 +120,13 @@ const MANGA_NSFW_PRESETS = {
     level: "L2",
     settings: {
       mangaNSFWEnable: true,
-      mangaNSFWExpr: "wink_smile",
-      mangaNSFWExpo: "retro_style",
-      mangaNSFWSitu: "photoshoot",
-      mangaNSFWLight: "classic_studio",
-      mangaNSFWPose: "pin_up_pose",
-      mangaNSFWOutfit: "retro_lingerie",
-      mangaComposition: "full_body"
+      mangaNSFWExpr: "wink",
+      mangaNSFWExpo: "leggy",
+      mangaNSFWSitu: "mirror_selfie",
+      mangaNSFWLight: "rim_light",
+      mangaNSFWPose: "hand_on_hips",
+      mangaNSFWOutfit: "bikini",
+      mangaComposition: "upper_body"
     }
   },
 
@@ -138,11 +138,11 @@ const MANGA_NSFW_PRESETS = {
     settings: {
       mangaNSFWEnable: true,
       mangaNSFWExpr: "embarrassed",
-      mangaNSFWExpo: "school_uniform_loose",
-      mangaNSFWSitu: "classroom_after_school",
-      mangaNSFWLight: "sunset_window",
-      mangaNSFWPose: "sitting_desk",
-      mangaNSFWOutfit: "school_uniform_disheveled",
+      mangaNSFWExpo: "short_skirt",
+      mangaNSFWSitu: "classroom",
+      mangaNSFWLight: "window_glow",
+      mangaNSFWPose: "sitting",
+      mangaNSFWOutfit: "sailor_uniform_r18",
       mangaComposition: "upper_body"
     }
   },
@@ -153,12 +153,12 @@ const MANGA_NSFW_PRESETS = {
     level: "L2",
     settings: {
       mangaNSFWEnable: true,
-      mangaNSFWExpr: "bashful_service",
-      mangaNSFWExpo: "maid_outfit_revealing",
-      mangaNSFWSitu: "private_room",
-      mangaNSFWLight: "soft_lighting",
-      mangaNSFWPose: "bowing_service",
-      mangaNSFWOutfit: "sexy_maid",
+      mangaNSFWExpr: "bashful_smile",
+      mangaNSFWExpo: "mild_cleavage",
+      mangaNSFWSitu: "bedroom",
+      mangaNSFWLight: "softbox",
+      mangaNSFWPose: "kneeling",
+      mangaNSFWOutfit: "maid_outfit",
       mangaComposition: "upper_body"
     }
   },
@@ -170,17 +170,16 @@ const MANGA_NSFW_PRESETS = {
     level: "L1",
     settings: {
       mangaNSFWEnable: true,
-      mangaNSFWExpr: "innocent_blush",
-      mangaNSFWExpo: "modest_exposure",
-      mangaNSFWSitu: "private_room",
-      mangaNSFWLight: "soft_pink",
-      mangaNSFWPose: "shy_sitting",
-      mangaNSFWUnderwear: "white_cotton",
-      mangaComposition: "bust"
+      mangaNSFWExpr: "bashful_smile",
+      mangaNSFWExpo: "mild_cleavage",
+      mangaNSFWSitu: "bedroom",
+      mangaNSFWLight: "softbox",
+      mangaNSFWPose: "sitting",
+      mangaNSFWUnderwear: "lingerie_white",
+      mangaComposition: "upper_body"
     }
   }
 };
-
 // NSFWプリセット用HTML生成
 function generateNSFWPresetHTML() {
   return `
