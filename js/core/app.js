@@ -2583,30 +2583,6 @@ function bindProduction(){
   });
 }
 
-function bindGASTools(){
-  document.getElementById("btnSaveSettings")?.addEventListener("click", saveSettings);
-  document.getElementById("btnResetSettings")?.addEventListener("click", resetSettings);
-
-  $("#btnTestGAS")?.addEventListener("click", async ()=>{
-    saveSettings();
-    const url = (Settings.gasUrl || '').trim();
-    const out = $("#gasTestResult");
-    if (!url) { if(out) out.textContent = "URL未設定"; return; }
-
-    if(out) out.textContent = "テスト中…";
-    try {
-      const r = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain; charset=utf-8" },
-        body: JSON.stringify({ kind: "ping", ts: Date.now() })
-      });
-      const txt = await r.text().catch(()=>"(no text)");
-      if(out) out.textContent = r.ok ? (txt ? `OK: ${txt}` : "OK") : `NG (${r.status})`;
-    } catch (e) {
-      if(out) out.textContent = "送信完了（応答確認不可）";
-    }
-  });
-}
 
 function initHairEyeAndAccWheels(){
   // 基本情報タブ（常に表示）の色ピッカーのみ初期化
