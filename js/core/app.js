@@ -4034,3 +4034,219 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('✅ 量産モードプリセット修正版を読み込みました');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 不足設定の確認と修正コード
+
+// 1. 量産モード色ピッカー強制初期化
+function forceInitProductionColors() {
+  console.log('🎨 量産モード色ピッカー強制初期化');
+  
+  setTimeout(() => {
+    if (typeof initProductionColorWheels === 'function') {
+      initProductionColorWheels();
+      console.log('✅ 量産モード色ピッカー初期化完了');
+    } else {
+      console.warn('❌ initProductionColorWheels関数が見つかりません');
+    }
+  }, 100);
+}
+
+// 2. データ確認関数
+function checkProductionData() {
+  console.log('📊 量産モードデータ確認開始');
+  
+  // SFW辞書の確認
+  const sfwChecks = [
+    'expressions', 'pose', 'background', 'composition', 'outfit'
+  ];
+  
+  sfwChecks.forEach(key => {
+    const data = window.SFW?.[key];
+    if (data && Array.isArray(data)) {
+      console.log(`✅ SFW.${key}: ${data.length}件`);
+    } else {
+      console.warn(`❌ SFW.${key}: データなし`);
+    }
+  });
+  
+  // NSFW辞書の確認
+  const nsfwChecks = [
+    'expression', 'pose', 'exposure', 'outfit', 'situation'
+  ];
+  
+  nsfwChecks.forEach(key => {
+    const data = window.NSFW?.[key];
+    if (data && Array.isArray(data)) {
+      console.log(`✅ NSFW.${key}: ${data.length}件`);
+    } else {
+      console.warn(`❌ NSFW.${key}: データなし`);
+    }
+  });
+}
+
+// 3. UI要素の存在確認
+function checkProductionUI() {
+  console.log('🖥️ 量産モードUI確認開始');
+  
+  const requiredElements = [
+    'production-details',
+    'clothing-vary-settings', 
+    'expression-vary-settings',
+    'p_outfit_top', 'p_outfit_pants', 'p_outfit_skirt', 'p_outfit_dress',
+    'p_expr', 'p_pose', 'p_bg', 'p_comp',
+    'wheel_p_top', 'wheel_p_bottom', 'wheel_p_shoes'
+  ];
+  
+  const missing = [];
+  const found = [];
+  
+  requiredElements.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      found.push(id);
+    } else {
+      missing.push(id);
+    }
+  });
+  
+  console.log(`✅ 発見: ${found.length}個`, found);
+  if (missing.length > 0) {
+    console.warn(`❌ 不足: ${missing.length}個`, missing);
+  }
+  
+  return { found, missing };
+}
+
+// 4. 量産モード完全初期化関数
+function completeProductionInit() {
+  console.log('🚀 量産モード完全初期化開始');
+  
+  // 1. データ確認
+  checkProductionData();
+  
+  // 2. UI確認
+  const uiCheck = checkProductionUI();
+  
+  // 3. 色ピッカー初期化
+  forceInitProductionColors();
+  
+  // 4. プリセット初期化
+  if (typeof window.initProductionPresets === 'function') {
+    window.initProductionPresets();
+  }
+  
+  // 5. 既存の量産モード初期化
+  if (typeof window.initProductionModeImproved === 'function') {
+    window.initProductionModeImproved();
+  }
+  
+  console.log('✅ 量産モード完全初期化完了');
+  return uiCheck;
+}
+
+// 5. タブ切り替え時の確実な初期化
+function setupProductionTabInit() {
+  const productionTab = document.querySelector('.tab[data-mode="production"]');
+  if (productionTab) {
+    productionTab.addEventListener('click', () => {
+      console.log('📋 量産モードタブクリック検出');
+      setTimeout(() => {
+        completeProductionInit();
+      }, 300);
+    });
+    console.log('✅ 量産モードタブイベント設定完了');
+  } else {
+    console.warn('❌ 量産モードタブが見つかりません');
+  }
+}
+
+// 6. 量産モード状況レポート
+function generateProductionReport() {
+  console.log('📋 量産モード状況レポート生成');
+  
+  const report = {
+    timestamp: new Date().toLocaleString(),
+    ui: checkProductionUI(),
+    preset: window.productionCurrentPreset || 'なし',
+    modes: {
+      clothing: document.querySelector('#panelProduction input[name="clothingMode"]:checked')?.value || '未設定',
+      expression: document.querySelector('#panelProduction input[name="expressionMode"]:checked')?.value || '未設定'
+    },
+    colorWheels: {
+      top: !!window.getPTopColor,
+      bottom: !!window.getPBottomColor,
+      shoes: !!window.getPShoesColor
+    },
+    dataAvailable: {
+      sfw: !!(window.SFW?.expressions?.length),
+      nsfw: !!(window.NSFW?.expression?.length)
+    }
+  };
+  
+  console.table(report);
+  return report;
+}
+
+// 7. 緊急修復関数
+function emergencyProductionFix() {
+  console.log('🚨 量産モード緊急修復開始');
+  
+  // プリセットボタンの強制再設定
+  const presetButtons = document.querySelectorAll('#panelProduction .preset-btn');
+  presetButtons.forEach(btn => {
+    const preset = btn.dataset.preset;
+    if (preset && !btn.onclick) {
+      btn.addEventListener('click', () => {
+        window.productionCurrentPreset = preset;
+        console.log(`🎯 緊急プリセット設定: ${preset}`);
+      });
+    }
+  });
+  
+  // 色ピッカーの強制初期化
+  if (typeof initProductionColorWheels === 'function') {
+    initProductionColorWheels();
+  }
+  
+  console.log('✅ 緊急修復完了');
+}
+
+// グローバル関数として公開
+window.checkProductionData = checkProductionData;
+window.checkProductionUI = checkProductionUI;
+window.completeProductionInit = completeProductionInit;
+window.generateProductionReport = generateProductionReport;
+window.emergencyProductionFix = emergencyProductionFix;
+
+// 初期化実行
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    setupProductionTabInit();
+    
+    // 既に量産モードが表示されている場合
+    if (!document.getElementById('panelProduction')?.hidden) {
+      completeProductionInit();
+    }
+  }, 1000);
+});
+
+console.log('🔧 量産モード診断ツールを読み込みました');
+console.log('📖 使用方法:');
+console.log('  - generateProductionReport() で状況確認');
+console.log('  - emergencyProductionFix() で緊急修復');
+console.log('  - completeProductionInit() で完全初期化');
+
+
