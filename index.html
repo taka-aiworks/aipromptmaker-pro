@@ -2410,16 +2410,16 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
     
-    console.log(`利用可能コンテナ: ${availableContainers.length}`);
-    availableContainers.forEach(name => {
-      console.log(`  ✓ ${name}`);
-    });
+  //  console.log(`利用可能コンテナ: ${availableContainers.length}`);
+  //  availableContainers.forEach(name => {
+  //    console.log(`  ✓ ${name}`);
+  //  });
     
-    if (missingContainers.length > 0) {
-      console.log(`不足コンテナ: ${missingContainers.length}`);
-      missingContainers.forEach(cat => {
-        console.log(`  ✗ ${cat.name} - Container: ${cat.hasContainer ? '✓' : '✗'}, Counter: ${cat.hasCounter ? '✓' : '✗'}`);
-      });
+  //  if (missingContainers.length > 0) {
+  //    console.log(`不足コンテナ: ${missingContainers.length}`);
+  //    missingContainers.forEach(cat => {
+ //       console.log(`  ✗ ${cat.name} - Container: ${cat.hasContainer ? '✓' : '✗'}, Counter: ${cat.hasCounter ? '✓' : '✗'}`);
+ //     });
     }
     
     return { available: availableContainers, missing: missingContainers };
