@@ -2370,16 +2370,16 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
     
-    console.log(`利用可能カテゴリ: ${availableCategories.length}`);
-    availableCategories.forEach(cat => {
-      console.log(`  ✓ ${cat.name} (${cat.dict}.${cat.key}): ${cat.count}件`);
-    });
+ //   console.log(`利用可能カテゴリ: ${availableCategories.length}`);
+ //   availableCategories.forEach(cat => {
+ //     console.log(`  ✓ ${cat.name} (${cat.dict}.${cat.key}): ${cat.count}件`);
+ //   });
     
-    if (missingCategories.length > 0) {
-      console.log(`不足カテゴリ: ${missingCategories.length}`);
-      missingCategories.forEach(cat => {
-        console.log(`  ✗ ${cat.name} (${cat.key}): 辞書に存在しない`);
-      });
+ //   if (missingCategories.length > 0) {
+ //     console.log(`不足カテゴリ: ${missingCategories.length}`);
+ //     missingCategories.forEach(cat => {
+ //       console.log(`  ✗ ${cat.name} (${cat.key}): 辞書に存在しない`);
+ //     });
     }
     
     return { available: availableCategories, missing: missingCategories };
