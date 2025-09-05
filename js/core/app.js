@@ -5199,3 +5199,94 @@ window.testPresetSystem = function() {
   
   console.log('✅ テスト完了');
 };
+
+
+
+// 🔧 修正コード: addUniversalCopyButtons関数の定義
+
+// 11. ユニバーサルコピーボタンの追加
+function addUniversalCopyButtons() {
+  console.log('📋 ユニバーサルコピーボタンを追加中...');
+  
+  // 全モードの出力エリアを対象
+  const outputAreas = [
+    { mode: 'basic', selectors: ['#outLearnTestAll', '#outLearnTestPrompt', '#outLearnTestNeg', '#outLearnTestCaption'] },
+    { mode: 'manga', selectors: ['#outMangaAll', '#outMangaPrompt', '#outMangaNeg'] },
+    { mode: 'planner', selectors: ['#outPlannerAll', '#outPlannerPrompt', '#outPlannerNeg'] },
+    { mode: 'learning', selectors: ['#outLearnAll', '#outLearnPrompt', '#outLearnNeg'] },
+    { mode: 'production', selectors: ['#outProdAll', '#outProdPrompt', '#outProdNeg'] }
+  ];
+  
+  outputAreas.forEach(area => {
+    area.selectors.forEach(selector => {
+      const outputElement = document.querySelector(selector);
+      if (!outputElement) return;
+      
+      // 既存のボタンがあるかチェック
+      const existingBtn = outputElement.parentNode?.querySelector('.universal-copy-btn');
+      if (existingBtn) return;
+      
+      // コピーボタンを作成
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn ghost small universal-copy-btn';
+      copyBtn.textContent = '📋 コピー';
+      copyBtn.style.cssText = `
+        margin-top: 6px;
+        margin-left: 8px;
+        padding: 4px 8px;
+        font-size: 12px;
+        opacity: 0.8;
+        transition: opacity 0.2s ease;
+      `;
+      
+      // コピー機能
+      copyBtn.addEventListener('click', () => {
+        const text = outputElement.textContent || '';
+        if (!text.trim()) {
+          if (typeof toast === 'function') {
+            toast('コピーする内容がありません');
+          }
+          return;
+        }
+        
+        navigator.clipboard?.writeText(text.trim())
+          .then(() => {
+            if (typeof toast === 'function') {
+              toast('コピーしました');
+            }
+            copyBtn.style.opacity = '1';
+            setTimeout(() => copyBtn.style.opacity = '0.8', 500);
+          })
+          .catch(() => {
+            // フォールバック
+            const ta = document.createElement('textarea');
+            ta.value = text.trim();
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+            if (typeof toast === 'function') {
+              toast('コピーしました');
+            }
+          });
+      });
+      
+      // ホバー効果
+      copyBtn.addEventListener('mouseenter', () => {
+        copyBtn.style.opacity = '1';
+      });
+      
+      copyBtn.addEventListener('mouseleave', () => {
+        copyBtn.style.opacity = '0.8';
+      });
+      
+      // 出力要素の隣に配置
+      outputElement.parentNode?.appendChild(copyBtn);
+    });
+  });
+  
+  console.log('✅ ユニバーサルコピーボタン追加完了');
+}
+
+// グローバル関数として公開
+window.addUniversalCopyButtons = addUniversalCopyButtons;
