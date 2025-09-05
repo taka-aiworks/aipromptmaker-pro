@@ -1090,40 +1090,47 @@ function initPlannerMode() {
   
 // 撮影モードのレンダリング修正
 window.initPlannerItems = function() {
-  // 撮影モード用のラジオボタンリスト初期化
-  radioList($("#pl_bg"), SFW.background, "pl_bg", {checkFirst: false});
-  radioList($("#pl_pose"), SFW.pose, "pl_pose", {checkFirst: false});
-  radioList($("#pl_comp"), SFW.composition, "pl_comp", {checkFirst: false});
-  radioList($("#pl_view"), SFW.view, "pl_view", {checkFirst: false});
-  radioList($("#pl_expr"), SFW.expressions, "pl_expr", {checkFirst: false});
-  radioList($("#pl_light"), SFW.lighting, "pl_light", {checkFirst: false});
+  // ★★★ 辞書データの参照方法を統一 ★★★
+  const SFW_DICT = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
   
-  // ★★★ 撮影モード専用要素を追加（辞書参照方法を修正） ★★★
-  // デバッグ用ログを追加
-  console.log('SFW辞書確認:', {
-    camera_angle: SFW.camera_angle,
-    focal_length: SFW.focal_length,
-    depth_of_field: SFW.depth_of_field,
-    photo_technique: SFW.photo_technique,
-    lighting_type: SFW.lighting_type,
-    light_direction: SFW.light_direction,
-    time_of_day: SFW.time_of_day
+  if (!SFW_DICT) {
+    console.error('SFW辞書データが見つかりません');
+    return;
+  }
+  
+  // デバッグ用ログ
+  console.log('撮影モード辞書確認:', {
+    camera_angle: SFW_DICT.camera_angle,
+    focal_length: SFW_DICT.focal_length,
+    depth_of_field: SFW_DICT.depth_of_field,
+    photo_technique: SFW_DICT.photo_technique,
+    lighting_type: SFW_DICT.lighting_type,
+    light_direction: SFW_DICT.light_direction,
+    time_of_day: SFW_DICT.time_of_day
   });
   
-  // 撮影専用要素（存在チェック付き）
-  if (SFW.camera_angle) radioList($("#pl_cameraAngle"), SFW.camera_angle, "pl_cameraAngle", {checkFirst: false});
-  if (SFW.focal_length) radioList($("#pl_focalLength"), SFW.focal_length, "pl_focalLength", {checkFirst: false});
-  if (SFW.depth_of_field) radioList($("#pl_depthOfField"), SFW.depth_of_field, "pl_depthOfField", {checkFirst: false});
-  if (SFW.photo_technique) radioList($("#pl_photoTechnique"), SFW.photo_technique, "pl_photoTechnique", {checkFirst: false});
-  if (SFW.lighting_type) radioList($("#pl_lightingType"), SFW.lighting_type, "pl_lightingType", {checkFirst: false});
-  if (SFW.light_direction) radioList($("#pl_lightDirection"), SFW.light_direction, "pl_lightDirection", {checkFirst: false});
-  if (SFW.time_of_day) radioList($("#pl_timeOfDay"), SFW.time_of_day, "pl_timeOfDay", {checkFirst: false});
+  // 撮影モード用のラジオボタンリスト初期化
+  radioList($("#pl_bg"), SFW_DICT.background, "pl_bg", {checkFirst: false});
+  radioList($("#pl_pose"), SFW_DICT.pose, "pl_pose", {checkFirst: false});
+  radioList($("#pl_comp"), SFW_DICT.composition, "pl_comp", {checkFirst: false});
+  radioList($("#pl_view"), SFW_DICT.view, "pl_view", {checkFirst: false});
+  radioList($("#pl_expr"), SFW_DICT.expressions, "pl_expr", {checkFirst: false});
+  radioList($("#pl_light"), SFW_DICT.lighting, "pl_light", {checkFirst: false});
+  
+  // ★★★ 撮影モード専用要素（存在チェック付き） ★★★
+  if (SFW_DICT.camera_angle) radioList($("#pl_cameraAngle"), SFW_DICT.camera_angle, "pl_cameraAngle", {checkFirst: false});
+  if (SFW_DICT.focal_length) radioList($("#pl_focalLength"), SFW_DICT.focal_length, "pl_focalLength", {checkFirst: false});
+  if (SFW_DICT.depth_of_field) radioList($("#pl_depthOfField"), SFW_DICT.depth_of_field, "pl_depthOfField", {checkFirst: false});
+  if (SFW_DICT.photo_technique) radioList($("#pl_photoTechnique"), SFW_DICT.photo_technique, "pl_photoTechnique", {checkFirst: false});
+  if (SFW_DICT.lighting_type) radioList($("#pl_lightingType"), SFW_DICT.lighting_type, "pl_lightingType", {checkFirst: false});
+  if (SFW_DICT.light_direction) radioList($("#pl_lightDirection"), SFW_DICT.light_direction, "pl_lightDirection", {checkFirst: false});
+  if (SFW_DICT.time_of_day) radioList($("#pl_timeOfDay"), SFW_DICT.time_of_day, "pl_timeOfDay", {checkFirst: false});
 
   // アクセサリーセレクト更新
   const plAccSel = document.getElementById("pl_accSel");
-  if (plAccSel && SFW.accessories) {
+  if (plAccSel && SFW_DICT.accessories) {
     const options = '<option value="">（未選択）</option>' + 
-      SFW.accessories.map(acc => `<option value="${acc.tag}">${acc.label || acc.tag}</option>`).join('');
+      SFW_DICT.accessories.map(acc => `<option value="${acc.tag}">${acc.label || acc.tag}</option>`).join('');
     plAccSel.innerHTML = options;
   }
 };
