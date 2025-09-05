@@ -307,6 +307,7 @@ class MangaPresetSystem {
       this.hidePresetDetails();
     });
   }
+  
   // プリセット詳細表示メソッド
   showPresetDetails(presetId, presetType) {
     const detailsElement = document.getElementById('presetDetails');
@@ -418,23 +419,6 @@ class MangaPresetSystem {
     }
   }
 
-    // プリセット選択
-    document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const presetId = e.target.dataset.preset;
-        const presetType = e.target.dataset.type;
-        this.applyPreset(presetId, presetType);
-        
-        // ボタンアクティブ状態更新
-        this.updateActiveButton(e.target);
-      });
-    });
-
-    // 全クリアボタン
-    document.querySelector('.preset-clear-btn').addEventListener('click', () => {
-      this.clearAllPresets();
-    });
-  }
 
   // タブ切り替え
   switchTab(tabType) {
