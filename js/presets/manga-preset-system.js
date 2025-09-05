@@ -1,3 +1,286 @@
+// ========================================
+// プリセットデータ定義（manga-preset-system.js の先頭に追加）
+// ========================================
+
+// SFWプリセットデータ
+const MANGA_SFW_PRESETS = {
+  'joy_happy': {
+    name: '😊 喜び・幸せ',
+    description: '明るく幸せな表情と雰囲気',
+    settings: {
+      'mangaEmotionPrimary': 'happy',
+      'mangaExpressions': 'smile',
+      'mangaEyeState': 'normal',
+      'mangaMouthState': 'smile',
+      'mangaPose': 'standing'
+    }
+  },
+  'joy_cheerful': {
+    name: '🌟 陽気・元気',
+    description: 'エネルギッシュで活発な表現',
+    settings: {
+      'mangaEmotionPrimary': 'cheerful',
+      'mangaExpressions': 'bright_smile',
+      'mangaEyeState': 'sparkling',
+      'mangaHandGesture': 'peace_sign',
+      'mangaPose': 'dynamic'
+    }
+  },
+  'calm_peaceful': {
+    name: '😌 穏やか',
+    description: '落ち着いた安らぎの表情',
+    settings: {
+      'mangaEmotionPrimary': 'calm',
+      'mangaExpressions': 'gentle_smile',
+      'mangaEyeState': 'half_closed',
+      'mangaMouthState': 'small_smile',
+      'mangaPose': 'sitting'
+    }
+  },
+  'sad_gentle': {
+    name: '😢 悲しみ',
+    description: '優しい悲しみの表現',
+    settings: {
+      'mangaEmotionPrimary': 'sad',
+      'mangaExpressions': 'sad',
+      'mangaEyeState': 'teary',
+      'mangaMouthState': 'frown',
+      'mangaPose': 'dejected'
+    }
+  },
+  'sad_crying': {
+    name: '😭 泣き顔',
+    description: '涙を流している表情',
+    settings: {
+      'mangaEmotionPrimary': 'crying',
+      'mangaExpressions': 'crying',
+      'mangaEyeState': 'tears',
+      'mangaMouthState': 'open_crying',
+      'mangaEffectManga': 'tears'
+    }
+  },
+  'anger_mild': {
+    name: '😤 むすっ',
+    description: '軽い怒りやむくれた表情',
+    settings: {
+      'mangaEmotionPrimary': 'annoyed',
+      'mangaExpressions': 'pouting',
+      'mangaEyeState': 'glaring',
+      'mangaMouthState': 'pout',
+      'mangaHandGesture': 'crossed_arms'
+    }
+  },
+  'anger_fury': {
+    name: '😡 激怒',
+    description: '強い怒りの表現',
+    settings: {
+      'mangaEmotionPrimary': 'angry',
+      'mangaExpressions': 'furious',
+      'mangaEyeState': 'fierce',
+      'mangaMouthState': 'shouting',
+      'mangaEffectManga': 'anger_marks'
+    }
+  },
+  'embarrassed_shy': {
+    name: '😊 恥ずかしがり',
+    description: 'シャイで恥ずかしがる表情',
+    settings: {
+      'mangaEmotionPrimary': 'embarrassed',
+      'mangaExpressions': 'shy',
+      'mangaEyeState': 'averted',
+      'mangaMouthState': 'small_smile',
+      'mangaHandGesture': 'fidgeting'
+    }
+  },
+  'embarrassed_blush': {
+    name: '😳 赤面',
+    description: '顔を赤らめた表情',
+    settings: {
+      'mangaEmotionPrimary': 'blushing',
+      'mangaExpressions': 'blushing',
+      'mangaEyeState': 'wide',
+      'mangaMouthState': 'surprised',
+      'mangaEffectManga': 'blush_marks'
+    }
+  },
+  'surprised_shock': {
+    name: '😲 驚き',
+    description: '驚いた表情',
+    settings: {
+      'mangaEmotionPrimary': 'surprised',
+      'mangaExpressions': 'shocked',
+      'mangaEyeState': 'wide_open',
+      'mangaMouthState': 'open',
+      'mangaEffectManga': 'surprise_marks'
+    }
+  },
+  'sleepy_tired': {
+    name: '😴 眠気',
+    description: '眠そうな表情',
+    settings: {
+      'mangaEmotionPrimary': 'sleepy',
+      'mangaExpressions': 'drowsy',
+      'mangaEyeState': 'half_closed',
+      'mangaMouthState': 'yawning',
+      'mangaPose': 'tired'
+    }
+  }
+};
+
+// NSFWプリセットデータ
+const MANGA_NSFW_PRESETS = {
+  'romantic_sweet': {
+    name: '💕 ロマンチック',
+    description: '甘いロマンチックな雰囲気',
+    level: 'R-15',
+    settings: {
+      'mangaEmotionPrimary': 'loving',
+      'mangaNSFWExpr': 'romantic',
+      'mangaNSFWSitu': 'romantic_date',
+      'mangaNSFWLight': 'soft_romantic',
+      'mangaNSFWPose': 'intimate_close'
+    }
+  },
+  'romantic_intimate': {
+    name: '💖 親密・密着',
+    description: '親密で密着した表現',
+    level: 'R-18',
+    settings: {
+      'mangaEmotionPrimary': 'intimate',
+      'mangaNSFWExpr': 'passionate',
+      'mangaNSFWSitu': 'intimate_moment',
+      'mangaNSFWPose': 'embracing',
+      'mangaNSFWAction': 'kissing'
+    }
+  },
+  'bath_shower': {
+    name: '🛁 バスタイム',
+    description: 'お風呂やシャワーのシーン',
+    level: 'R-15',
+    settings: {
+      'mangaNSFWSitu': 'bathroom',
+      'mangaNSFWExpo': 'bathing',
+      'mangaNSFWLight': 'steam',
+      'mangaNSFWOutfit': 'towel',
+      'mangaNSFWPose': 'bathing_pose'
+    }
+  },
+  'swimsuit_beach': {
+    name: '🏖️ 水着・ビーチ',
+    description: '水着姿やビーチでの表現',
+    level: 'R-15',
+    settings: {
+      'mangaNSFWOutfit': 'bikini',
+      'mangaBackground': 'beach',
+      'mangaNSFWLight': 'sunny',
+      'mangaNSFWPose': 'beach_pose',
+      'mangaNSFWSitu': 'summer_fun'
+    }
+  },
+  'bedroom_night': {
+    name: '🌙 ベッドルーム',
+    description: 'ベッドルームでの夜のシーン',
+    level: 'R-18',
+    settings: {
+      'mangaNSFWSitu': 'bedroom',
+      'mangaNSFWLight': 'dim_romantic',
+      'mangaNSFWOutfit': 'lingerie',
+      'mangaNSFWPose': 'lying_bed',
+      'mangaNSFWExpr': 'seductive'
+    }
+  },
+  'sleepwear_night': {
+    name: '🌃 ナイトウェア',
+    description: 'パジャマやナイトウェア',
+    level: 'R-15',
+    settings: {
+      'mangaNSFWOutfit': 'pajamas',
+      'mangaNSFWSitu': 'bedroom_casual',
+      'mangaNSFWLight': 'soft_night',
+      'mangaEmotionPrimary': 'relaxed',
+      'mangaNSFWPose': 'casual_sitting'
+    }
+  },
+  'glamorous_pose': {
+    name: '💄 グラマラス',
+    description: 'グラマラスでセクシーなポーズ',
+    level: 'R-18',
+    settings: {
+      'mangaNSFWPose': 'glamorous',
+      'mangaNSFWExpr': 'confident_sexy',
+      'mangaNSFWOutfit': 'elegant_dress',
+      'mangaNSFWLight': 'dramatic',
+      'mangaComposition': 'dynamic_angle'
+    }
+  },
+  'pinup_style': {
+    name: '📸 ピンナップ',
+    description: 'ピンナップスタイルの表現',
+    level: 'R-18',
+    settings: {
+      'mangaNSFWPose': 'pinup_classic',
+      'mangaNSFWOutfit': 'retro_sexy',
+      'mangaNSFWExpr': 'playful_wink',
+      'mangaComposition': 'portrait',
+      'mangaArtStyle': 'retro'
+    }
+  },
+  'school_after': {
+    name: '🏫 放課後',
+    description: '放課後の学校シーン',
+    level: 'R-15',
+    settings: {
+      'mangaNSFWOutfit': 'school_uniform',
+      'mangaBackground': 'classroom',
+      'mangaNSFWSitu': 'after_school',
+      'mangaEmotionPrimary': 'youthful',
+      'mangaNSFWExpr': 'innocent_cute'
+    }
+  },
+  'cosplay_maid': {
+    name: '🎀 メイドコス',
+    description: 'メイドコスプレ',
+    level: 'R-18',
+    settings: {
+      'mangaNSFWOutfit': 'maid_costume',
+      'mangaNSFWPose': 'serving_pose',
+      'mangaNSFWExpr': 'cute_submissive',
+      'mangaNSFWAcc': 'maid_accessories',
+      'mangaNSFWSitu': 'maid_service'
+    }
+  },
+  'cute_innocent': {
+    name: '🌸 初心・純真',
+    description: '初々しく純真な表現',
+    level: 'R-15',
+    settings: {
+      'mangaEmotionPrimary': 'innocent',
+      'mangaNSFWExpr': 'pure_innocent',
+      'mangaNSFWOutfit': 'white_dress',
+      'mangaNSFWLight': 'soft_pure',
+      'mangaNSFWPose': 'innocent_pose'
+    }
+  }
+};
+
+// ========================================
+// デバッグ用：プリセットデータが正しく読み込まれているかチェック
+// ========================================
+console.log('✅ プリセットデータ定義完了', {
+  SFW_COUNT: Object.keys(MANGA_SFW_PRESETS).length,
+  NSFW_COUNT: Object.keys(MANGA_NSFW_PRESETS).length
+});
+
+// ========================================
+// 既存のコードをそのまま使用するための宣言
+// ========================================
+// この後に、先ほど提案した詳細表示機能のコードを続けて追加してください
+
+
+
+
+
+
 // 漫画モードプリセット統合システム
 class MangaPresetSystem {
   constructor() {
