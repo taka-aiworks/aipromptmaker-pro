@@ -346,7 +346,16 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "whip",              "ja": "鞭",                  "level": "L3" },
       { "tag": "electro_toy",       "ja": "電気責め玩具",        "level": "L3" },
       { "tag": "speculum",          "ja": "開脚器/拡張器具",     "level": "L3" },
-      { "tag": "iron_mask",         "ja": "拘束マスク",          "level": "L3" }
+      { "tag": "iron_mask",         "ja": "拘束マスク",          "level": "L3" },
+      // 6. 道具・アイテム（拡張）
+      { "tag": "love_potion", "ja": "媚薬", "level": "L2" },
+      { "tag": "aphrodisiac", "ja": "催淫剤", "level": "L2" },
+      { "tag": "massage_oil", "ja": "マッサージオイル", "level": "L1" },
+      { "tag": "edible_underwear", "ja": "食べられる下着", "level": "L2" },
+      { "tag": "ice_cube_play", "ja": "氷プレイ", "level": "L1" },
+      { "tag": "candle_wax", "ja": "ロウソクプレイ", "level": "L2" },
+      { "tag": "remote_vibrator", "ja": "リモコンバイブ", "level": "L2" },
+      { "tag": "chastity_belt", "ja": "貞操帯", "level": "L3" }
         ],
     
     "outfit": [
@@ -744,6 +753,85 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "public_sex",        "ja": "人前セックス", "level": "L3" },
       { "tag": "filming",           "ja": "撮影・録画", "level": "L2" },
       { "tag": "livestreaming",     "ja": "ライブ配信", "level": "L2" }
-    ]
+    ],
+    // ===== NSFW追加推奨タグ =====
+
+// 1. ★★★ 最優先：インタラクション（2人目キャラ用）★★★
+"interaction_nsfw": [
+  // L1: 軽いスキンシップ
+  { "tag": "intimate_touching", "ja": "密着タッチ", "level": "L1" },
+  { "tag": "sensual_massage", "ja": "官能的マッサージ", "level": "L1" },
+  { "tag": "body_worship", "ja": "身体を愛でる", "level": "L1" },
+  { "tag": "mutual_undressing", "ja": "お互いに脱がせ合う", "level": "L1" },
+  { "tag": "shower_together", "ja": "一緒にシャワー", "level": "L1" },
+  { "tag": "bed_cuddle", "ja": "ベッドで密着", "level": "L1" },
+  
+  // L2: セクシャルアクション
+  { "tag": "mutual_masturbation", "ja": "相互オナニー", "level": "L2" },
+  { "tag": "69_position", "ja": "69ポジション", "level": "L2" },
+  { "tag": "tribbing", "ja": "貝合わせ", "level": "L2" },
+  { "tag": "double_dildo", "ja": "ダブルディルド", "level": "L2" },
+  { "tag": "strap_on_sex", "ja": "ペニバンプレイ", "level": "L2" },
+  { "tag": "roleplay_sex", "ja": "ロールプレイセックス", "level": "L2" },
+  
+  // L3: ハードコア
+  { "tag": "double_penetration_mmf", "ja": "男性2人による二穴攻め", "level": "L3" },
+  { "tag": "gangbang_receiving", "ja": "輪姦される", "level": "L3" },
+  { "tag": "bdsm_session", "ja": "BDSM調教", "level": "L3" },
+  { "tag": "master_slave_play", "ja": "主従プレイ", "level": "L3" },
+  { "tag": "forced_orgasm", "ja": "強制絶頂", "level": "L3" },
+  { "tag": "public_humiliation", "ja": "公開羞恥", "level": "L3" }
+],
+
+// 2. 背景（NSFW特化）
+"background_nsfw": [
+  { "tag": "love_hotel", "ja": "ラブホテル", "level": "L1" },
+  { "tag": "strip_club", "ja": "ストリップクラブ", "level": "L2" },
+  { "tag": "brothel", "ja": "売春宿", "level": "L3" },
+  { "tag": "dungeon_bdsm", "ja": "BDSM地下室", "level": "L3" },
+  { "tag": "adult_theater", "ja": "アダルト劇場", "level": "L2" },
+  { "tag": "massage_parlor", "ja": "マッサージパーラー", "level": "L2" },
+  { "tag": "webcam_room", "ja": "配信部屋", "level": "L1" },
+  { "tag": "adult_convention", "ja": "アダルトイベント会場", "level": "L2" },
+  { "tag": "sex_shop", "ja": "アダルトショップ", "level": "L1" },
+  { "tag": "glory_hole", "ja": "グローリーホール", "level": "L3" }
+],
+
+// 3. 感情・心理状態（NSFW特化）
+"emotion_nsfw": [
+  { "tag": "aroused_confused", "ja": "戸惑いながら興奮", "level": "L1" },
+  { "tag": "reluctant_pleasure", "ja": "嫌がりながら感じる", "level": "L2" },
+  { "tag": "shameful_arousal", "ja": "恥ずかしがりながら興奮", "level": "L1" },
+  { "tag": "prideful_submission", "ja": "プライドを捨てて従う", "level": "L2" },
+  { "tag": "addicted_pleasure", "ja": "快楽依存", "level": "L3" },
+  { "tag": "mind_break", "ja": "精神崩壊", "level": "L3" },
+  { "tag": "corruption_progress", "ja": "堕落進行中", "level": "L2" },
+  { "tag": "virginity_loss", "ja": "初体験の痛み", "level": "L2" }
+],
+
+// 4. 時間・シチュエーション
+"timing_nsfw": [
+  { "tag": "first_time", "ja": "初体験", "level": "L1" },
+  { "tag": "after_party", "ja": "パーティー後", "level": "L1" },
+  { "tag": "drunk_sex", "ja": "酔った勢いで", "level": "L2" },
+  { "tag": "morning_after", "ja": "翌朝", "level": "L1" },
+  { "tag": "lunch_break", "ja": "昼休み", "level": "L2" },
+  { "tag": "overtime_office", "ja": "残業中", "level": "L2" },
+  { "tag": "festival_night", "ja": "祭りの夜", "level": "L1" },
+  { "tag": "graduation_celebration", "ja": "卒業祝い", "level": "L1" },
+  { "tag": "birthday_surprise", "ja": "誕生日サプライズ", "level": "L1" }
+],
+
+// 5. 職業・役職（NSFW用）
+"occupation_nsfw": [
+  { "tag": "teacher_student", "ja": "先生と生徒", "level": "L2" },
+  { "tag": "boss_secretary", "ja": "上司と秘書", "level": "L1" },
+  { "tag": "doctor_patient", "ja": "医師と患者", "level": "L2" },
+  { "tag": "trainer_athlete", "ja": "トレーナーと選手", "level": "L1" },
+  { "tag": "photographer_model", "ja": "カメラマンとモデル", "level": "L1" },
+  { "tag": "landlord_tenant", "ja": "大家と住人", "level": "L2" },
+  { "tag": "delivery_customer", "ja": "配達員と客", "level": "L2" },
+  { "tag": "tutor_student", "ja": "家庭教師と生徒", "level": "L2" }
+],
   }
 };
