@@ -109,7 +109,12 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "lingerie_see_through","ja": "透けランジェリー", "level": "L2" },
       { "tag": "full_transparent_outfit", "ja": "全身透け衣装", "level": "L3" },
       { "tag": "mesh_outfit",         "ja": "メッシュ透け衣装", "level": "L2" },
-      { "tag": "latex_transparent",   "ja": "透明ラバー衣装",   "level": "L3" }
+      { "tag": "latex_transparent",   "ja": "透明ラバー衣装",   "level": "L3" },
+      { "tag": "underboob_window",  "ja": "下乳カットアウト衣装", "level": "L2" },
+      { "tag": "underboob_peek",    "ja": "下乳チラ見え",         "level": "L1" },
+      { "tag": "side_underboob",    "ja": "横から下乳露出",       "level": "L2" },
+      { "tag": "crop_top_underboob","ja": "丈の短いトップスで下乳", "level": "L1" },
+      { "tag": "lifted_top",        "ja": "服をめくって下乳露出", "level": "L2" }
     ],
 
       "situation": [
@@ -142,7 +147,17 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "alley", "ja": "路地裏", "level": "L2" },
       { "tag": "cage", "ja": "檻の中", "level": "L3" },
       { "tag": "dungeon", "ja": "地下牢", "level": "L3" },
-      { "tag": "stage_performance", "ja": "ステージ演出", "level": "L2" }
+      { "tag": "stage_performance", "ja": "ステージ演出", "level": "L2" },
+      { "tag": "sweat",        "ja": "汗（むわっとした表現）", "level": "L1" },
+      { "tag": "steam",        "ja": "白いモヤ・蒸気",         "level": "L1" },
+      { "tag": "sweaty_body",       "ja": "汗だくの体",        "level": "L1" },
+      { "tag": "sweaty_face",       "ja": "汗をかいた顔",      "level": "L1" },
+      { "tag": "sweaty_clothes",    "ja": "汗で濡れた服",      "level": "L2" },
+      { "tag": "sweat_drops",       "ja": "滴る汗",            "level": "L2" },
+      { "tag": "after_exercise",    "ja": "運動後の汗",        "level": "L1" },
+      { "tag": "summer_heat",       "ja": "夏の暑さで汗",      "level": "L1" },
+      { "tag": "crowded_train_heat","ja": "満員電車で汗だく",  "level": "L2" },
+      { "tag": "intense_sex_sweat", "ja": "行為中の汗だく",    "level": "L2" }
     ],
 
       "lighting": [
@@ -201,6 +216,7 @@ window.DEFAULT_NSFW_DICT = {
         { "tag": "labia_spread",     "ja": "小陰唇を広げる",             "level": "L2" },
         { "tag": "pussy_spread",     "ja": "くぱぁ（性器開き）",          "level": "L2" },
         { "tag": "gaping_vagina",    "ja": "拡張くぱぁ（大きく開く）",    "level": "L3" },
+        { "tag": "spread_pussy",      "ja": "くぱぁ（大開脚）",      "level": "L2" },
       
         { "tag": "on_all_fours",    "ja": "四つん這い",        "level": "L2" },
         { "tag": "against_wall",    "ja": "壁に寄りかかる",    "level": "L1" },
@@ -308,7 +324,14 @@ window.DEFAULT_NSFW_DICT = {
         { "tag": "reverse_bridge",        "ja": "逆ブリッジ体位",              "level": "L3" },
         { "tag": "handstand_position",    "ja": "逆立ち体位",                  "level": "L3" },
         
-        { "tag": "multiple_partner_chain","ja": "連結体位（複数人繋がる）",   "level": "L3" }
+        { "tag": "multiple_partner_chain","ja": "連結体位（複数人繋がる）",   "level": "L3" },
+        { "tag": "daisuki_hold",         "ja": "だいしゅきホールド（足絡め密着）", "level": "L3" },
+        { "tag": "missionary_kissing",   "ja": "正常位でキス",                    "level": "L2" },
+        { "tag": "cowgirl_kissing",      "ja": "騎乗位でキス",                    "level": "L2" },
+        { "tag": "spooning_kissing",     "ja": "添い寝位でキス",                  "level": "L2" },
+        { "tag": "lap_sitting_kissing",  "ja": "膝上座位でキス",                  "level": "L2" },
+        { "tag": "against_wall_kissing", "ja": "壁ドンしながらキス",              "level": "L2" },
+        { "tag": "reverse_cowgirl_kiss", "ja": "背面騎乗位で振り返りキス",        "level": "L3" }
 
       ],
     
@@ -355,7 +378,20 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "ice_cube_play", "ja": "氷プレイ", "level": "L1" },
       { "tag": "candle_wax", "ja": "ロウソクプレイ", "level": "L2" },
       { "tag": "remote_vibrator", "ja": "リモコンバイブ", "level": "L2" },
-      { "tag": "chastity_belt", "ja": "貞操帯", "level": "L3" }
+      { "tag": "chastity_belt", "ja": "貞操帯", "level": "L3" },
+      { "tag": "dog_ears",        "ja": "犬耳カチューシャ", "level": "L1" },
+      { "tag": "fox_ears",        "ja": "狐耳カチューシャ", "level": "L1" },
+      { "tag": "wolf_ears",       "ja": "狼耳カチューシャ", "level": "L1" },
+      { "tag": "bear_ears",       "ja": "熊耳カチューシャ", "level": "L1" },
+      { "tag": "sheep_ears",      "ja": "羊耳カチューシャ", "level": "L1" },
+      { "tag": "deer_antlers",    "ja": "鹿の角アクセ",      "level": "L1" },
+      { "tag": "dragon_horns",    "ja": "ドラゴンの角",      "level": "L1" },
+      { "tag": "halo",            "ja": "天使の輪",          "level": "L1" },
+      { "tag": "devil_horns",     "ja": "悪魔の角カチューシャ","level": "L1" },
+      { "tag": "angel_wings",     "ja": "天使の翼アクセ",    "level": "L1" },
+      { "tag": "devil_wings",     "ja": "悪魔の翼アクセ",    "level": "L1" },
+      { "tag": "tail_accessory",  "ja": "しっぽアクセ",      "level": "L1" },
+      { "tag": "pubic_tattoo",      "ja": "淫紋（恥丘タトゥー）", "level": "L2" }
         ],
     
     "outfit": [
@@ -482,6 +518,7 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "lactating", "ja": "母乳分泌", "level": "L2" },
       { "tag": "pregnant_body", "ja": "妊娠体型（お腹ふくらみ）", "level": "L2" },
       { "tag": "pregnant_belly", "ja": "孕み腹", "level": "L2" },
+      { "tag": "pregnant",          "ja": "ボテ腹（妊娠体型）",   "level": "L2" },
       { "tag": "succubus_body",   "ja": "淫魔体型",    "level": "L2" },
       { "tag": "emaciated_body",  "ja": "やつれ体型",  "level": "L3" },
       { "tag": "postpartum_body", "ja": "産後体型", "level": "L2" },
@@ -638,7 +675,38 @@ window.DEFAULT_NSFW_DICT = {
 
       { "tag": "scat",               "ja": "排便/スカトロ",       "level": "L3" },
       { "tag": "scat_play",          "ja": "スカトロプレイ",      "level": "L3" },
-      { "tag": "coprophagia",        "ja": "スカトロ食",          "level": "L3" }
+      { "tag": "coprophagia",        "ja": "スカトロ食",          "level": "L3" },
+
+      { "tag": "pull_aside_insertion_vaginal", "ja": "ずらし挿入（膣・下着/衣服をずらす）", "level": "L2" },
+      { "tag": "pull_aside_insertion_anal",    "ja": "ずらし挿入（アナル・下着/衣服をずらす）", "level": "L3" },
+      { "tag": "panties_aside_rubbing",        "ja": "パンツずらし愛撫（外側/素股）", "level": "L2" },
+      { "tag": "zip_access_insertion",         "ja": "ジッパー開けての挿入", "level": "L2" },
+      { "tag": "through_open_crotch_insertion","ja": "股あき衣装からの挿入", "level": "L2" },
+      { "tag": "one_leg_in_panties_sex",       "ja": "片脚だけパンツ履いたままの挿入", "level": "L2" },
+
+      { "tag": "fingering_vaginal",    "ja": "指入れ（膣）", "level": "L2" },
+      { "tag": "fingering_anal",       "ja": "指入れ（アナル）", "level": "L3" },
+      { "tag": "clit_rubbing",         "ja": "クリ愛撫（擦る/押す）", "level": "L2" },
+      { "tag": "outercourse",          "ja": "素股（外性器擦り合わせ）", "level": "L2" },
+      { "tag": "dry_humping",          "ja": "服の上から擦り付け", "level": "L1" },
+      { "tag": "glans_teasing",        "ja": "亀頭いじり", "level": "L2" },
+     
+      { "tag": "just_the_tip",         "ja": "半挿し/先っぽだけ", "level": "L2" },
+      { "tag": "deep_insert",          "ja": "奥まで挿入（根本まで）", "level": "L3" },
+      { "tag": "grinding_crotch",      "ja": "股間擦り付け（挿入前の挑発）", "level": "L1" },
+     
+      { "tag": "condom_roll_on",       "ja": "コンドーム装着（手で装着）", "level": "L1" },
+      { "tag": "condom_roll_on_mouth", "ja": "コンドームを口で装着", "level": "L2" },
+      { "tag": "apply_lubricant",      "ja": "ローション/潤滑剤を塗る", "level": "L1" },
+      { "tag": "handjob_gesture", "ja": "手コキポーズ（ジェスチャー）", "level": "L2" },
+      { "tag": "fellatio_gesture", "ja": "フェラチオポーズ（ジェスチャー）", "level": "L2" },
+      { "tag": "girl_trembling_with_sexual_climax", "ja": "絶頂で震える体", "level": "L2" },
+      { "tag": "breast_squeeze",    "ja": "乳搾り（セルフ）",   "level": "L2" },
+      { "tag": "breast_grab",       "ja": "乳掴み（正面/他人）","level": "L2" },
+      { "tag": "breast_grab_back",  "ja": "乳掴み（背後から）", "level": "L2" },
+      { "tag": "breast_milk",       "ja": "母乳（垂れる）",     "level": "L2" },
+      { "tag": "nipple_to_nipple",  "ja": "乳首合わせ",          "level": "L2" }
+
     ],
     "action2": [
       { "tag": "creampie",           "ja": "中出し",              "level": "L3" },
@@ -676,6 +744,8 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "insertion_closeup_start",    "ja": "挿入直前アップ",                 "level": "L2" },
       { "tag": "insertion_closeup_mid",      "ja": "挿入中アップ",                   "level": "L3" },
       { "tag": "withdrawal_closeup",         "ja": "抜き差しアップ",                 "level": "L3" },
+      { "tag": "pull_aside_insertion_closeup", "ja": "ずらし挿入・結合部アップ", "level": "L3" },
+      { "tag": "just_the_tip_closeup",         "ja": "半挿しアップ", "level": "L3" },
 
       { "tag": "fluids_vaginal",             "ja": "愛液の描写（糸/滴）",            "level": "L2" },
       { "tag": "fluids_cum_drip",            "ja": "精液が垂れる描写",               "level": "L2" },
@@ -806,7 +876,8 @@ window.DEFAULT_NSFW_DICT = {
   { "tag": "addicted_pleasure", "ja": "快楽依存", "level": "L3" },
   { "tag": "mind_break", "ja": "精神崩壊", "level": "L3" },
   { "tag": "corruption_progress", "ja": "堕落進行中", "level": "L2" },
-  { "tag": "virginity_loss", "ja": "初体験の痛み", "level": "L2" }
+  { "tag": "virginity_loss", "ja": "初体験の痛み", "level": "L2" },
+  { "tag": "trembling_climax",  "ja": "絶頂で震える",       "level": "L2" },
 ],
 
 // 4. 時間・シチュエーション
