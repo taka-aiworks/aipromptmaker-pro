@@ -4719,376 +4719,427 @@ initVisibleImprovements();
 
 // 設定タブUI修正コード
 
-// 1. 設定タブの要素を確実に追加
-function addSettingsUI() {
-  console.log('⚙️ 設定タブUI追加開始');
+// 設定タブ安全初期化コード（エラー回避版）
+
+// 1. 安全な設定UI追加
+function safeAddSettingsUI() {
+  console.log('🛡️ 安全な設定UI追加開始');
   
-  const settingsPanel = document.getElementById('panelSettings');
+  // 設定パネルの存在確認（より確実に）
+  let settingsPanel = document.getElementById('panelSettings');
   if (!settingsPanel) {
     console.error('❌ 設定パネルが見つかりません');
-    return;
+    return false;
   }
   
-  console.log('✅ 設定パネル発見');
-  
-  // 既存のバックアップパネルをチェック
-  if (settingsPanel.querySelector('.backup-panel')) {
-    console.log('⚠️ バックアップパネルは既に存在します');
-    return;
+  // 既に追加済みかチェック
+  if (settingsPanel.querySelector('.safe-backup-panel')) {
+    console.log('⚠️ 設定UIは既に追加済みです');
+    return true;
   }
   
-  // バックアップパネルを作成
-  const backupPanel = document.createElement('div');
-  backupPanel.className = 'panel backup-panel';
-  backupPanel.style.cssText = `
-    margin-bottom: 20px;
-    padding: 16px;
-    border: 1px solid #444;
-    border-radius: 8px;
-    background: var(--bg-card, #2a2f3a);
-  `;
+  // 新しいコンテナを作成
+  const newContainer = document.createElement('div');
+  newContainer.className = 'safe-settings-container';
+  newContainer.style.cssText = 'margin-bottom: 20px;';
   
-  backupPanel.innerHTML = `
-    <h3 style="margin: 0 0 12px 0; color: #fff;">💾 バックアップ・復元</h3>
-    <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-      <button id="backup-export-btn" class="btn ok small">📤 バックアップエクスポート</button>
-      <label for="backup-import-file" class="btn ghost small" style="cursor: pointer;">📥 バックアップインポート</label>
-      <input type="file" id="backup-import-file" accept=".json" style="display: none;">
-    </div>
-    <div class="note mini" style="color: #aaa;">
-      すべての設定、プリセット、履歴をバックアップできます。<br>
-      エクスポートでJSONファイルをダウンロード、インポートで復元できます。
+  // バックアップパネル
+  const backupHTML = `
+    <div class="panel safe-backup-panel" style="margin-bottom: 16px; padding: 16px; border: 1px solid #444; border-radius: 8px; background: var(--bg-card, #2a2f3a);">
+      <h3 style="margin: 0 0 12px 0; color: #fff;">💾 バックアップ・復元</h3>
+      <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+        <button onclick="safeExportBackup()" class="btn ok small">📤 エクスポート</button>
+        <label for="safe-import-file" class="btn ghost small" style="cursor: pointer;">📥 インポート</label>
+        <input type="file" id="safe-import-file" accept=".json" style="display: none;">
+      </div>
+      <div class="note mini" style="color: #aaa;">
+        設定・プリセット・履歴をバックアップできます
+      </div>
     </div>
   `;
   
-  // 履歴パネルを作成
-  const historyPanel = document.createElement('div');
-  historyPanel.className = 'panel history-panel';
-  historyPanel.style.cssText = `
-    margin-bottom: 20px;
-    padding: 16px;
-    border: 1px solid #444;
-    border-radius: 8px;
-    background: var(--bg-card, #2a2f3a);
-  `;
-  
-  historyPanel.innerHTML = `
-    <h3 style="margin: 0 0 12px 0; color: #fff;">📜 使用履歴</h3>
-    <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-      <button id="history-view-btn" class="btn ghost small">📋 履歴表示</button>
-      <button id="history-clear-btn" class="btn bad small">🗑️ 履歴クリア</button>
-      <span id="history-count" class="mini" style="color: #aaa; align-self: center;">履歴: 0件</span>
-    </div>
-    <div id="history-content-area" style="max-height: 300px; overflow-y: auto; display: none; margin-top: 12px;">
-      <div class="note mini" style="color: #aaa;">履歴を読み込み中...</div>
-    </div>
-    <div class="note mini" style="color: #aaa;">
-      生成したプロンプトの履歴を確認できます。最新100件まで保存されます。
+  // 履歴パネル
+  const historyHTML = `
+    <div class="panel safe-history-panel" style="margin-bottom: 16px; padding: 16px; border: 1px solid #444; border-radius: 8px; background: var(--bg-card, #2a2f3a);">
+      <h3 style="margin: 0 0 12px 0; color: #fff;">📜 使用履歴</h3>
+      <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+        <button onclick="safeToggleHistory()" class="btn ghost small" id="safe-history-toggle">📋 履歴表示</button>
+        <button onclick="safeClearHistory()" class="btn bad small">🗑️ 履歴クリア</button>
+        <span id="safe-history-count" class="mini" style="color: #aaa;">履歴: 0件</span>
+      </div>
+      <div id="safe-history-content" style="max-height: 250px; overflow-y: auto; display: none; margin-top: 12px; border-top: 1px solid #444; padding-top: 12px;">
+        <div class="note mini" style="color: #aaa;">履歴なし</div>
+      </div>
+      <div class="note mini" style="color: #aaa;">
+        生成履歴を確認・管理できます
+      </div>
     </div>
   `;
   
-  // プリセット管理パネルを作成
-  const presetPanel = document.createElement('div');
-  presetPanel.className = 'panel preset-panel';
-  presetPanel.style.cssText = `
-    margin-bottom: 20px;
-    padding: 16px;
-    border: 1px solid #444;
-    border-radius: 8px;
-    background: var(--bg-card, #2a2f3a);
-  `;
-  
-  presetPanel.innerHTML = `
-    <h3 style="margin: 0 0 12px 0; color: #fff;">⚙️ プリセット管理</h3>
-    <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-      <button id="preset-view-all-btn" class="btn ghost small">📋 全プリセット表示</button>
-      <button id="preset-clear-all-btn" class="btn bad small">🗑️ 全プリセット削除</button>
-      <span id="preset-count" class="mini" style="color: #aaa; align-self: center;">プリセット: 0件</span>
-    </div>
-    <div id="preset-content-area" style="max-height: 300px; overflow-y: auto; display: none; margin-top: 12px;">
-      <div class="note mini" style="color: #aaa;">プリセットを読み込み中...</div>
-    </div>
-    <div class="note mini" style="color: #aaa;">
-      保存されたプリセットを一覧表示・削除できます。
+  // プリセット管理パネル
+  const presetHTML = `
+    <div class="panel safe-preset-panel" style="margin-bottom: 16px; padding: 16px; border: 1px solid #444; border-radius: 8px; background: var(--bg-card, #2a2f3a);">
+      <h3 style="margin: 0 0 12px 0; color: #fff;">⚙️ プリセット管理</h3>
+      <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+        <button onclick="safeTogglePresets()" class="btn ghost small" id="safe-preset-toggle">📋 プリセット表示</button>
+        <button onclick="safeClearPresets()" class="btn bad small">🗑️ 全削除</button>
+        <span id="safe-preset-count" class="mini" style="color: #aaa;">プリセット: 0件</span>
+      </div>
+      <div id="safe-preset-content" style="max-height: 250px; overflow-y: auto; display: none; margin-top: 12px; border-top: 1px solid #444; padding-top: 12px;">
+        <div class="note mini" style="color: #aaa;">プリセットなし</div>
+      </div>
+      <div class="note mini" style="color: #aaa;">
+        保存されたプリセットを管理できます
+      </div>
     </div>
   `;
   
-  // 設定パネルの先頭に追加（既存のパネルの前に）
-  const firstPanel = settingsPanel.querySelector('.panel');
-  if (firstPanel) {
-    settingsPanel.insertBefore(presetPanel, firstPanel);
-    settingsPanel.insertBefore(historyPanel, firstPanel);
-    settingsPanel.insertBefore(backupPanel, firstPanel);
-  } else {
-    settingsPanel.appendChild(backupPanel);
-    settingsPanel.appendChild(historyPanel);
-    settingsPanel.appendChild(presetPanel);
+  // コンテナにHTML追加
+  newContainer.innerHTML = backupHTML + historyHTML + presetHTML;
+  
+  // 安全にDOMに追加
+  try {
+    // 設定パネルの最初の子要素として追加
+    const firstChild = settingsPanel.firstElementChild;
+    if (firstChild) {
+      settingsPanel.insertBefore(newContainer, firstChild);
+    } else {
+      settingsPanel.appendChild(newContainer);
+    }
+    
+    console.log('✅ 設定UI追加成功');
+    
+    // インポートファイルのイベント設定
+    const importFile = document.getElementById('safe-import-file');
+    if (importFile) {
+      importFile.addEventListener('change', safeImportBackup);
+    }
+    
+    // 初期データ更新
+    updateSafeCounts();
+    
+    return true;
+    
+  } catch (error) {
+    console.error('❌ 設定UI追加失敗:', error);
+    return false;
   }
-  
-  console.log('✅ UI要素追加完了');
-  
-  // イベントリスナーを設定
-  setupSettingsEventListeners();
-  
-  // 初期データを更新
-  updateSettingsCounts();
 }
 
-// 2. イベントリスナー設定
-function setupSettingsEventListeners() {
-  console.log('🔗 イベントリスナー設定開始');
+// 2. 安全なバックアップエクスポート
+function safeExportBackup() {
+  console.log('📤 バックアップエクスポート実行');
   
-  // バックアップエクスポート
-  const exportBtn = document.getElementById('backup-export-btn');
-  if (exportBtn) {
-    exportBtn.addEventListener('click', () => {
-      console.log('📤 バックアップエクスポート実行');
+  try {
+    if (typeof BackupManager !== 'undefined' && BackupManager.export) {
       BackupManager.export();
-    });
-  }
-  
-  // バックアップインポート
-  const importFile = document.getElementById('backup-import-file');
-  if (importFile) {
-    importFile.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        console.log('📥 バックアップインポート実行');
-        BackupManager.import(file);
-        e.target.value = ''; // ファイル選択をリセット
+    } else {
+      // 簡易バックアップ
+      const backup = {
+        timestamp: new Date().toISOString(),
+        localStorage: {}
+      };
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('LPM_')) {
+          backup.localStorage[key] = localStorage.getItem(key);
+        }
       }
-    });
+      
+      const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `LPM_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast('バックアップをエクスポートしました');
+    }
+  } catch (error) {
+    console.error('❌ エクスポートエラー:', error);
+    toast('エクスポートに失敗しました');
   }
-  
-  // 履歴表示切り替え
-  const historyViewBtn = document.getElementById('history-view-btn');
-  if (historyViewBtn) {
-    historyViewBtn.addEventListener('click', () => {
-      toggleHistoryDisplay();
-    });
-  }
-  
-  // 履歴クリア
-  const historyClearBtn = document.getElementById('history-clear-btn');
-  if (historyClearBtn) {
-    historyClearBtn.addEventListener('click', () => {
-      if (confirm('使用履歴をすべて削除しますか？')) {
-        HistoryManager.clear();
-        updateHistoryDisplay();
-        updateSettingsCounts();
-        toast('履歴をクリアしました');
-      }
-    });
-  }
-  
-  // プリセット表示切り替え
-  const presetViewBtn = document.getElementById('preset-view-all-btn');
-  if (presetViewBtn) {
-    presetViewBtn.addEventListener('click', () => {
-      togglePresetDisplay();
-    });
-  }
-  
-  // 全プリセット削除
-  const presetClearBtn = document.getElementById('preset-clear-all-btn');
-  if (presetClearBtn) {
-    presetClearBtn.addEventListener('click', () => {
-      if (confirm('すべてのプリセットを削除しますか？')) {
-        clearAllPresets();
-        updatePresetDisplay();
-        updateSettingsCounts();
-        toast('全プリセットを削除しました');
-      }
-    });
-  }
-  
-  console.log('✅ イベントリスナー設定完了');
 }
 
-// 3. 履歴表示切り替え
-function toggleHistoryDisplay() {
-  const content = document.getElementById('history-content-area');
-  const btn = document.getElementById('history-view-btn');
+// 3. 安全なバックアップインポート
+function safeImportBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
   
-  if (!content || !btn) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      
+      if (backup.localStorage) {
+        Object.entries(backup.localStorage).forEach(([key, value]) => {
+          localStorage.setItem(key, value);
+        });
+      }
+      
+      toast('バックアップをインポートしました。ページを再読み込みしてください。');
+      
+    } catch (error) {
+      console.error('❌ インポートエラー:', error);
+      toast('インポートに失敗しました');
+    }
+  };
+  
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// 4. 履歴表示切り替え
+function safeToggleHistory() {
+  const content = document.getElementById('safe-history-content');
+  const toggle = document.getElementById('safe-history-toggle');
+  
+  if (!content || !toggle) return;
   
   if (content.style.display === 'none') {
     content.style.display = 'block';
-    btn.textContent = '📋 履歴非表示';
-    updateHistoryDisplay();
+    toggle.textContent = '📋 履歴非表示';
+    updateHistoryContent();
   } else {
     content.style.display = 'none';
-    btn.textContent = '📋 履歴表示';
+    toggle.textContent = '📋 履歴表示';
   }
 }
 
-// 4. 履歴表示更新
-function updateHistoryDisplay() {
-  const content = document.getElementById('history-content-area');
+// 5. 履歴内容更新
+function updateHistoryContent() {
+  const content = document.getElementById('safe-history-content');
   if (!content) return;
   
-  const history = HistoryManager.get();
+  let history = [];
+  try {
+    if (typeof HistoryManager !== 'undefined') {
+      history = HistoryManager.get();
+    } else {
+      const stored = localStorage.getItem('LPM_HISTORY');
+      history = stored ? JSON.parse(stored) : [];
+    }
+  } catch (error) {
+    console.error('❌ 履歴取得エラー:', error);
+  }
   
   if (history.length === 0) {
     content.innerHTML = '<div class="note mini" style="color: #aaa;">履歴がありません</div>';
     return;
   }
   
-  content.innerHTML = history.slice(0, 20).map((entry, index) => `
-    <div style="padding: 12px; border-bottom: 1px solid #444; font-size: 12px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-        <span style="color: #3b82f6; font-weight: 500;">${entry.mode}モード</span>
-        <span style="color: #888; font-size: 11px;">${new Date(entry.timestamp).toLocaleString()}</span>
-      </div>
-      <div style="color: #ccc; word-break: break-all;">${entry.prompt}</div>
+  content.innerHTML = history.slice(0, 10).map(entry => `
+    <div style="padding: 8px; border-bottom: 1px solid #555; font-size: 12px;">
+      <div style="color: #3b82f6; font-weight: 500;">${entry.mode || 'unknown'}モード</div>
+      <div style="color: #ccc; margin: 4px 0; word-break: break-all;">${(entry.prompt || '').substring(0, 100)}...</div>
+      <div style="color: #888; font-size: 10px;">${new Date(entry.timestamp).toLocaleString()}</div>
     </div>
   `).join('');
 }
 
-// 5. プリセット表示切り替え
-function togglePresetDisplay() {
-  const content = document.getElementById('preset-content-area');
-  const btn = document.getElementById('preset-view-all-btn');
+// 6. 履歴クリア
+function safeClearHistory() {
+  if (!confirm('使用履歴をすべて削除しますか？')) return;
   
-  if (!content || !btn) return;
-  
-  if (content.style.display === 'none') {
-    content.style.display = 'block';
-    btn.textContent = '📋 プリセット非表示';
-    updatePresetDisplay();
-  } else {
-    content.style.display = 'none';
-    btn.textContent = '📋 全プリセット表示';
+  try {
+    if (typeof HistoryManager !== 'undefined') {
+      HistoryManager.clear();
+    } else {
+      localStorage.removeItem('LPM_HISTORY');
+    }
+    
+    updateHistoryContent();
+    updateSafeCounts();
+    toast('履歴をクリアしました');
+    
+  } catch (error) {
+    console.error('❌ 履歴クリアエラー:', error);
+    toast('履歴クリアに失敗しました');
   }
 }
 
-// 6. プリセット表示更新
-function updatePresetDisplay() {
-  const content = document.getElementById('preset-content-area');
+// 7. プリセット表示切り替え
+function safeTogglePresets() {
+  const content = document.getElementById('safe-preset-content');
+  const toggle = document.getElementById('safe-preset-toggle');
+  
+  if (!content || !toggle) return;
+  
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    toggle.textContent = '📋 プリセット非表示';
+    updatePresetContent();
+  } else {
+    content.style.display = 'none';
+    toggle.textContent = '📋 プリセット表示';
+  }
+}
+
+// 8. プリセット内容更新
+function updatePresetContent() {
+  const content = document.getElementById('safe-preset-content');
   if (!content) return;
   
-  const allPresets = getAllPresets();
+  let allPresets = [];
+  
+  try {
+    const modes = ['production', 'manga', 'planner', 'learning'];
+    modes.forEach(mode => {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith(`LPM_PRESET_${mode}_`)) {
+          const preset = JSON.parse(localStorage.getItem(key));
+          allPresets.push({...preset, mode});
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ プリセット取得エラー:', error);
+  }
   
   if (allPresets.length === 0) {
-    content.innerHTML = '<div class="note mini" style="color: #aaa;">保存されたプリセットがありません</div>';
+    content.innerHTML = '<div class="note mini" style="color: #aaa;">プリセットがありません</div>';
     return;
   }
   
   content.innerHTML = allPresets.map(preset => `
-    <div style="padding: 12px; border-bottom: 1px solid #444; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="padding: 8px; border-bottom: 1px solid #555; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
       <div>
         <div style="color: #3b82f6; font-weight: 500;">${preset.name}</div>
-        <div style="color: #888; font-size: 11px;">${preset.mode}モード - ${new Date(preset.created).toLocaleString()}</div>
+        <div style="color: #888; font-size: 10px;">${preset.mode}モード - ${new Date(preset.created).toLocaleDateString()}</div>
       </div>
-      <button class="btn bad small" onclick="deletePreset('${preset.mode}', '${preset.name}')" style="font-size: 10px; padding: 2px 6px;">削除</button>
+      <button onclick="safeDeletePreset('${preset.mode}', '${preset.name}')" class="btn bad small" style="font-size: 10px; padding: 2px 6px;">削除</button>
     </div>
   `).join('');
 }
 
-// 7. 全プリセット取得
-function getAllPresets() {
-  const allPresets = [];
-  const modes = ['production', 'manga', 'planner', 'learning'];
+// 9. プリセット削除
+function safeDeletePreset(mode, name) {
+  if (!confirm(`プリセット「${name}」を削除しますか？`)) return;
   
-  modes.forEach(mode => {
-    const presets = PresetManager.list(mode);
-    presets.forEach(preset => {
-      allPresets.push({ ...preset, mode });
-    });
-  });
-  
-  return allPresets.sort((a, b) => new Date(b.created) - new Date(a.created));
-}
-
-// 8. 全プリセット削除
-function clearAllPresets() {
-  const modes = ['production', 'manga', 'planner', 'learning'];
-  
-  modes.forEach(mode => {
-    const presets = PresetManager.list(mode);
-    presets.forEach(preset => {
-      PresetManager.delete(mode, preset.name);
-    });
-  });
-}
-
-// 9. 個別プリセット削除
-function deletePreset(mode, name) {
-  if (confirm(`プリセット「${name}」を削除しますか？`)) {
-    PresetManager.delete(mode, name);
-    updatePresetDisplay();
-    updateSettingsCounts();
+  try {
+    const key = `LPM_PRESET_${mode}_${name}`;
+    localStorage.removeItem(key);
     
-    // 該当モードのプリセット一覧も更新
-    updatePresetList(mode);
+    updatePresetContent();
+    updateSafeCounts();
+    toast(`プリセット「${name}」を削除しました`);
+    
+    // 対応するモードのプリセット選択も更新
+    if (typeof updatePresetList === 'function') {
+      updatePresetList(mode);
+    }
+    
+  } catch (error) {
+    console.error('❌ プリセット削除エラー:', error);
+    toast('プリセット削除に失敗しました');
   }
 }
 
-// 10. 設定画面の件数表示更新
-function updateSettingsCounts() {
-  // 履歴件数
-  const historyCount = document.getElementById('history-count');
-  if (historyCount) {
-    const count = HistoryManager.get().length;
-    historyCount.textContent = `履歴: ${count}件`;
-  }
+// 10. 全プリセット削除
+function safeClearPresets() {
+  if (!confirm('すべてのプリセットを削除しますか？')) return;
   
-  // プリセット件数
-  const presetCount = document.getElementById('preset-count');
-  if (presetCount) {
-    const count = getAllPresets().length;
-    presetCount.textContent = `プリセット: ${count}件`;
+  try {
+    const keysToDelete = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith('LPM_PRESET_')) {
+        keysToDelete.push(key);
+      }
+    }
+    
+    keysToDelete.forEach(key => localStorage.removeItem(key));
+    
+    updatePresetContent();
+    updateSafeCounts();
+    toast('すべてのプリセットを削除しました');
+    
+  } catch (error) {
+    console.error('❌ 全プリセット削除エラー:', error);
+    toast('プリセット削除に失敗しました');
   }
 }
 
-// 11. 強制初期化（デバッグ用）
-function forceInitSettingsUI() {
-  console.log('🔧 設定UI強制初期化');
+// 11. 件数表示更新
+function updateSafeCounts() {
+  try {
+    // 履歴件数
+    const historyCount = document.getElementById('safe-history-count');
+    if (historyCount) {
+      let count = 0;
+      const stored = localStorage.getItem('LPM_HISTORY');
+      if (stored) {
+        const history = JSON.parse(stored);
+        count = Array.isArray(history) ? history.length : 0;
+      }
+      historyCount.textContent = `履歴: ${count}件`;
+    }
+    
+    // プリセット件数
+    const presetCount = document.getElementById('safe-preset-count');
+    if (presetCount) {
+      let count = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('LPM_PRESET_')) {
+          count++;
+        }
+      }
+      presetCount.textContent = `プリセット: ${count}件`;
+    }
+    
+  } catch (error) {
+    console.error('❌ 件数更新エラー:', error);
+  }
+}
+
+// 12. 初期化関数
+function initSafeSettingsUI() {
+  console.log('🛡️ 安全な設定UI初期化開始');
   
-  // 既存のパネルを削除
-  const existing = document.querySelectorAll('.backup-panel, .history-panel, .preset-panel');
-  existing.forEach(panel => panel.remove());
+  // 設定タブがクリックされたときに初期化
+  document.addEventListener('click', (e) => {
+    if (e.target.matches('.tab[data-mode="settings"]')) {
+      setTimeout(() => {
+        const settingsPanel = document.getElementById('panelSettings');
+        if (settingsPanel && !settingsPanel.hidden) {
+          if (!settingsPanel.querySelector('.safe-backup-panel')) {
+            safeAddSettingsUI();
+          } else {
+            updateSafeCounts();
+          }
+        }
+      }, 300);
+    }
+  });
   
-  // 再度追加
+  // 既に設定タブが表示されている場合
   setTimeout(() => {
-    addSettingsUI();
-  }, 100);
+    const settingsPanel = document.getElementById('panelSettings');
+    if (settingsPanel && !settingsPanel.hidden) {
+      safeAddSettingsUI();
+    }
+  }, 1000);
 }
 
 // グローバル関数として公開
-window.addSettingsUI = addSettingsUI;
-window.forceInitSettingsUI = forceInitSettingsUI;
-window.deletePreset = deletePreset;
-window.updateSettingsCounts = updateSettingsCounts;
+window.safeAddSettingsUI = safeAddSettingsUI;
+window.safeExportBackup = safeExportBackup;
+window.safeImportBackup = safeImportBackup;
+window.safeToggleHistory = safeToggleHistory;
+window.safeClearHistory = safeClearHistory;
+window.safeTogglePresets = safeTogglePresets;
+window.safeDeletePreset = safeDeletePreset;
+window.safeClearPresets = safeClearPresets;
+window.updateSafeCounts = updateSafeCounts;
 
-// タブクリック時の初期化
-document.addEventListener('click', (e) => {
-  if (e.target.matches('.tab[data-mode="settings"]')) {
-    setTimeout(() => {
-      const settingsPanel = document.getElementById('panelSettings');
-      if (settingsPanel && !settingsPanel.hidden) {
-        if (!settingsPanel.querySelector('.backup-panel')) {
-          addSettingsUI();
-        } else {
-          updateSettingsCounts();
-        }
-      }
-    }, 200);
-  }
-});
+// 自動初期化
+initSafeSettingsUI();
 
-// DOM読み込み完了後の初期化
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    // 設定タブが既に表示されている場合の初期化
-    const settingsPanel = document.getElementById('panelSettings');
-    if (settingsPanel && !settingsPanel.hidden) {
-      addSettingsUI();
-    }
-  }, 2000);
-});
-
-console.log('⚙️ 設定タブUI修正コードを読み込みました');
-console.log('📖 コマンド:');
-console.log('  - forceInitSettingsUI() で強制初期化');
-console.log('  - updateSettingsCounts() で件数更新');
+console.log('🛡️ 安全な設定UI初期化コードを読み込みました');
+console.log('📖 手動コマンド:');
+console.log('  - safeAddSettingsUI() で手動初期化');
+console.log('  - updateSafeCounts() で件数更新');
