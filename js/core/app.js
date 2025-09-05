@@ -2915,12 +2915,14 @@ const MAPPING_TABLE = {
     'body_type': 'body-type',
     'height': 'height',
     'worldview': 'worldview',
+    'speech_tone': 'speech-tone',  // ← 追加
     'hair_style': 'hair-style',
     'hair_length': 'hair-length',
     'bangs_style': 'bangs-style',
     'eyes': 'eyes',
     'face': 'face',
     'skin_features': 'skin-features',
+    'skin_body': 'skin-body',  // ← 追加
     'outfit': 'outfit-sfw',
     'accessories': 'accessories',
     'pose': 'pose',
@@ -2940,7 +2942,16 @@ const MAPPING_TABLE = {
     'movement_action': 'movement-action',
     'props_light': 'props-light',
     'effect_manga': 'effect-manga',
-    'colors': 'color'
+    'colors': 'color',
+    // ★★★ 撮影モード専用要素を追加 ★★★
+    'camera_angle': 'camera-angle',
+    'focal_length': 'focal-length',
+    'depth_of_field': 'depth-of-field',
+    'photo_technique': 'photo-technique',
+    'lighting_type': 'lighting-type',
+    'light_direction': 'light-direction',
+    'time_of_day': 'time-of-day',
+    // ネガティブ関連は単語モードでは使用しないため除外
   },
   NSFW: {
     'expression': 'expression-nsfw',
