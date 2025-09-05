@@ -1377,32 +1377,65 @@
 
       
 
-   <!-- ==== 撮影モード ==== -->
+<!-- ==== 撮影モード（写真撮影特化版） ==== -->
 <section id="panelPlanner" class="card" hidden>
   <h2>撮影モード</h2>
-  <p class="note">1枚だけ確定出力。学習・量産のホワイトリストなし。</p>
+  <p class="note">写真撮影に特化したプロンプト生成。カメラワーク・ライティング重視。</p>
 
-  <div class="row mini"><b>背景</b></div>
-  <div id="pl_bg" class="scroller"></div>
+  <!-- カメラワーク系 -->
+  <div class="panel">
+    <h3>📷 カメラ設定</h3>
+    
+    <div class="row mini"><b>カメラアングル</b></div>
+    <div id="pl_cameraAngle" class="scroller"></div>
 
-  <div class="row mini" style="margin-top:10px"><b>ポーズ</b></div>
-  <div id="pl_pose" class="scroller"></div>
+    <div class="row mini" style="margin-top:10px"><b>レンズ・焦点距離</b></div>
+    <div id="pl_focalLength" class="scroller"></div>
 
-  <div class="row mini" style="margin-top:10px"><b>構図</b></div>
-  <div id="pl_comp" class="scroller"></div>
+    <div class="row mini" style="margin-top:10px"><b>被写界深度</b></div>
+    <div id="pl_depthOfField" class="scroller"></div>
 
-  <div class="row mini" style="margin-top:10px"><b>視点</b></div>
-  <div id="pl_view" class="scroller"></div>
+    <div class="row mini" style="margin-top:10px"><b>撮影技法</b></div>
+    <div id="pl_photoTechnique" class="scroller"></div>
+  </div>
 
-  <div class="row mini" style="margin-top:10px"><b>表情</b></div>
-  <div id="pl_expr" class="scroller"></div>
+  <!-- ライティング系 -->
+  <div class="panel">
+    <h3>💡 ライティング</h3>
+    
+    <div class="row mini"><b>照明タイプ</b></div>
+    <div id="pl_lightingType" class="scroller"></div>
 
-  <div class="row mini" style="margin-top:10px"><b>ライティング</b></div>
-  <div id="pl_light" class="scroller"></div>
+    <div class="row mini" style="margin-top:10px"><b>光の方向</b></div>
+    <div id="pl_lightDirection" class="scroller"></div>
 
-  <!-- 18禁 -->
-  <div class="panel" style="margin-top:10px">
-    <h3>18禁</h3>
+    <div class="row mini" style="margin-top:10px"><b>時間帯・環境光</b></div>
+    <div id="pl_timeOfDay" class="scroller"></div>
+  </div>
+
+  <!-- 基本撮影要素 -->
+  <div class="panel">
+    <h3>📸 撮影要素</h3>
+    
+    <div class="row mini"><b>背景</b></div>
+    <div id="pl_bg" class="scroller"></div>
+
+    <div class="row mini" style="margin-top:10px"><b>ポーズ</b></div>
+    <div id="pl_pose" class="scroller"></div>
+
+    <div class="row mini" style="margin-top:10px"><b>構図</b></div>
+    <div id="pl_comp" class="scroller"></div>
+
+    <div class="row mini" style="margin-top:10px"><b>視点</b></div>
+    <div id="pl_view" class="scroller"></div>
+
+    <div class="row mini" style="margin-top:10px"><b>表情</b></div>
+    <div id="pl_expr" class="scroller"></div>
+  </div>
+
+  <!-- 18禁セクション -->
+  <div class="panel">
+    <h3>🔞 18禁オプション</h3>
     <div class="row" style="margin-top:6px">
       <label class="inline"><input type="checkbox" id="pl_nsfw"> 18禁ON</label>
       <span class="mini">（手動選択のみ）</span>
@@ -1417,18 +1450,14 @@
       <div class="grid g3" style="margin-top:6px">
         <div class="note mini" style="margin:6px 0">
           ※表情や衣装が被った場合NSFWで選んだものが優先されます。
-          追加で色を指定したい場合は単語モードを参照して追加してください。
         </div>
         <div class="mini" style="margin-top:6px">
           ※ 露出・下着・衣装は競合しやすいため、同時に複数を選ぶと出力が崩れる可能性があります。
-          なるべく1カテゴリのみを使用してください。
         </div>
-        <!-- 先頭に：露出／下着／衣装 -->
+        <!-- NSFW要素 -->
         <div><b class="mini">露出</b><div id="pl_nsfw_expo" class="scroller"></div></div>
         <div><b class="mini">下着</b><div id="pl_nsfw_underwear" class="scroller"></div></div>
         <div><b class="mini">衣装</b><div id="pl_nsfw_outfit" class="scroller"></div></div>
-      
-        <!-- 以降そのまま -->
         <div><b class="mini">表情</b><div id="pl_nsfw_expr" class="scroller"></div></div>
         <div><b class="mini">シチュ</b><div id="pl_nsfw_situ" class="scroller"></div></div>
         <div><b class="mini">ライティング</b><div id="pl_nsfw_light" class="scroller"></div></div>
@@ -1441,10 +1470,9 @@
     </div>
   </div>
 
-  <hr class="sep">
-
+  <!-- 固定タグ・ネガティブ -->
   <div class="panel">
-    <h3>固定タグ / ネガティブ</h3>
+    <h3>📝 固定タグ / ネガティブ</h3>
     <label>固定タグ（先頭に付与）</label>
     <textarea id="fixedPlanner" rows="3" placeholder="※タグを追加したい場合はここに入力"></textarea>
     <label style="margin-top:10px">ネガティブ（全行）</label>
@@ -1453,8 +1481,10 @@
       <label class="inline"><input type="checkbox" id="pl_useDefaultNeg" checked> デフォルトのネガティブを使う</label>
     </div>
   </div>
-        <!-- 出力フォーマット（学習/量産と同仕様） -->
-    <!-- 出力フォーマット（学習/量産と同仕様） -->
+
+  <!-- 出力セクション -->
+  <div class="panel">
+    <h3>🎯 出力</h3>
     <div class="row" style="gap:8px;margin-top:10px">
       <button id="btnPlanOne" class="btn ok">1件出力</button>
       <label class="inline mini">出力フォーマット
@@ -1466,28 +1496,29 @@
           <option value="nai">NovelAI</option>
         </select>
       </label>
-      <span style="flex:1"></span>
     </div>
     
-      <div class="grid g3" style="margin-top:10px">
-    <div>
-      <div class="mini" style="margin:0 0 .35rem">全部</div>
-      <div class="out" id="outPlannerAll"></div>
-      <button id="btnCopyPlannerAll" class="btn ghost small" style="margin-top:6px">全部をコピー</button>
-    </div>
-    <div>
-      <div class="mini" style="margin:0 0 .35rem">Promptのみ</div>
-      <div class="out" id="outPlannerPrompt"></div>
-      <button id="btnCopyPlannerPrompt" class="btn ghost small" style="margin-top:6px">Promptだけコピー</button>
-    </div>
-    <div>
-      <div class="mini" style="margin:0 0 .35rem">Negativeのみ</div>
-      <div class="out" id="outPlannerNeg"></div>
-      <button id="btnCopyPlannerNeg" class="btn ghost small" style="margin-top:6px">Negativeだけコピー</button>
+    <div class="grid g3" style="margin-top:10px">
+      <div>
+        <div class="mini" style="margin:0 0 .35rem">全部</div>
+        <div class="out" id="outPlannerAll"></div>
+        <button id="btnCopyPlannerAll" class="btn ghost small" style="margin-top:6px">全部をコピー</button>
+      </div>
+      <div>
+        <div class="mini" style="margin:0 0 .35rem">Promptのみ</div>
+        <div class="out" id="outPlannerPrompt"></div>
+        <button id="btnCopyPlannerPrompt" class="btn ghost small" style="margin-top:6px">Promptだけコピー</button>
+      </div>
+      <div>
+        <div class="mini" style="margin:0 0 .35rem">Negativeのみ</div>
+        <div class="out" id="outPlannerNeg"></div>
+        <button id="btnCopyPlannerNeg" class="btn ghost small" style="margin-top:6px">Negativeだけコピー</button>
+      </div>
     </div>
   </div>
 </section>
 
+          
 <!-- 学習モード（バリエーション） -->
 <section id="panelLearning" class="card" hidden>
   <div class="row" style="align-items:center">
