@@ -534,7 +534,22 @@ window.DEFAULT_SFW_DICT = {
       
         { "tag": "squatting_low", "label": "低くしゃがむ" },
         { "tag": "yoga_pose", "label": "ヨガポーズ" },
-        { "tag": "handstand", "label": "逆立ち" }
+        { "tag": "handstand", "label": "逆立ち" },
+        { "tag": "standing_one_leg", "label": "片足立ち" },
+        { "tag": "leg_up", "label": "片足上げ" },
+        { "tag": "sitting_leg_lift", "label": "座って片足持ち上げ" },
+        { "tag": "standing_split", "label": "I字バランス（片脚上げ）" },
+        { "tag": "sitting_feet_up", "label": "座って足を上げる" },
+        { "tag": "lying_feet_up", "label": "仰向けで足を上げる" },
+        { "tag": "lying_legs_up_spread", "label": "仰向けで両脚を広げ上げる" },
+        { "tag": "legs_over_head", "label": "両脚を頭上に上げる" },
+        { "tag": "spread_legs", "label": "脚を広げる（開脚）" },
+      
+        { "tag": "villain_pose", "label": "悪役のポーズ" },
+        { "tag": "victory_pose", "label": "勝利のポーズ" },
+      
+        { "tag": "pole_dance", "label": "ポールダンス" },
+        { "tag": "pole_dance_crouch_side", "label": "ポールダンス＋蹲踞＋脇見せ" }
       ],
     "composition": [
       { "tag": "full body", "label": "全身" },
@@ -964,7 +979,20 @@ window.DEFAULT_SFW_DICT = {
     { "tag": "hand_sign_magic",      "label": "魔法詠唱の手" },
     { "tag": "hand_sign_ninja",      "label": "忍術印の手" },
     { "tag": "crossed_palms",        "label": "両手を交差させる" },
-    { "tag": "folded_arms_behind_head","label": "頭の後ろで腕を組む" }
+    { "tag": "folded_arms_behind_head","label": "頭の後ろで腕を組む" },
+    { "tag": "arm_up", "label": "片手を上げる" },
+    { "tag": "arms_up", "label": "両手を上げる" },
+    { "tag": "arms_behind_head", "label": "両手を頭の後ろに" },
+    { "tag": "spread_arms", "label": "両手を広げる" },
+    { "tag": "outstretched_hand", "label": "手を差し伸べる" },
+    { "tag": "t_pose", "label": "Tポーズ" },
+    { "tag": "breast_hold", "label": "胸を支える" },
+    { "tag": "double_peace", "label": "ダブルピース" },
+    { "tag": "heart_hands", "label": "手でハート" },
+    { "tag": "arms_behind_back", "label": "背中に手を隠す" },
+    { "tag": "hands_clasped_front", "label": "手を前で組む（祈り）" },
+    { "tag": "head_rest", "label": "頬杖" },
+    { "tag": "hand_on_ass", "label": "お尻に手を当てる" }
   ],
 
   "props_light": [
