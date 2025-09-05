@@ -1,74 +1,115 @@
 /**
- * LoRA Prompt Maker - Google Apps Script側の受信コード
- * 
- * 【設定手順】
- * 1. https://script.google.com/ にアクセス
- * 2. 新しいプロジェクトを作成
- * 3. このコードをコピー&ペースト
- * 4. 「デプロイ」→「新しいデプロイ」でWebアプリとして公開
- * 5. 実行権限: 自分、アクセス権限: 全員
- * 6. 生成されたURLをクライアント側に設定
+ * AI Prompt Maker - Google Apps Script側の受信コード（完全修正版）
  */
 
-// ===== 設定（必要に応じて変更） =====
-const CONFIG = {
-  // 認証トークン（セキュリティ強化したい場合）
-  AUTH_TOKEN: "", // 空文字の場合は認証なし
-  
-  // Google Driveのフォルダ設定
-  BACKUP_FOLDER_NAME: "LoRA_Prompt_Maker_Backups",
-  CSV_FOLDER_NAME: "LoRA_Prompt_Maker_CSV",
-  PRESET_FOLDER_NAME: "LoRA_Prompt_Maker_Presets",
-  
-  // スプレッドシート設定
-  CREATE_SPREADSHEET: true, // CSVをスプレッドシートとしても保存するか
-  
-  // ログ設定
-  ENABLE_LOGGING: true,
-  MAX_LOG_ENTRIES: 1000
-};
+// ===== 設定 =====
+function getConfig() {
+  console.log("🔍 getConfig() 呼び出し");
+  var config = {
+    AUTH_TOKEN: "",
+    BACKUP_FOLDER_NAME: "AI_Prompt_Maker_Backups",
+    CSV_FOLDER_NAME: "AI_Prompt_Maker_CSV",
+    PRESET_FOLDER_NAME: "AI_Prompt_Maker_Presets",
+    CREATE_SPREADSHEET: true,
+    ENABLE_LOGGING: true,
+    MAX_LOG_ENTRIES: 1000
+  };
+  console.log("📋 設定値:", JSON.stringify(config));
+  return config;
+}
 
 // ===== フォルダ管理 =====
-function getOrCreateFolder(folderName, parentFolder = null) {
-  const parent = parentFolder || DriveApp.getRootFolder();
-  const folders = parent.getFoldersByName(folderName);
+function getOrCreateFolder(folderName, parentFolder) {
+  console.log("📁 getOrCreateFolder開始");
+  console.log("📍 呼び出し元スタックトレース:");
+  try {
+    throw new Error("スタックトレース取得用");
+  } catch (e) {
+    console.log(e.stack);
+  }
+  
+  console.log("  引数1 folderName:", folderName);
+  console.log("  引数1の型:", typeof folderName);
+  console.log("  引数1のJSON:", JSON.stringify(folderName));
+  console.log("  引数2 parentFolder:", parentFolder);
+  
+  if (!folderName || folderName === '' || folderName === null || folderName === undefined) {
+    console.error("❌ フォルダ名が無効:", folderName);
+    throw new Error("フォルダ名が無効: " + folderName);
+  }
+  
+  var parent = parentFolder || DriveApp.getRootFolder();
+  var folders = parent.getFoldersByName(folderName);
   
   if (folders.hasNext()) {
+    console.log("✅ 既存フォルダ発見:", folderName);
     return folders.next();
   } else {
+    console.log("📁 新規フォルダ作成:", folderName);
     return parent.createFolder(folderName);
   }
 }
 
 function setupFolders() {
-  return {
-    backup: getOrCreateFolder(CONFIG.BACKUP_FOLDER_NAME),
-    csv: getOrCreateFolder(CONFIG.CSV_FOLDER_NAME),
-    preset: getOrCreateFolder(CONFIG.PRESET_FOLDER_NAME)
+  console.log("📁 setupFolders開始");
+  
+  var config = getConfig();
+  console.log("🔍 configの中身確認:");
+  console.log("  config:", config);
+  console.log("  config.BACKUP_FOLDER_NAME:", config.BACKUP_FOLDER_NAME);
+  console.log("  config.CSV_FOLDER_NAME:", config.CSV_FOLDER_NAME);
+  console.log("  config.PRESET_FOLDER_NAME:", config.PRESET_FOLDER_NAME);
+  
+  // ここで個別に値を取り出して確認
+  var backupName = config.BACKUP_FOLDER_NAME;
+  var csvName = config.CSV_FOLDER_NAME;
+  var presetName = config.PRESET_FOLDER_NAME;
+  
+  console.log("🔍 個別値確認:");
+  console.log("  backupName:", backupName, "型:", typeof backupName);
+  console.log("  csvName:", csvName, "型:", typeof csvName);
+  console.log("  presetName:", presetName, "型:", typeof presetName);
+  
+  console.log("📁 フォルダ作成開始 - backup");
+  var backupFolder = getOrCreateFolder(backupName);
+  
+  console.log("📁 フォルダ作成開始 - csv");
+  var csvFolder = getOrCreateFolder(csvName);
+  
+  console.log("📁 フォルダ作成開始 - preset");
+  var presetFolder = getOrCreateFolder(presetName);
+  
+  var folders = {
+    backup: backupFolder,
+    csv: csvFolder,
+    preset: presetFolder
   };
+  
+  console.log("✅ 全フォルダ作成完了");
+  return folders;
 }
 
 // ===== ログ管理 =====
-function addLog(action, data, status = "success", error = null) {
-  if (!CONFIG.ENABLE_LOGGING) return;
+function addLog(action, data, status, error) {
+  var config = getConfig();
+  if (!config.ENABLE_LOGGING) return;
   
   try {
-    const logSheet = getOrCreateLogSheet();
-    const timestamp = new Date();
+    var logSheet = getOrCreateLogSheet();
+    var timestamp = new Date();
     
     logSheet.appendRow([
       timestamp,
       action,
       JSON.stringify(data),
-      status,
+      status || "success",
       error ? error.toString() : "",
       Session.getActiveUser().getEmail()
     ]);
     
-    // 最大ログ数を超えた場合は古いものを削除
-    const lastRow = logSheet.getLastRow();
-    if (lastRow > CONFIG.MAX_LOG_ENTRIES + 1) {
-      const deleteCount = lastRow - CONFIG.MAX_LOG_ENTRIES;
+    var lastRow = logSheet.getLastRow();
+    if (lastRow > config.MAX_LOG_ENTRIES + 1) {
+      var deleteCount = lastRow - config.MAX_LOG_ENTRIES;
       logSheet.deleteRows(2, deleteCount);
     }
     
@@ -78,17 +119,17 @@ function addLog(action, data, status = "success", error = null) {
 }
 
 function getOrCreateLogSheet() {
-  const ssName = "LoRA Prompt Maker - ログ";
-  const files = DriveApp.getFilesByName(ssName);
+  var ssName = "AI Prompt Maker - ログ";
+  var files = DriveApp.getFilesByName(ssName);
   
-  let spreadsheet;
+  var spreadsheet;
   if (files.hasNext()) {
     spreadsheet = SpreadsheetApp.open(files.next());
   } else {
     spreadsheet = SpreadsheetApp.create(ssName);
   }
   
-  let sheet = spreadsheet.getSheetByName("ログ");
+  var sheet = spreadsheet.getSheetByName("ログ");
   if (!sheet) {
     sheet = spreadsheet.insertSheet("ログ");
     sheet.getRange(1, 1, 1, 6).setValues([[
@@ -104,28 +145,25 @@ function getOrCreateLogSheet() {
 // ===== メイン処理 =====
 function doPost(e) {
   try {
-    // CORS対応
-    const response = {
+    var response = {
       status: "success",
       message: "",
       data: null,
       timestamp: new Date().toISOString()
     };
     
-    // リクエストデータの解析
-    let requestData;
+    var requestData;
     try {
       requestData = JSON.parse(e.postData.contents);
     } catch (parseError) {
       throw new Error("リクエストデータの解析に失敗: " + parseError.message);
     }
     
-    // 認証チェック
-    if (CONFIG.AUTH_TOKEN && requestData.token !== CONFIG.AUTH_TOKEN) {
+    var config = getConfig();
+    if (config.AUTH_TOKEN && requestData.token !== config.AUTH_TOKEN) {
       throw new Error("認証に失敗しました");
     }
     
-    // アクションに基づく処理
     switch (requestData.action) {
       case "ping":
         response.message = "接続成功 - " + new Date().toLocaleString();
@@ -133,7 +171,7 @@ function doPost(e) {
         break;
         
       case "save_csv":
-        response.data = await saveCSVData(requestData.data);
+        response.data = saveCSVData(requestData.data);
         response.message = "CSV保存完了";
         addLog("save_csv", { 
           type: requestData.data.type, 
@@ -142,7 +180,7 @@ function doPost(e) {
         break;
         
       case "save_preset":
-        response.data = await savePresetData(requestData.data);
+        response.data = savePresetData(requestData.data);
         response.message = "プリセット保存完了";
         addLog("save_preset", {
           mode: requestData.data.mode,
@@ -151,7 +189,7 @@ function doPost(e) {
         break;
         
       case "save_backup":
-        response.data = await saveBackupData(requestData.data);
+        response.data = saveBackupData(requestData.data);
         response.message = "バックアップ保存完了";
         addLog("save_backup", { 
           size: JSON.stringify(requestData.data).length 
@@ -159,7 +197,7 @@ function doPost(e) {
         break;
         
       case "get_data":
-        response.data = await getData(requestData.data);
+        response.data = getData(requestData.data);
         response.message = "データ取得完了";
         addLog("get_data", { 
           getAction: requestData.data.getAction 
@@ -177,9 +215,9 @@ function doPost(e) {
   } catch (error) {
     console.error("処理エラー:", error);
     
-    addLog(requestData?.action || "unknown", requestData || {}, "error", error);
+    addLog(requestData ? requestData.action : "unknown", requestData || {}, "error", error);
     
-    const errorResponse = {
+    var errorResponse = {
       status: "error",
       error: error.message,
       timestamp: new Date().toISOString()
@@ -191,67 +229,45 @@ function doPost(e) {
   }
 }
 
-// GET対応（テスト用）
 function doGet(e) {
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>LoRA Prompt Maker - GAS Endpoint</title>
-      <meta charset="utf-8">
-    </head>
-    <body>
-      <h1>🎨 LoRA Prompt Maker - GAS Endpoint</h1>
-      <p><strong>ステータス:</strong> ✅ 正常動作中</p>
-      <p><strong>最終更新:</strong> ${new Date().toLocaleString()}</p>
-      <hr>
-      <h2>📊 統計情報</h2>
-      <p>このエンドポイントは正常に動作しています。</p>
-      <p>POST リクエストでデータを送信してください。</p>
-      
-      <h2>🔗 設定URL</h2>
-      <p>以下のURLをクライアント側に設定してください：</p>
-      <code>${ScriptApp.getService().getUrl()}</code>
-      
-      <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        code { background: #f5f5f5; padding: 8px; border-radius: 4px; }
-      </style>
-    </body>
-    </html>
-  `;
+  var html = "<html><body>" +
+    "<h1>🎨 AI Prompt Maker - GAS Endpoint</h1>" +
+    "<p><strong>ステータス:</strong> ✅ 正常動作中</p>" +
+    "<p><strong>最終更新:</strong> " + new Date().toLocaleString() + "</p>" +
+    "<hr><h2>🔗 設定URL</h2>" +
+    "<p>以下のURLをクライアント側に設定してください：</p>" +
+    "<code>" + ScriptApp.getService().getUrl() + "</code>" +
+    "</body></html>";
   
-  return HtmlService
-    .createHtmlOutput(html)
-    .setTitle("AI Prompt Maker - GAS Endpoint");
+  return HtmlService.createHtmlOutput(html).setTitle("AI Prompt Maker - GAS Endpoint");
 }
 
 // ===== データ保存機能 =====
-async function saveCSVData(data) {
-  const folders = setupFolders();
-  const { type, filename, csv, metadata } = data;
+function saveCSVData(data) {
+  var folders = setupFolders();
+  var type = data.type;
+  var filename = data.filename;
+  var csv = data.csv;
+  var metadata = data.metadata;
   
-  // CSVファイルとして保存
-  const csvBlob = Utilities.newBlob(csv, "text/csv", filename);
-  const csvFile = folders.csv.createFile(csvBlob);
+  var csvBlob = Utilities.newBlob(csv, "text/csv", filename);
+  var csvFile = folders.csv.createFile(csvBlob);
   
-  let spreadsheetUrl = null;
+  var spreadsheetUrl = null;
+  var config = getConfig();
   
-  // スプレッドシートとしても保存
-  if (CONFIG.CREATE_SPREADSHEET) {
+  if (config.CREATE_SPREADSHEET) {
     try {
-      const ssName = filename.replace('.csv', '') + " (スプレッドシート)";
-      const spreadsheet = SpreadsheetApp.create(ssName);
+      var ssName = filename.replace('.csv', '') + " (スプレッドシート)";
+      var spreadsheet = SpreadsheetApp.create(ssName);
       
-      // CSVデータをパース
-      const rows = csv.split('\n').map(row => {
-        // 簡単なCSVパーサー（ダブルクォート対応）
-        const cells = [];
-        let current = '';
-        let inQuotes = false;
+      var rows = csv.split('\n').map(function(row) {
+        var cells = [];
+        var current = '';
+        var inQuotes = false;
         
-        for (let i = 0; i < row.length; i++) {
-          const char = row[i];
+        for (var i = 0; i < row.length; i++) {
+          var char = row[i];
           if (char === '"' && (i === 0 || row[i-1] === ',')) {
             inQuotes = true;
           } else if (char === '"' && inQuotes) {
@@ -267,43 +283,39 @@ async function saveCSVData(data) {
         return cells;
       });
       
-      const sheet = spreadsheet.getActiveSheet();
+      var sheet = spreadsheet.getActiveSheet();
       sheet.setName(type);
       
       if (rows.length > 0) {
         sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
-        
-        // ヘッダー行のフォーマット
         sheet.getRange(1, 1, 1, rows[0].length).setFontWeight("bold");
         sheet.setFrozenRows(1);
       }
       
-      // メタデータシートを追加
-      const metaSheet = spreadsheet.insertSheet("メタデータ");
-      const metaData = [
+      var metaSheet = spreadsheet.insertSheet("メタデータ");
+      var metaData = [
         ["項目", "値"],
         ["生成日時", new Date().toLocaleString()],
         ["タイプ", type],
         ["ファイル名", filename],
         ["行数", rows.length - 1],
         ["キャラクター名", metadata.characterName || "不明"],
-        ["生成元", "LoRA Prompt Maker v2.1"]
+        ["生成元", "AI Prompt Maker v2.1"]
       ];
       
       if (metadata) {
-        Object.entries(metadata).forEach(([key, value]) => {
-          if (!["characterName"].includes(key)) {
-            metaData.push([key, String(value)]);
+        for (var key in metadata) {
+          if (key !== "characterName") {
+            metaData.push([key, String(metadata[key])]);
           }
-        });
+        }
       }
       
       metaSheet.getRange(1, 1, metaData.length, 2).setValues(metaData);
       metaSheet.getRange(1, 1, 1, 2).setFontWeight("bold");
       metaSheet.setFrozenRows(1);
       
-      // スプレッドシートをCSVフォルダに移動
-      const ssFile = DriveApp.getFileById(spreadsheet.getId());
+      var ssFile = DriveApp.getFileById(spreadsheet.getId());
       folders.csv.addFile(ssFile);
       DriveApp.getRootFolder().removeFile(ssFile);
       
@@ -317,28 +329,31 @@ async function saveCSVData(data) {
   return {
     csvFileId: csvFile.getId(),
     csvUrl: csvFile.getUrl(),
-    spreadsheetUrl,
+    spreadsheetUrl: spreadsheetUrl,
     savedAt: new Date().toISOString(),
     size: csv.length
   };
 }
 
-async function savePresetData(data) {
-  const folders = setupFolders();
-  const { mode, name, preset, metadata } = data;
+function savePresetData(data) {
+  var folders = setupFolders();
+  var mode = data.mode;
+  var name = data.name;
+  var preset = data.preset;
+  var metadata = data.metadata;
   
-  const presetData = {
-    mode,
-    name,
-    preset,
-    metadata,
+  var presetData = {
+    mode: mode,
+    name: name,
+    preset: preset,
+    metadata: metadata,
     savedAt: new Date().toISOString(),
     version: "2.1"
   };
   
-  const filename = `preset_${mode}_${name}_${new Date().toISOString().split('T')[0]}.json`;
-  const blob = Utilities.newBlob(JSON.stringify(presetData, null, 2), "application/json", filename);
-  const file = folders.preset.createFile(blob);
+  var filename = "preset_" + mode + "_" + name + "_" + new Date().toISOString().split('T')[0] + ".json";
+  var blob = Utilities.newBlob(JSON.stringify(presetData, null, 2), "application/json", filename);
+  var file = folders.preset.createFile(blob);
   
   return {
     fileId: file.getId(),
@@ -347,21 +362,22 @@ async function savePresetData(data) {
   };
 }
 
-async function saveBackupData(data) {
-  const folders = setupFolders();
-  const { backup, metadata } = data;
+function saveBackupData(data) {
+  var folders = setupFolders();
+  var backup = data.backup;
+  var metadata = data.metadata;
   
-  const backupData = {
-    backup,
-    metadata,
+  var backupData = {
+    backup: backup,
+    metadata: metadata,
     savedAt: new Date().toISOString(),
     version: "2.1"
   };
   
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").split('T')[0];
-  const filename = `backup_${timestamp}.json`;
-  const blob = Utilities.newBlob(JSON.stringify(backupData, null, 2), "application/json", filename);
-  const file = folders.backup.createFile(blob);
+  var timestamp = new Date().toISOString().replace(/[:.]/g, "-").split('T')[0];
+  var filename = "backup_" + timestamp + ".json";
+  var blob = Utilities.newBlob(JSON.stringify(backupData, null, 2), "application/json", filename);
+  var file = folders.backup.createFile(blob);
   
   return {
     fileId: file.getId(),
@@ -371,9 +387,10 @@ async function saveBackupData(data) {
   };
 }
 
-async function getData(data) {
-  const folders = setupFolders();
-  const { getAction, params } = data;
+function getData(data) {
+  var folders = setupFolders();
+  var getAction = data.getAction;
+  var params = data.params;
   
   switch (getAction) {
     case "list_backups":
@@ -399,18 +416,17 @@ async function getData(data) {
   }
 }
 
-function listFiles(folder, type, filter = null) {
-  const files = folder.getFiles();
-  const result = [];
+function listFiles(folder, type, filter) {
+  var files = folder.getFiles();
+  var result = [];
   
   while (files.hasNext()) {
-    const file = files.next();
-    const name = file.getName();
+    var file = files.next();
+    var name = file.getName();
     
-    // フィルタリング
     if (filter) {
-      if (type === "preset" && !name.includes(`preset_${filter}_`)) continue;
-      if (type === "csv" && !name.includes(`${filter}_`)) continue;
+      if (type === "preset" && name.indexOf("preset_" + filter + "_") === -1) continue;
+      if (type === "csv" && name.indexOf(filter + "_") === -1) continue;
     }
     
     result.push({
@@ -423,16 +439,17 @@ function listFiles(folder, type, filter = null) {
     });
   }
   
-  // 作成日時で降順ソート
-  result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  result.sort(function(a, b) {
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
   
   return result;
 }
 
 function getFileContent(fileId) {
   try {
-    const file = DriveApp.getFileById(fileId);
-    const content = file.getBlob().getDataAsString();
+    var file = DriveApp.getFileById(fileId);
+    var content = file.getBlob().getDataAsString();
     
     return {
       id: fileId,
@@ -443,37 +460,25 @@ function getFileContent(fileId) {
       retrievedAt: new Date().toISOString()
     };
   } catch (error) {
-    throw new Error(`ファイル取得エラー: ${error.message}`);
+    throw new Error("ファイル取得エラー: " + error.message);
   }
 }
 
 function getStats(folders) {
-  const stats = {
-    backups: {
-      count: 0,
-      totalSize: 0,
-      latestDate: null
-    },
-    presets: {
-      count: 0,
-      totalSize: 0,
-      latestDate: null
-    },
-    csvs: {
-      count: 0,
-      totalSize: 0,
-      latestDate: null
-    }
+  var stats = {
+    backups: { count: 0, totalSize: 0, latestDate: null },
+    presets: { count: 0, totalSize: 0, latestDate: null },
+    csvs: { count: 0, totalSize: 0, latestDate: null }
   };
   
   function processFolder(folder, statKey) {
-    const files = folder.getFiles();
+    var files = folder.getFiles();
     while (files.hasNext()) {
-      const file = files.next();
+      var file = files.next();
       stats[statKey].count++;
       stats[statKey].totalSize += file.getSize();
       
-      const modified = file.getLastUpdated();
+      var modified = file.getLastUpdated();
       if (!stats[statKey].latestDate || modified > new Date(stats[statKey].latestDate)) {
         stats[statKey].latestDate = modified.toISOString();
       }
@@ -487,68 +492,25 @@ function getStats(folders) {
   return stats;
 }
 
-// ===== 管理機能 =====
-function cleanupOldFiles() {
-  const folders = setupFolders();
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - 90); // 90日前
-  
-  let deletedCount = 0;
-  
-  function cleanFolder(folder, folderName) {
-    const files = folder.getFiles();
-    while (files.hasNext()) {
-      const file = files.next();
-      if (file.getDateCreated() < cutoffDate) {
-        console.log(`削除: ${folderName}/${file.getName()}`);
-        file.setTrashed(true);
-        deletedCount++;
-      }
-    }
-  }
-  
-  cleanFolder(folders.backup, "backup");
-  cleanFolder(folders.csv, "csv");
-  // プリセットは削除しない
-  
-  console.log(`クリーンアップ完了: ${deletedCount}ファイル削除`);
-  return deletedCount;
-}
-
-function createTriggers() {
-  // 既存のトリガーを削除
-  const triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach(trigger => ScriptApp.deleteTrigger(trigger));
-  
-  // 週次クリーンアップトリガー
-  ScriptApp.newTrigger('cleanupOldFiles')
-    .timeBased()
-    .everyWeeks(1)
-    .onWeekDay(ScriptApp.WeekDay.SUNDAY)
-    .atHour(2)
-    .create();
-    
-  console.log("トリガーを設定しました");
-}
-
 // ===== セットアップ関数 =====
 function setupGAS() {
-  console.log("🚀 LoRA Prompt Maker GAS セットアップ開始");
+  console.log("🚀 AI Prompt Maker GAS セットアップ開始");
+  console.log("📍 setupGAS() 関数の開始地点");
   
   try {
-    // フォルダ作成
-    const folders = setupFolders();
+    console.log("📍 Step 1: setupFolders() を呼び出します");
+    var folders = setupFolders();
     console.log("✅ フォルダ作成完了");
     
-    // ログシート作成
+    console.log("📍 Step 2: getOrCreateLogSheet() を呼び出します");
     getOrCreateLogSheet();
     console.log("✅ ログシート作成完了");
     
-    // トリガー設定
+    console.log("📍 Step 3: createTriggers() を呼び出します");
     createTriggers();
     console.log("✅ トリガー設定完了");
     
-    // テストログ追加
+    console.log("📍 Step 4: addLog() を呼び出します");
     addLog("setup", { message: "GASセットアップ完了" }, "success");
     
     console.log("🎉 セットアップ完了!");
@@ -566,31 +528,73 @@ function setupGAS() {
     };
     
   } catch (error) {
-    console.error("❌ セットアップエラー:", error);
+    console.error("❌ セットアップエラー詳細:");
+    console.error("  エラーメッセージ:", error.message);
+    console.error("  エラースタック:", error.stack);
     throw error;
   }
 }
 
-// ===== テスト関数 =====
+// ===== 管理機能 =====
+function cleanupOldFiles() {
+  console.log("🧹 cleanupOldFiles() 開始");
+  var folders = setupFolders();
+  var cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - 90);
+  
+  var deletedCount = 0;
+  
+  function cleanFolder(folder, folderName) {
+    var files = folder.getFiles();
+    while (files.hasNext()) {
+      var file = files.next();
+      if (file.getDateCreated() < cutoffDate) {
+        console.log("削除: " + folderName + "/" + file.getName());
+        file.setTrashed(true);
+        deletedCount++;
+      }
+    }
+  }
+  
+  cleanFolder(folders.backup, "backup");
+  cleanFolder(folders.csv, "csv");
+  
+  console.log("クリーンアップ完了: " + deletedCount + "ファイル削除");
+  return deletedCount;
+}
+
+function createTriggers() {
+  console.log("🕒 createTriggers() 開始");
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    ScriptApp.deleteTrigger(triggers[i]);
+  }
+  
+  ScriptApp.newTrigger('cleanupOldFiles')
+    .timeBased()
+    .everyWeeks(1)
+    .onWeekDay(ScriptApp.WeekDay.SUNDAY)
+    .atHour(2)
+    .create();
+    
+  console.log("トリガーを設定しました");
+}
+
 function testEndpoint() {
-  const testData = {
+  var testData = {
     action: "ping",
     timestamp: new Date().toISOString(),
-    token: CONFIG.AUTH_TOKEN
+    token: getConfig().AUTH_TOKEN
   };
   
-  const mockEvent = {
+  var mockEvent = {
     postData: {
       contents: JSON.stringify(testData)
     }
   };
   
-  const result = doPost(mockEvent);
+  var result = doPost(mockEvent);
   console.log("テスト結果:", result.getContent());
   
   return JSON.parse(result.getContent());
 }
-
-// ===== 初期セットアップ実行 =====
-// 初回のみ手動で実行してください
-// setupGAS();
