@@ -4011,7 +4011,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // 生成後のアドバイス表示
-        setTimeout(showAdvice, 500);
+        setTimeout(() => {
+          if (typeof window.showProductionAdvice === 'function') {
+            window.showProductionAdvice();
+          }
+        }, 500);
       });
     }
   }, 1000);
