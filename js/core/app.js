@@ -3266,9 +3266,9 @@ window.moveCategoriesToBottom = function() {
     try {
       categoriesContainer.appendChild(element);
       movedCount++;
-      console.log('移動完了:', element.id || element.className || element.tagName);
+  //    console.log('移動完了:', element.id || element.className || element.tagName);
     } catch (e) {
-      console.warn('要素の移動に失敗:', element, e);
+  //    console.warn('要素の移動に失敗:', element, e);
     }
   });
   
@@ -3383,7 +3383,7 @@ window.initWordModeFixed = function() {
     const count = validItems.length;
     totalItems += count;
     
-    console.log(`SFW: ${count}件 (${dictKey} → ${htmlId})`);
+ //   console.log(`SFW: ${count}件 (${dictKey} → ${htmlId})`);
     
     const counter = document.getElementById(`wm-count-${htmlId}`);
     if (counter) counter.textContent = count;
@@ -3420,13 +3420,13 @@ window.initWordModeFixed = function() {
     const count = validItems.length;
     totalItems += count;
     
-    console.log(`NSFW: ${count}件 (${dictKey} → ${htmlId})`);
+   // console.log(`NSFW: ${count}件 (${dictKey} → ${htmlId})`);
     
     const counter = document.getElementById(`wm-count-${htmlId}`);
     if (counter) counter.textContent = count;
   });
   
-  console.log(`初期化完了: 総計 ${totalItems} 件のタグを読み込み`);
+ // console.log(`初期化完了: 総計 ${totalItems} 件のタグを読み込み`);
   
   const totalCountEl = document.getElementById('wm-total-count');
   if (totalCountEl) totalCountEl.textContent = totalItems;
