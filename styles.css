@@ -1007,9 +1007,10 @@ legend { display: none; }
 /* モバイル対応（さらに小さく） */
 @media (max-width: 768px) {
   .preset-btn {
-    padding: 3px 6px !important;
+    padding: 1px 4px !important;      /* 縦をさらに短く */
     font-size: 9px !important;
     min-width: 40px !important;
+    line-height: 1.1 !important;
   }
 }
 
@@ -1840,22 +1841,6 @@ legend { display: none; }
   margin-top: 12px;
 }
 
-.preset-btn {
-  height: 80px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  border: 2px solid var(--line);
-  background: var(--bg-secondary);
-  transition: all 0.2s ease;
-}
-
-.preset-btn:hover {
-  border-color: var(--accent-ok);
-  background: var(--bg-hover);
-}
 
 .preset-btn.active {
   border-color: var(--accent-ok);
