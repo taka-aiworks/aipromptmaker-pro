@@ -2054,48 +2054,55 @@ function getSeedMode() {
   return r ? r.value : 'fixed'; // 'fixed' | 'vary'
 }
 
+// 量産モード服装出力修正コード
+
 // buildBatchProduction関数を修正
 function buildBatchProduction(n){
   const want = Math.max(1, Number(n) || 1);
   const rows = [];
   
-  // ★ 共通のネガティブプロンプトを1回だけ生成（そのままでOK）
+  // 共通のネガティブプロンプト
   const commonNeg = buildNegative((document.getElementById("p_neg")?.value || "").trim(), true);
 
-  // ★ ベースseedを一度だけ作る
+  // ベースseed
   const name = (document.getElementById('charName')?.value || "");
   const baseSeed = seedFromName(name, 0);
   const seedMode = getSeedMode(); // 'fixed' or 'vary'
 
- for(let i=0; i<want; i++){
-  let p = [];
-  
-  // ★★★ 修正：LoRAタグを最優先で先頭に追加 ★★★
-  const loraTag = (document.getElementById('loraTag')?.value || '').trim();
-  if (loraTag) p.push(loraTag);
-  
-  const isNSFW = document.getElementById("nsfwProd")?.checked;
-  if (isNSFW) p.push("NSFW");
+  for(let i=0; i<want; i++){
+    let p = [];
+    
+    // LoRAタグを最優先で先頭に追加
+    const loraTag = (document.getElementById('loraTag')?.value || '').trim();
+    if (loraTag) p.push(loraTag);
+    
+    const isNSFW = document.getElementById("nsfwProd")?.checked;
+    if (isNSFW) p.push("NSFW");
 
-  // 量産モードではsoloは入れない  
-  // p.push("solo");
-  //    const g = getGenderCountTag() || "";
-  //  if (g) p.push(g);
+    // 量産モードではsoloは入れない  
+    // p.push("solo");
+    // const g = getGenderCountTag() || "";
+    // if (g) p.push(g);
 
+    // 基本情報を追加
+    const textOf = id => (document.getElementById(id)?.textContent || "").trim();
     const basics = [
-      document.getElementById('tagH')?.textContent,
-      document.getElementById('tagE')?.textContent,
-      document.getElementById('tagSkin')?.textContent,
-      getOne("bf_age"), getOne("bf_gender"), getOne("bf_body"), getOne("bf_height"),
-      // ★★★ 以下3行を追加 ★★★
-     getOne("hairLength"),
-     getOne("bangsStyle"),
-     getOne("skinFeatures"), 
-      getOne("hairStyle"), getOne("eyeShape")
+      textOf('tagH'),      // 髪色
+      textOf('tagE'),      // 目色
+      textOf('tagSkin'),   // 肌色
+      getBFValue('age'), 
+      getBFValue('gender'), 
+      getBFValue('body'), 
+      getBFValue('height'),
+      getOne('hairStyle'),
+      getOne('hairLength'),    // 追加
+      getOne('bangsStyle'),    // 追加
+      getOne('skinFeatures'),  // 追加
+      getOne('eyeShape')
     ].filter(Boolean);
     p.push(...basics);
 
-    // 量産モードでの服の処理（NSFW優先、未選択対応）
+    // 👕 服装処理の修正（基本情報を参照）
     let hasNSFWClothing = false;
     if (isNSFW) {
       // NSFW衣装・下着・露出のチェック
@@ -2114,66 +2121,117 @@ function buildBatchProduction(n){
     }
     
     if (!hasNSFWClothing) {
-      const topOutfits    = getMany("p_outfit_top");
-      const pantsOutfits  = getMany("p_outfit_pants");
-      const skirtOutfits  = getMany("p_outfit_skirt");
-      const dressOutfits  = getMany("p_outfit_dress");
-      const shoesOutfits  = getMany("p_outfit_shoes");
+      // 🆕 服装モードの確認
+      const clothingMode = document.querySelector('#panelProduction input[name="clothingMode"]:checked')?.value || 'fixed';
       
-      const selectedOutfits = [];
-      
-      if (dressOutfits.length > 0) {
-        selectedOutfits.push(pick(dressOutfits));
-        if (shoesOutfits.length > 0) selectedOutfits.push(pick(shoesOutfits));
+      if (clothingMode === 'fixed') {
+        // 基本情報の服装を使用
+        const isOnepiece = getIsOnepiece();
+        const outfits = [];
+        
+        // 基本情報の色タグを取得
+        const baseColorTags = {
+          top: document.getElementById('use_top')?.checked ? textOf('tag_top').replace(/^—$/, "") : "",
+          bottom: document.getElementById('useBottomColor')?.checked ? textOf('tag_bottom').replace(/^—$/, "") : "",
+          shoes: document.getElementById('use_shoes')?.checked ? textOf('tag_shoes').replace(/^—$/, "") : ""
+        };
+        
+        if (isOnepiece) {
+          const dress = getOne('outfit_dress');
+          if (dress) outfits.push(dress);
+        } else {
+          const top = getOne('outfit_top');
+          const bottomCat = getOne('bottomCat') || 'pants';
+          const pants = getOne('outfit_pants');
+          const skirt = getOne('outfit_skirt');
+          const shoes = getOne('outfit_shoes');
+          
+          if (top) outfits.push(top);
+          if (bottomCat === 'pants' && pants) outfits.push(pants);
+          else if (bottomCat === 'skirt' && skirt) outfits.push(skirt);
+          if (shoes) outfits.push(shoes);
+        }
+        
+        // 基本情報のアクセサリー
+        const charAccSel = document.getElementById("characterAccessory");
+        const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
+        if (charAccSel && charAccSel.value) {
+          if (charAccColor && charAccColor !== "—") {
+            outfits.push(`${charAccColor} ${charAccSel.value}`);
+          } else {
+            outfits.push(charAccSel.value);
+          }
+        }
+        
+        const finalOutfits = makeFinalOutfitTags(outfits, baseColorTags);
+        p.push(...finalOutfits);
+        
       } else {
-        if (topOutfits.length > 0) selectedOutfits.push(pick(topOutfits));
+        // バリエーションモード（既存のロジック）
+        const topOutfits    = getMany("p_outfit_top");
+        const pantsOutfits  = getMany("p_outfit_pants");
+        const skirtOutfits  = getMany("p_outfit_skirt");
+        const dressOutfits  = getMany("p_outfit_dress");
+        const shoesOutfits  = getMany("p_outfit_shoes");
         
-        const allowBottomSwap = document.getElementById("allowBottomSwap")?.checked;
-        let hasBottom = false;
+        const selectedOutfits = [];
         
-        if (pantsOutfits.length > 0) {
-          selectedOutfits.push(pick(pantsOutfits));
-          hasBottom = true;
-        } else if (allowBottomSwap && skirtOutfits.length > 0) {
-          selectedOutfits.push(pick(skirtOutfits));
-          hasBottom = true;
+        if (dressOutfits.length > 0) {
+          selectedOutfits.push(pick(dressOutfits));
+          if (shoesOutfits.length > 0) selectedOutfits.push(pick(shoesOutfits));
+        } else {
+          if (topOutfits.length > 0) selectedOutfits.push(pick(topOutfits));
+          
+          const allowBottomSwap = document.getElementById("allowBottomSwap")?.checked;
+          let hasBottom = false;
+          
+          if (pantsOutfits.length > 0) {
+            selectedOutfits.push(pick(pantsOutfits));
+            hasBottom = true;
+          } else if (allowBottomSwap && skirtOutfits.length > 0) {
+            selectedOutfits.push(pick(skirtOutfits));
+            hasBottom = true;
+          }
+          
+          if (!hasBottom && skirtOutfits.length > 0) {
+            selectedOutfits.push(pick(skirtOutfits));
+          } else if (!hasBottom && allowBottomSwap && pantsOutfits.length > 0) {
+            selectedOutfits.push(pick(pantsOutfits));
+          }
+          
+          if (shoesOutfits.length > 0) {
+            selectedOutfits.push(pick(shoesOutfits));
+          }
         }
-        
-        if (!hasBottom && skirtOutfits.length > 0) {
-          selectedOutfits.push(pick(skirtOutfits));
-        } else if (!hasBottom && allowBottomSwap && pantsOutfits.length > 0) {
-          selectedOutfits.push(pick(pantsOutfits));
-        }
-        
-        if (shoesOutfits.length > 0) {
-          selectedOutfits.push(pick(shoesOutfits));
-        }
+
+        // 量産モードの色タグを取得（— を除外）
+        const norm = s => (s || "").replace(/^—$/, "");
+        const prodColorTags = {
+          top:    document.getElementById("p_use_top")?.checked    ? norm(document.getElementById("tag_p_top")?.textContent)    : "",
+          bottom: document.getElementById("p_use_bottom")?.checked ? norm(document.getElementById("tag_p_bottom")?.textContent) : "",
+          shoes:  document.getElementById("p_use_shoes")?.checked  ? norm(document.getElementById("tag_p_shoes")?.textContent)  : ""
+        };
+
+        const finalOutfits = makeFinalOutfitTags(selectedOutfits, prodColorTags);
+        p.push(...finalOutfits);
       }
-
-      // 量産モードの色タグを取得（— を除外）
-      const norm = s => (s || "").replace(/^—$/, "");
-      const prodColorTags = {
-        top:    document.getElementById("p_use_top")?.checked    ? norm(document.getElementById("tag_p_top")?.textContent)    : "",
-        bottom: document.getElementById("p_use_bottom")?.checked ? norm(document.getElementById("tag_p_bottom")?.textContent) : "",
-        shoes:  document.getElementById("p_use_shoes")?.checked  ? norm(document.getElementById("tag_p_shoes")?.textContent)  : ""
-      };
-
-      const finalOutfits = makeFinalOutfitTags(selectedOutfits, prodColorTags);
-      p.push(...finalOutfits);
     }
 
-    // アクセサリー（A/B/C） —— 元のまま
-    ['p_accA', 'p_accB', 'p_accC'].forEach(accId => {
-      const accSel = document.getElementById(accId);
-      const accColorFunc = window[accId === 'p_accA' ? 'getAccAColor' : 
-                                 accId === 'p_accB' ? 'getAccBColor' : 'getAccCColor'];
-      const accColor = accColorFunc ? accColorFunc() : "";
-      if (accSel && accSel.value && accColor && accColor !== "—") {
-        p.push(`${accColor} ${accSel.value}`);
-      } else if (accSel && accSel.value) {
-        p.push(accSel.value);
-      }
-    });
+    // アクセサリー（A/B/C）（バリエーションモード時のみ）
+    const clothingMode = document.querySelector('#panelProduction input[name="clothingMode"]:checked')?.value || 'fixed';
+    if (clothingMode === 'vary') {
+      ['p_accA', 'p_accB', 'p_accC'].forEach(accId => {
+        const accSel = document.getElementById(accId);
+        const accColorFunc = window[accId === 'p_accA' ? 'getAccAColor' : 
+                                   accId === 'p_accB' ? 'getAccBColor' : 'getAccCColor'];
+        const accColor = accColorFunc ? accColorFunc() : "";
+        if (accSel && accSel.value && accColor && accColor !== "—") {
+          p.push(`${accColor} ${accSel.value}`);
+        } else if (accSel && accSel.value) {
+          p.push(accSel.value);
+        }
+      });
+    }
 
     // 背景/ポーズ/構図/表情：NSFW優先の1つ取り（未選択対応）
     const categories = [
@@ -2204,16 +2262,16 @@ function buildBatchProduction(n){
       });
     }
 
-    // ★★★ 修正：固定タグをLoRAタグの次に配置 ★★★
-  const fixedProd = (document.getElementById('fixedProd')?.value || "").trim();
-  if (fixedProd) {
-    const fixedTags = fixedProd.split(/\s*,\s*/).filter(Boolean);
-    // LoRAタグがある場合はその後に、ない場合は先頭近くに挿入
-    const insertIndex = loraTag ? 1 : 0;
-    p.splice(insertIndex, 0, ...fixedTags);
-  }
+    // 固定タグをLoRAタグの次に配置
+    const fixedProd = (document.getElementById('fixedProd')?.value || "").trim();
+    if (fixedProd) {
+      const fixedTags = fixedProd.split(/\s*,\s*/).filter(Boolean);
+      // LoRAタグがある場合はその後に、ない場合は先頭近くに挿入
+      const insertIndex = loraTag ? 1 : 0;
+      p.splice(insertIndex, 0, ...fixedTags);
+    }
 
-    // ★ seed の決定（ここが肝）
+    // seed の決定
     const seed = (seedMode === 'fixed')
       ? baseSeed
       : microJitterSeed(baseSeed, i); // 行ごとに +i（微差）
@@ -2229,6 +2287,68 @@ function buildBatchProduction(n){
   }
   return rows;
 }
+
+// プリセット適用時の服装モード設定を確実にする関数
+function ensureClothingModeDisplay() {
+  const clothingMode = document.querySelector('#panelProduction input[name="clothingMode"]:checked')?.value || 'fixed';
+  const varySettings = document.getElementById('clothing-vary-settings');
+  
+  if (varySettings) {
+    if (clothingMode === 'vary') {
+      varySettings.style.display = 'block';
+      console.log('👔 服装バリエーション設定を表示');
+    } else {
+      varySettings.style.display = 'none';
+      console.log('👔 服装は基本情報を使用（固定モード）');
+    }
+  }
+}
+
+// プリセット適用関数も修正
+function applyProductionPreset(presetName) {
+  const preset = PRODUCTION_PRESETS[presetName];
+  if (!preset) {
+    console.error(`❌ 不明なプリセット: ${presetName}`);
+    return;
+  }
+  
+  window.productionCurrentPreset = presetName;
+  console.log(`🎯 プリセット適用: ${preset.name} (${presetName})`);
+  
+  // 服装モード設定
+  const clothingRadio = document.querySelector(`#panelProduction input[name="clothingMode"][value="${preset.clothing}"]`);
+  if (clothingRadio) {
+    clothingRadio.checked = true;
+    console.log(`👔 服装モード: ${preset.clothing}`);
+    ensureClothingModeDisplay();
+  }
+  
+  // 表情モード設定
+  const expressionRadio = document.querySelector(`#panelProduction input[name="expressionMode"][value="${preset.expression}"]`);
+  if (expressionRadio) {
+    expressionRadio.checked = true;
+    console.log(`😊 表情モード: ${preset.expression}`);
+    toggleExpressionMode();
+  }
+  
+  // 状況表示更新
+  updateProductionStatus();
+  
+  if (typeof toast === 'function') {
+    toast(`${preset.name}プリセットを適用しました`);
+  }
+  
+  console.log(`✅ プリセット適用完了: ${preset.name}`);
+}
+
+console.log('👕 量産モード服装出力修正コードを読み込みました');
+console.log('📖 修正内容:');
+console.log('  - 固定モード時に基本情報の服装を使用');
+console.log('  - バリエーションモード時に量産モード専用設定を使用');
+console.log('  - 服装モードの表示切り替えを改善');
+
+
+
 
 /* ===== テーブル描画 ===== */
 function renderLearnTableTo(tbodySel, rows){
