@@ -131,7 +131,7 @@ const MANGA_SFW_PRESETS = {
       mangaGaze: "side_glance_shy",
       mangaMouthState: "mouth_closed",
       mangaPose: "standing", 
-      mangaHandGesture: "covering_face",
+      mangaHandGesture: "hands_on_cheeks",
       mangaEffectManga: "blush",
       mangaComposition: "portrait"
     }
