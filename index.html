@@ -2380,35 +2380,35 @@ window.addEventListener('DOMContentLoaded', () => {
  //     missingCategories.forEach(cat => {
  //       console.log(`  ✗ ${cat.name} (${cat.key}): 辞書に存在しない`);
  //     });
-    }
+ //   }
     
-    return { available: availableCategories, missing: missingCategories };
-  }
+ //   return { available: availableCategories, missing: missingCategories };
+ // }
   
   // HTMLコンテナの存在チェック
-  function checkHTMLContainers() {
-    console.log('=== HTMLコンテナチェック ===');
+ // function checkHTMLContainers() {
+ //   console.log('=== HTMLコンテナチェック ===');
     
-    const missingContainers = [];
-    const availableContainers = [];
+ //   const missingContainers = [];
+ //   const availableContainers = [];
     
-    Object.keys(MANGA_CATEGORY_MAPPING).forEach(displayName => {
-      const containerId = `wm-items-${displayName}`;
-      const countId = `wm-count-${displayName}`;
+ //   Object.keys(MANGA_CATEGORY_MAPPING).forEach(displayName => {
+ //     const containerId = `wm-items-${displayName}`;
+ //     const countId = `wm-count-${displayName}`;
       
-      const container = document.getElementById(containerId);
-      const counter = document.getElementById(countId);
+ //     const container = document.getElementById(containerId);
+ //const counter = document.getElementById(countId);
       
-      if (container && counter) {
-        availableContainers.push(displayName);
-      } else {
-        missingContainers.push({
-          name: displayName,
-          hasContainer: !!container,
-          hasCounter: !!counter
-        });
-      }
-    });
+ //     if (container && counter) {
+  //      availableContainers.push(displayName);
+  //    } else {
+  //      missingContainers.push({
+  //        name: displayName,
+   //       hasContainer: !!container,
+   //       hasCounter: !!counter
+   //     });
+   //   }
+  //  });
     
   //  console.log(`利用可能コンテナ: ${availableContainers.length}`);
   //  availableContainers.forEach(name => {
@@ -2420,10 +2420,10 @@ window.addEventListener('DOMContentLoaded', () => {
   //    missingContainers.forEach(cat => {
  //       console.log(`  ✗ ${cat.name} - Container: ${cat.hasContainer ? '✓' : '✗'}, Counter: ${cat.hasCounter ? '✓' : '✗'}`);
  //     });
-    }
+ //   }
     
-    return { available: availableContainers, missing: missingContainers };
-  }
+ //   return { available: availableContainers, missing: missingContainers };
+ // }
   
   // 不足コンテナの動的生成
   function generateMissingContainers(missingContainers) {
