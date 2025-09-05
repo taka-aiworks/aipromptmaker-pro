@@ -369,70 +369,76 @@ class MangaPresetSystem {
     console.log(`📋 プリセット詳細表示: ${presetData.name} - ${settingsDetails.length}項目`);
   }
 
-  // 辞書データから日本語ラベルを取得する関数
-  getJapaneseLabelFromDictionary(categoryId, value) {
-    // カテゴリIDから辞書のプロパティ名を推測
-    const categoryMappings = {
-      'mangaEmotionPrimary': 'emotion_primary',
-      'mangaEmotionDetail': 'emotion_detail',
-      'mangaExpressions': 'expressions',
-      'mangaEyeState': 'eye_state',
-      'mangaGaze': 'gaze',
-      'mangaMouthState': 'mouth_state',
-      'mangaPose': 'pose',
-      'mangaHandGesture': 'hand_gesture',
-      'mangaMovementAction': 'movement_action',
-      'mangaComposition': 'composition',
-      'mangaView': 'view',
-      'mangaCameraView': 'camera_view',
-      'mangaPropsLight': 'props_light',
-      'mangaEffectManga': 'effect_manga',
-      'mangaBackground': 'background',
-      'mangaLighting': 'lighting',
-      'mangaArtStyle': 'art_style',
-      // NSFW系（推測）
-      'mangaNSFWExpr': 'n_expr',
-      'mangaNSFWExpo': 'n_expo',
-      'mangaNSFWSitu': 'n_situ',
-      'mangaNSFWLight': 'n_light',
-      'mangaNSFWPose': 'n_pose',
-      'mangaNSFWUnderwear': 'n_underwear',
-      'mangaNSFWOutfit': 'n_outfit',
-      'mangaNSFWAction': 'n_action',
-      'mangaNSFWAcc': 'n_acc',
-      'mangaNSFWBody': 'n_body',
-      'mangaNSFWNipples': 'n_nipples'
-    };
-
-    const dictProperty = categoryMappings[categoryId];
-    if (!dictProperty) return null;
-
-    // SFW辞書から検索
-    if (window.SFW && window.SFW[dictProperty] && Array.isArray(window.SFW[dictProperty])) {
-      const item = window.SFW[dictProperty].find(item => item.tag === value);
-      if (item && item.label) return item.label;
-    }
-
-    // NSFW辞書から検索（存在しない場合もあるので、DOM要素から取得を試行）
-    if (window.NSFW && window.NSFW[dictProperty] && Array.isArray(window.NSFW[dictProperty])) {
-      const item = window.NSFW[dictProperty].find(item => item.tag === value);
-      if (item && item.label) return item.label;
-    }
-
-    // DOM要素から日本語ラベルを取得（最後の手段）
+  // DOM要素から日本語ラベルを正確に抽出
+  getJapaneseLabelFromDOM(categoryId, value) {
     const container = document.getElementById(categoryId);
-    if (container) {
-      const input = container.querySelector(`input[value="${value}"]`);
-      if (input) {
-        // ラベル要素またはテキストコンテンツから日本語を取得
-        const label = input.closest('label') || input.parentElement;
-        if (label) {
-          const textContent = label.textContent || label.innerText;
-          // "日本語 (english)" のような形式から日本語部分を抽出
-          const match = textContent.match(/^([^(]+)/);
-          if (match) {
-            return match[1].trim();
+    if (!container) return null;
+
+    // 指定された値を持つinput要素を検索
+    const input = container.querySelector(`input[value="${value}"]`);
+    if (!input) return null;
+
+    // 親のlabel要素を取得
+    const label = input.closest('label');
+    if (!label) return null;
+
+    // span要素内のテキストを取得
+    const span = label.querySelector('span');
+    if (!span) return null;
+
+    const fullText = span.textContent.trim();
+    
+    // "日本語 english_tag" 形式から日本語部分を抽出
+    // 最後のスペース以降を英語タグとして除去
+    const lastSpaceIndex = fullText.lastIndexOf(' ');
+    if (lastSpaceIndex > 0) {
+      const possibleTag = fullText.substring(lastSpaceIndex + 1);
+      // 英語タグっぽい（アンダースコア含む、または元のvalue値）場合は除去
+      if (possibleTag.includes('_') || possibleTag === value) {
+        return fullText.substring(0, lastSpaceIndex).trim();
+      }
+    }
+    
+    // フォールバック：そのまま返す
+    return fullText;
+  }
+
+  // 辞書データからも検索を試行
+  getJapaneseLabelFromDictionary(categoryId, value) {
+    // DEFAULT_SFW_DICT から検索
+    if (window.DEFAULT_SFW_DICT) {
+      const sfwData = this.searchInDictionary(window.DEFAULT_SFW_DICT, value);
+      if (sfwData) return sfwData;
+    }
+
+    // DEFAULT_NSFW_DICT から検索
+    if (window.DEFAULT_NSFW_DICT) {
+      const nsfwData = this.searchInDictionary(window.DEFAULT_NSFW_DICT, value);
+      if (nsfwData) return nsfwData;
+    }
+
+    return null;
+  }
+
+  // 辞書内を再帰的に検索
+  searchInDictionary(dict, targetValue) {
+    if (!dict || typeof dict !== 'object') return null;
+
+    // 配列の場合
+    if (Array.isArray(dict)) {
+      for (const item of dict) {
+        if (item && typeof item === 'object') {
+          if (item.tag === targetValue && item.label) {
+            return item.label;
           }
+        }
+      }
+    } else {
+      // オブジェクトの場合、プロパティを再帰的に検索
+      for (const [key, value] of Object.entries(dict)) {
+        if (Array.isArray(value)) {
+          const result = this.searchInDictionary(value, targetValue);
+          if (result) return result;
         }
       }
     }
@@ -440,7 +446,7 @@ class MangaPresetSystem {
     return null;
   }
 
-  // 設定詳細を抽出するメソッド（辞書ベース版）
+  // 設定詳細を抽出するメソッド（改良版）
   extractSettingsDetails(settings) {
     const categoryNames = {
       'mangaEmotionPrimary': '基本感情',
@@ -476,18 +482,27 @@ class MangaPresetSystem {
     const details = [];
     
     Object.entries(settings || {}).forEach(([key, value]) => {
-      // 値の型チェック
       if (value && (typeof value === 'string' || typeof value === 'number') && String(value).trim() !== '') {
         const categoryName = categoryNames[key] || key;
         const stringValue = String(value);
         const englishValue = stringValue.replace(/_/g, ' ');
         
-        // 辞書から日本語ラベルを取得
-        const japaneseValue = this.getJapaneseLabelFromDictionary(key, stringValue) || englishValue;
+        // 1. DOM要素から日本語ラベルを取得（優先）
+        let japaneseValue = this.getJapaneseLabelFromDOM(key, stringValue);
+        
+        // 2. 辞書データから取得（フォールバック）
+        if (!japaneseValue) {
+          japaneseValue = this.getJapaneseLabelFromDictionary(key, stringValue);
+        }
+        
+        // 3. 最終フォールバック
+        if (!japaneseValue) {
+          japaneseValue = englishValue;
+        }
         
         details.push({
           category: categoryName,
-          value: `${japaneseValue}（${englishValue}）`
+          value: japaneseValue !== englishValue ? `${japaneseValue}（${englishValue}）` : englishValue
         });
       }
     });
