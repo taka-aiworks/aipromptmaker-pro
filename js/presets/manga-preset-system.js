@@ -1,286 +1,3 @@
-// ========================================
-// プリセットデータ定義（manga-preset-system.js の先頭に追加）
-// ========================================
-
-// SFWプリセットデータ
-const MANGA_SFW_PRESETS = {
-  'joy_happy': {
-    name: '😊 喜び・幸せ',
-    description: '明るく幸せな表情と雰囲気',
-    settings: {
-      'mangaEmotionPrimary': 'happy',
-      'mangaExpressions': 'smile',
-      'mangaEyeState': 'normal',
-      'mangaMouthState': 'smile',
-      'mangaPose': 'standing'
-    }
-  },
-  'joy_cheerful': {
-    name: '🌟 陽気・元気',
-    description: 'エネルギッシュで活発な表現',
-    settings: {
-      'mangaEmotionPrimary': 'cheerful',
-      'mangaExpressions': 'bright_smile',
-      'mangaEyeState': 'sparkling',
-      'mangaHandGesture': 'peace_sign',
-      'mangaPose': 'dynamic'
-    }
-  },
-  'calm_peaceful': {
-    name: '😌 穏やか',
-    description: '落ち着いた安らぎの表情',
-    settings: {
-      'mangaEmotionPrimary': 'calm',
-      'mangaExpressions': 'gentle_smile',
-      'mangaEyeState': 'half_closed',
-      'mangaMouthState': 'small_smile',
-      'mangaPose': 'sitting'
-    }
-  },
-  'sad_gentle': {
-    name: '😢 悲しみ',
-    description: '優しい悲しみの表現',
-    settings: {
-      'mangaEmotionPrimary': 'sad',
-      'mangaExpressions': 'sad',
-      'mangaEyeState': 'teary',
-      'mangaMouthState': 'frown',
-      'mangaPose': 'dejected'
-    }
-  },
-  'sad_crying': {
-    name: '😭 泣き顔',
-    description: '涙を流している表情',
-    settings: {
-      'mangaEmotionPrimary': 'crying',
-      'mangaExpressions': 'crying',
-      'mangaEyeState': 'tears',
-      'mangaMouthState': 'open_crying',
-      'mangaEffectManga': 'tears'
-    }
-  },
-  'anger_mild': {
-    name: '😤 むすっ',
-    description: '軽い怒りやむくれた表情',
-    settings: {
-      'mangaEmotionPrimary': 'annoyed',
-      'mangaExpressions': 'pouting',
-      'mangaEyeState': 'glaring',
-      'mangaMouthState': 'pout',
-      'mangaHandGesture': 'crossed_arms'
-    }
-  },
-  'anger_fury': {
-    name: '😡 激怒',
-    description: '強い怒りの表現',
-    settings: {
-      'mangaEmotionPrimary': 'angry',
-      'mangaExpressions': 'furious',
-      'mangaEyeState': 'fierce',
-      'mangaMouthState': 'shouting',
-      'mangaEffectManga': 'anger_marks'
-    }
-  },
-  'embarrassed_shy': {
-    name: '😊 恥ずかしがり',
-    description: 'シャイで恥ずかしがる表情',
-    settings: {
-      'mangaEmotionPrimary': 'embarrassed',
-      'mangaExpressions': 'shy',
-      'mangaEyeState': 'averted',
-      'mangaMouthState': 'small_smile',
-      'mangaHandGesture': 'fidgeting'
-    }
-  },
-  'embarrassed_blush': {
-    name: '😳 赤面',
-    description: '顔を赤らめた表情',
-    settings: {
-      'mangaEmotionPrimary': 'blushing',
-      'mangaExpressions': 'blushing',
-      'mangaEyeState': 'wide',
-      'mangaMouthState': 'surprised',
-      'mangaEffectManga': 'blush_marks'
-    }
-  },
-  'surprised_shock': {
-    name: '😲 驚き',
-    description: '驚いた表情',
-    settings: {
-      'mangaEmotionPrimary': 'surprised',
-      'mangaExpressions': 'shocked',
-      'mangaEyeState': 'wide_open',
-      'mangaMouthState': 'open',
-      'mangaEffectManga': 'surprise_marks'
-    }
-  },
-  'sleepy_tired': {
-    name: '😴 眠気',
-    description: '眠そうな表情',
-    settings: {
-      'mangaEmotionPrimary': 'sleepy',
-      'mangaExpressions': 'drowsy',
-      'mangaEyeState': 'half_closed',
-      'mangaMouthState': 'yawning',
-      'mangaPose': 'tired'
-    }
-  }
-};
-
-// NSFWプリセットデータ
-const MANGA_NSFW_PRESETS = {
-  'romantic_sweet': {
-    name: '💕 ロマンチック',
-    description: '甘いロマンチックな雰囲気',
-    level: 'R-15',
-    settings: {
-      'mangaEmotionPrimary': 'loving',
-      'mangaNSFWExpr': 'romantic',
-      'mangaNSFWSitu': 'romantic_date',
-      'mangaNSFWLight': 'soft_romantic',
-      'mangaNSFWPose': 'intimate_close'
-    }
-  },
-  'romantic_intimate': {
-    name: '💖 親密・密着',
-    description: '親密で密着した表現',
-    level: 'R-18',
-    settings: {
-      'mangaEmotionPrimary': 'intimate',
-      'mangaNSFWExpr': 'passionate',
-      'mangaNSFWSitu': 'intimate_moment',
-      'mangaNSFWPose': 'embracing',
-      'mangaNSFWAction': 'kissing'
-    }
-  },
-  'bath_shower': {
-    name: '🛁 バスタイム',
-    description: 'お風呂やシャワーのシーン',
-    level: 'R-15',
-    settings: {
-      'mangaNSFWSitu': 'bathroom',
-      'mangaNSFWExpo': 'bathing',
-      'mangaNSFWLight': 'steam',
-      'mangaNSFWOutfit': 'towel',
-      'mangaNSFWPose': 'bathing_pose'
-    }
-  },
-  'swimsuit_beach': {
-    name: '🏖️ 水着・ビーチ',
-    description: '水着姿やビーチでの表現',
-    level: 'R-15',
-    settings: {
-      'mangaNSFWOutfit': 'bikini',
-      'mangaBackground': 'beach',
-      'mangaNSFWLight': 'sunny',
-      'mangaNSFWPose': 'beach_pose',
-      'mangaNSFWSitu': 'summer_fun'
-    }
-  },
-  'bedroom_night': {
-    name: '🌙 ベッドルーム',
-    description: 'ベッドルームでの夜のシーン',
-    level: 'R-18',
-    settings: {
-      'mangaNSFWSitu': 'bedroom',
-      'mangaNSFWLight': 'dim_romantic',
-      'mangaNSFWOutfit': 'lingerie',
-      'mangaNSFWPose': 'lying_bed',
-      'mangaNSFWExpr': 'seductive'
-    }
-  },
-  'sleepwear_night': {
-    name: '🌃 ナイトウェア',
-    description: 'パジャマやナイトウェア',
-    level: 'R-15',
-    settings: {
-      'mangaNSFWOutfit': 'pajamas',
-      'mangaNSFWSitu': 'bedroom_casual',
-      'mangaNSFWLight': 'soft_night',
-      'mangaEmotionPrimary': 'relaxed',
-      'mangaNSFWPose': 'casual_sitting'
-    }
-  },
-  'glamorous_pose': {
-    name: '💄 グラマラス',
-    description: 'グラマラスでセクシーなポーズ',
-    level: 'R-18',
-    settings: {
-      'mangaNSFWPose': 'glamorous',
-      'mangaNSFWExpr': 'confident_sexy',
-      'mangaNSFWOutfit': 'elegant_dress',
-      'mangaNSFWLight': 'dramatic',
-      'mangaComposition': 'dynamic_angle'
-    }
-  },
-  'pinup_style': {
-    name: '📸 ピンナップ',
-    description: 'ピンナップスタイルの表現',
-    level: 'R-18',
-    settings: {
-      'mangaNSFWPose': 'pinup_classic',
-      'mangaNSFWOutfit': 'retro_sexy',
-      'mangaNSFWExpr': 'playful_wink',
-      'mangaComposition': 'portrait',
-      'mangaArtStyle': 'retro'
-    }
-  },
-  'school_after': {
-    name: '🏫 放課後',
-    description: '放課後の学校シーン',
-    level: 'R-15',
-    settings: {
-      'mangaNSFWOutfit': 'school_uniform',
-      'mangaBackground': 'classroom',
-      'mangaNSFWSitu': 'after_school',
-      'mangaEmotionPrimary': 'youthful',
-      'mangaNSFWExpr': 'innocent_cute'
-    }
-  },
-  'cosplay_maid': {
-    name: '🎀 メイドコス',
-    description: 'メイドコスプレ',
-    level: 'R-18',
-    settings: {
-      'mangaNSFWOutfit': 'maid_costume',
-      'mangaNSFWPose': 'serving_pose',
-      'mangaNSFWExpr': 'cute_submissive',
-      'mangaNSFWAcc': 'maid_accessories',
-      'mangaNSFWSitu': 'maid_service'
-    }
-  },
-  'cute_innocent': {
-    name: '🌸 初心・純真',
-    description: '初々しく純真な表現',
-    level: 'R-15',
-    settings: {
-      'mangaEmotionPrimary': 'innocent',
-      'mangaNSFWExpr': 'pure_innocent',
-      'mangaNSFWOutfit': 'white_dress',
-      'mangaNSFWLight': 'soft_pure',
-      'mangaNSFWPose': 'innocent_pose'
-    }
-  }
-};
-
-// ========================================
-// デバッグ用：プリセットデータが正しく読み込まれているかチェック
-// ========================================
-console.log('✅ プリセットデータ定義完了', {
-  SFW_COUNT: Object.keys(MANGA_SFW_PRESETS).length,
-  NSFW_COUNT: Object.keys(MANGA_NSFW_PRESETS).length
-});
-
-// ========================================
-// 既存のコードをそのまま使用するための宣言
-// ========================================
-// この後に、先ほど提案した詳細表示機能のコードを続けて追加してください
-
-
-
-
-
-
 // 漫画モードプリセット統合システム
 class MangaPresetSystem {
   constructor() {
@@ -1102,136 +819,153 @@ window.mangaPresetEnhancement = mangaPresetEnhancement;
 // プリセット詳細表示機能（manga-preset-system.js に追加）
 // ========================================
 
-// プリセット詳細データを既存のクラスに追加
+// ========================================
+// プリセット詳細表示のタグ修正（manga-preset-system.js の該当部分を置換）
+// ========================================
+
+// getPresetDetails関数を修正して、実際の設定値を詳細に表示
 MangaPresetSystem.prototype.getPresetDetails = function(presetId, type) {
+  let presetData, detailsData;
+  
   if (type === 'sfw') {
-    const sfwDetails = {
+    presetData = MANGA_SFW_PRESETS[presetId];
+    // SFWプリセットの詳細設定データ
+    detailsData = {
       'joy_happy': {
-        name: '😊 喜び・幸せ',
-        description: '明るく幸せな表情と雰囲気',
-        tags: ['happy, joyful expression', 'smiling', 'cheerful atmosphere']
+        tags: ['joy expression', 'delighted mood', 'bright smile', 'sparkling eyes', 'peace sign gesture', 'upper body composition']
       },
       'joy_cheerful': {
-        name: '🌟 陽気・元気',
-        description: 'エネルギッシュで活発な表現',
-        tags: ['energetic expression', 'bright, cheerful', 'lively atmosphere']
+        tags: ['cheerful energy', 'smiling open mouth', 'raised fist', 'jumping pose', 'arm swing motion', 'full body view']
       },
       'calm_peaceful': {
-        name: '😌 穏やか',
-        description: '落ち着いた安らぎの表情',
-        tags: ['calm, peaceful expression', 'serene', 'gentle smile']
+        tags: ['calm expression', 'soft smile', 'half closed eyes', 'gentle gaze', 'sitting pose', 'hands together']
       },
       'sad_gentle': {
-        name: '😢 悲しみ',
-        description: '優しい悲しみの表現',
-        tags: ['sad, melancholic expression', 'gentle tears', 'emotional']
+        tags: ['tearful sadness', 'teary eyes', 'downcast gaze', 'sitting pose', 'wiping tears', 'bust composition']
       },
       'sad_crying': {
-        name: '😭 泣き顔',
-        description: '涙を流している表情',
-        tags: ['crying', 'tears streaming', 'emotional breakdown']
+        tags: ['sobbing expression', 'crying face', 'teary filled eyes', 'kneeling pose', 'covering eyes', 'teardrops effect']
       },
       'anger_mild': {
-        name: '😤 むすっ',
-        description: '軽い怒りやむくれた表情',
-        tags: ['pouting', 'slightly annoyed', 'sulking expression']
+        tags: ['annoyed mood', 'pouting face', 'narrowed eyes', 'averted gaze', 'arms crossed', 'upper body']
       },
       'anger_fury': {
-        name: '😡 激怒',
-        description: '強い怒りの表現',
-        tags: ['angry, furious expression', 'intense emotion', 'fierce look']
+        tags: ['furious anger', 'angry vein eyes', 'glaring look', 'clenched fist', 'teeth grit', 'anger mark effect']
       },
       'embarrassed_shy': {
-        name: '😊 恥ずかしがり',
-        description: 'シャイで恥ずかしがる表情',
-        tags: ['shy, embarrassed expression', 'bashful smile', 'modest look']
+        tags: ['bashful emotion', 'embarrassed face', 'shy hidden eyes', 'hands on cheeks', 'blush effect', 'bust view']
       },
       'embarrassed_blush': {
-        name: '😳 赤面',
-        description: '顔を赤らめた表情',
-        tags: ['blushing', 'red face', 'flustered expression']
+        tags: ['blushing face', 'half closed eyes', 'shy side glance', 'covering face', 'blush effect', 'portrait view']
       },
       'surprised_shock': {
-        name: '😲 驚き',
-        description: '驚いた表情',
-        tags: ['surprised, shocked expression', 'wide eyes', 'amazed look']
+        tags: ['shocked expression', 'widened eyes', 'surprised mouth', 'hands on head', 'surprise mark', 'upper body']
       },
       'sleepy_tired': {
-        name: '😴 眠気',
-        description: '眠そうな表情',
-        tags: ['sleepy, drowsy expression', 'tired look', 'yawning']
+        tags: ['sleepy eyes', 'drowsy mood', 'yawning mouth', 'stretching pose', 'hands on head', 'zzz sleep effect']
       }
     };
-    return sfwDetails[presetId];
   } else if (type === 'nsfw') {
-    const nsfwDetails = {
+    presetData = MANGA_NSFW_PRESETS[presetId];
+    // NSFWプリセットの詳細設定データ
+    detailsData = {
       'romantic_sweet': {
-        name: '💕 ロマンチック',
-        description: '甘いロマンチックな雰囲気',
-        tags: ['romantic atmosphere', 'sweet expression', 'loving gaze']
+        tags: ['loving emotion', 'romantic expression', 'soft romantic lighting', 'intimate close pose', 'romantic date situation']
       },
       'romantic_intimate': {
-        name: '💖 親密・密着',
-        description: '親密で密着した表現',
-        tags: ['intimate pose', 'close contact', 'affectionate']
+        tags: ['intimate emotion', 'passionate expression', 'embracing pose', 'kissing action', 'intimate moment']
       },
       'bath_shower': {
-        name: '🛁 バスタイム',
-        description: 'お風呂やシャワーのシーン',
-        tags: ['bathing', 'shower scene', 'wet skin']
+        tags: ['bathroom setting', 'bathing exposure', 'steam lighting', 'towel outfit', 'bathing pose']
       },
       'swimsuit_beach': {
-        name: '🏖️ 水着・ビーチ',
-        description: '水着姿やビーチでの表現',
-        tags: ['swimsuit', 'beach setting', 'summer vibes']
+        tags: ['bikini outfit', 'beach background', 'sunny lighting', 'beach pose', 'summer fun situation']
       },
       'bedroom_night': {
-        name: '🌙 ベッドルーム',
-        description: 'ベッドルームでの夜のシーン',
-        tags: ['bedroom setting', 'night scene', 'intimate lighting']
+        tags: ['bedroom setting', 'dim romantic lighting', 'lingerie outfit', 'lying bed pose', 'seductive expression']
       },
       'sleepwear_night': {
-        name: '🌃 ナイトウェア',
-        description: 'パジャマやナイトウェア',
-        tags: ['nightwear', 'pajamas', 'cozy atmosphere']
+        tags: ['pajamas outfit', 'bedroom casual setting', 'soft night lighting', 'relaxed emotion', 'casual sitting']
       },
       'glamorous_pose': {
-        name: '💄 グラマラス',
-        description: 'グラマラスでセクシーなポーズ',
-        tags: ['glamorous pose', 'sexy expression', 'alluring']
+        tags: ['glamorous pose', 'confident sexy expression', 'elegant dress', 'dramatic lighting', 'dynamic angle']
       },
       'pinup_style': {
-        name: '📸 ピンナップ',
-        description: 'ピンナップスタイルの表現',
-        tags: ['pin-up style', 'retro pose', 'classic beauty']
+        tags: ['pinup classic pose', 'retro sexy outfit', 'playful wink', 'portrait composition', 'retro art style']
       },
       'school_after': {
-        name: '🏫 放課後',
-        description: '放課後の学校シーン',
-        tags: ['after school', 'school uniform', 'youthful']
+        tags: ['school uniform', 'classroom background', 'after school situation', 'youthful emotion', 'innocent cute']
       },
       'cosplay_maid': {
-        name: '🎀 メイドコス',
-        description: 'メイドコスプレ',
-        tags: ['maid costume', 'cosplay', 'cute outfit']
+        tags: ['maid costume', 'serving pose', 'cute submissive expression', 'maid accessories', 'maid service']
       },
       'cute_innocent': {
-        name: '🌸 初心・純真',
-        description: '初々しく純真な表現',
-        tags: ['innocent expression', 'pure look', 'youthful charm']
+        tags: ['innocent emotion', 'pure innocent expression', 'white dress', 'soft pure lighting', 'innocent pose']
       }
     };
-    return nsfwDetails[presetId];
   }
-  return null;
+  
+  if (!presetData || !detailsData[presetId]) return null;
+  
+  return {
+    name: presetData.name,
+    description: presetData.description,
+    level: presetData.level || 'SFW',
+    tags: detailsData[presetId].tags,
+    settings: presetData.settings // 実際の設定値も含める
+  };
 };
 
-// プリセット詳細を表示する関数を追加
+// 設定値を詳細表示する新しい関数を追加
+MangaPresetSystem.prototype.getSettingsDetails = function(settings) {
+  const settingsDetails = [];
+  const categoryNames = {
+    'mangaEmotionPrimary': '基本感情',
+    'mangaEmotionDetail': '詳細感情',
+    'mangaExpressions': '表情',
+    'mangaEyeState': '目の状態',
+    'mangaGaze': '視線',
+    'mangaMouthState': '口の状態',
+    'mangaPose': 'ポーズ',
+    'mangaHandGesture': '手の動作',
+    'mangaMovementAction': '動き',
+    'mangaComposition': '構図',
+    'mangaEffectManga': 'エフェクト',
+    'mangaBackground': '背景',
+    'mangaLighting': 'ライティング',
+    'mangaArtStyle': 'アートスタイル',
+    'mangaNSFWExpr': 'NSFW表情',
+    'mangaNSFWExpo': 'NSFW露出',
+    'mangaNSFWSitu': 'NSFWシチュ',
+    'mangaNSFWLight': 'NSFWライト',
+    'mangaNSFWPose': 'NSFWポーズ',
+    'mangaNSFWAction': 'NSFWアクション',
+    'mangaNSFWOutfit': 'NSFW衣装',
+    'mangaNSFWAcc': 'NSFWアクセ',
+    'mangaNSFWUnderwear': 'NSFW下着'
+  };
+  
+  Object.entries(settings).forEach(([key, value]) => {
+    if (value && categoryNames[key]) {
+      settingsDetails.push({
+        category: categoryNames[key],
+        value: value.replace(/_/g, ' ')
+      });
+    }
+  });
+  
+  return settingsDetails;
+};
+
+// プリセット詳細表示関数を大幅に改良
 MangaPresetSystem.prototype.showPresetDetails = function(presetId, type) {
   const detailsElement = document.getElementById('presetDetails');
   const detailsContent = document.getElementById('presetDetailsContent');
   
-  if (!detailsElement || !detailsContent) return;
+  if (!detailsElement || !detailsContent) {
+    console.warn('詳細表示エリアが見つかりません');
+    return;
+  }
   
   const details = this.getPresetDetails(presetId, type);
   if (!details) {
@@ -1239,140 +973,79 @@ MangaPresetSystem.prototype.showPresetDetails = function(presetId, type) {
     return;
   }
   
-  // 詳細内容を生成
+  // タグをより見やすく表示
   const tagsHtml = details.tags.map(tag => 
-    `<span class="preset-tag">${tag}</span>`
-  ).join(' ');
+    `<span class="preset-tag" style="
+      display: inline-block;
+      background: rgba(100,150,255,0.2);
+      color: rgba(255,255,255,0.9);
+      padding: 2px 6px;
+      margin: 1px 2px;
+      border-radius: 10px;
+      font-size: 10px;
+      border: 1px solid rgba(100,150,255,0.3);
+    ">${tag}</span>`
+  ).join('');
+  
+  // 実際の設定値も表示
+  const settingsDetails = this.getSettingsDetails(details.settings);
+  const settingsHtml = settingsDetails.length > 0 ? `
+    <div style="margin-top: 8px; padding: 6px; background: rgba(0,0,0,0.1); border-radius: 4px;">
+      <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">📋 設定内容:</div>
+      ${settingsDetails.map(detail => 
+        `<div style="margin: 1px 0; font-size: 10px;">
+          <span style="color: rgba(100,200,100,1); font-weight: bold;">${detail.category}:</span> 
+          <span style="color: rgba(255,255,255,0.8);">${detail.value}</span>
+        </div>`
+      ).join('')}
+    </div>
+  ` : '';
+  
+  // レベル表示（NSFWの場合）
+  const levelBadge = details.level !== 'SFW' ? 
+    `<span style="
+      background: rgba(255,100,100,0.3);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 10px;
+      margin-left: 8px;
+    ">${details.level}</span>` : '';
   
   detailsContent.innerHTML = `
-    <div style="margin-bottom: 6px; font-weight: bold;">${details.name}</div>
-    <div style="margin-bottom: 8px; color: var(--muted);">${details.description}</div>
-    <div>${tagsHtml}</div>
+    <div style="margin-bottom: 6px; font-weight: bold;">
+      ${details.name}${levelBadge}
+    </div>
+    <div style="margin-bottom: 8px; color: rgba(255,255,255,0.7); font-size: 12px;">
+      ${details.description}
+    </div>
+    <div style="margin-bottom: 6px;">
+      <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">🏷️ 含まれるタグ:</div>
+      ${tagsHtml}
+    </div>
+    ${settingsHtml}
   `;
   
   detailsElement.style.display = 'block';
   
-  console.log(`📋 プリセット詳細表示: ${details.name}`);
+  console.log(`📋 プリセット詳細表示: ${details.name} - ${details.tags.length}個のタグ`);
 };
 
-// プリセット詳細を隠す関数を追加
-MangaPresetSystem.prototype.hidePresetDetails = function() {
-  const detailsElement = document.getElementById('presetDetails');
-  if (detailsElement) {
-    detailsElement.style.display = 'none';
-  }
-};
+// プリセット詳細表示エリアのHTMLも更新（generatePresetHTML関数内に追加）
+const presetDetailsHTML = `
+<div id="presetDetails" style="
+  display: none;
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  max-height: 200px;
+  overflow-y: auto;
+">
+  <div id="presetDetailsContent"></div>
+</div>
+`;
 
-// 既存のapplyPreset関数を拡張して詳細表示機能を追加
-const originalApplyPreset = MangaPresetSystem.prototype.applyPreset;
-MangaPresetSystem.prototype.applyPreset = function(presetId, type) {
-  // 元の処理を実行
-  originalApplyPreset.call(this, presetId, type);
-  
-  // 詳細を表示
-  this.showPresetDetails(presetId, type);
-};
-
-// 既存のclearAllPresets関数を拡張
-const originalClearAllPresets = MangaPresetSystem.prototype.clearAllPresets;
-MangaPresetSystem.prototype.clearAllPresets = function() {
-  // 元の処理を実行
-  originalClearAllPresets.call(this);
-  
-  // 詳細を隠す
-  this.hidePresetDetails();
-};
-
-// 微調整時にも詳細を更新する機能を追加
-MangaPresetEnhancement.prototype.updatePresetDetailsWithCustomization = function() {
-  if (!this.basePreset) return;
-  
-  const detailsContent = document.getElementById('presetDetailsContent');
-  if (!detailsContent) return;
-  
-  // 元のプリセット詳細を取得
-  const originalDetails = mangaPresetSystem.getPresetDetails(this.basePreset.id, this.basePreset.type);
-  if (!originalDetails) return;
-  
-  // カスタマイズ情報を追加
-  const customCount = Object.keys(this.customizations).length;
-  const customInfo = customCount > 0 ? 
-    `<div style="margin-top: 8px; padding: 6px; background: rgba(255,165,0,0.1); border-radius: 4px; font-size: 11px;">
-      🔧 <strong>${customCount}項目をカスタマイズ中</strong>
-    </div>` : '';
-  
-  // 詳細内容を更新
-  const tagsHtml = originalDetails.tags.map(tag => 
-    `<span class="preset-tag">${tag}</span>`
-  ).join(' ');
-  
-  detailsContent.innerHTML = `
-    <div style="margin-bottom: 6px; font-weight: bold;">${originalDetails.name}</div>
-    <div style="margin-bottom: 8px; color: var(--muted);">${originalDetails.description}</div>
-    <div>${tagsHtml}</div>
-    ${customInfo}
-  `;
-};
-
-// 微調整記録時に詳細も更新
-const originalRecordCustomization = MangaPresetEnhancement.prototype.recordCustomization;
-MangaPresetEnhancement.prototype.recordCustomization = function(categoryId, oldValue, newValue) {
-  // 元の処理を実行
-  originalRecordCustomization.call(this, categoryId, oldValue, newValue);
-  
-  // 詳細表示を更新
-  this.updatePresetDetailsWithCustomization();
-};
-
-// カスタムプリセット適用時も詳細を表示
-const originalApplyCustomPreset = MangaPresetEnhancement.prototype.applyCustomPreset;
-MangaPresetEnhancement.prototype.applyCustomPreset = function(customPreset) {
-  // 元の処理を実行
-  originalApplyCustomPreset.call(this, customPreset);
-  
-  // カスタムプリセットの詳細を表示
-  const detailsElement = document.getElementById('presetDetails');
-  const detailsContent = document.getElementById('presetDetailsContent');
-  
-  if (detailsElement && detailsContent) {
-    const baseDetails = mangaPresetSystem.getPresetDetails(
-      customPreset.basePreset.id, 
-      customPreset.basePreset.type
-    );
-    
-    // カスタムプリセットの実際の設定を表示
-    const settingsDetails = mangaPresetSystem.getSettingsDetails(customPreset.settings);
-    const customCount = Object.keys(customPreset.customizations || {}).length;
-    
-    const settingsHtml = settingsDetails.length > 0 ? `
-      <div style="margin-bottom: 8px;">
-        <strong>📋 保存された設定:</strong>
-        <div style="margin-top: 4px;">
-          ${settingsDetails.map(detail => 
-            `<div style="margin: 2px 0; font-size: 11px;">
-              <span style="color: var(--brand); font-weight: bold;">${detail.category}:</span> 
-              <span class="preset-tag">${detail.value}</span>
-            </div>`
-          ).join('')}
-        </div>
-      </div>
-    ` : '';
-    
-    const customInfo = customCount > 0 ? 
-      `<div style="margin-top: 8px; padding: 6px; background: rgba(106,161,255,0.1); border-radius: 4px; font-size: 11px;">
-        💾 <strong>保存済みカスタムプリセット</strong><br>
-        ベース: ${baseDetails ? baseDetails.name : 'Unknown'} + ${customCount}項目のカスタマイズ
-      </div>` : '';
-    
-    detailsContent.innerHTML = `
-      <div style="margin-bottom: 6px; font-weight: bold;">💾 ${customPreset.name}</div>
-      <div style="margin-bottom: 8px; color: var(--muted);">${customPreset.description}</div>
-      ${settingsHtml}
-      ${customInfo}
-    `;
-    
-    detailsElement.style.display = 'block';
-  }
-};
-
-console.log('✅ プリセット詳細表示機能を manga-preset-system.js に統合完了');
+console.log('✅ プリセット詳細表示のタグ表示機能を強化しました');
+console.log('📝 各プリセットの詳細なタグと設定値が表示されるようになります');
