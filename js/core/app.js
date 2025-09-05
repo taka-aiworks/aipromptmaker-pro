@@ -4001,7 +4001,6 @@ function enhancedBuildBatchProduction(n) {
     return [];
   }
 }
-
 // 生成ボタンのイベントリスナー修正
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
@@ -4035,6 +4034,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('✅ 量産モードプリセット修正版を読み込みました');
-});
-
-console.log('✅ 量産モードエラー修正版を読み込みました');
