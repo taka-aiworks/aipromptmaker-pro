@@ -9,7 +9,6 @@ function initMangaMode() {
   if (mangaInitialized) return;
   mangaInitialized = true;
   
-  console.log('漫画モード初期化中...');
   
   // HTMLの漫画モード要素が存在するかチェック
   const mangaPanel = document.getElementById('panelManga');
@@ -53,10 +52,7 @@ function initMangaMode() {
     //console.log('✅ 辞書データ確認OK - populateMangaOptions()を実行');
     populateMangaOptions();
   } else {
-    console.error('❌ 辞書データが取得できません');
   }
-  
-  console.log('漫画モード初期化完了');
 }
 
 // イベントリスナーの設定（デバッグ強化版） - 既存のsetupMangaEventListeners関数を置き換え
@@ -714,9 +710,7 @@ function populateMangaOptions() {
     if (document.getElementById('mangaNegEssential') && typeof initMangaNegativeSystem === 'function') {
       try {
         initMangaNegativeSystem();
-        console.log('新ネガティブプロンプトシステム初期化完了');
       } catch (error) {
-        console.error('新ネガティブプロンプトシステム初期化エラー:', error);
       }
     }
   }, 300);
@@ -1177,9 +1171,7 @@ function generateMangaPrompt() {
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaOccupation'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaSeasonWeather'));
     
-    console.log('✅ 漫画パラメータ追加タグ:', addedTags);
   } else {
-    console.log('⚠️ 漫画パラメータ処理がスキップされました');
   }
   
   // NSFW専用項目
@@ -1203,12 +1195,9 @@ function generateMangaPrompt() {
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWBackground'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWEmotion'));
       
-    console.log('🔞 NSFW追加タグ:', nsfwTags);
   }
   
   const finalPrompt = tags.filter(Boolean).join(', ');
-  console.log('🎯 最終プロンプト:', finalPrompt);
-  console.log('🎭 商用LoRA含有確認:', finalPrompt.includes('<lora:'));
   
   return finalPrompt;
 }
@@ -1225,11 +1214,9 @@ if (window.commercialLoRAManager) {
     if (typeof updateMangaOutput === 'function') {
       updateMangaOutput();
     } else {
-      console.error('❌ updateMangaOutput関数が見つかりません');
     }
   };
-  
-  console.log('✅ 商用LoRAマネージャーの更新メソッドを即座実行に変更');
+
 }
 
 // ========================================
@@ -1238,34 +1225,31 @@ if (window.commercialLoRAManager) {
 
 // プロンプト生成テスト
 window.testMangaPromptWithLoRA = function() {
-  console.log('🧪 商用LoRA対応プロンプト生成テスト開始');
   
   // 現在の商用LoRA状態確認
   const toggle = document.getElementById('mangaCommercialLoRAEnable');
   const loraCount = window.commercialLoRAManager?.selectedLoRAs?.size || 0;
   
-  console.log('📋 テスト前状態確認:', {
-    'LoRA有効': toggle?.checked || false,
-    '選択LoRA数': loraCount,
-    '選択LoRAタグ': window.commercialLoRAManager?.getSelectedLoRATags() || []
-  });
+  //console.log('📋 テスト前状態確認:', {
+  //  'LoRA有効': toggle?.checked || false,
+  //  '選択LoRA数': loraCount,
+  //  '選択LoRAタグ': window.commercialLoRAManager?.getSelectedLoRATags() || []
+  //});
   
   // プロンプト生成実行
   const result = generateMangaPrompt();
   
-  console.log('📝 生成結果:', result);
   
   // LoRAタグの位置確認
   const loraMatch = result.match(/<lora:[^>]+>/g);
   if (loraMatch) {
     const firstLoRAIndex = result.indexOf(loraMatch[0]);
-    console.log('✅ LoRAタグが先頭に配置:', {
-      'LoRAタグ': loraMatch,
-      '最初のLoRA位置': firstLoRAIndex,
-      '先頭配置': firstLoRAIndex < 20
-    });
+   // console.log('✅ LoRAタグが先頭に配置:', {
+   //   'LoRAタグ': loraMatch,
+   //   '最初のLoRA位置': firstLoRAIndex,
+   //   '先頭配置': firstLoRAIndex < 20
+   // });
   } else {
-    console.log('⚠️ LoRAタグが見つかりません');
   }
   
   return result;
@@ -1273,20 +1257,16 @@ window.testMangaPromptWithLoRA = function() {
 
 // 完全な出力テスト
 window.testFullMangaOutputWithLoRA = function() {
-  console.log('🧪 完全な漫画出力テスト（商用LoRA対応）');
   
   updateMangaOutput();
   
   const outPrompt = document.getElementById('outMangaPrompt');
   const result = outPrompt ? outPrompt.textContent : 'null';
   
-  console.log('📝 最終出力結果:', result);
   
   return result;
 };
 
-console.log('✅ 商用LoRA対応 generateMangaPrompt関数の修正完了');
-console.log('🔧 テストコマンド: testMangaPromptWithLoRA(), testFullMangaOutputWithLoRA()');
 
 
 
@@ -1298,7 +1278,6 @@ function addSelectedValuesSafe(tags, containerId) {
   //console.log(`🔍 ${containerId} 要素チェック開始`);
   
   if (!container) {
-    console.warn(`❌ コンテナが見つかりません: ${containerId}`);
     return added;
   }
   
@@ -1363,7 +1342,6 @@ function addBasicInfoTagsSafe(tags) {
       if (height) tags.push(height);
    //   console.log('👤 基本情報タグ追加:', { age, gender, body, height });
     } else {
-      console.log('⚠️ getBFValue関数が利用できません - 基本情報タグをスキップ');
     }
     
     if (typeof getOne === 'function') {
@@ -1412,7 +1390,6 @@ function addBasicInfoTagsSafe(tags) {
     addBasicOutfitTagsSafe(tags);
     
   } catch (error) {
-    console.error('❌ 基本情報タグ追加エラー:', error);
   }
 }
 
@@ -1427,7 +1404,6 @@ function addBasicOutfitTagsSafe(tags) {
   try {
     // 既存の関数が利用可能な場合のみ実行
     if (typeof getIsOnepiece !== 'function' || typeof getOne !== 'function') {
-      console.log('⚠️ 服装関連関数が利用できません - 服装タグをスキップ');
       return;
     }
     
@@ -1446,7 +1422,6 @@ function addBasicOutfitTagsSafe(tags) {
         } else {
           tags.push(dress);
         }
-        console.log('👗 ワンピース:', topColor ? `${topColor} ${dress}` : dress);
       }
     } else {
       const top = getOne('outfit_top');
@@ -1489,11 +1464,9 @@ function addBasicOutfitTagsSafe(tags) {
         }
       }
       
-      console.log('👕 分離服装:', { top, bottom: bottomCat === 'pants' ? pants : skirt, shoes });
     }
     
   } catch (error) {
-    console.error('❌ 基本服装タグ追加エラー:', error);
   }
 }
 
@@ -1777,7 +1750,6 @@ function copyMangaOutput(type) {
         showToast(`${type.toUpperCase()}をクリップボードにコピーしました`);
       }
     }).catch(err => {
-      console.error('コピーに失敗しました:', err);
       if (typeof toast === 'function') {
         toast('コピーに失敗しました');
       } else {
@@ -1876,20 +1848,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasNSFW = !!(window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW);
     
     if (hasSFW && hasNSFW) {
-      console.log('辞書データ確認:', {
-        DEFAULT_SFW_DICT: !!window.DEFAULT_SFW_DICT,
-        DEFAULT_NSFW_DICT: !!window.DEFAULT_NSFW_DICT,
-        SFW: !!window.SFW,
-        NSFW: !!window.NSFW
-      });
+      //console.log('辞書データ確認:', {
+      //  DEFAULT_SFW_DICT: !!window.DEFAULT_SFW_DICT,
+      //  DEFAULT_NSFW_DICT: !!window.DEFAULT_NSFW_DICT,
+      //  SFW: !!window.SFW,
+      //  NSFW: !!window.NSFW
+      //});
       initMangaMode();
     } else {
-      console.log('辞書データ待機中...', {
-        DEFAULT_SFW_DICT: !!window.DEFAULT_SFW_DICT,
-        DEFAULT_NSFW_DICT: !!window.DEFAULT_NSFW_DICT,
-        SFW: !!window.SFW,
-        NSFW: !!window.NSFW
-      });
+     // console.log('辞書データ待機中...', {
+     //  DEFAULT_SFW_DICT: !!window.DEFAULT_SFW_DICT,
+     //   DEFAULT_NSFW_DICT: !!window.DEFAULT_NSFW_DICT,
+     //   SFW: !!window.SFW,
+     //   NSFW: !!window.NSFW
+     // });
       setTimeout(checkDictionaries, 100);
     }
   };
@@ -1905,7 +1877,6 @@ document.addEventListener('click', (e) => {
       const hasNSFW = !!(window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW);
       
       if (!mangaInitialized && hasSFW && hasNSFW) {
-        console.log('タブクリック時の初期化実行');
         initMangaMode();
       }
     }, 100);
@@ -1919,7 +1890,6 @@ window.addEventListener('load', () => {
     const hasNSFW = !!(window.DEFAULT_NSFW_DICT?.NSFW || window.NSFW);
     
     if (!mangaInitialized && hasSFW && hasNSFW) {
-      console.log('window.load時の初期化実行');
       initMangaMode();
     }
   }, 1000);
@@ -1944,7 +1914,6 @@ if (typeof window !== 'undefined') {
 function initMangaNegativeSystem() {
   const SFW = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
   if (!SFW) {
-    console.log('辞書なし - デフォルトネガティブを設定');
     populateDefaultNegativeOptions();
     setupNegativePresetListeners();
     setupNegativePreviewUpdate();
@@ -1959,15 +1928,13 @@ function initMangaNegativeSystem() {
   
   // リアルタイムプレビュー
   setupNegativePreviewUpdate();
-  
-  console.log('ネガティブプロンプトシステム初期化完了');
+
 }
 
 // カテゴリ別のネガティブプロンプト設定
 function populateNegativeByCategory() {
   const SFW = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
   if (!SFW?.negative_presets) {
-    console.warn('negative_presets が辞書に見つかりません - デフォルトを使用');
     populateDefaultNegativeOptions();
     return;
   }
@@ -2240,7 +2207,6 @@ function initMangaSearchSystem() {
   const resultsClose = document.getElementById('manga-results-close');
   
   if (!searchInput || !clearBtn || !resultsArea) {
-    console.warn('漫画モード検索要素が見つかりません');
     return;
   }
   
@@ -2271,8 +2237,7 @@ function initMangaSearchSystem() {
   
   // 初期統計表示
   setTimeout(updateMangaSearchStats, 100);
-  
-  console.log('✅ 漫画モード検索システム初期化完了');
+
 }
 
 
@@ -2336,7 +2301,6 @@ function performMangaSearch(searchTerm) {
   displayMangaSearchResults(results, searchTerm);
   updateMangaSearchStats(results.length, null);
   
-  console.log(`🔍 漫画モード検索: "${searchTerm}" - ${results.length}件ヒット`);
 }
 
 // 検索結果の表示
@@ -2454,7 +2418,6 @@ function bindMangaSearchResultEvents() {
       setTimeout(updateMangaOutput, 10);
     }
     
-    console.log(`✅ 検索結果から選択: ${inputValue} (${originalInput.type}) = ${originalInput.checked}`);
   });
   
   // 検索結果内の入力要素への直接クリックも処理
@@ -2510,7 +2473,6 @@ function bindMangaSearchResultEvents() {
       setTimeout(updateMangaOutput, 10);
     }
     
-    console.log(`✅ 検索結果入力変更: ${inputValue} (${originalInput.type}) = ${originalInput.checked}`);
   });
 }
 
