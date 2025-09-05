@@ -73,7 +73,11 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "biting_lip_pain",  "ja": "苦痛に唇を噛む", "level": "L3" },
       { "tag": "forced_smile",     "ja": "無理やりの笑顔", "level": "L3" },
       { "tag": "orgasm_face_closeup",      "ja": "絶頂時の顔アップ", "level": "L2" },
-      { "tag": "afterglow_face",           "ja": "事後の恍惚顔アップ", "level": "L1" }
+      { "tag": "afterglow_face",           "ja": "事後の恍惚顔アップ", "level": "L1" },
+      { "tag": "spoken_text",   "ja": "普通の吹き出し（セリフ強調）", "level": "L1" },
+      { "tag": "spoken_heart",  "ja": "ハート付き吹き出し",           "level": "L1" },
+      { "tag": "spoken_moan",   "ja": "擬音・あえぎ声吹き出し",       "level": "L2" },
+      { "tag": "spoken_symbol", "ja": "記号（！？など）入り吹き出し", "level": "L1" }
     ],
 
       "exposure": [
@@ -157,7 +161,9 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "after_exercise",    "ja": "運動後の汗",        "level": "L1" },
       { "tag": "summer_heat",       "ja": "夏の暑さで汗",      "level": "L1" },
       { "tag": "crowded_train_heat","ja": "満員電車で汗だく",  "level": "L2" },
-      { "tag": "intense_sex_sweat", "ja": "行為中の汗だく",    "level": "L2" }
+      { "tag": "intense_sex_sweat", "ja": "行為中の汗だく",    "level": "L2" },
+      { "tag": "selfie", "ja": "自撮り（露出あり）", "level": "L1" },
+      { "tag": "masked_selfie", "ja": "口マスク＋自撮り", "level": "L1" }
     ],
 
       "lighting": [
