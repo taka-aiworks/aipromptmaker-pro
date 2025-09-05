@@ -255,4 +255,3 @@ window.COMMERCIAL_LORA_DICT = {
   ]
 };
 
-console.log('商用LoRA辞書が読み込まれました:', window.COMMERCIAL_LORA_DICT.commercial_lora.length + '件');
