@@ -5573,6 +5573,73 @@ window.testPresetSystem = function() {
  console.log('✅ テスト完了');
 };
 
+
+// プリセットコントロールのレイアウト調整
+function adjustPresetControlsLayout() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .preset-controls {
+      display: inline-flex !important;
+      gap: 6px !important;
+      margin-left: 12px !important;
+      align-items: center !important;
+      flex-wrap: nowrap !important;
+    }
+    
+    .preset-controls .btn {
+      padding: 3px 6px !important;
+      font-size: 11px !important;
+      white-space: nowrap !important;
+      min-width: auto !important;
+    }
+    
+    .preset-controls .preset-select {
+      padding: 3px 6px !important;
+      font-size: 11px !important;
+      min-width: 120px !important;
+      max-width: 140px !important;
+    }
+    
+    .preset-controls .preset-delete-btn {
+      padding: 2px 4px !important;
+      font-size: 10px !important;
+      min-width: 20px !important;
+    }
+    
+    /* ヘッダー全体の調整 */
+    .card h2 {
+      display: flex !important;
+      align-items: center !important;
+      flex-wrap: nowrap !important;
+      gap: 8px !important;
+    }
+    
+    /* 露出控えめ推奨バッジなどの調整 */
+    .badge {
+      margin-left: 8px !important;
+      font-size: 10px !important;
+      padding: 2px 6px !important;
+    }
+  `;
+  document.head.appendChild(style);
+  
+  console.log('✅ プリセットコントロールレイアウト調整完了');
+}
+
+// プリセットボタン追加時にレイアウト調整も実行
+const originalAddPresetButtons = window.addPresetButtons;
+window.addPresetButtons = function() {
+  if (originalAddPresetButtons) {
+    originalAddPresetButtons();
+  }
+  
+  // レイアウト調整を追加
+  setTimeout(adjustPresetControlsLayout, 100);
+};
+
+// 既に実行済みの場合は即座に調整
+setTimeout(adjustPresetControlsLayout, 500);
+
 /* =========================================================
   プリセット機能システム完了
   ========================================================= */
