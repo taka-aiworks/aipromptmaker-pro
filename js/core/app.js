@@ -1112,8 +1112,8 @@ window.initPlannerItems = function() {
   // 撮影モード用のラジオボタンリスト初期化
   radioList($("#pl_bg"), SFW_DICT.background, "pl_bg", {checkFirst: false});
   radioList($("#pl_pose"), SFW_DICT.pose, "pl_pose", {checkFirst: false});
-  radioList($("#pl_comp"), SFW_DICT.composition, "pl_comp", {checkFirst: false});
-  radioList($("#pl_view"), SFW_DICT.view, "pl_view", {checkFirst: false});
+  //radioList($("#pl_comp"), SFW_DICT.composition, "pl_comp", {checkFirst: false});
+  //radioList($("#pl_view"), SFW_DICT.view, "pl_view", {checkFirst: false});
   radioList($("#pl_expr"), SFW_DICT.expressions, "pl_expr", {checkFirst: false});
   radioList($("#pl_light"), SFW_DICT.lighting, "pl_light", {checkFirst: false});
   
@@ -1647,10 +1647,10 @@ function buildOnePlanner() {
   });
 
   // SFWのみの単独カテゴリはそのまま1つ採用（未選択対応）
-  ['pl_bg', 'pl_comp', 'pl_view'].forEach(id => {
-    const v = getOne(id);
-    if (v) pushUnique(p, v);
-  });
+   ['pl_bg'].forEach(id => {
+     const v = getOne(id);
+     if (v) pushUnique(p, v);
+   });
 
   // ★★★ 撮影モード専用要素を追加 ★★★
   ['pl_cameraAngle', 'pl_focalLength', 'pl_depthOfField', 'pl_photoTechnique', 
