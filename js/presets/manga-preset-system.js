@@ -274,7 +274,7 @@ class MangaPresetSystem {
     `;
   }
 
-  // イベントリスナー設定
+// イベントリスナー設定
   setupEventListeners() {
     // タブ切り替え
     document.querySelectorAll('.preset-tab').forEach(tab => {
@@ -283,6 +283,140 @@ class MangaPresetSystem {
         this.switchTab(tabType);
       });
     });
+
+    // プリセット選択（詳細表示付き）
+    document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const presetId = e.target.dataset.preset;
+        const presetType = e.target.dataset.type;
+        this.applyPreset(presetId, presetType);
+        
+        // ボタンアクティブ状態更新
+        this.updateActiveButton(e.target);
+        
+        // 詳細表示を追加
+        setTimeout(() => {
+          this.showPresetDetails(presetId, presetType);
+        }, 100);
+      });
+    });
+
+    // 全クリアボタン
+    document.querySelector('.preset-clear-btn').addEventListener('click', () => {
+      this.clearAllPresets();
+      this.hidePresetDetails();
+    });
+  }
+  // プリセット詳細表示メソッド
+  showPresetDetails(presetId, presetType) {
+    const detailsElement = document.getElementById('presetDetails');
+    const detailsContent = document.getElementById('presetDetailsContent');
+    
+    if (!detailsElement || !detailsContent) {
+      console.log('❌ 詳細表示エリアが見つかりません');
+      return;
+    }
+
+    // プリセットデータを取得
+    let presetData = null;
+    if (presetType === 'sfw' && window.MANGA_SFW_PRESETS) {
+      presetData = window.MANGA_SFW_PRESETS[presetId];
+    } else if (presetType === 'nsfw' && window.MANGA_NSFW_PRESETS) {
+      presetData = window.MANGA_NSFW_PRESETS[presetId];
+    }
+
+    if (!presetData) {
+      console.log(`⚠️ プリセットデータが見つかりません: ${presetId} (${presetType})`);
+      detailsElement.style.display = 'none';
+      return;
+    }
+
+    // 設定内容を詳細に表示
+    const settingsDetails = this.extractSettingsDetails(presetData.settings);
+    
+    // NSFWレベル表示
+    const levelBadge = presetData.level ? 
+      `<span style="background: rgba(255,100,100,0.3); color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px; margin-left: 8px;">${presetData.level}</span>` : '';
+
+    // 設定タグを見やすく表示
+    const settingsHtml = settingsDetails.length > 0 ? 
+      settingsDetails.map(setting => 
+        `<div style="margin: 2px 0; font-size: 11px;">
+          <span style="color: #4ade80; font-weight: bold;">${setting.category}:</span> 
+          <span style="color: rgba(255,255,255,0.9);">${setting.value}</span>
+        </div>`
+      ).join('') : 
+      '<div style="font-size: 11px; color: #999;">設定データが空です</div>';
+
+    detailsContent.innerHTML = `
+      <div style="margin-bottom: 6px; font-weight: bold;">${presetData.name}${levelBadge}</div>
+      <div style="margin-bottom: 8px; color: #999;">${presetData.description}</div>
+      <div style="padding: 6px; background: rgba(0,0,0,0.1); border-radius: 4px;">
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">📋 設定内容 (${settingsDetails.length}項目):</div>
+        ${settingsHtml}
+      </div>
+    `;
+    
+    detailsElement.style.display = 'block';
+    console.log(`📋 プリセット詳細表示: ${presetData.name} - ${settingsDetails.length}項目`);
+  }
+
+  // 設定詳細を抽出するメソッド
+  extractSettingsDetails(settings) {
+    const categoryNames = {
+      'mangaEmotionPrimary': '基本感情',
+      'mangaEmotionDetail': '詳細感情', 
+      'mangaExpressions': '表情',
+      'mangaEyeState': '目の状態',
+      'mangaGaze': '視線',
+      'mangaMouthState': '口の状態',
+      'mangaPose': 'ポーズ',
+      'mangaHandGesture': '手の動作',
+      'mangaMovementAction': '動き',
+      'mangaComposition': '構図',
+      'mangaView': '体の向き',
+      'mangaCameraView': 'カメラワーク',
+      'mangaPropsLight': '小物',
+      'mangaEffectManga': 'エフェクト',
+      'mangaBackground': '背景',
+      'mangaLighting': 'ライティング',
+      'mangaArtStyle': 'アートスタイル',
+      'mangaNSFWExpr': 'NSFW表情',
+      'mangaNSFWExpo': 'NSFW露出',
+      'mangaNSFWSitu': 'NSFWシチュ',
+      'mangaNSFWLight': 'NSFWライト',
+      'mangaNSFWPose': 'NSFWポーズ',
+      'mangaNSFWAction': 'NSFWアクション',
+      'mangaNSFWOutfit': 'NSFW衣装',
+      'mangaNSFWAcc': 'NSFWアクセ',
+      'mangaNSFWUnderwear': 'NSFW下着',
+      'mangaNSFWBody': 'NSFW身体',
+      'mangaNSFWNipples': 'NSFW乳首'
+    };
+
+    const details = [];
+    
+    Object.entries(settings || {}).forEach(([key, value]) => {
+      if (value && value.trim() !== '') {
+        const categoryName = categoryNames[key] || key;
+        const displayValue = value.replace(/_/g, ' ');
+        details.push({
+          category: categoryName,
+          value: displayValue
+        });
+      }
+    });
+
+    return details;
+  }
+
+  // 詳細非表示メソッド
+  hidePresetDetails() {
+    const detailsElement = document.getElementById('presetDetails');
+    if (detailsElement) {
+      detailsElement.style.display = 'none';
+    }
+  }
 
     // プリセット選択
     document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
