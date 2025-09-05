@@ -987,6 +987,762 @@ legend { display: none; }
   }
 }
 
+/* ============================================ */
+/* 漫画モードプリセット・検索機能 統合CSS     */
+/* ============================================ */
+
+/* 🎨 漫画モード全体のレイアウト */
+.manga-mode-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.manga-priority-note {
+  font-size: 0.9em;
+  color: var(--muted);
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 165, 0, 0.1);
+  border-left: 3px solid #ffa500;
+  border-radius: 4px;
+}
+
+.manga-params-section {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.manga-section-divider {
+  border-top: 2px solid var(--line);
+  margin: 32px 0;
+  position: relative;
+}
+
+.manga-section-divider::after {
+  content: '●';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg);
+  color: var(--muted);
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+/* 🔧 キャラ基礎設定 */
+.char-base-options {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.char-base-note {
+  background: rgba(106, 161, 255, 0.1);
+  border: 1px solid rgba(106, 161, 255, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+  font-size: 0.9em;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+/* 🎭 LoRA設定 */
+.lora-content {
+  transition: all 0.3s ease;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  margin-top: 12px;
+}
+
+.lora-weight-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.weight-value {
+  min-width: 40px;
+  text-align: center;
+  font-weight: bold;
+  color: var(--brand);
+  font-size: 0.9em;
+  padding: 2px 6px;
+  background: rgba(106, 161, 255, 0.15);
+  border-radius: 4px;
+}
+
+/* 📱 任意項目の折りたたみ */
+.manga-optional-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+
+/* 👥 2人目キャラ設定 */
+.second-char-content {
+  transition: all 0.3s ease;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  margin-top: 12px;
+}
+
+.second-char-io {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed var(--line);
+  margin-bottom: 16px;
+}
+
+.second-char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.second-char-colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.color-picker-item {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.color-picker-item label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 8px;
+  font-size: 0.9em;
+}
+
+/* 🤝 インタラクション設定 */
+.interaction-section {
+  margin: 16px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ============================================ */
+/* 🔍 検索機能のスタイル                        */
+/* ============================================ */
+
+.manga-search {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.manga-search-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.manga-search-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.manga-search-input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px rgba(106, 161, 255, 0.2);
+}
+
+.manga-search-clear {
+  padding: 8px 12px;
+  background: var(--accent-warn);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s ease;
+}
+
+.manga-search-clear:hover {
+  background: #d63384;
+}
+
+.manga-search-stats {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* 🎯 検索結果表示エリア */
+.manga-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-height: 400px;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  margin-top: 4px;
+}
+
+.manga-search-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.manga-search-results-title {
+  color: var(--ink);
+}
+
+.manga-results-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.manga-results-close:hover {
+  background: rgba(255, 100, 100, 0.2);
+  color: #ff6b6b;
+}
+
+.manga-search-results-content {
+  padding: 8px;
+}
+
+.manga-result-category {
+  margin-bottom: 16px;
+}
+
+.manga-result-category-title {
+  font-weight: bold;
+  font-size: 13px;
+  color: var(--brand);
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: rgba(106, 161, 255, 0.1);
+  border-radius: 4px;
+}
+
+.manga-result-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 2px 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13px;
+}
+
+.manga-result-item:hover {
+  background: rgba(106, 161, 255, 0.1);
+  border-color: rgba(106, 161, 255, 0.3);
+}
+
+.manga-result-item.selected {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+}
+
+.manga-result-item input[type="radio"],
+.manga-result-item input[type="checkbox"] {
+  margin: 0;
+  transform: scale(0.9);
+}
+
+.manga-result-item-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.manga-result-item-main {
+  font-weight: 500;
+}
+
+.manga-result-item-tag {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: monospace;
+}
+
+.manga-search-highlight {
+  background: rgba(255, 235, 59, 0.3);
+  color: #f57c00;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: bold;
+}
+
+.manga-no-results {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ============================================ */
+/* 🔥 ネガティブプロンプト（改良版）           */
+/* ============================================ */
+
+.negative-section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(255, 100, 100, 0.05);
+  margin: 16px 0;
+}
+
+.negative-section h4 {
+  color: var(--accent-warn);
+  margin-bottom: 12px;
+}
+
+.negative-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.negative-preset-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.negative-preset-btn:hover {
+  background: rgba(255, 100, 100, 0.1);
+  border-color: var(--accent-warn);
+}
+
+.negative-preset-btn.active {
+  background: var(--accent-warn);
+  color: white;
+  border-color: var(--accent-warn);
+}
+
+.negative-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.negative-category {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.negative-category h5 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--accent-warn);
+}
+
+.negative-preview {
+  background: rgba(255, 100, 100, 0.1);
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 12px;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  max-height: 120px;
+  overflow-y: auto;
+  word-break: break-all;
+}
+
+/* ============================================ */
+/* 📤 出力エリア                               */
+/* ============================================ */
+
+.manga-output {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  position: relative;
+}
+
+.conflict-warning {
+  background: rgba(255, 107, 107, 0.15);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  color: #ff6b6b;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+/* ============================================ */
+/* 🛠️ 商用LoRA設定                            */
+/* ============================================ */
+
+.commercial-lora-tabs {
+  margin-top: 12px;
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.lora-tab-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.lora-tab-btn:hover {
+  background: rgba(106, 161, 255, 0.1);
+  border-color: var(--brand);
+  color: var(--ink);
+}
+
+.lora-tab-btn.active {
+  background: var(--brand);
+  color: white;
+  border-color: var(--brand);
+}
+
+.commercial-lora-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.commercial-lora-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.commercial-lora-item:hover {
+  border-color: var(--brand);
+  background: rgba(106, 161, 255, 0.05);
+}
+
+.commercial-lora-item.selected {
+  border-color: var(--brand);
+  background: rgba(106, 161, 255, 0.1);
+}
+
+.commercial-lora-item .lora-name {
+  font-weight: bold;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.commercial-lora-item .lora-description {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.commercial-lora-item .lora-tag {
+  font-family: monospace;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--brand);
+}
+
+.commercial-lora-item .lora-weight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.commercial-lora-item .weight-slider {
+  flex: 1;
+  height: 4px;
+}
+
+/* ============================================ */
+/* 📱 レスポンシブ対応                         */
+/* ============================================ */
+
+@media (max-width: 1024px) {
+  .manga-params-section {
+    padding: 12px;
+  }
+  
+  .second-char-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  
+  .second-char-colors {
+    grid-template-columns: 1fr;
+  }
+  
+  .commercial-lora-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .manga-mode-header {
+    margin-bottom: 16px;
+  }
+  
+  .char-base-options {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .manga-search-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .manga-search-input {
+    width: 100%;
+  }
+  
+  .negative-presets {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .tab-buttons {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .commercial-lora-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .manga-search-results {
+    position: fixed;
+    top: 10%;
+    left: 5%;
+    right: 5%;
+    max-height: 80vh;
+  }
+}
+
+/* ============================================ */
+/* 🎨 プリセット感情ボタン（統合スタイル）     */
+/* ============================================ */
+
+.preset-controls {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 50px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+}
+
+.preset-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.preset-btn.sfw {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.preset-btn.nsfw {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: white;
+}
+
+.preset-btn.clear {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  color: #333;
+}
+
+/* プリセット適用時の状態表示 */
+.current-preset {
+  text-align: center;
+  padding: 10px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 6px;
+  margin: 12px 0;
+  border-left: 3px solid var(--brand);
+  font-size: 12px;
+}
+
+/* 統計表示 */
+.stats {
+  text-align: center;
+  margin-top: 12px;
+  padding: 6px;
+  background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%);
+  border-radius: 5px;
+  font-size: 11px;
+  color: #5f6368;
+}
+
+/* ============================================ */
+/* 🔧 チップ（選択肢）の最適化スタイル         */
+/* ============================================ */
+
+.chip {
+  display: inline-block;
+  padding: 3px 6px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  margin: 1px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 10px;
+  user-select: none;
+  position: relative;
+  white-space: nowrap;
+}
+
+.chip input {
+  display: none;
+}
+
+.chip:hover {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-color: #2196f3;
+  transform: translateY(-1px);
+  box-shadow: 0 1px 6px rgba(33, 150, 243, 0.2);
+}
+
+.chip.selected {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border-color: #0066cc;
+  box-shadow: 0 1px 8px rgba(79, 172, 254, 0.3);
+}
+
+.chip.nsfw-selected {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: white;
+  border-color: #e91e63;
+}
+
+.chip .mini {
+  font-size: 8px;
+  opacity: 0.7;
+  margin-left: 3px;
+}
+
+/* モバイル最適化 */
+@media (max-width: 768px) {
+  .preset-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    min-width: 45px;
+  }
+  
+  .chip {
+    padding: 2px 5px;
+    font-size: 9px;
+    margin: 1px;
+  }
+  
+  .current-preset {
+    padding: 8px;
+    font-size: 11px;
+  }
+  
+  .stats {
+    padding: 5px;
+    font-size: 10px;
+  }
+}
+
+
+
+
+
+
+
+
+
+
 /* 単語モード検索機能用CSS - styles.cssに追加 */
 
 /* 検索エリア */
