@@ -1090,13 +1090,23 @@ function initPlannerMode() {
   
   // 撮影モードのレンダリング修正
   window.initPlannerItems = function() {
-    // 撮影モード用のラジオボタンリスト初期化
-    radioList($("#pl_bg"), SFW.background, "pl_bg", {checkFirst: false});
-    radioList($("#pl_pose"), SFW.pose, "pl_pose", {checkFirst: false});
-    radioList($("#pl_comp"), SFW.composition, "pl_comp", {checkFirst: false});
-    radioList($("#pl_view"), SFW.view, "pl_view", {checkFirst: false});
-    radioList($("#pl_expr"), SFW.expressions, "pl_expr", {checkFirst: false});
-    radioList($("#pl_light"), SFW.lighting, "pl_light", {checkFirst: false});
+      // 撮影モード用のラジオボタンリスト初期化
+        radioList($("#pl_bg"), SFW.background, "pl_bg", {checkFirst: false});
+        radioList($("#pl_pose"), SFW.pose, "pl_pose", {checkFirst: false});
+        radioList($("#pl_comp"), SFW.composition, "pl_comp", {checkFirst: false});
+        radioList($("#pl_view"), SFW.view, "pl_view", {checkFirst: false});
+        radioList($("#pl_expr"), SFW.expressions, "pl_expr", {checkFirst: false});
+        radioList($("#pl_light"), SFW.lighting, "pl_light", {checkFirst: false});
+        
+        // ★★★ 撮影モード専用要素を追加 ★★★
+        radioList($("#pl_cameraAngle"), SFW.camera_angle, "pl_cameraAngle", {checkFirst: false});
+        radioList($("#pl_focalLength"), SFW.focal_length, "pl_focalLength", {checkFirst: false});
+        radioList($("#pl_depthOfField"), SFW.depth_of_field, "pl_depthOfField", {checkFirst: false});
+        radioList($("#pl_photoTechnique"), SFW.photo_technique, "pl_photoTechnique", {checkFirst: false});
+        radioList($("#pl_lightingType"), SFW.lighting_type, "pl_lightingType", {checkFirst: false});
+        radioList($("#pl_lightDirection"), SFW.light_direction, "pl_lightDirection", {checkFirst: false});
+        radioList($("#pl_timeOfDay"), SFW.time_of_day, "pl_timeOfDay", {checkFirst: false});
+
     
     // アクセサリーセレクト更新
     const plAccSel = document.getElementById("pl_accSel");
@@ -1620,6 +1630,13 @@ function buildOnePlanner() {
 
   // SFWのみの単独カテゴリはそのまま1つ採用（未選択対応）
   ['pl_bg', 'pl_comp', 'pl_view'].forEach(id => {
+    const v = getOne(id);
+    if (v) pushUnique(p, v);
+  });
+
+  // ★★★ 撮影モード専用要素を追加 ★★★
+  ['pl_cameraAngle', 'pl_focalLength', 'pl_depthOfField', 'pl_photoTechnique', 
+   'pl_lightingType', 'pl_lightDirection', 'pl_timeOfDay'].forEach(id => {
     const v = getOne(id);
     if (v) pushUnique(p, v);
   });
