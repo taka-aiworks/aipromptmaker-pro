@@ -8,7 +8,9 @@ const $$ = (s) => Array.from(document.querySelectorAll(s));
 
 const toast = (msg) => {
   const t = $("#toast");
-  if (!t) { console.log(msg); return; }
+  if (!t) { 
+   return;
+  }
   t.textContent = msg;
   t.hidden = false;
   setTimeout(() => (t.hidden = true), 1500);
@@ -1094,7 +1096,6 @@ window.initPlannerItems = function() {
   const SFW_DICT = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
   
   if (!SFW_DICT) {
-    console.error('SFW辞書データが見つかりません');
     return;
   }
   
@@ -1330,7 +1331,6 @@ function bindBasicInfo() {
         
         toast("キャラ設定を読み込みました");
       } catch (error) {
-        console.error("キャラ設定読み込みエラー:", error);
         toast("キャラ設定の読み込みに失敗しました");
       }
       
@@ -1425,7 +1425,6 @@ function bindBasicInfo() {
         renderTextTriplet("outLearnTest", [result], "fmtLearn");
         toast("テスト生成完了");
       } catch (error) {
-        console.error("テスト生成エラー:", error);
         toast("テスト生成に失敗しました");
       }
     });
@@ -2287,10 +2286,8 @@ function ensureClothingModeDisplay() {
   if (varySettings) {
     if (clothingMode === 'vary') {
       varySettings.style.display = 'block';
-      console.log('👔 服装バリエーション設定を表示');
     } else {
       varySettings.style.display = 'none';
-      console.log('👔 服装は基本情報を使用（固定モード）');
     }
   }
 }
@@ -2299,18 +2296,15 @@ function ensureClothingModeDisplay() {
 function applyProductionPreset(presetName) {
   const preset = PRODUCTION_PRESETS[presetName];
   if (!preset) {
-    console.error(`❌ 不明なプリセット: ${presetName}`);
     return;
   }
   
   window.productionCurrentPreset = presetName;
-  console.log(`🎯 プリセット適用: ${preset.name} (${presetName})`);
   
   // 服装モード設定
   const clothingRadio = document.querySelector(`#panelProduction input[name="clothingMode"][value="${preset.clothing}"]`);
   if (clothingRadio) {
     clothingRadio.checked = true;
-    console.log(`👔 服装モード: ${preset.clothing}`);
     ensureClothingModeDisplay();
   }
   
@@ -2318,7 +2312,6 @@ function applyProductionPreset(presetName) {
   const expressionRadio = document.querySelector(`#panelProduction input[name="expressionMode"][value="${preset.expression}"]`);
   if (expressionRadio) {
     expressionRadio.checked = true;
-    console.log(`😊 表情モード: ${preset.expression}`);
     toggleExpressionMode();
   }
   
@@ -2328,15 +2321,9 @@ function applyProductionPreset(presetName) {
   if (typeof toast === 'function') {
     toast(`${preset.name}プリセットを適用しました`);
   }
-  
-  console.log(`✅ プリセット適用完了: ${preset.name}`);
+
 }
 
-console.log('👕 量産モード服装出力修正コードを読み込みました');
-console.log('📖 修正内容:');
-console.log('  - 固定モード時に基本情報の服装を使用');
-console.log('  - バリエーションモード時に量産モード専用設定を使用');
-console.log('  - 服装モードの表示切り替えを改善');
 
 
 
@@ -3001,7 +2988,6 @@ function updateCharAccDisplay() {
 // 1. toast関数を定義（存在しない場合）
 if (typeof window.toast !== 'function') {
   window.toast = function(message) {
-    console.log('Toast:', message);
     // 簡易的な通知表示
     const notification = document.createElement('div');
     notification.textContent = message;
@@ -3103,11 +3089,9 @@ const MAPPING_TABLE = {
 
 // 3. テーブル操作機能
 window.addToOutputTable = function(en, jp) {
-  console.log('addToOutputTable呼び出し:', en, jp);
   
   const tbody = document.getElementById('wm-table-body');
   if (!tbody) {
-    console.warn('wm-table-body が見つかりません');
     return;
   }
   
@@ -3136,7 +3120,6 @@ window.addToOutputTable = function(en, jp) {
   tbody.appendChild(row);
   window.toast(`「${jp}」をテーブルに追加しました`);
   
-  console.log('テーブルに追加完了:', en, jp);
 };
 
 // 4. アイテム作成関数（シンプル版）
@@ -3183,7 +3166,6 @@ function createWordItem(item, category) {
 
 // 5. 検索機能（結果を下に表示）
 window.performWordModeSearch = function(searchTerm) {
-  console.log('検索実行:', searchTerm);
   
   searchTerm = (searchTerm || '').trim();
   
@@ -3222,7 +3204,6 @@ window.performWordModeSearch = function(searchTerm) {
   }
   
   const allItems = document.querySelectorAll('#panelWordMode .wm-item');
-  console.log('検索対象アイテム数:', allItems.length);
   
   if (!searchTerm) {
     searchResultsArea.style.display = 'none';
@@ -3246,7 +3227,6 @@ window.performWordModeSearch = function(searchTerm) {
     }
   });
   
-  console.log('検索結果:', matchedItems.length);
   
   if (matchedItems.length === 0) {
     searchResultsArea.innerHTML = `
@@ -3304,11 +3284,9 @@ window.clearWordModeSearch = function() {
 
 // 6. カテゴリ完全折りたたみ機能（強化版）
 window.moveCategoriesToBottom = function() {
-  console.log('=== カテゴリ折りたたみ処理開始 ===');
   
   const wordModePanel = document.getElementById('panelWordMode');
   if (!wordModePanel) {
-    console.warn('panelWordMode が見つかりません');
     return;
   }
   
@@ -3319,24 +3297,21 @@ window.moveCategoriesToBottom = function() {
                         wordModePanel.querySelector('table')?.parentElement;
   
   if (!tableContainer) {
-    console.warn('テーブルコンテナが見つかりません');
+
     return;
   }
   
-  console.log('テーブルコンテナ特定:', tableContainer.id || tableContainer.className);
   
   // 既存のボタンとコンテナをチェック
   let existingToggle = document.getElementById('wm-categories-toggle');
   let existingContainer = document.getElementById('wm-categories-container');
   
   if (existingToggle && existingContainer) {
-    console.log('既存の折りたたみ要素が存在するため、処理をスキップ');
     return;
   }
   
   // 現在のwordModePanelの全子要素を取得
   const allChildren = Array.from(wordModePanel.children);
-  console.log('wordModePanel全子要素数:', allChildren.length);
   
   // 検索・テーブル関連要素を除外
   const excludeElements = [];
@@ -3360,21 +3335,16 @@ window.moveCategoriesToBottom = function() {
     }
   });
   
-  console.log('除外要素数:', excludeElements.length);
   excludeElements.forEach(el => {
-    console.log('除外:', el.id || el.className || el.tagName);
   });
   
   // 移動対象要素を特定
   const elementsToMove = allChildren.filter(element => !excludeElements.includes(element));
   
-  console.log('移動対象要素数:', elementsToMove.length);
   elementsToMove.forEach(el => {
-    console.log('移動対象:', el.id || el.className || el.tagName);
   });
   
   if (elementsToMove.length === 0) {
-    console.warn('移動するカテゴリ要素が見つかりません');
     return;
   }
   
@@ -3418,7 +3388,7 @@ window.moveCategoriesToBottom = function() {
     const icon = isVisible ? '▲' : '▼';
     const text = isVisible ? 'カテゴリ一覧を隠す' : 'カテゴリ一覧を表示';
     toggleButton.textContent = `${icon} ${text}`;
-    console.log('カテゴリ表示切り替え:', isVisible ? '表示' : '非表示');
+
   });
   
   // ホバー効果
@@ -3457,9 +3427,7 @@ window.moveCategoriesToBottom = function() {
       toggleButton.parentNode.appendChild(categoriesContainer);
     }
     
-    console.log('✅ DOM配置完了');
   } catch (e) {
-    console.error('DOM配置に失敗:', e);
     return;
   }
   
@@ -3469,25 +3437,21 @@ window.moveCategoriesToBottom = function() {
     details.open = false;
   });
   
-  console.log(`✅ カテゴリ折りたたみ完了: ${movedCount}個の要素を移動, ${detailsElements.length}個のdetailsを閉じました`);
   
   // 成功確認
   setTimeout(() => {
     const finalToggle = document.getElementById('wm-categories-toggle');
     const finalContainer = document.getElementById('wm-categories-container');
-    console.log('最終確認 - トグルボタン:', !!finalToggle, 'コンテナ:', !!finalContainer);
     
     if (finalToggle && finalContainer) {
-      console.log('✅ カテゴリ折りたたみ機能が正常に設置されました');
     } else {
-      console.error('❌ カテゴリ折りたたみ機能の設置に失敗');
+      //console.error('❌ カテゴリ折りたたみ機能の設置に失敗');
     }
   }, 100);
 };
 
 // 7. メイン初期化関数
 window.initWordModeFixed = function() {
-  console.log('=== 単語モード修正版 初期化開始 ===');
   
   // 辞書データの取得
   let sfwDict = null;
@@ -3568,7 +3532,6 @@ Object.entries(sfwDict).forEach(([dictKey, items]) => {
   });
   
   // NSFW辞書の処理
-  console.log('--- NSFW辞書処理開始 ---');
   Object.entries(nsfwDict).forEach(([dictKey, items]) => {
     if (!Array.isArray(items) || items.length === 0) return;
     
@@ -3717,7 +3680,6 @@ window.initWordMode = function() {
 
 if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NSFW_DICT)) {
   setTimeout(() => {
-    console.log('辞書確認完了、初期化開始');
     window.initWordMode();
   }, 500);
 } else {
@@ -3726,10 +3688,8 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
   
   const waitForDicts = () => {
     attempts++;
-    console.log(`辞書待機中... (${attempts}/${maxAttempts})`);
     
     if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NSFW_DICT)) {
-      console.log('辞書確認完了、初期化開始');
       window.initWordMode();
       return;
     }
@@ -3815,7 +3775,6 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
         const details = document.getElementById('production-details');
         if (details) {
           details.style.display = 'block';
-          console.log('📋 詳細設定パネルを表示');
         }
       });
     });
@@ -3825,8 +3784,7 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     
     // リアルタイム更新
     setupRealtimeUpdates();
-    
-    console.log('✅ 量産モードプリセット初期化完了');
+
   }
   
   // プリセット適用
@@ -3838,26 +3796,23 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     }
     
     window.productionCurrentPreset = presetName;
-    console.log(`🎯 プリセット適用: ${preset.name} (${presetName})`);
     
     // 服装モード設定
     const clothingRadio = document.querySelector(`#panelProduction input[name="clothingMode"][value="${preset.clothing}"]`);
     if (clothingRadio) {
       clothingRadio.checked = true;
-      console.log(`👔 服装モード: ${preset.clothing}`);
       toggleClothingMode();
     } else {
-      console.warn('❌ 服装モードラジオが見つかりません');
+      //console.warn('❌ 服装モードラジオが見つかりません');
     }
     
     // 表情モード設定
     const expressionRadio = document.querySelector(`#panelProduction input[name="expressionMode"][value="${preset.expression}"]`);
     if (expressionRadio) {
       expressionRadio.checked = true;
-      console.log(`😊 表情モード: ${preset.expression}`);
       toggleExpressionMode();
     } else {
-      console.warn('❌ 表情モードラジオが見つかりません');
+      //console.warn('❌ 表情モードラジオが見つかりません');
     }
     
     // 状況表示更新
@@ -3866,8 +3821,7 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     if (typeof toast === 'function') {
       toast(`${preset.name}プリセットを適用しました`);
     }
-    
-    console.log(`✅ プリセット適用完了: ${preset.name}`);
+
   }
   
   // モード切り替え設定
@@ -3875,7 +3829,6 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     // 服装モード
     document.querySelectorAll('#panelProduction input[name="clothingMode"]').forEach(radio => {
       radio.addEventListener('change', () => {
-        console.log(`👔 服装モード変更: ${radio.value}`);
         toggleClothingMode();
       });
     });
@@ -3883,7 +3836,6 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     // 表情モード
     document.querySelectorAll('#panelProduction input[name="expressionMode"]').forEach(radio => {
       radio.addEventListener('change', () => {
-        console.log(`😊 表情モード変更: ${radio.value}`);
         toggleExpressionMode();
       });
     });
@@ -3896,7 +3848,6 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     
     if (varySettings) {
       varySettings.style.display = isVary ? 'block' : 'none';
-      console.log(`👔 服装詳細設定: ${isVary ? '表示' : '非表示'}`);
     }
     
     updateProductionStatus();
@@ -3909,7 +3860,6 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     
     if (varySettings) {
       varySettings.style.display = isVary ? 'block' : 'none';
-      console.log(`😊 表情詳細設定: ${isVary ? '表示' : '非表示'}`);
     }
     
     updateProductionStatus();
@@ -3925,7 +3875,6 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     
     productionPanel.addEventListener('change', updateProductionStatus);
     productionPanel.addEventListener('input', updateProductionStatus);
-    console.log('🔄 リアルタイム更新を設定');
   }
   
   // 状況表示更新
@@ -4060,7 +4009,6 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     const productionTab = document.querySelector('.tab[data-mode="production"]');
     if (productionTab) {
       productionTab.addEventListener('click', () => {
-        console.log('📋 量産モードタブクリック');
         setTimeout(() => {
           initProductionPresets();
         }, 200);
@@ -4095,12 +4043,12 @@ function enhancedBuildBatchProduction(n) {
   const clothingMode = document.querySelector('#panelProduction input[name="clothingMode"]:checked')?.value || 'fixed';
   const expressionMode = document.querySelector('#panelProduction input[name="expressionMode"]:checked')?.value || 'fixed';
   
-  console.log('🚀 Enhanced Production:', {
-    clothingMode,
-    expressionMode,
-    preset: window.productionCurrentPreset,
-    count: n
-  });
+  //console.log('🚀 Enhanced Production:', {
+  //  clothingMode,
+  //  expressionMode,
+  //  preset: window.productionCurrentPreset,
+  //  count: n
+  //});
   
   // 既存のbuildBatchProduction関数を呼び出し
   if (typeof buildBatchProduction === 'function') {
@@ -4115,14 +4063,12 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     const btnGenProd = document.getElementById('btnGenProd');
     if (btnGenProd) {
-      console.log('🔘 量産生成ボタンを設定');
       
       // 既存のイベントリスナーを削除
       const newBtn = btnGenProd.cloneNode(true);
       btnGenProd.parentNode.replaceChild(newBtn, btnGenProd);
       
       newBtn.addEventListener('click', () => {
-        console.log('🚀 量産セット生成開始');
         const cnt = parseInt(document.getElementById('countProd')?.value, 10) || 50;
         const rows = enhancedBuildBatchProduction(cnt);
         
@@ -4135,14 +4081,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof toast === 'function') {
           toast('✅ 量産セット生成完了');
         }
-        
-        console.log(`✅ 量産セット生成完了: ${rows.length}件`);
+
       });
     }
   }, 1500);
 });
 
-console.log('✅ 量産モードプリセット修正版を読み込みました');
+
 
 
 
@@ -4174,28 +4119,23 @@ function fixGlobalDictionaries() {
     
     Object.entries(window.SFW).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        console.log(`  - ${key}: ${value.length}件`);
       }
     });
   }
   
   // DEFAULT_NSFW_DICT から window.NSFW に設定
   if (window.DEFAULT_NSFW_DICT) {
-    console.log('📚 DEFAULT_NSFW_DICT構造:', Object.keys(window.DEFAULT_NSFW_DICT));
     
     // NSFWネストを確認
     if (window.DEFAULT_NSFW_DICT.NSFW) {
       window.NSFW = window.DEFAULT_NSFW_DICT.NSFW;
-      console.log('✅ window.NSFW = DEFAULT_NSFW_DICT.NSFW に設定');
     } else {
       window.NSFW = window.DEFAULT_NSFW_DICT;
-      console.log('✅ window.NSFW = DEFAULT_NSFW_DICT に設定');
     }
     
-    console.log('📊 NSFWキー:', Object.keys(window.NSFW));
     Object.entries(window.NSFW).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        console.log(`  - ${key}: ${value.length}件`);
+
       }
     });
   }
@@ -4204,7 +4144,7 @@ function fixGlobalDictionaries() {
 
 // 2. 量産モード用データ再構築
 function rebuildProductionData() {
-  console.log('🏭 量産モード用データ再構築');
+
   
   if (!window.SFW || !window.NSFW) {
     console.error('❌ グローバル辞書が設定されていません');
@@ -4219,7 +4159,7 @@ function rebuildProductionData() {
     if (!window.SFW[key] || !Array.isArray(window.SFW[key]) || window.SFW[key].length === 0) {
       sfwMissing.push(key);
     } else {
-      console.log(`✅ SFW.${key}: ${window.SFW[key].length}件`);
+     // console.log(`✅ SFW.${key}: ${window.SFW[key].length}件`);
     }
   });
   
@@ -4231,16 +4171,16 @@ function rebuildProductionData() {
     if (!window.NSFW[key] || !Array.isArray(window.NSFW[key]) || window.NSFW[key].length === 0) {
       nsfwMissing.push(key);
     } else {
-      console.log(`✅ NSFW.${key}: ${window.NSFW[key].length}件`);
+     // console.log(`✅ NSFW.${key}: ${window.NSFW[key].length}件`);
     }
   });
   
   if (sfwMissing.length > 0) {
-    console.warn('⚠️ SFW不足要素:', sfwMissing);
+    //console.warn('⚠️ SFW不足要素:', sfwMissing);
   }
   
   if (nsfwMissing.length > 0) {
-    console.warn('⚠️ NSFW不足要素:', nsfwMissing);
+    //console.warn('⚠️ NSFW不足要素:', nsfwMissing);
   }
   
   return { sfwMissing, nsfwMissing };
@@ -4248,13 +4188,11 @@ function rebuildProductionData() {
 
 // 3. レンダリング強制実行
 function forceRenderAll() {
-  console.log('🎨 全レンダリング強制実行');
   
   try {
     // SFWレンダリング
     if (typeof renderSFW === 'function') {
       renderSFW();
-      console.log('✅ renderSFW() 実行完了');
     } else {
       console.warn('❌ renderSFW関数が見つかりません');
     }
@@ -4262,33 +4200,30 @@ function forceRenderAll() {
     // NSFW量産レンダリング
     if (typeof renderNSFWProduction === 'function') {
       renderNSFWProduction();
-      console.log('✅ renderNSFWProduction() 実行完了');
     } else {
-      console.warn('❌ renderNSFWProduction関数が見つかりません');
+      // console.warn('❌ renderNSFWProduction関数が見つかりません');
     }
     
     // NSFW学習レンダリング
     if (typeof renderNSFWLearning === 'function') {
       renderNSFWLearning();
-      console.log('✅ renderNSFWLearning() 実行完了');
     } else {
-      console.warn('❌ renderNSFWLearning関数が見つかりません');
+      //console.warn('❌ renderNSFWLearning関数が見つかりません');
     }
     
     // アクセサリー設定
     if (typeof fillAccessorySlots === 'function') {
       fillAccessorySlots();
-      console.log('✅ fillAccessorySlots() 実行完了');
+      //console.log('✅ fillAccessorySlots() 実行完了');
     }
     
   } catch (error) {
-    console.error('❌ レンダリングエラー:', error);
+    //console.error('❌ レンダリングエラー:', error);
   }
 }
 
 // 4. 量産モード完全復旧
 function fullProductionRecovery() {
-  console.log('🚨 量産モード完全復旧開始');
   
   // Step 1: グローバル辞書設定
   fixGlobalDictionaries();
@@ -4308,9 +4243,7 @@ function fullProductionRecovery() {
   
   // Step 5: 最終確認
   setTimeout(() => {
-    console.log('🔍 最終データ確認:');
-    console.log('SFW件数:', Object.keys(window.SFW || {}).length);
-    console.log('NSFW件数:', Object.keys(window.NSFW || {}).length);
+
     
     // 量産モードの選択肢確認
     const productionItems = {
@@ -4320,15 +4253,14 @@ function fullProductionRecovery() {
       outfitTops: document.querySelectorAll('#p_outfit_top input').length
     };
     
-    console.log('📊 量産モード選択肢数:', productionItems);
     
     if (Object.values(productionItems).some(count => count > 0)) {
-      console.log('🎉 量産モード復旧成功！');
+     // console.log('🎉 量産モード復旧成功！');
       if (typeof toast === 'function') {
         toast('✅ 量産モード復旧完了！プリセットを試してください');
       }
     } else {
-      console.warn('⚠️ まだ選択肢が表示されていません');
+    //  console.warn('⚠️ まだ選択肢が表示されていません');
     }
     
   }, 1500);
@@ -4337,34 +4269,13 @@ function fullProductionRecovery() {
 }
 
 // 5. デバッグ情報表示
-function showDebugInfo() {
-  console.log('🐛 デバッグ情報:');
-  console.log('DEFAULT_SFW_DICT:', !!window.DEFAULT_SFW_DICT);
-  console.log('DEFAULT_NSFW_DICT:', !!window.DEFAULT_NSFW_DICT);
-  console.log('window.SFW:', !!window.SFW);
-  console.log('window.NSFW:', !!window.NSFW);
-  
-  if (window.DEFAULT_SFW_DICT) {
-    console.log('DEFAULT_SFW_DICT構造:', Object.keys(window.DEFAULT_SFW_DICT));
-    if (window.DEFAULT_SFW_DICT.SFW) {
-      console.log('DEFAULT_SFW_DICT.SFWキー:', Object.keys(window.DEFAULT_SFW_DICT.SFW));
-    }
-  }
-  
-  if (window.DEFAULT_NSFW_DICT) {
-    console.log('DEFAULT_NSFW_DICT構造:', Object.keys(window.DEFAULT_NSFW_DICT));
-    if (window.DEFAULT_NSFW_DICT.NSFW) {
-      console.log('DEFAULT_NSFW_DICT.NSFWキー:', Object.keys(window.DEFAULT_NSFW_DICT.NSFW));
-    }
-  }
-}
+
 
 // グローバル関数として公開
 window.fixGlobalDictionaries = fixGlobalDictionaries;
 window.rebuildProductionData = rebuildProductionData;
 window.forceRenderAll = forceRenderAll;
 window.fullProductionRecovery = fullProductionRecovery;
-window.showDebugInfo = showDebugInfo;
 
 
 
@@ -4394,13 +4305,11 @@ const PresetManager = {
         created: new Date().toISOString()
       };
       localStorage.setItem(key, JSON.stringify(preset));
-      console.log(`✅ プリセット保存: ${mode} - ${name}`);
       if (typeof toast === 'function') {
         toast(`プリセット「${name}」を保存しました`);
       }
       return true;
     } catch (error) {
-      console.error('❌ プリセット保存エラー:', error);
       return false;
     }
   },
@@ -4412,10 +4321,8 @@ const PresetManager = {
       if (!stored) return null;
       
       const preset = JSON.parse(stored);
-      console.log(`✅ プリセット読み込み: ${mode} - ${name}`);
       return preset;
     } catch (error) {
-      console.error('❌ プリセット読み込みエラー:', error);
       return null;
     }
   },
@@ -4435,7 +4342,6 @@ const PresetManager = {
       }
       return presets.sort((a, b) => new Date(b.created) - new Date(a.created));
     } catch (error) {
-      console.error('❌ プリセット一覧取得エラー:', error);
       return [];
     }
   },
@@ -4444,13 +4350,11 @@ const PresetManager = {
     try {
       const key = `LPM_PRESET_${mode}_${name}`;
       localStorage.removeItem(key);
-      console.log(`✅ プリセット削除: ${mode} - ${name}`);
       if (typeof toast === 'function') {
         toast(`プリセット「${name}」を削除しました`);
       }
       return true;
     } catch (error) {
-      console.error('❌ プリセット削除エラー:', error);
       return false;
     }
   }
@@ -4478,7 +4382,6 @@ const HistoryManager = {
       localStorage.setItem('LPM_HISTORY', JSON.stringify(history));
       return true;
     } catch (error) {
-      console.error('❌ 履歴追加エラー:', error);
       return false;
     }
   },
@@ -4488,7 +4391,6 @@ const HistoryManager = {
       const history = localStorage.getItem('LPM_HISTORY');
       return history ? JSON.parse(history) : [];
     } catch (error) {
-      console.error('❌ 履歴取得エラー:', error);
       return [];
     }
   },
@@ -4501,7 +4403,6 @@ const HistoryManager = {
       }
       return true;
     } catch (error) {
-      console.error('❌ 履歴クリアエラー:', error);
       return false;
     }
   }
@@ -4540,7 +4441,6 @@ const BackupManager = {
       }
       return true;
     } catch (error) {
-      console.error('❌ バックアップエクスポートエラー:', error);
       return false;
     }
   },
@@ -4561,7 +4461,6 @@ const BackupManager = {
           toast('バックアップを復元しました。ページを再読み込みしてください。');
         }
       } catch (error) {
-        console.error('❌ バックアップインポートエラー:', error);
         if (typeof toast === 'function') {
           toast('バックアップファイルの読み込みに失敗しました');
         }
@@ -4584,18 +4483,15 @@ function addPresetButtons() {
   modes.forEach(mode => {
     const panel = document.getElementById(mode.id);
     if (!panel) {
-      console.warn(`⚠️ パネルが見つかりません: ${mode.id}`);
       return;
     }
     
     const header = panel.querySelector('h2');
     if (!header) {
-      console.warn(`⚠️ ヘッダーが見つかりません: ${mode.id}`);
       return;
     }
     
     if (header.querySelector('.preset-controls')) {
-      console.log(`⚠️ プリセットコントロールは既に存在: ${mode.name}`);
       return;
     }
     
@@ -4649,8 +4545,7 @@ function addPresetButtons() {
     }
     
     updatePresetList(mode.name);
-    
-    console.log(`✅ プリセットボタン追加完了: ${mode.name}`);
+
   });
 }
 
@@ -4731,7 +4626,7 @@ function collectCurrentSettings(mode) {
         break;
     }
   } catch (error) {
-    console.error('❌ 設定収集エラー:', error);
+    //console.error('❌ 設定収集エラー:', error);
   }
   
   return settings;
@@ -4739,11 +4634,9 @@ function collectCurrentSettings(mode) {
 
 // 7. プリセット読み込み（修正版）
 function loadSelectedPreset(mode) {
-  console.log(`📁 プリセット読み込み開始: ${mode}`);
   
   const select = document.querySelector(`.preset-select[data-mode="${mode}"]`);
   if (!select) {
-    console.error(`❌ セレクト要素が見つかりません: ${mode}`);
     if (typeof toast === 'function') {
       toast('プリセット選択ボックスが見つかりません');
     }
@@ -4751,7 +4644,6 @@ function loadSelectedPreset(mode) {
   }
   
   const presetName = select.value;
-  console.log(`📋 選択されたプリセット: "${presetName}"`);
   
   if (!presetName || presetName.trim() === '') {
     if (typeof toast === 'function') {
@@ -4766,14 +4658,12 @@ function loadSelectedPreset(mode) {
   
   const preset = PresetManager.load(mode, presetName);
   if (!preset) {
-    console.error(`❌ プリセット読み込み失敗: ${mode} - ${presetName}`);
     if (typeof toast === 'function') {
       toast(`プリセット「${presetName}」の読み込みに失敗しました`);
     }
     return;
   }
-  
-  console.log(`✅ プリセットデータ取得成功:`, preset);
+
   
   try {
     applySettingsAdvanced(mode, preset.data);
@@ -4794,7 +4684,6 @@ function loadSelectedPreset(mode) {
     }
     
   } catch (error) {
-    console.error(`❌ 設定適用エラー:`, error);
     if (typeof toast === 'function') {
       toast('設定の適用に失敗しました');
     }
@@ -4803,18 +4692,15 @@ function loadSelectedPreset(mode) {
 
 // 8. 設定適用関数（高度版）
 function applySettingsAdvanced(mode, settings) {
-  console.log(`🔧 設定適用開始: ${mode}`, settings);
   
   try {
     switch(mode) {
       case 'production':
-        console.log('📦 量産モード設定適用');
         
         if (settings.clothingMode) {
           const radio = document.querySelector(`input[name="clothingMode"][value="${settings.clothingMode}"]`);
           if (radio) {
             radio.checked = true;
-            console.log(`✅ 服装モード設定: ${settings.clothingMode}`);
             
             if (typeof toggleClothingMode === 'function') {
               toggleClothingMode();
@@ -4826,7 +4712,6 @@ function applySettingsAdvanced(mode, settings) {
           const radio = document.querySelector(`input[name="expressionMode"][value="${settings.expressionMode}"]`);
           if (radio) {
             radio.checked = true;
-            console.log(`✅ 表情モード設定: ${settings.expressionMode}`);
             
             if (typeof toggleExpressionMode === 'function') {
               toggleExpressionMode();
@@ -4860,13 +4745,11 @@ function applySettingsAdvanced(mode, settings) {
         break;
         
       case 'manga':
-        console.log('🎨 漫画モード設定適用');
         
         if (settings.charBase) {
           const radio = document.querySelector(`input[name="mangaCharBase"][value="${settings.charBase}"]`);
           if (radio) {
             radio.checked = true;
-            console.log(`✅ キャラ基礎設定: ${settings.charBase}`);
           }
         }
         
@@ -4874,7 +4757,6 @@ function applySettingsAdvanced(mode, settings) {
           const checkbox = document.getElementById('mangaUseLoRA');
           if (checkbox) {
             checkbox.checked = settings.useLoRA;
-            console.log(`✅ LoRA使用設定: ${settings.useLoRA}`);
             
             if (typeof toggleLoRASettings === 'function') {
               toggleLoRASettings();
@@ -4886,7 +4768,6 @@ function applySettingsAdvanced(mode, settings) {
           const input = document.getElementById('mangaLoRATag');
           if (input) {
             input.value = settings.loraTag;
-            console.log(`✅ LoRAタグ設定: ${settings.loraTag}`);
           }
         }
         
@@ -4936,7 +4817,6 @@ function applySettingsAdvanced(mode, settings) {
         break;
         
       case 'planner':
-        console.log('📷 撮影モード設定適用');
         
         const plannerSettings = ['cameraAngle', 'lighting', 'background', 'pose', 'expression'];
         plannerSettings.forEach(setting => {
@@ -4944,7 +4824,6 @@ function applySettingsAdvanced(mode, settings) {
             const radio = document.querySelector(`input[name="pl_${setting}"][value="${settings[setting]}"]`);
             if (radio) {
               radio.checked = true;
-              console.log(`✅ ${setting}設定: ${settings[setting]}`);
             }
           }
         });
@@ -4966,13 +4845,11 @@ function applySettingsAdvanced(mode, settings) {
         break;
         
       case 'learning':
-        console.log('🧠 学習モード設定適用');
         
         if (settings.wearMode) {
           const radio = document.querySelector(`input[name="learnWearMode"][value="${settings.wearMode}"]`);
           if (radio) {
             radio.checked = true;
-            console.log(`✅ 服装モード設定: ${settings.wearMode}`);
           }
         }
         
@@ -4980,7 +4857,6 @@ function applySettingsAdvanced(mode, settings) {
           const select = document.getElementById('countLearn');
           if (select) {
             select.value = settings.count;
-            console.log(`✅ 生成数設定: ${settings.count}`);
           }
         }
         
@@ -5015,13 +4891,10 @@ function applySettingsAdvanced(mode, settings) {
         break;
         
       default:
-        console.warn(`⚠️ 未対応のモード: ${mode}`);
     }
     
-    console.log(`✅ ${mode}モード設定適用完了`);
     
   } catch (error) {
-    console.error(`❌ ${mode}モード設定適用エラー:`, error);
     throw error;
   }
 }
@@ -5107,7 +4980,6 @@ function addBackupUI() {
     }
   });
   
-  console.log('✅ バックアップUIを追加しました');
 }
 
 // 13. 履歴UI追加
@@ -5141,7 +5013,6 @@ function addHistoryUI() {
     }
   });
   
-  console.log('✅ 履歴UIを追加しました');
 }
 
 // 14. 履歴表示切り替え
@@ -5184,7 +5055,6 @@ content.innerHTML = '<div class="note mini">履歴がありません</div>';
 
 // 16. ユニバーサルコピーボタン追加
 function addUniversalCopyButtons() {
- console.log('📋 ユニバーサルコピーボタンを追加中...');
  
  const outputAreas = [
    { mode: 'basic', selectors: ['#outLearnTestAll', '#outLearnTestPrompt', '#outLearnTestNeg', '#outLearnTestCaption'] },
@@ -5255,13 +5125,11 @@ function addUniversalCopyButtons() {
      outputElement.parentNode?.appendChild(copyBtn);
    });
  });
- 
- console.log('✅ ユニバーサルコピーボタン追加完了');
+
 }
 
 // 17. 初期化関数
 function initCompletePresetSystem() {
- console.log('🚀 完全なプリセットシステム初期化開始');
  
  if (document.readyState === 'loading') {
    document.addEventListener('DOMContentLoaded', () => {
@@ -5281,7 +5149,6 @@ function initCompletePresetSystem() {
    }, 1500);
  }
  
- console.log('✅ プリセットシステム初期化完了');
 }
 
 // 18. クイックアクセス機能
@@ -5316,8 +5183,7 @@ function addQuickAccessShortcuts() {
      }
    }
  });
- 
- console.log('✅ キーボードショートカット追加: Ctrl+S(保存), Ctrl+L(読み込み)');
+
 }
 
 // 19. プリセット管理UI（詳細）
@@ -5356,8 +5222,7 @@ function addAdvancedPresetManager() {
      importPresets(file);
    }
  });
- 
- console.log('✅ 高度なプリセット管理UIを追加しました');
+
 }
 
 // 20. プリセット管理表示切り替え
@@ -5500,7 +5365,6 @@ function importPresets(file) {
        toast(`${importCount}件のプリセットをインポートしました`);
      }
    } catch (error) {
-     console.error('プリセットインポートエラー:', error);
      toast('プリセットファイルの読み込みに失敗しました');
    }
  };
