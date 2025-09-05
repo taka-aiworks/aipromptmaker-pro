@@ -10,27 +10,23 @@ class MangaPresetSystem {
   init() {
     if (this.initialized) return;
     
-    console.log('🎛️ 漫画プリセットシステム初期化中...');
     
     this.createPresetUI();
     this.setupEventListeners();
     this.initialized = true;
     
-    console.log('✅ 漫画プリセットシステム初期化完了');
   }
 
 // プリセットUI作成（検索欄の下に配置）
   createPresetUI() {
     const mangaPanel = document.getElementById('panelManga');
     if (!mangaPanel) {
-      console.error('❌ #panelManga が見つかりません');
       return;
     }
 
     // 検索セクションを探す
     const searchSection = mangaPanel.querySelector('.manga-search');
     if (!searchSection) {
-      console.error('❌ 検索セクションが見つかりません');
       return;
     }
 
@@ -42,7 +38,6 @@ class MangaPresetSystem {
     // 検索セクションの直後に挿入
     searchSection.insertAdjacentElement('afterend', presetSection);
     
-    console.log('✅ プリセットUIを検索欄の下に作成完了');
   }
 
   // プリセットHTML生成
@@ -321,7 +316,6 @@ class MangaPresetSystem {
     const detailsContent = document.getElementById('presetDetailsContent');
     
     if (!detailsElement || !detailsContent) {
-      console.log('❌ 詳細表示エリアが見つかりません');
       return;
     }
 
@@ -334,7 +328,6 @@ class MangaPresetSystem {
     }
 
     if (!presetData) {
-      console.log(`⚠️ プリセットデータが見つかりません: ${presetId} (${presetType})`);
       detailsElement.style.display = 'none';
       return;
     }
@@ -366,7 +359,7 @@ class MangaPresetSystem {
     `;
     
     detailsElement.style.display = 'block';
-    console.log(`📋 プリセット詳細表示: ${presetData.name} - ${settingsDetails.length}項目`);
+
   }
 
   // DOM要素から日本語ラベルを正確に抽出
@@ -536,7 +529,6 @@ class MangaPresetSystem {
 
   // プリセット適用
   applyPreset(presetId, type) {
-    console.log(`🎭 プリセット適用: ${presetId} (${type})`);
     
     if (type === 'sfw') {
       this.applySFWPreset(presetId);
@@ -549,7 +541,6 @@ class MangaPresetSystem {
   applySFWPreset(presetId) {
     const preset = MANGA_SFW_PRESETS[presetId];
     if (!preset) {
-      console.error(`SFWプリセットが見つかりません: ${presetId}`);
       return;
     }
 
@@ -589,7 +580,6 @@ class MangaPresetSystem {
   applyNSFWPreset(presetId) {
     const preset = MANGA_NSFW_PRESETS[presetId];
     if (!preset) {
-      console.error(`NSFWプリセットが見つかりません: ${presetId}`);
       return;
     }
 
@@ -633,16 +623,14 @@ class MangaPresetSystem {
     
     const container = document.getElementById(categoryId);
     if (!container) {
-      console.warn(`⚠️ カテゴリが見つかりません: ${categoryId}`);
       return;
     }
 
     const input = container.querySelector(`input[value="${value}"]`);
     if (input) {
       input.checked = true;
-      console.log(`✅ ${categoryId}: ${value}`);
     } else {
-      console.warn(`⚠️ 値が見つかりません: ${categoryId} = ${value}`);
+      //console.warn(`⚠️ 値が見つかりません: ${categoryId} = ${value}`);
     }
   }
 
@@ -754,7 +742,7 @@ class MangaPresetEnhancement {
     // 微調整状態の表示を更新
     this.updateCustomizationStatus();
     
-    console.log(`🔧 微調整モード開始: ${presetId} (${presetType})`);
+
   }
 
   // 微調整項目を記録
@@ -766,8 +754,7 @@ class MangaPresetEnhancement {
       custom: newValue,
       timestamp: Date.now()
     };
-    
-    console.log(`📝 微調整記録: ${categoryId} ${oldValue} → ${newValue}`);
+
     this.updateCustomizationStatus();
   }
 
@@ -813,7 +800,7 @@ class MangaPresetEnhancement {
   resetCustomizations() {
     if (!this.basePreset) return;
     
-    console.log('🔄 微調整をリセット中...');
+
     
     // 元のプリセットを再適用
     if (this.basePreset.type === 'sfw') {
@@ -942,7 +929,6 @@ class MangaPresetEnhancement {
 
   // カスタムプリセット適用
   applyCustomPreset(customPreset) {
-    console.log(`💾 カスタムプリセット適用: ${customPreset.name}`);
     
     // 全選択クリア
     mangaPresetSystem.clearAllSelections();
@@ -1358,20 +1344,16 @@ const CATEGORY_NAMES_JP = {
 
 // 3. プリセット詳細表示機能を既存システムに追加
 function showPresetDetails(presetId, type) {
-  console.log(`📋 プリセット詳細表示開始: ${presetId} (${type})`);
   
   const detailsElement = document.getElementById('presetDetails');
   const detailsContent = document.getElementById('presetDetailsContent');
   
   if (!detailsElement || !detailsContent) {
-    console.warn('❌ 詳細表示エリアが見つかりません');
-    console.log('💡 HTMLに #presetDetails と #presetDetailsContent が必要です');
     return;
   }
   
   const detailsData = PRESET_DETAILS_DATA[type]?.[presetId];
   if (!detailsData) {
-    console.warn(`❌ 詳細データが見つかりません: ${presetId} (${type})`);
     detailsElement.style.display = 'none';
     return;
   }
@@ -1441,7 +1423,6 @@ function showPresetDetails(presetId, type) {
   
   detailsElement.style.display = 'block';
   
-  console.log(`✅ プリセット詳細表示完了: ${presetName} - ${detailsData.tags.length}個のタグ`);
 }
 
 // 4. 詳細表示を隠す機能
@@ -1454,7 +1435,6 @@ function hidePresetDetails() {
 
 // 5. 既存のプリセット適用関数に詳細表示を追加
 function enhancePresetButtons() {
-  console.log('🔧 プリセットボタンに詳細表示機能を追加中...');
   
   // SFWプリセットボタンに詳細表示を追加
   document.querySelectorAll('.preset-btn[data-preset][data-type="sfw"]').forEach(button => {
@@ -1477,19 +1457,16 @@ function enhancePresetButtons() {
     button.addEventListener('click', hidePresetDetails);
   });
   
-  console.log('✅ プリセットボタンの拡張完了');
 }
 
 // 6. 初期化関数
 function initPresetDetailsSystem() {
-  console.log('🚀 プリセット詳細表示システム初期化中...');
   
   // ボタンの拡張を実行
   setTimeout(() => {
     enhancePresetButtons();
   }, 500);
   
-  console.log('✅ プリセット詳細表示システム初期化完了');
 }
 
 // 7. グローバル関数として公開
@@ -1505,5 +1482,3 @@ if (document.readyState === 'loading') {
   initPresetDetailsSystem();
 }
 
-console.log('✅ プリセット詳細表示システム全量ロード完了');
-console.log('📋 使用方法: showPresetDetails("joy_happy", "sfw") でテスト可能');
