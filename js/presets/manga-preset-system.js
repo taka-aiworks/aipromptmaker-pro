@@ -369,7 +369,7 @@ class MangaPresetSystem {
     console.log(`📋 プリセット詳細表示: ${presetData.name} - ${settingsDetails.length}項目`);
   }
 
-  // 設定詳細を抽出するメソッド（エラー修正版）
+  // 設定詳細を抽出するメソッド（完全版日本語マッピング）
   extractSettingsDetails(settings) {
     const categoryNames = {
       'mangaEmotionPrimary': '基本感情',
@@ -402,8 +402,9 @@ class MangaPresetSystem {
       'mangaNSFWNipples': 'NSFW乳首'
     };
 
-    // 値の日本語マッピング
+    // 完全版日本語値マッピング
     const valueNames = {
+      // === SFW値（既存） ===
       // 基本感情
       'joy': '喜び',
       'sadness': '悲しみ',
@@ -439,76 +440,101 @@ class MangaPresetSystem {
       'surprised': '驚いた顔',
       'sleepy_eyes': '眠そうな目',
       
-      // 目の状態
-      'sparkling_eyes': 'キラキラした目',
-      'eyes_open': '目を開けた',
-      'eyes_half_closed': '半目',
-      'teary': '涙目',
-      'teary_filled_eyes': '涙でいっぱいの目',
-      'narrowed_eyes': '細い目',
-      'angry_vein_eyes': '青筋の立った目',
-      'shy_hidden_eyes': '恥ずかしそうに隠れた目',
-      'widened_eyes': '見開いた目',
-      'sleepy_drowsy_eyes': '眠そうでうとうとした目',
-      
-      // 視線
-      'at_viewer': '見つめる',
-      'down': '下を向く',
-      'away': 'そっぽを向く',
-      'gentle_down': '優しく下を見る',
-      'downcast_glance': '伏し目がち',
-      'glaring': '睨む',
-      'averted_quick': 'さっと目をそらす',
-      'side_glance_shy': '恥ずかしそうに横目',
-      'half_closed_down': '半目で下を向く',
-      
-      // 口の状態
-      'grin': 'にっこり',
-      'wide_open_mouth': '大きく開いた口',
-      'slight_smile': 'かすかな微笑み',
-      'slight_open_mouth': 'わずかに開いた口',
-      'open_mouth': '開いた口',
-      'pouting_mouth': 'ふくれた口',
-      'teeth_grit': '歯を食いしばる',
-      'mouth_closed': '口を閉じた',
-      'surprised_o': '驚きの「お」の口',
-      'yawning': 'あくび',
-      
-      // ポーズ
-      'standing': '立っている',
-      'jumping': 'ジャンプ',
-      'sitting': '座っている',
-      'kneeling': '膝をつく',
-      'stumbling': 'よろめく',
-      'stretching': '伸びをする',
-      
-      // 手の動作
-      'peace_sign': 'ピースサイン',
-      'raised_fist': '拳を上げる',
-      'hands_together_chest': '胸の前で手を合わせる',
-      'wiping_tears': '涙を拭く',
-      'covering_eyes': '目を覆う',
-      'arms_crossed': '腕組み',
-      'clenched_fist': '握りしめた拳',
-      'hands_on_cheeks': '頬に手を当てる',
-      'covering_face': '顔を覆う',
-      'hands_on_head': '頭に手を置く',
-      
-      // 動き
-      'arm_swing': '腕を振る',
-      
       // 構図
       'upper_body': '上半身',
       'full_body': '全身',
       'bust': 'バストアップ',
       'portrait': 'ポートレート',
       
-      // エフェクト
-      'blush': '赤面',
-      'teardrops': '涙のしずく',
-      'anger_mark': '怒りマーク',
-      'surprise_mark': '驚きマーク',
-      'zzz_sleep': 'ZZZ（眠気）'
+      // === NSFW値（新規追加） ===
+      // NSFW表情
+      'aroused': '興奮した表情',
+      'flushed': '上気した顔',
+      'embarrassed': '恥ずかしがった顔',
+      'seductive_smile': '誘惑的な微笑み',
+      'half_lidded_eyes': '半目',
+      'bedroom_eyes': '誘惑的な目',
+      'lip_bite': '唇を噛む',
+      'bashful_smile': '恥ずかしそうな微笑み',
+      'soft_moan': '小さなうめき声',
+      'smirk': 'にやり笑い',
+      'wink': 'ウィンク',
+      'shy_smile': '恥ずかしそうな笑顔',
+      
+      // NSFW露出
+      'mild_cleavage': '軽い胸の谷間',
+      'off_shoulder': '肩出し',
+      'bare_back': '背中見せ',
+      'leggy': '脚見せ',
+      'short_skirt': 'ミニスカート',
+      'tight_clothes': 'タイトな服',
+      'wet_clothes': '濡れた服',
+      'see_through': '透け感',
+      'sideboob': '横乳',
+      'underboob': 'アンダーバスト',
+      'cleavage_window': '胸元の窓',
+      
+      // NSFWシチュエーション
+      'mirror_selfie': '鏡越しセルフィー',
+      'after_shower': 'シャワー後',
+      'towel_wrap': 'タオル巻き',
+      'sauna_steam': 'サウナの蒸気',
+      'sunbathing': '日光浴',
+      'in_bed_sheets': 'ベッドシーツの中',
+      'bedroom': '寝室',
+      'bathroom': '浴室',
+      'beach': 'ビーチ',
+      'classroom': '教室',
+      'stage_performance': 'ステージパフォーマンス',
+      
+      // NSFWライティング
+      'softbox': 'ソフトボックス照明',
+      'rim_light': 'リムライト',
+      'backlit': '逆光',
+      'window_glow': '窓からの光',
+      'golden_hour': 'ゴールデンアワー',
+      'neon': 'ネオン',
+      'candlelight': 'キャンドルライト',
+      'low_key': 'ローキー照明',
+      'hard_light': 'ハードライト',
+      'spotlight': 'スポットライト',
+      'moody_bedroom': 'ムーディーな寝室照明',
+      
+      // NSFWポーズ
+      'standing': '立ちポーズ',
+      'sitting': '座りポーズ',
+      'lying_down': '横たわり',
+      'kneeling': '膝立ち',
+      'seiza_pose': '正座',
+      'crouching': 'しゃがみ',
+      'bent_over': '前かがみ',
+      'arched_back': '反り返り',
+      'spread_legs': '開脚',
+      'frog_pose': 'カエルポーズ',
+      'hand_on_hips': '腰に手',
+      'lying_side': '横向きに寝る',
+      
+      // NSFW下着
+      'bra_off': 'ブラ外し',
+      'bra_unhooked': 'ブラのホック外し',
+      'bra_pulled_aside': 'ブラずらし',
+      'panties_off': 'パンツ脱ぎ',
+      'panties_pulled_aside': 'パンツずらし',
+      'lingerie_white': '白いランジェリー',
+      'lingerie_black': '黒いランジェリー',
+      'lingerie_red': '赤いランジェリー',
+      'lingerie_pink': 'ピンクのランジェリー',
+      
+      // NSFW衣装
+      'bunny_suit': 'バニースーツ',
+      'nurse_uniform': 'ナース服',
+      'maid_outfit': 'メイド服',
+      'school_swimsuit': 'スクール水着',
+      'sailor_uniform_r18': 'セーラー服（R18）',
+      'bikini': 'ビキニ',
+      'micro_bikini': 'マイクロビキニ',
+      'negligee': 'ネグリジェ',
+      'stripper_outfit': 'ストリッパー衣装'
     };
 
     const details = [];
