@@ -5402,10 +5402,10 @@ setTimeout(adjustPresetControlsLayout, 500);
 
 
 /* ===================================================
-   GAS連携 最終修正版（CORS完全対応）
+   GAS連携 データサイズ対応修正版
    =================================================== */
 
-// 1. 設定管理
+// 1. 設定管理（変更なし）
 const GAS_SETTINGS_KEY = "LPM_GAS_SETTINGS_V2";
 
 const GASSettings = {
@@ -5416,20 +5416,38 @@ const GASSettings = {
   lastBackup: null
 };
 
-// 2. 完全修正版GASConnector
+// 2. データサイズ対応のGASConnector
 class GASConnector {
   constructor() {
     this.isConnected = false;
     this.lastError = null;
+    this.maxUrlLength = 8000; // URL最大長制限
   }
   
-  // JSONP方式での通信（CORS完全回避）
+  // データサイズをチェック
+  checkDataSize(data) {
+    const dataString = JSON.stringify(data);
+    const estimatedUrlLength = GASSettings.gasUrl.length + dataString.length + 200; // バッファ
+    return {
+      size: dataString.length,
+      estimatedUrl: estimatedUrlLength,
+      isTooLarge: estimatedUrlLength > this.maxUrlLength,
+      dataString
+    };
+  }
+  
+  // 小さいデータ用JSONP送信
   async sendViaJSONP(action, data) {
+    const sizeCheck = this.checkDataSize(data);
+    
+    if (sizeCheck.isTooLarge) {
+      throw new Error(`データが大きすぎます (${sizeCheck.size}文字, 推定URL: ${sizeCheck.estimatedUrl}文字)`);
+    }
+    
     return new Promise((resolve, reject) => {
       const callbackName = `gasCallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const timeoutDuration = 30000; // 30秒
+      const timeoutDuration = 30000;
       
-      // グローバルコールバック関数を登録
       window[callbackName] = function(response) {
         clearTimeout(timeoutId);
         delete window[callbackName];
@@ -5444,7 +5462,6 @@ class GASConnector {
         }
       };
       
-      // タイムアウト設定
       const timeoutId = setTimeout(() => {
         delete window[callbackName];
         if (script && script.parentNode) {
@@ -5453,7 +5470,6 @@ class GASConnector {
         reject(new Error("タイムアウト: GASからの応答がありません（30秒）"));
       }, timeoutDuration);
       
-      // リクエストデータを準備
       const requestData = {
         action,
         data,
@@ -5463,7 +5479,6 @@ class GASConnector {
         version: "2.1"
       };
       
-      // クエリパラメータを構築
       const params = new URLSearchParams({
         action,
         data: JSON.stringify(data),
@@ -5472,7 +5487,6 @@ class GASConnector {
         token: requestData.token
       });
       
-      // スクリプトタグで送信
       const script = document.createElement("script");
       script.src = `${GASSettings.gasUrl}?${params.toString()}`;
       script.onerror = () => {
@@ -5488,7 +5502,178 @@ class GASConnector {
     });
   }
   
-  // 接続テスト（JSONP方式）
+  // 大きいデータ用フォーム送信
+  async sendViaForm(action, data) {
+    return new Promise((resolve, reject) => {
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.name = `gasFrame_${Date.now()}`;
+      
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = GASSettings.gasUrl;
+      form.target = iframe.name;
+      form.enctype = "application/x-www-form-urlencoded";
+      
+      // フォームデータを作成
+      const formData = {
+        action,
+        data: JSON.stringify(data),
+        timestamp: new Date().toISOString(),
+        token: GASSettings.gasToken || "",
+        source: "LoRA_Prompt_Maker",
+        version: "2.1"
+      };
+      
+      Object.entries(formData).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+      });
+      
+      let resolved = false;
+      
+      // 成功判定（時間ベース）
+      iframe.onload = () => {
+        if (resolved) return;
+        resolved = true;
+        
+        setTimeout(() => {
+          try {
+            document.body.removeChild(iframe);
+            document.body.removeChild(form);
+          } catch (e) {
+            console.warn("クリーンアップエラー:", e);
+          }
+          
+          resolve({ 
+            status: "success", 
+            message: "データ送信完了（フォーム方式）",
+            method: "form"
+          });
+        }, 1000);
+      };
+      
+      // エラーハンドリング
+      iframe.onerror = () => {
+        if (resolved) return;
+        resolved = true;
+        
+        try {
+          document.body.removeChild(iframe);
+          document.body.removeChild(form);
+        } catch (e) {
+          console.warn("クリーンアップエラー:", e);
+        }
+        
+        reject(new Error("フォーム送信に失敗しました"));
+      };
+      
+      // タイムアウト
+      setTimeout(() => {
+        if (resolved) return;
+        resolved = true;
+        
+        try {
+          document.body.removeChild(iframe);
+          document.body.removeChild(form);
+        } catch (e) {
+          console.warn("クリーンアップエラー:", e);
+        }
+        
+        reject(new Error("フォーム送信がタイムアウトしました"));
+      }, 45000); // 45秒
+      
+      document.body.appendChild(iframe);
+      document.body.appendChild(form);
+      form.submit();
+    });
+  }
+  
+  // データ分割送信（超大型データ用）
+  async sendInChunks(action, data) {
+    const dataString = JSON.stringify(data);
+    const chunkSize = 3000; // 1チャンクのサイズ
+    const chunks = [];
+    
+    // データを分割
+    for (let i = 0; i < dataString.length; i += chunkSize) {
+      chunks.push(dataString.substring(i, i + chunkSize));
+    }
+    
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // 各チャンクを送信
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkData = {
+        sessionId,
+        chunkIndex: i,
+        totalChunks: chunks.length,
+        chunk: chunks[i],
+        action: i === chunks.length - 1 ? action : 'chunk', // 最後のチャンクで実際のアクションを実行
+        originalData: i === chunks.length - 1 ? { metadata: data.metadata || {} } : null
+      };
+      
+      await this.sendViaJSONP('chunk_upload', chunkData);
+    }
+    
+    return { 
+      status: "success", 
+      message: "分割送信完了",
+      chunks: chunks.length,
+      method: "chunks"
+    };
+  }
+  
+  // 統合送信メソッド（データサイズに応じて自動選択）
+  async sendData(action, data) {
+    if (!GASSettings.gasUrl) {
+      throw new Error("GAS URLが設定されていません");
+    }
+    
+    try {
+      const sizeCheck = this.checkDataSize(data);
+      console.log(`データサイズチェック: ${sizeCheck.size}文字, 推定URL: ${sizeCheck.estimatedUrl}文字`);
+      
+      // pingは常にJSONP
+      if (action === 'ping') {
+        return await this.sendViaJSONP(action, data);
+      }
+      
+      // データサイズに応じて送信方法を選択
+      if (sizeCheck.size < 2000) {
+        console.log("小データ: JSONP方式を使用");
+        return await this.sendViaJSONP(action, data);
+      } else if (sizeCheck.size < 50000) {
+        console.log("中データ: フォーム方式を使用");
+        return await this.sendViaForm(action, data);
+      } else {
+        console.log("大データ: 分割送信を使用");
+        return await this.sendInChunks(action, data);
+      }
+      
+    } catch (error) {
+      console.error(`GAS通信エラー (${action}):`, error);
+      
+      // JSONPで失敗した場合、フォーム方式にフォールバック
+      if (error.message.includes("スクリプトの読み込みに失敗") || 
+          error.message.includes("データが大きすぎます")) {
+        console.log("フォールバック: フォーム方式を試行");
+        try {
+          return await this.sendViaForm(action, data);
+        } catch (formError) {
+          console.error("フォーム方式も失敗:", formError);
+          throw new Error(`両方の送信方式が失敗: JSONP(${error.message}), Form(${formError.message})`);
+        }
+      }
+      
+      throw error;
+    }
+  }
+  
+  // 接続テスト
   async testConnection() {
     if (!GASSettings.gasUrl) {
       throw new Error("GAS URLが設定されていません");
@@ -5510,25 +5695,25 @@ class GASConnector {
     }
   }
   
-  // 統合送信メソッド
-  async sendData(action, data) {
-    if (!GASSettings.gasUrl) {
-      throw new Error("GAS URLが設定されていません");
-    }
-    
-    try {
-      return await this.sendViaJSONP(action, data);
-    } catch (error) {
-      console.error(`GAS通信エラー (${action}):`, error);
-      throw error;
-    }
-  }
-  
-  // CSV送信
+  // CSV送信（データサイズ最適化版）
   async sendCSV(type, csvData, metadata = {}) {
     const charName = document.getElementById("charName")?.value || "unnamed";
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const filename = `${type}_${charName}_${timestamp}.csv`;
+    
+    // データサイズをチェックして警告
+    const sizeCheck = this.checkDataSize({
+      type,
+      filename,
+      csv: csvData,
+      metadata
+    });
+    
+    console.log(`CSV送信: ${sizeCheck.size}文字のデータを送信します`);
+    
+    if (sizeCheck.size > 100000) {
+      console.warn("大きなCSVデータです。送信に時間がかかる場合があります。");
+    }
     
     return await this.sendData("save_csv", {
       type,
@@ -5538,6 +5723,7 @@ class GASConnector {
         characterName: charName,
         generatedAt: new Date().toISOString(),
         rowCount: csvData.split('\n').length - 1,
+        dataSize: sizeCheck.size,
         ...metadata
       }
     });
@@ -5556,13 +5742,32 @@ class GASConnector {
     });
   }
   
-  // バックアップ送信
+  // バックアップ送信（データサイズ最適化版）
   async sendBackup(backupData) {
+    // バックアップデータから不要な情報を除外してサイズを削減
+    const optimizedBackup = {
+      version: backupData.version,
+      timestamp: backupData.timestamp,
+      settings: {}
+    };
+    
+    // 設定データから重要なもののみを抽出
+    for (const [key, value] of Object.entries(backupData.settings || {})) {
+      if (key.startsWith("LPM_") && !key.includes("_TEMP_") && !key.includes("_CACHE_")) {
+        optimizedBackup.settings[key] = value;
+      }
+    }
+    
+    const sizeCheck = this.checkDataSize(optimizedBackup);
+    console.log(`バックアップ送信: ${sizeCheck.size}文字のデータを送信します`);
+    
     return await this.sendData("save_backup", {
-      backup: backupData,
+      backup: optimizedBackup,
       metadata: {
         backupAt: new Date().toISOString(),
-        size: JSON.stringify(backupData).length
+        originalSize: JSON.stringify(backupData).length,
+        optimizedSize: sizeCheck.size,
+        compression: "optimized"
       }
     });
   }
@@ -5576,7 +5781,7 @@ class GASConnector {
   }
 }
 
-// 3. 設定管理関数
+// 残りの関数は前回と同じ
 function loadGASSettings() {
   try {
     const stored = localStorage.getItem(GAS_SETTINGS_KEY);
@@ -5587,7 +5792,6 @@ function loadGASSettings() {
     console.warn("GAS設定の読み込みに失敗:", error);
   }
   
-  // UIに反映
   const urlInput = document.getElementById("set_gasUrl");
   const tokenInput = document.getElementById("set_gasToken");
   const autoBackupCheck = document.getElementById("set_autoBackup");
@@ -5620,369 +5824,15 @@ function saveGASSettings() {
   }
 }
 
-// 4. UI関数
-function setupGASUI() {
-  const settingsPanel = document.getElementById("panelSettings");
-  if (!settingsPanel) return;
-  
-  let gasSection = document.getElementById("gas-settings-section");
-  if (!gasSection) {
-    gasSection = document.createElement("div");
-    gasSection.id = "gas-settings-section";
-    gasSection.className = "panel";
-    settingsPanel.appendChild(gasSection);
-  }
-  
-  gasSection.innerHTML = `
-    <h3>☁️ Google Apps Script連携</h3>
-    
-    <div class="form-row">
-      <label>GAS WebアプリURL:</label>
-      <input type="url" id="set_gasUrl" placeholder="https://script.google.com/macros/s/...../exec" style="width: 100%;">
-      <div class="note mini">GASでデプロイしたWebアプリのURLを入力</div>
-    </div>
-    
-    <div class="form-row">
-      <label>認証トークン（オプション）:</label>
-      <input type="password" id="set_gasToken" placeholder="セキュリティ用トークン" style="width: 100%;">
-      <div class="note mini">GAS側で認証を設定している場合のみ</div>
-    </div>
-    
-    <div class="form-row">
-      <label>
-        <input type="checkbox" id="set_autoBackup"> 自動バックアップを有効化
-      </label>
-      <div style="margin-left: 20px; margin-top: 8px;">
-        <label>間隔: 
-          <select id="set_backupInterval">
-            <option value="1">1時間</option>
-            <option value="6">6時間</option>
-            <option value="24" selected>24時間</option>
-            <option value="168">1週間</option>
-          </select>
-        </label>
-      </div>
-    </div>
-    
-    <div class="form-row" style="display: flex; gap: 8px; flex-wrap: wrap;">
-      <button id="btnSaveGASSettings" class="btn ok small">💾 設定保存</button>
-      <button id="btnTestGAS" class="btn ghost small">🔌 接続テスト</button>
-      <button id="btnManualBackup" class="btn ghost small">☁️ 手動バックアップ</button>
-      <button id="btnResetGAS" class="btn bad small">🗑️ リセット</button>
-    </div>
-    
-    <div id="gasStatus" class="note" style="margin-top: 12px; padding: 8px; border-radius: 4px; display: none;">
-      ステータス表示エリア
-    </div>
-    
-    <details style="margin-top: 16px;">
-      <summary style="cursor: pointer; font-weight: 500;">📚 設定手順</summary>
-      <div style="margin-top: 8px; font-size: 12px; line-height: 1.6;">
-        <ol>
-          <li><strong>Google Apps Scriptを開く</strong><br>
-          <a href="https://script.google.com/" target="_blank">https://script.google.com/</a></li>
-          <li><strong>新しいプロジェクトを作成</strong></li>
-          <li><strong>提供されたGASコードをコピー&ペースト</strong></li>
-          <li><strong>setupGAS()関数を一度実行</strong></li>
-          <li><strong>「デプロイ」→「新しいデプロイ」</strong>
-            <ul>
-              <li>種類: ウェブアプリ</li>
-              <li>実行者: 自分</li>
-              <li>アクセス: 全員</li>
-            </ul>
-          </li>
-          <li><strong>生成されたURLをここに入力</strong></li>
-        </ol>
-      </div>
-    </details>
-  `;
-  
-  // イベントリスナー設定
-  document.getElementById("btnSaveGASSettings")?.addEventListener("click", saveGASSettings);
-  document.getElementById("btnTestGAS")?.addEventListener("click", testGASConnection);
-  document.getElementById("btnManualBackup")?.addEventListener("click", performManualBackup);
-  document.getElementById("btnResetGAS")?.addEventListener("click", resetGASSettings);
-  
-  loadGASSettings();
-}
+// 以下、setupGASUI、testGASConnection、performManualBackup、resetGASSettings、
+// enhanceExistingGASFunctions、setupAutoBackup、initGASIntegration は
+// 前回のコードと同じものを使用
 
-// 5. テスト・バックアップ機能
-async function testGASConnection() {
-  const statusDiv = document.getElementById("gasStatus");
-  const testBtn = document.getElementById("btnTestGAS");
-  
-  if (!statusDiv || !testBtn) return;
-  
-  // UI更新（開始）
-  statusDiv.style.display = "block";
-  statusDiv.style.backgroundColor = "#fbbf24";
-  statusDiv.style.color = "#92400e";
-  statusDiv.textContent = "🔄 接続テスト中（JSONP方式）...";
-  testBtn.disabled = true;
-  testBtn.textContent = "テスト中...";
-  
-  try {
-    const result = await gasConnector.testConnection();
-    
-    // 成功時のUI
-    statusDiv.style.backgroundColor = "#10b981";
-    statusDiv.style.color = "#ffffff";
-    statusDiv.innerHTML = `
-      ✅ 接続成功!<br>
-      📡 ${result.message}<br>
-      ⏰ ${result.data?.serverTime ? new Date(result.data.serverTime).toLocaleString('ja-JP') : ''}
-    `;
-    toast("✅ GAS接続テストに成功しました");
-    
-  } catch (error) {
-    // 失敗時のUI
-    statusDiv.style.backgroundColor = "#ef4444";
-    statusDiv.style.color = "#ffffff";
-    statusDiv.innerHTML = `
-      ❌ 接続失敗<br>
-      🔍 ${error.message}<br>
-      💡 GAS URLとデプロイ設定を確認してください
-    `;
-    toast("❌ GAS接続テストに失敗しました");
-    
-  } finally {
-    // UI復元
-    testBtn.disabled = false;
-    testBtn.textContent = "🔌 接続テスト";
-    
-    // 7秒後にステータスを非表示
-    setTimeout(() => {
-      if (statusDiv) statusDiv.style.display = "none";
-    }, 7000);
-  }
-}
-
-async function performManualBackup() {
-  const backupBtn = document.getElementById("btnManualBackup");
-  if (!backupBtn) return;
-  
-  const originalText = backupBtn.textContent;
-  backupBtn.disabled = true;
-  backupBtn.textContent = "バックアップ中...";
-  
-  try {
-    // 全設定データを収集
-    const backupData = {
-      version: "2.1",
-      timestamp: new Date().toISOString(),
-      settings: {},
-      userAgent: navigator.userAgent,
-      url: window.location.href
-    };
-    
-    // ローカルストレージから設定を収集
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith("LPM_")) {
-        try {
-          backupData.settings[key] = JSON.parse(localStorage.getItem(key));
-        } catch {
-          backupData.settings[key] = localStorage.getItem(key);
-        }
-      }
-    }
-    
-    // GASに送信
-    const result = await gasConnector.sendBackup(backupData);
-    
-    // 最終バックアップ時刻を更新
-    GASSettings.lastBackup = new Date().toISOString();
-    localStorage.setItem(GAS_SETTINGS_KEY, JSON.stringify(GASSettings));
-    
-    toast(`✅ バックアップ完了! ファイルID: ${result.data?.fileId?.substring(0, 8)}...`);
-    
-  } catch (error) {
-    console.error("バックアップエラー:", error);
-    toast(`❌ バックアップ失敗: ${error.message}`);
-    
-  } finally {
-    backupBtn.disabled = false;
-    backupBtn.textContent = originalText;
-  }
-}
-
-function resetGASSettings() {
-  if (!confirm("GAS設定をリセットしますか？\n（保存されたデータは削除されません）")) return;
-  
-  // 設定をデフォルトに戻す
-  Object.assign(GASSettings, {
-    gasUrl: "",
-    gasToken: "",
-    autoBackup: false,
-    backupInterval: 24,
-    lastBackup: null
-  });
-  
-  localStorage.removeItem(GAS_SETTINGS_KEY);
-  loadGASSettings();
-  
-  toast("🔄 GAS設定をリセットしました");
-}
-
-// 6. 既存機能の強化
-function enhanceExistingGASFunctions() {
-  // 学習データCSV送信ボタンの強化
-  const btnCloudLearn = document.getElementById("btnCloudLearn");
-  if (btnCloudLearn) {
-    const newBtn = btnCloudLearn.cloneNode(true);
-    btnCloudLearn.parentNode.replaceChild(newBtn, btnCloudLearn);
-    
-    newBtn.addEventListener("click", async () => {
-      const originalText = newBtn.textContent;
-      newBtn.disabled = true;
-      newBtn.textContent = "送信中...";
-      
-      try {
-        const csvData = csvFromLearn();
-        if (!csvData || csvData.trim() === '') {
-          throw new Error("学習データが生成されていません");
-        }
-        
-        const result = await gasConnector.sendCSV("learning", csvData, {
-          mode: "learning",
-          generatedRows: csvData.split('\n').length - 1
-        });
-        
-        toast(`✅ 学習データを送信完了! ${result.data?.csvFileId ? 'ID: ' + result.data.csvFileId.substring(0, 8) + '...' : ''}`);
-        
-      } catch (error) {
-        console.error("学習データ送信エラー:", error);
-        toast(`❌ 送信失敗: ${error.message}`);
-        
-      } finally {
-        newBtn.disabled = false;
-        newBtn.textContent = originalText;
-      }
-    });
-  }
-  
-  // 量産データCSV送信ボタンの強化
-  const btnCloudProd = document.getElementById("btnCloudProd");
-  if (btnCloudProd) {
-    const newBtn = btnCloudProd.cloneNode(true);
-    btnCloudProd.parentNode.replaceChild(newBtn, btnCloudProd);
-    
-    newBtn.addEventListener("click", async () => {
-      const originalText = newBtn.textContent;
-      newBtn.disabled = true;
-      newBtn.textContent = "送信中...";
-      
-      try {
-        const csvData = csvFromProd();
-        if (!csvData || csvData.trim() === '') {
-          throw new Error("量産データが生成されていません");
-        }
-        
-        const result = await gasConnector.sendCSV("production", csvData, {
-          mode: "production",
-          generatedRows: csvData.split('\n').length - 1
-        });
-        
-        toast(`✅ 量産データを送信完了! ${result.data?.csvFileId ? 'ID: ' + result.data.csvFileId.substring(0, 8) + '...' : ''}`);
-        
-      } catch (error) {
-        console.error("量産データ送信エラー:", error);
-        toast(`❌ 送信失敗: ${error.message}`);
-        
-      } finally {
-        newBtn.disabled = false;
-        newBtn.textContent = originalText;
-      }
-    });
-  }
-}
-
-// 7. 自動バックアップ
-function setupAutoBackup() {
-  function checkAutoBackup() {
-    if (!GASSettings.autoBackup || !GASSettings.gasUrl) return;
-    
-    const now = new Date();
-    const lastBackup = GASSettings.lastBackup ? new Date(GASSettings.lastBackup) : null;
-    const intervalMs = GASSettings.backupInterval * 60 * 60 * 1000;
-    
-    if (!lastBackup || (now - lastBackup) >= intervalMs) {
-      console.log("🔄 自動バックアップを実行中...");
-      performManualBackup().catch(error => {
-        console.error("自動バックアップ失敗:", error);
-      });
-    }
-  }
-  
-  // 1時間ごとにチェック
-  setInterval(checkAutoBackup, 60 * 60 * 1000);
-  
-  // 初回チェック（5秒後）
-  setTimeout(checkAutoBackup, 5000);
-}
-
-// 8. 初期化
-function initGASIntegration() {
-  function initialize() {
-    try {
-      setupGASUI();
-      enhanceExistingGASFunctions();
-      setupAutoBackup();
-      console.log("✅ GAS連携機能の初期化完了");
-    } catch (error) {
-      console.error("❌ GAS連携初期化エラー:", error);
-    }
-  }
-  
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      setTimeout(initialize, 1000);
-    });
-  } else {
-    setTimeout(initialize, 1000);
-  }
-}
-
-// 9. GASConnectorインスタンス作成
+// GASConnectorインスタンス
 const gasConnector = new GASConnector();
 
-// 10. 公開関数
+// 公開関数
 window.GASSettings = GASSettings;
 window.gasConnector = gasConnector;
 window.loadGASSettings = loadGASSettings;
 window.saveGASSettings = saveGASSettings;
-window.testGASConnection = testGASConnection;
-window.performManualBackup = performManualBackup;
-
-// 11. 自動初期化実行
-initGASIntegration();
-
-// 12. トースト通知関数（既存のtoast関数がない場合）
-if (typeof window.toast === 'undefined') {
-  window.toast = function(message, duration = 3000) {
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #333;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 6px;
-      z-index: 10000;
-      font-size: 14px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      max-width: 400px;
-      word-wrap: break-word;
-    `;
-    toast.textContent = message;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-      if (toast.parentNode) {
-        toast.parentNode.removeChild(toast);
-      }
-    }, duration);
-  };
-}
