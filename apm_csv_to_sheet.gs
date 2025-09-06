@@ -1,728 +1,563 @@
-/**
- * AI Prompt Maker - Google Apps Script側の受信コード（CORS完全対応版）
- */
-
-// ===== 設定 =====
-function getConfig() {
-  var config = {
-    AUTH_TOKEN: "", // 必要に応じて設定
-    BACKUP_FOLDER_NAME: "AI_Prompt_Maker_Backups",
-    CSV_FOLDER_NAME: "AI_Prompt_Maker_CSV", 
-    PRESET_FOLDER_NAME: "AI_Prompt_Maker_Presets",
-    CREATE_SPREADSHEET: true,
-    ENABLE_LOGGING: true,
-    MAX_LOG_ENTRIES: 1000
-  };
-  return config;
-}
-
-// ===== CORS対応のレスポンス関数 =====
-function createCORSResponse(data, callback) {
-  var jsonString = JSON.stringify(data);
-  
-  if (callback) {
-    // JSONP形式
-    return ContentService
-      .createTextOutput(callback + '(' + jsonString + ');')
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  } else {
-    // 通常のJSON + CORSヘッダー
-    return ContentService
-      .createTextOutput(jsonString)
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-// ===== フォルダ管理（エラー修正版） =====
-function getOrCreateFolder(folderName, parentFolder) {
-  if (!folderName || typeof folderName !== 'string' || folderName.trim() === '') {
-    throw new Error("無効なフォルダ名: " + folderName);
-  }
-  
-  var parent = parentFolder || DriveApp.getRootFolder();
-  var folders = parent.getFoldersByName(folderName.trim());
-  
-  if (folders.hasNext()) {
-    return folders.next();
-  } else {
-    return parent.createFolder(folderName.trim());
-  }
-}
-
-function setupFolders() {
-  var config = getConfig();
-  
-  var folders = {
-    backup: getOrCreateFolder(config.BACKUP_FOLDER_NAME),
-    csv: getOrCreateFolder(config.CSV_FOLDER_NAME),
-    preset: getOrCreateFolder(config.PRESET_FOLDER_NAME)
-  };
-  
-  return folders;
-}
-
-// ===== ログ管理 =====
-function addLog(action, data, status, error) {
-  var config = getConfig();
-  if (!config.ENABLE_LOGGING) return;
-  
-  try {
-    var logSheet = getOrCreateLogSheet();
-    var timestamp = new Date();
-    
-    logSheet.appendRow([
-      timestamp,
-      action,
-      JSON.stringify(data),
-      status || "success",
-      error ? error.toString() : "",
-      Session.getActiveUser().getEmail()
-    ]);
-    
-    // 古いログを削除
-    var lastRow = logSheet.getLastRow();
-    if (lastRow > config.MAX_LOG_ENTRIES + 1) {
-      var deleteCount = lastRow - config.MAX_LOG_ENTRIES;
-      logSheet.deleteRows(2, deleteCount);
-    }
-    
-  } catch (e) {
-    console.error("ログ追加エラー:", e);
-  }
-}
-
-function getOrCreateLogSheet() {
-  var ssName = "AI Prompt Maker - ログ";
-  var files = DriveApp.getFilesByName(ssName);
-  
-  var spreadsheet;
-  if (files.hasNext()) {
-    spreadsheet = SpreadsheetApp.open(files.next());
-  } else {
-    spreadsheet = SpreadsheetApp.create(ssName);
-  }
-  
-  var sheet = spreadsheet.getSheetByName("ログ");
-  if (!sheet) {
-    sheet = spreadsheet.insertSheet("ログ");
-    sheet.getRange(1, 1, 1, 6).setValues([[
-      "タイムスタンプ", "アクション", "データ", "ステータス", "エラー", "ユーザー"
-    ]]);
-    sheet.getRange(1, 1, 1, 6).setFontWeight("bold");
-    sheet.setFrozenRows(1);
-  }
-  
-  return sheet;
-}
-
-// ===== メイン処理（CORS完全対応） =====
 function doGet(e) {
-  try {
-    var action = e.parameter.action || 'info';
-    var callback = e.parameter.callback;
-    
-    if (action === 'ping') {
-      var response = {
-        status: "success",
-        message: "GAS接続テスト成功 - " + new Date().toLocaleString('ja-JP'),
-        timestamp: new Date().toISOString(),
-        url: ScriptApp.getService().getUrl()
-      };
-      
-      addLog("ping_get", { callback: !!callback }, "success");
-      return createCORSResponse(response, callback);
+  console.log("doGet実行");
+  
+  const params = (e && e.parameter) ? e.parameter : {};
+  const action = params.action || "none";
+  const callback = params.callback;
+  
+  if (action === "ping") {
+    const result = {
+    status: "success",
+    message: "接続成功",
+    timestamp: new Date().toISOString(),
+    data: {
+      serverTime: new Date().toISOString()
     }
-    
-    // JSONPで複雑なデータを受信する場合
-    if (e.parameter.data) {
-      try {
-        var requestData = JSON.parse(e.parameter.data);
-        requestData.callback = callback;
-        
-        var result = processRequest(requestData);
-        return createCORSResponse(result, callback);
-        
-      } catch (parseError) {
-        var errorResponse = {
-          status: "error",
-          error: "データパース エラー: " + parseError.message,
-          timestamp: new Date().toISOString()
-        };
-        return createCORSResponse(errorResponse, callback);
-      }
-    }
-    
-    // デフォルトの情報表示
-    var html = `
-    <html>
-    <head>
-      <title>AI Prompt Maker - GAS Endpoint</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-        .status { background: #e7f5e7; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .url { background: #f5f5f5; padding: 10px; border-radius: 3px; font-family: monospace; }
-        .test-button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 10px 0; }
-      </style>
-    </head>
-    <body>
-      <h1>🎨 AI Prompt Maker - GAS Endpoint</h1>
-      
-      <div class="status">
-        <h2>✅ ステータス: 正常動作中</h2>
-        <p><strong>最終確認:</strong> ${new Date().toLocaleString('ja-JP')}</p>
-        <p><strong>URL:</strong></p>
-        <div class="url">${ScriptApp.getService().getUrl()}</div>
-      </div>
-      
-      <h2>🧪 接続テスト</h2>
-      <button class="test-button" onclick="testConnection()">接続テスト実行</button>
-      <div id="test-result"></div>
-      
-      <script>
-        function testConnection() {
-          var url = '${ScriptApp.getService().getUrl()}?action=ping&callback=handleTestResult';
-          var script = document.createElement('script');
-          script.src = url;
-          document.head.appendChild(script);
-        }
-        
-        function handleTestResult(response) {
-          document.getElementById('test-result').innerHTML = 
-            '<h3>テスト結果:</h3><pre>' + JSON.stringify(response, null, 2) + '</pre>';
-        }
-      </script>
-    </body>
-    </html>`;
-    
-    return HtmlService
-      .createHtmlOutput(html)
-      .setTitle("AI Prompt Maker - GAS Endpoint")
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-      
-  } catch (error) {
-    var errorResponse = {
-      status: "error",
-      error: error.message,
-      timestamp: new Date().toISOString()
     };
     
-    addLog("doGet_error", { error: error.message }, "error", error);
-    return createCORSResponse(errorResponse, e.parameter.callback);
+    const responseJson = JSON.stringify(result);
+    
+    if (callback) {
+      return ContentService
+        .createTextOutput(callback + "(" + responseJson + ");")
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
   }
+  
+  return ContentService
+    .createTextOutput("GET OK")
+    .setMimeType(ContentService.MimeType.TEXT);
 }
 
 function doPost(e) {
   try {
-    var requestData;
-    var callback = null;
+    console.log("=== doPost開始 ===");
+    console.log("受信パラメータ確認:");
+    console.log("e存在:", !!e);
     
-    // POSTデータの解析
+    if (!e) {
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          status: "error",
+          message: "パラメータが受信されませんでした"
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    console.log("eのプロパティ:", Object.keys(e));
+    
+    let requestData = null;
+    
+    // FormData形式での送信を処理
     if (e.postData && e.postData.contents) {
-      try {
-        requestData = JSON.parse(e.postData.contents);
-      } catch (parseError) {
-        // フォームデータとして再試行
-        if (e.parameter) {
-          if (e.parameter.action) {
-            requestData = {
-              action: e.parameter.action,
-              data: e.parameter.data ? JSON.parse(e.parameter.data) : {},
-              timestamp: e.parameter.timestamp,
-              token: e.parameter.token
-            };
-            callback = e.parameter.callback;
-          } else {
-            throw new Error("POSTデータの解析に失敗: " + parseError.message);
+      console.log("postData.contentsから取得");
+      console.log("データ形式確認:", e.postData.contents.substring(0, 100));
+      
+      // FormDataとしてパース
+      requestData = parseFormData(e.postData.contents);
+      console.log("FormDataパース完了");
+    }
+    // parameterから取得（バックアップ）
+    else if (e.parameter) {
+      console.log("parameterから取得");
+      requestData = e.parameter;
+    }
+    
+    console.log("取得データタイプ:", typeof requestData);
+    console.log("データ存在:", !!requestData);
+    
+    if (!requestData) {
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          status: "error",
+          message: "データが受信されませんでした",
+          debug: {
+            hasPostData: !!(e.postData),
+            hasParameter: !!(e.parameter),
+            contentType: e.postData ? e.postData.type : "unknown"
           }
-        } else {
-          throw new Error("POSTデータが不正です");
-        }
-      }
-    } else if (e.parameter && e.parameter.action) {
-      // フォームデータとして処理
-      requestData = {
-        action: e.parameter.action,
-        data: e.parameter.data ? JSON.parse(e.parameter.data) : {},
-        timestamp: e.parameter.timestamp,
-        token: e.parameter.token
-      };
-      callback = e.parameter.callback;
-    } else {
-      throw new Error("リクエストデータが見つかりません");
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
     
-    var result = processRequest(requestData);
-    return createCORSResponse(result, callback);
+    // アクション判定
+    const action = requestData.action || "unknown";
+    console.log("アクション:", action);
     
+    if (action === "save_csv") {
+      console.log("CSV保存処理開始");
+      console.log("受信データキー:", Object.keys(requestData));
+      
+      // dataパラメータからJSONを抽出
+      let actualData = requestData;
+      if (requestData.data) {
+        try {
+          console.log("dataパラメータをJSONパース");
+          actualData = JSON.parse(requestData.data);
+          console.log("JSONパース成功");
+        } catch (e) {
+          console.log("JSONパース失敗:", e.message);
+        }
+      }
+      
+      console.log("最終データキー:", Object.keys(actualData));
+      console.log("CSVデータ存在:", !!actualData.csv);
+      console.log("ファイル名存在:", !!actualData.filename);
+      
+      // 必要なデータが存在するかチェック
+      if (!actualData.csv || !actualData.filename) {
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            status: "error",
+            message: "CSVデータまたはファイル名が不足しています",
+            received: {
+              hasCSV: !!actualData.csv,
+              hasFilename: !!actualData.filename,
+              csvLength: actualData.csv ? actualData.csv.length : 0,
+              dataKeys: Object.keys(actualData)
+            }
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      const saveResult = saveToSpreadsheet(actualData);
+      
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          status: "success",
+          data: saveResult,
+          message: "スプレッドシート保存完了"
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // デフォルト応答
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        status: "success",
+        message: "POST受信成功",
+        action: action,
+        dataReceived: true,
+        timestamp: new Date().toISOString()
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
   } catch (error) {
-    var errorResponse = {
-      status: "error",
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      details: error.stack
-    };
+    console.error("doPostエラー:", error);
+    console.error("エラースタック:", error.stack);
     
-    addLog("doPost_error", { error: error.message }, "error", error);
-    return createCORSResponse(errorResponse, e.parameter ? e.parameter.callback : null);
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        status: "error",
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-// ===== リクエスト処理（共通化） =====
-function processRequest(requestData) {
-  var config = getConfig();
+// FormData形式の文字列をオブジェクトに変換
+function parseFormData(formDataString) {
+  const params = {};
+  const pairs = formDataString.split('&');
   
-  // 認証チェック（トークンが設定されている場合のみ）
-  if (config.AUTH_TOKEN && requestData.token !== config.AUTH_TOKEN) {
-    throw new Error("認証に失敗しました");
-  }
-  
-  var response = {
-    status: "success",
-    message: "",
-    data: null,
-    timestamp: new Date().toISOString()
-  };
-  
-  switch (requestData.action) {
-    case "ping":
-      response.message = "接続成功 - " + new Date().toLocaleString('ja-JP');
-      response.data = {
-        serverTime: new Date().toISOString(),
-        gasUrl: ScriptApp.getService().getUrl()
-      };
-      addLog("ping", {}, "success");
-      break;
-      
-    case "save_csv":
-      response.data = saveCSVData(requestData.data);
-      response.message = "CSV保存完了";
-      addLog("save_csv", { 
-        type: requestData.data.type, 
-        filename: requestData.data.filename 
-      }, "success");
-      break;
-      
-    case "save_preset":
-      response.data = savePresetData(requestData.data);
-      response.message = "プリセット保存完了";
-      addLog("save_preset", {
-        mode: requestData.data.mode,
-        name: requestData.data.name
-      }, "success");
-      break;
-      
-    case "save_backup":
-      response.data = saveBackupData(requestData.data);
-      response.message = "バックアップ保存完了";
-      addLog("save_backup", { 
-        size: JSON.stringify(requestData.data).length 
-      }, "success");
-      break;
-      
-    case "get_data":
-      response.data = getData(requestData.data);
-      response.message = "データ取得完了";
-      addLog("get_data", { 
-        getAction: requestData.data.getAction 
-      }, "success");
-      break;
-      
-    default:
-      throw new Error("未知のアクション: " + requestData.action);
-  }
-  
-  return response;
-}
-
-// ===== データ保存機能 =====
-function saveCSVData(data) {
-  if (!data || !data.csv || !data.filename) {
-    throw new Error("CSVデータが不完全です");
-  }
-  
-  var folders = setupFolders();
-  var type = data.type || "unknown";
-  var filename = data.filename;
-  var csv = data.csv;
-  var metadata = data.metadata || {};
-  
-  // CSVファイル保存
-  var csvBlob = Utilities.newBlob(csv, "text/csv", filename);
-  var csvFile = folders.csv.createFile(csvBlob);
-  
-  var result = {
-    csvFileId: csvFile.getId(),
-    csvUrl: csvFile.getUrl(),
-    savedAt: new Date().toISOString(),
-    size: csv.length,
-    type: type
-  };
-  
-  // スプレッドシート作成（オプション）
-  var config = getConfig();
-  if (config.CREATE_SPREADSHEET) {
-    try {
-      var ssName = filename.replace('.csv', '') + " (スプレッドシート)";
-      var spreadsheet = SpreadsheetApp.create(ssName);
-      
-      // CSVを解析してスプレッドシートに挿入
-      var rows = parseCSV(csv);
-      
-      if (rows.length > 0) {
-        var sheet = spreadsheet.getActiveSheet();
-        sheet.setName(type);
-        
-        var maxCols = Math.max.apply(Math, rows.map(function(row) { return row.length; }));
-        sheet.getRange(1, 1, rows.length, maxCols).setValues(rows);
-        
-        // ヘッダー行のスタイリング
-        if (rows.length > 0) {
-          sheet.getRange(1, 1, 1, maxCols).setFontWeight("bold");
-          sheet.setFrozenRows(1);
-        }
-      }
-      
-      // メタデータシート
-      var metaSheet = spreadsheet.insertSheet("メタデータ");
-      var metaData = [
-        ["項目", "値"],
-        ["生成日時", new Date().toLocaleString('ja-JP')],
-        ["タイプ", type],
-        ["ファイル名", filename],
-        ["行数", rows.length - 1],
-        ["キャラクター名", metadata.characterName || "不明"],
-        ["生成元", "AI Prompt Maker v2.1"]
-      ];
-      
-      for (var key in metadata) {
-        if (key !== "characterName") {
-          metaData.push([key, String(metadata[key])]);
-        }
-      }
-      
-      metaSheet.getRange(1, 1, metaData.length, 2).setValues(metaData);
-      metaSheet.getRange(1, 1, 1, 2).setFontWeight("bold");
-      metaSheet.setFrozenRows(1);
-      
-      // スプレッドシートを適切なフォルダに移動
-      var ssFile = DriveApp.getFileById(spreadsheet.getId());
-      folders.csv.addFile(ssFile);
-      DriveApp.getRootFolder().removeFile(ssFile);
-      
-      result.spreadsheetUrl = spreadsheet.getUrl();
-      result.spreadsheetId = spreadsheet.getId();
-      
-    } catch (ssError) {
-      console.error("スプレッドシート作成エラー:", ssError);
-      result.spreadsheetError = ssError.message;
+  for (const pair of pairs) {
+    const [key, value] = pair.split('=');
+    if (key && value !== undefined) {
+      // URLデコード
+      const decodedKey = decodeURIComponent(key);
+      const decodedValue = decodeURIComponent(value.replace(/\+/g, ' '));
+      params[decodedKey] = decodedValue;
     }
   }
   
+  return params;
+}
+
+
+function parseQueryString(queryString) {
+  const params = {};
+  const pairs = queryString.split('&');
+  
+  for (const pair of pairs) {
+    const [key, value] = pair.split('=');
+    if (key && value) {
+      params[decodeURIComponent(key)] = decodeURIComponent(value);
+    }
+  }
+  
+  return params;
+}
+
+function saveToSpreadsheet(data) {
+  console.log("スプレッドシート保存開始");
+  
+  // データ検証
+  if (!data.csv || !data.filename) {
+    throw new Error("CSVデータまたはファイル名が不足しています");
+  }
+  
+  const csv = data.csv;
+  const filename = data.filename;
+  const type = data.type || "unknown";
+  const metadata = data.metadata || {};
+  
+  console.log("ファイル名:", filename);
+  console.log("タイプ:", type);
+  console.log("CSV長さ:", csv.length + "文字");
+  
+  // CSVをパース
+  const rows = parseCSVToArray(csv);
+  console.log("パース結果:", rows.length + "行");
+  
+  if (rows.length <= 1) {
+    throw new Error("CSVデータにヘッダーのみが含まれています");
+  }
+  
+  // データの順序を修正（#列でソート）
+  const sortedRows = sortByNumberColumn(rows);
+  console.log("ソート完了:", sortedRows.length + "行");
+  
+  // フォルダ作成・取得
+  const rootFolderName = "AI_Prompt_Maker_Data";
+  let rootFolder;
+  
+  const folders = DriveApp.getFoldersByName(rootFolderName);
+  if (folders.hasNext()) {
+    rootFolder = folders.next();
+  } else {
+    rootFolder = DriveApp.createFolder(rootFolderName);
+  }
+  
+  let csvFolder;
+  const csvFolders = rootFolder.getFoldersByName("Spreadsheets");
+  if (csvFolders.hasNext()) {
+    csvFolder = csvFolders.next();
+  } else {
+    csvFolder = rootFolder.createFolder("Spreadsheets");
+  }
+  
+  // スプレッドシート作成
+  const ssName = filename.replace('.csv', '') + '_データ_' + Utilities.formatDate(new Date(), 'JST', 'MMdd_HHmm');
+  const spreadsheet = SpreadsheetApp.create(ssName);
+  
+  // データシート作成
+  const dataSheet = spreadsheet.getActiveSheet();
+  dataSheet.setName(type + "_データ");
+  
+  // データ正規化
+  const normalizedRows = normalizeSpreadsheetData(sortedRows);
+  const maxCols = normalizedRows[0].length;
+  
+  console.log("正規化後のデータ:");
+  console.log("- 行数:", normalizedRows.length);
+  console.log("- 列数:", maxCols);
+  
+  // データ書き込み
+  if (normalizedRows.length > 1000) {
+    // 分割書き込み
+    const chunkSize = 1000;
+    for (let i = 0; i < normalizedRows.length; i += chunkSize) {
+      const chunk = normalizedRows.slice(i, i + chunkSize);
+      dataSheet.getRange(i + 1, 1, chunk.length, maxCols).setValues(chunk);
+      console.log(`書き込み進捗: ${i + chunk.length}/${normalizedRows.length}行`);
+      Utilities.sleep(100);
+    }
+  } else {
+    dataSheet.getRange(1, 1, normalizedRows.length, maxCols).setValues(normalizedRows);
+    console.log("一括書き込み完了");
+  }
+  
+  // ヘッダー行のフォーマット
+  if (normalizedRows.length > 0) {
+    dataSheet.getRange(1, 1, 1, maxCols).setFontWeight("bold");
+    dataSheet.getRange(1, 1, 1, maxCols).setBackground("#f0f0f0");
+    dataSheet.setFrozenRows(1);
+  }
+  
+  // 列幅自動調整（最初の10列のみ）
+  for (let i = 1; i <= Math.min(maxCols, 10); i++) {
+    dataSheet.autoResizeColumn(i);
+  }
+  
+  // メタデータシート作成
+  const metaSheet = spreadsheet.insertSheet("メタデータ");
+  const metaData = [
+    ["項目", "値"],
+    ["作成日時", new Date().toLocaleString('ja-JP')],
+    ["データタイプ", type],
+    ["元ファイル名", filename],
+    ["データ行数", normalizedRows.length - 1],
+    ["総行数", normalizedRows.length],
+    ["列数", maxCols],
+    ["キャラクター名", metadata.characterName || "不明"],
+    ["生成元", "AI Prompt Maker"],
+    ["データサイズ", csv.length + " 文字"],
+    ["処理完了日時", new Date().toISOString()],
+    ["ソート", "連番順に整列済み"]
+  ];
+  
+  metaSheet.getRange(1, 1, metaData.length, 2).setValues(metaData);
+  metaSheet.getRange(1, 1, 1, 2).setFontWeight("bold");
+  metaSheet.getRange(1, 1, 1, 2).setBackground("#e3f2fd");
+  metaSheet.setFrozenRows(1);
+  metaSheet.autoResizeColumn(1);
+  metaSheet.autoResizeColumn(2);
+  
+  // スプレッドシートをフォルダに移動
+  const ssFile = DriveApp.getFileById(spreadsheet.getId());
+  csvFolder.addFile(ssFile);
+  DriveApp.getRootFolder().removeFile(ssFile);
+  
+  const result = {
+    spreadsheetId: spreadsheet.getId(),
+    spreadsheetUrl: spreadsheet.getUrl(),
+    filename: ssName,
+    dataRows: normalizedRows.length - 1,
+    totalRows: normalizedRows.length,
+    columns: maxCols,
+    type: type,
+    savedAt: new Date().toISOString(),
+    folderId: csvFolder.getId(),
+    sorted: true
+  };
+  
+  console.log("スプレッドシート保存完了:", result.filename);
   return result;
 }
 
-// CSV解析関数（改良版）
-function parseCSV(csv) {
-  var rows = [];
-  var lines = csv.split('\n');
+function parseCSVToArray(csv) {
+  console.log("CSV解析開始（連番データのみ抽出）");
   
-  for (var i = 0; i < lines.length; i++) {
-    var line = lines[i].trim();
-    if (line === '') continue;
+  const lines = csv.split('\n').map(line => line.trim()).filter(line => line !== '');
+  console.log("総行数:", lines.length);
+  
+  const validRows = [];
+  
+  // ヘッダーを手動作成
+  const header = ['no', 'seed', 'prompt', 'negative'];
+  validRows.push(header);
+  console.log("ヘッダー作成:", header);
+  
+  console.log("=== 行の詳細チェック（修正版） ===");
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     
-    var cells = [];
-    var current = '';
-    var inQuotes = false;
-    
-    for (var j = 0; j < line.length; j++) {
-      var char = line[j];
+    // デバッグ出力（最初の15行のみ）
+    if (i < 15) {
+      console.log(`行${i}: "${line.substring(0, 100)}"`);
       
-      if (char === '"') {
-        if (inQuotes && j + 1 < line.length && line[j + 1] === '"') {
-          // エスケープされた引用符
-          current += '"';
-          j++; // 次の引用符をスキップ
-        } else {
-          inQuotes = !inQuotes;
+      // ダブルクォート除去後の数字チェック
+      const cleanLine = line.replace(/^"/, '').trim();
+      const startsWithNumber = /^\d+/.test(cleanLine);
+      console.log(`  クリーンライン: "${cleanLine.substring(0, 30)}"`);
+      console.log(`  数字開始チェック: ${startsWithNumber}`);
+      console.log(`  カンマ含有: ${line.includes(',')}`);
+    }
+    
+    // 修正された条件：ダブルクォートで囲まれた数字行を検出
+    let isDataRow = false;
+    
+    // パターン1: "数字" で始まる行
+    if (/^"\d+",/.test(line)) {
+      isDataRow = true;
+    }
+    // パターン2: 数字で始まる行（クォートなし）
+    else if (/^\d+,/.test(line)) {
+      isDataRow = true;
+    }
+    
+    if (isDataRow) {
+      console.log(`マッチした行${i}: "${line.substring(0, 80)}"`);
+      
+      const cells = parseCSVLine(line);
+      console.log(`  パース結果: [${cells.length}列]`, cells.map((cell, idx) => 
+        `${idx}: ${cell ? cell.substring(0, 20) + (cell.length > 20 ? '...' : '') : '(空)'}`
+      ));
+      
+      // データ検証：連番、シード、プロンプトが存在するか
+      if (cells.length >= 3 && 
+          cells[0] && /^\d+$/.test(cells[0].trim()) && // 連番が数字
+          cells[1] && /^\d+$/.test(cells[1].trim()) && // シードが数字
+          cells[2] && cells[2].trim().length > 5) {    // プロンプトが5文字以上
+        
+        // 4列に正規化
+        while (cells.length < 4) {
+          cells.push('');
         }
-      } else if (char === ',' && !inQuotes) {
-        cells.push(current);
-        current = '';
+        
+        validRows.push(cells.slice(0, 4));
+        console.log(`  → 追加: データ行${validRows.length - 1}`);
+        
       } else {
-        current += char;
+        console.log(`  → スキップ: データ検証失敗`);
+        console.log(`    連番チェック: ${cells[0]} -> ${cells[0] && /^\d+$/.test(cells[0].trim())}`);
+        console.log(`    シードチェック: ${cells[1]} -> ${cells[1] && /^\d+$/.test(cells[1].trim())}`);
+        console.log(`    プロンプト長: ${cells[2] ? cells[2].length : 0}`);
       }
     }
+  }
+  
+  console.log("抽出完了:", (validRows.length - 1) + "データ行");
+  
+  // 連番順にソート
+  if (validRows.length > 1) {
+    const headerRow = validRows[0];
+    const dataRows = validRows.slice(1);
     
-    cells.push(current);
-    rows.push(cells);
-  }
-  
-  return rows;
-}
-
-function savePresetData(data) {
-  if (!data || !data.mode || !data.name || !data.preset) {
-    throw new Error("プリセットデータが不完全です");
-  }
-  
-  var folders = setupFolders();
-  var presetData = {
-    mode: data.mode,
-    name: data.name,
-    preset: data.preset,
-    metadata: data.metadata || {},
-    savedAt: new Date().toISOString(),
-    version: "2.1"
-  };
-  
-  var timestamp = new Date().toISOString().split('T')[0];
-  var filename = "preset_" + data.mode + "_" + data.name + "_" + timestamp + ".json";
-  var blob = Utilities.newBlob(JSON.stringify(presetData, null, 2), "application/json", filename);
-  var file = folders.preset.createFile(blob);
-  
-  return {
-    fileId: file.getId(),
-    fileUrl: file.getUrl(),
-    filename: filename,
-    savedAt: new Date().toISOString()
-  };
-}
-
-function saveBackupData(data) {
-  if (!data || !data.backup) {
-    throw new Error("バックアップデータが不完全です");
-  }
-  
-  var folders = setupFolders();
-  var backupData = {
-    backup: data.backup,
-    metadata: data.metadata || {},
-    savedAt: new Date().toISOString(),
-    version: "2.1"
-  };
-  
-  var timestamp = new Date().toISOString().replace(/[:.]/g, "-").split('T')[0];
-  var filename = "backup_" + timestamp + "_" + Utilities.getUuid().substring(0, 8) + ".json";
-  var blob = Utilities.newBlob(JSON.stringify(backupData, null, 2), "application/json", filename);
-  var file = folders.backup.createFile(blob);
-  
-  return {
-    fileId: file.getId(),
-    fileUrl: file.getUrl(),
-    filename: filename,
-    savedAt: new Date().toISOString(),
-    size: JSON.stringify(backupData).length
-  };
-}
-
-// ===== データ取得機能 =====
-function getData(data) {
-  var folders = setupFolders();
-  var getAction = data.getAction;
-  var params = data.params || {};
-  
-  switch (getAction) {
-    case "list_backups":
-      return listFiles(folders.backup, "backup");
-      
-    case "list_presets":
-      return listFiles(folders.preset, "preset", params.mode);
-      
-    case "list_csvs":
-      return listFiles(folders.csv, "csv", params.type);
-      
-    case "get_backup":
-      return getFileContent(params.fileId);
-      
-    case "get_preset":
-      return getFileContent(params.fileId);
-      
-    case "stats":
-      return getStats(folders);
-      
-    default:
-      throw new Error("未知のデータ取得アクション: " + getAction);
-  }
-}
-
-function listFiles(folder, type, filter) {
-  var files = folder.getFiles();
-  var result = [];
-  
-  while (files.hasNext()) {
-    var file = files.next();
-    var name = file.getName();
-    
-    if (filter) {
-      if (type === "preset" && name.indexOf("preset_" + filter + "_") === -1) continue;
-      if (type === "csv" && name.indexOf(filter + "_") === -1) continue;
-    }
-    
-    result.push({
-      id: file.getId(),
-      name: name,
-      url: file.getUrl(),
-      size: file.getSize(),
-      createdAt: file.getDateCreated().toISOString(),
-      modifiedAt: file.getLastUpdated().toISOString()
+    dataRows.sort((a, b) => {
+      const aNum = parseInt(a[0]) || 0;
+      const bNum = parseInt(b[0]) || 0;
+      return aNum - bNum;
     });
+    
+    console.log("ソート完了");
+    console.log("最初の3行の連番:", dataRows.slice(0, 3).map(row => row[0]));
+    
+    return [headerRow, ...dataRows];
   }
   
-  result.sort(function(a, b) {
-    return new Date(b.createdAt) - new Date(a.createdAt);
+  return validRows;
+}
+
+function parseCSVLine(line) {
+  const cells = [];
+  let current = '';
+  let inQuotes = false;
+  let i = 0;
+  
+  while (i < line.length) {
+    const char = line[i];
+    
+    if (char === '"') {
+      if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+        // エスケープされたクォート
+        current += '"';
+        i += 2;
+      } else {
+        // クォート開始/終了
+        inQuotes = !inQuotes;
+        i++;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // カンマ区切り
+      cells.push(current.trim());
+      current = '';
+      i++;
+    } else {
+      current += char;
+      i++;
+    }
+  }
+  
+  // 最後のセルを追加
+  cells.push(current.trim());
+  
+  return cells;
+}
+
+function isValidDataRow(cells, originalLine) {
+  // 空行や不完全な行をスキップ
+  if (cells.length < 3) return false;
+  
+  // 最初のセルが数字でない場合はスキップ（連番以外）
+  const firstCell = cells[0]?.trim();
+  if (!firstCell || isNaN(parseInt(firstCell))) return false;
+  
+  // "Seed:" で始まる行はスキップ
+  if (originalLine.toLowerCase().includes('seed:')) return false;
+  
+  // "Negative prompt:" で始まる行はスキップ
+  if (originalLine.toLowerCase().includes('negative prompt:')) return false;
+  
+  // 2列目（seed列）が数字でない場合はスキップ
+  const secondCell = cells[1]?.trim();
+  if (!secondCell || isNaN(parseInt(secondCell))) return false;
+  
+  // 3列目（prompt列）が存在し、内容がある場合のみ有効
+  const thirdCell = cells[2]?.trim();
+  if (!thirdCell || thirdCell.length < 5) return false;
+  
+  return true;
+}
+
+function parseCSVLine(line) {
+  const cells = [];
+  let current = '';
+  let inQuotes = false;
+  let i = 0;
+  
+  while (i < line.length) {
+    const char = line[i];
+    
+    if (char === '"') {
+      if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+        current += '"';
+        i += 2;
+      } else {
+        inQuotes = !inQuotes;
+        i++;
+      }
+    } else if (char === ',' && !inQuotes) {
+      cells.push(current.trim());
+      current = '';
+      i++;
+    } else {
+      current += char;
+      i++;
+    }
+  }
+  
+  cells.push(current.trim());
+  return cells;
+}
+
+// ソート関数も修正
+function sortByNumberColumn(rows) {
+  if (rows.length <= 1) return rows;
+  
+  const header = rows[0];
+  const dataRows = rows.slice(1);
+  
+  console.log("ソート対象データ行数:", dataRows.length);
+  
+  // 連番列でソート（1列目）
+  dataRows.sort((a, b) => {
+    const aNum = parseInt(a[0]) || 0;
+    const bNum = parseInt(b[0]) || 0;
+    return aNum - bNum;
   });
   
-  return result;
-}
-
-function getFileContent(fileId) {
-  try {
-    var file = DriveApp.getFileById(fileId);
-    var content = file.getBlob().getDataAsString();
-    
-    return {
-      id: fileId,
-      name: file.getName(),
-      content: content,
-      size: file.getSize(),
-      mimeType: file.getBlob().getContentType(),
-      retrievedAt: new Date().toISOString()
-    };
-  } catch (error) {
-    throw new Error("ファイル取得エラー: " + error.message);
-  }
-}
-
-function getStats(folders) {
-  var stats = {
-    backups: { count: 0, totalSize: 0, latestDate: null },
-    presets: { count: 0, totalSize: 0, latestDate: null },
-    csvs: { count: 0, totalSize: 0, latestDate: null }
-  };
+  console.log("ソート完了");
+  console.log("最初の5行の連番:", dataRows.slice(0, 5).map(row => row[0]));
   
-  function processFolder(folder, statKey) {
-    var files = folder.getFiles();
-    while (files.hasNext()) {
-      var file = files.next();
-      stats[statKey].count++;
-      stats[statKey].totalSize += file.getSize();
-      
-      var modified = file.getLastUpdated();
-      if (!stats[statKey].latestDate || modified > new Date(stats[statKey].latestDate)) {
-        stats[statKey].latestDate = modified.toISOString();
-      }
+  return [header, ...dataRows];
+}
+
+
+// スプレッドシート保存時のデータ整理関数
+function normalizeSpreadsheetData(rows) {
+  if (rows.length === 0) return rows;
+  
+  const maxCols = Math.max(...rows.map(row => row.length));
+  console.log("最大列数:", maxCols);
+  
+  const normalizedRows = rows.map((row, index) => {
+    const normalizedRow = [...row];
+    
+    while (normalizedRow.length < maxCols) {
+      normalizedRow.push('');
     }
-  }
-  
-  processFolder(folders.backup, 'backups');
-  processFolder(folders.preset, 'presets');
-  processFolder(folders.csv, 'csvs');
-  
-  return stats;
-}
-
-// ===== セットアップ・管理機能 =====
-function setupGAS() {
-  try {
-    var folders = setupFolders();
-    getOrCreateLogSheet();
-    createTriggers();
     
-    addLog("setup", { message: "GASセットアップ完了" }, "success");
-    
-    return {
-      status: "success",
-      message: "セットアップ完了",
-      webAppUrl: ScriptApp.getService().getUrl(),
-      folders: {
-        backup: folders.backup.getId(),
-        csv: folders.csv.getId(),
-        preset: folders.preset.getId()
-      },
-      timestamp: new Date().toISOString()
-    };
-    
-  } catch (error) {
-    console.error("セットアップエラー:", error);
-    addLog("setup", { error: error.message }, "error", error);
-    throw error;
-  }
-}
-
-function createTriggers() {
-  // 既存のトリガーを削除
-  var triggers = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < triggers.length; i++) {
-    ScriptApp.deleteTrigger(triggers[i]);
-  }
-  
-  // 週次クリーンアップトリガー
-  ScriptApp.newTrigger('cleanupOldFiles')
-    .timeBased()
-    .everyWeeks(1)
-    .onWeekDay(ScriptApp.WeekDay.SUNDAY)
-    .atHour(2)
-    .create();
-}
-
-function cleanupOldFiles() {
-  var folders = setupFolders();
-  var cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - 90); // 90日前
-  
-  var deletedCount = 0;
-  
-  function cleanFolder(folder, folderName) {
-    var files = folder.getFiles();
-    while (files.hasNext()) {
-      var file = files.next();
-      if (file.getDateCreated() < cutoffDate) {
-        console.log("削除: " + folderName + "/" + file.getName());
-        file.setTrashed(true);
-        deletedCount++;
-      }
+    if (normalizedRow.length > maxCols) {
+      normalizedRow.splice(maxCols);
     }
-  }
+    
+    return normalizedRow;
+  });
   
-  cleanFolder(folders.backup, "backup");
-  cleanFolder(folders.csv, "csv");
-  
-  addLog("cleanup", { deletedCount: deletedCount }, "success");
-  return deletedCount;
-}
-
-// ===== テスト・デバッグ機能 =====
-function testEndpoint() {
-  var testData = {
-    action: "ping",
-    timestamp: new Date().toISOString(),
-    token: getConfig().AUTH_TOKEN
-  };
-  
-  var mockEvent = {
-    postData: {
-      contents: JSON.stringify(testData)
-    }
-  };
-  
-  var result = doPost(mockEvent);
-  var response = JSON.parse(result.getContent());
-  
-  console.log("テスト結果:", response);
-  return response;
-}
-
-function debugRequest(eventData) {
-  console.log("=== デバッグ情報 ===");
-  console.log("Event object:", JSON.stringify(eventData, null, 2));
-  
-  if (eventData.postData) {
-    console.log("POST Data:", eventData.postData.contents);
-  }
-  
-  if (eventData.parameter) {
-    console.log("Parameters:", JSON.stringify(eventData.parameter, null, 2));
-  }
-  
-  console.log("==================");
+  console.log("データ正規化完了");
+  return normalizedRows;
 }
