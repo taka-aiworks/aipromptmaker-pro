@@ -1052,17 +1052,14 @@ function updateMangaOutput() {
 function generateMangaPrompt() {
   const tags = [];
   
-  console.log('🚀 プロンプト生成開始');
-  
+
   // ===== 🎭 商用LoRAタグを最優先で先頭に追加（修正版） =====
   const commercialLoRAToggle = document.getElementById('mangaCommercialLoRAEnable');
   if (commercialLoRAToggle && commercialLoRAToggle.checked && window.commercialLoRAManager) {
     const loraBaseTags = window.commercialLoRAManager.getSelectedLoRATags();
     if (loraBaseTags.length > 0) {
       tags.push(...loraBaseTags);
-      console.log('✅ 商用LoRAタグ追加（先頭配置）:', loraBaseTags);
     } else {
-      console.log('⚠️ 商用LoRA有効だが選択タグなし');
     }
   }
   
@@ -1071,7 +1068,6 @@ function generateMangaPrompt() {
   if (fixed) {
     const fixedTags = fixed.split(/\s*,\s*/).filter(Boolean);
     tags.push(...fixedTags);
-    console.log('📌 固定タグ:', fixedTags);
   }
   
   // 従来のLoRAタグ（商用LoRAの後）
@@ -1080,21 +1076,18 @@ function generateMangaPrompt() {
     if (loraTag) {
       const weight = document.getElementById('mangaLoRAWeight')?.value || '0.8';
       tags.push(loraTag.replace(':0.8>', `:${weight}>`));
-      console.log('🎭 従来のLoRAタグ:', loraTag);
     }
   }
   
   // NSFW
   if (document.getElementById('mangaNSFWEnable')?.checked) {
     tags.push('NSFW');
-    console.log('🔞 NSFWモード有効');
   }
   
   // キャラ基礎設定（1人目）
   const useCharBase = document.querySelector('input[name="mangaCharBase"]:checked')?.value === 'B';
   if (useCharBase) {
     tags.push('solo'); // 2人目がいる場合は後で修正
-    console.log('👤 基本キャラ設定使用');
     
     if (typeof getGenderCountTag === 'function') {
       const genderCountTag = getGenderCountTag();
@@ -1113,7 +1106,6 @@ function generateMangaPrompt() {
       tags.splice(soloIndex, 1);
     }
     tags.push('2people');
-    console.log('👥 2人目キャラ有効');
     
     // 2人目の設定を追加
     addSecondCharTags(tags);
@@ -1122,7 +1114,6 @@ function generateMangaPrompt() {
   // 【重要修正】SFW有効状態のチェックを改善
   const sfwEnabledElement = document.getElementById('mangaSFWEnable');
   const sfwEnabled = sfwEnabledElement ? sfwEnabledElement.checked : true; // デフォルトで有効
-  console.log('📊 SFW有効状態:', sfwEnabled);
   
   if (sfwEnabled) {
     const addedTags = [];
@@ -1187,7 +1178,6 @@ function generateMangaPrompt() {
   }
   
   const finalPrompt = tags.filter(Boolean).join(', ');
-  console.log('📝 最終プロンプト:', finalPrompt);
   
   return finalPrompt;
 }
@@ -1200,11 +1190,9 @@ function generateMangaPrompt() {
 
 // 🔥 修正版: 商用LoRAマネージャーとの統合強化
 function initCommercialLoRAIntegration() {
-  console.log('🎭 商用LoRA統合初期化開始');
   
   // 商用LoRAマネージャーの存在確認
   if (!window.commercialLoRAManager) {
-    console.warn('⚠️ commercialLoRAManager未初期化 - 遅延再試行します');
     
     // 遅延再試行（最大5回）
     let retryCount = 0;
@@ -1214,16 +1202,14 @@ function initCommercialLoRAIntegration() {
       retryCount++;
       
       if (window.commercialLoRAManager) {
-        console.log('✅ commercialLoRAManager発見 - 統合を開始');
         setupCommercialLoRAHooks();
         return;
       }
       
       if (retryCount < maxRetries) {
-        console.log(`🔄 commercialLoRAManager再試行 ${retryCount}/${maxRetries}`);
+
         setTimeout(retryInit, 500);
       } else {
-        console.warn('❌ commercialLoRAManager初期化タイムアウト');
       }
     };
     
@@ -1238,23 +1224,20 @@ function initCommercialLoRAIntegration() {
 // 商用LoRAフックのセットアップ
 function setupCommercialLoRAHooks() {
   if (!window.commercialLoRAManager) {
-    console.error('❌ setupCommercialLoRAHooks: commercialLoRAManager不存在');
+
     return;
   }
   
-  console.log('🔗 商用LoRAフック設定開始');
   
   // 元のupdateMangaOutputメソッドをバックアップ
   const originalUpdateMethod = window.commercialLoRAManager.updateMangaOutput;
   
   // 改良版updateMangaOutputメソッドを設定
   window.commercialLoRAManager.updateMangaOutput = function() {
-    console.log('🎭 商用LoRA経由でupdateMangaOutput呼び出し');
     
     try {
       // 循環参照防止フラグ
       if (window.commercialLoRAManager._updating) {
-        console.warn('⚠️ 商用LoRA更新中 - 循環参照を防止');
         return;
       }
       
@@ -1264,17 +1247,14 @@ function setupCommercialLoRAHooks() {
       if (typeof updateMangaOutput === 'function') {
         updateMangaOutput();
       } else {
-        console.error('❌ updateMangaOutput関数が見つかりません');
         
         // フォールバック: 最小限のプロンプト生成
         if (typeof generateMangaPrompt === 'function') {
           const prompt = generateMangaPrompt();
-          console.log('📝 フォールバックプロンプト:', prompt);
         }
       }
       
     } catch (error) {
-      console.error('❌ 商用LoRA updateMangaOutput エラー:', error);
     } finally {
       // フラグをリセット
       window.commercialLoRAManager._updating = false;
@@ -1284,7 +1264,6 @@ function setupCommercialLoRAHooks() {
   // 商用LoRAの選択変更を監視
   setupCommercialLoRAChangeListener();
   
-  console.log('✅ 商用LoRAフック設定完了');
 }
 
 // 商用LoRA選択変更の監視
@@ -1293,7 +1272,6 @@ function setupCommercialLoRAChangeListener() {
   const commercialLoRAToggle = document.getElementById('mangaCommercialLoRAEnable');
   if (commercialLoRAToggle) {
     commercialLoRAToggle.addEventListener('change', () => {
-      console.log('🎭 商用LoRAトグル変更:', commercialLoRAToggle.checked);
       
       // 少し遅延してプロンプト更新
       setTimeout(() => {
@@ -1309,7 +1287,6 @@ function setupCommercialLoRAChangeListener() {
   if (commercialLoRAPanel) {
     commercialLoRAPanel.addEventListener('change', (e) => {
       if (e.target.matches('input[type="checkbox"], input[type="range"]')) {
-        console.log('🎭 商用LoRA選択変更:', e.target.name || e.target.id);
         
         // 遅延してプロンプト更新
         setTimeout(() => {
@@ -1324,7 +1301,6 @@ function setupCommercialLoRAChangeListener() {
 
 // 商用LoRAのデバッグ関数
 function debugCommercialLoRA() {
-  console.log('🔍 商用LoRAデバッグ情報:');
   
   const info = {
     managerExists: !!window.commercialLoRAManager,
@@ -1336,17 +1312,14 @@ function debugCommercialLoRA() {
     selectedTags: window.commercialLoRAManager?.getSelectedLoRATags?.() || []
   };
   
-  console.table(info);
   
   // プロンプト生成テスト
   if (info.managerExists && info.selectedCount > 0) {
     try {
       const prompt = generateMangaPrompt();
       const hasLoRAAtStart = info.selectedTags.some(tag => prompt.startsWith(tag.substring(0, 10)));
-      console.log('📝 LoRA先頭配置テスト:', hasLoRAAtStart ? '✅ 成功' : '❌ 失敗');
-      console.log('📝 生成プロンプト（最初の100文字）:', prompt.substring(0, 100));
     } catch (error) {
-      console.error('❌ プロンプト生成テストエラー:', error);
+
     }
   }
   
@@ -1385,8 +1358,6 @@ window.initCommercialLoRAIntegration = initCommercialLoRAIntegration;
 window.setupCommercialLoRAHooks = setupCommercialLoRAHooks;
 window.debugCommercialLoRA = debugCommercialLoRA;
 
-console.log('🎭 商用LoRA統合機能を初期化しました');
-console.log('🔍 デバッグ実行: debugCommercialLoRA()');
 
 
 // ========================================
@@ -1446,7 +1417,6 @@ function addSelectedValuesSafe(tags, containerId) {
   const added = [];
   
   if (!container) {
-    console.warn(`⚠️ ${containerId} 要素が見つかりません`);
     return added;
   }
   
@@ -1460,7 +1430,6 @@ function addSelectedValuesSafe(tags, containerId) {
   });
   
   if (added.length > 0) {
-    console.log(`✅ ${containerId} 追加:`, added);
   }
   
   return added;
