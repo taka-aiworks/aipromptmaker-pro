@@ -6159,3 +6159,161 @@ if (typeof window.toast === 'undefined') {
 
 // 11. 自動初期化実行
 initGASIntegration();
+
+
+
+/* =========================================================
+   「⚙️ 設定」ヘッダーを設定パネルの最上位に移動
+   ========================================================= */
+
+console.log("🔄 設定ヘッダーを最上位に移動開始");
+
+function moveSettingsHeaderToTop() {
+  const settingsPanel = document.getElementById("panelSettings");
+  if (!settingsPanel) {
+    console.warn("❌ 設定パネルが見つかりません");
+    return;
+  }
+  
+  // 設定パネル内のh2要素（⚙️ 設定）を取得
+  const settingsHeader = settingsPanel.querySelector("h2");
+  if (!settingsHeader) {
+    console.warn("❌ 設定ヘッダー（h2）が見つかりません");
+    return;
+  }
+  
+  console.log("✅ 設定ヘッダーを発見:", settingsHeader.textContent);
+  
+  // 現在の位置から一旦削除
+  settingsHeader.remove();
+  
+  // 設定パネルの最初に挿入
+  settingsPanel.insertBefore(settingsHeader, settingsPanel.firstChild);
+  
+  console.log("✅ 設定ヘッダーを最上位に移動完了");
+  
+  // 他の追加された要素も整理
+  organizeSettingsOrder();
+}
+
+function organizeSettingsOrder() {
+  const settingsPanel = document.getElementById("panelSettings");
+  if (!settingsPanel) return;
+  
+  // 理想的な順序を定義
+  const desiredOrder = [
+    'h2',                        // ⚙️ 設定 ヘッダー
+    '.grid',                     // 辞書I/O部分
+    '#simple-settings-section',  // Simple版（もしあれば下に）
+    '#gas-settings-section',     // GAS設定
+    '[class*="backup"]',         // バックアップ関連
+    '[class*="history"]',        // 履歴関連
+    '[class*="preset"]'          // プリセット管理
+  ];
+  
+  console.log("📋 設定パネル内要素を整理中...");
+  
+  // 各要素を適切な位置に移動
+  let currentPosition = settingsPanel.firstChild;
+  
+  desiredOrder.forEach((selector, index) => {
+    let element = null;
+    
+    if (selector === 'h2') {
+      element = settingsPanel.querySelector('h2');
+    } else if (selector === '.grid') {
+      // 辞書I/O部分のgrid要素を探す
+      const grids = settingsPanel.querySelectorAll('.grid');
+      for (let grid of grids) {
+        if (grid.textContent.includes('辞書') || grid.textContent.includes('SFW') || grid.textContent.includes('NSFW')) {
+          element = grid;
+          break;
+        }
+      }
+    } else {
+      element = settingsPanel.querySelector(selector);
+    }
+    
+    if (element && element !== currentPosition) {
+      // 要素を現在位置の次に移動
+      if (currentPosition && currentPosition.nextSibling) {
+        settingsPanel.insertBefore(element, currentPosition.nextSibling);
+      } else {
+        settingsPanel.appendChild(element);
+      }
+      currentPosition = element;
+      console.log(`✅ ${selector} を位置 ${index + 1} に移動`);
+    } else if (element) {
+      currentPosition = element;
+    }
+  });
+  
+  console.log("✅ 設定パネル内要素整理完了");
+}
+
+// Simple版要素を削除する関数（必要に応じて）
+function removeSimpleElements() {
+  // Simple版設定管理セクションを削除
+  const simpleSettingsSection = document.getElementById("simple-settings-section");
+  if (simpleSettingsSection) {
+    simpleSettingsSection.remove();
+    console.log("✅ Simple設定管理セクションを削除");
+  }
+  
+  // Simple版プリセットコントロールを削除
+  const simplePresetControls = document.querySelectorAll(".simple-preset-controls");
+  simplePresetControls.forEach(control => {
+    control.remove();
+    console.log("✅ Simpleプリセットコントロールを削除");
+  });
+  
+  // Simple版関連のグローバル関数を無効化
+  const simpleFunctions = [
+    'saveSimplePreset',
+    'loadSimplePreset', 
+    'deleteSimplePreset',
+    'updateSimplePresetList',
+    'updateSimpleDeleteButton',
+    'showSimpleStatus'
+  ];
+  
+  simpleFunctions.forEach(funcName => {
+    if (window[funcName]) {
+      window[funcName] = function() {
+        console.log(`❌ ${funcName} は無効化されています`);
+      };
+    }
+  });
+  
+  console.log("✅ Simple版要素と関数を無効化完了");
+}
+
+// 初期化関数
+function initSettingsReorder() {
+  console.log("🚀 設定UI整理初期化開始");
+  
+  // DOM読み込み完了後に実行
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        removeSimpleElements();  // Simple版を削除
+        moveSettingsHeaderToTop(); // ヘッダーを最上位に
+      }, 3000); // 他の初期化より後に実行
+    });
+  } else {
+    setTimeout(() => {
+      removeSimpleElements();
+      moveSettingsHeaderToTop();
+    }, 3000);
+  }
+}
+
+// グローバル関数として公開
+window.moveSettingsHeaderToTop = moveSettingsHeaderToTop;
+window.removeSimpleElements = removeSimpleElements;
+window.organizeSettingsOrder = organizeSettingsOrder;
+
+// 自動初期化実行
+initSettingsReorder();
+
+console.log("✅ 設定ヘッダー移動システム初期化完了");
