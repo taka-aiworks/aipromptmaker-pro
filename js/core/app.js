@@ -5401,7 +5401,7 @@ window.addPresetButtons = function() {
 setTimeout(adjustPresetControlsLayout, 500);
 
 /* ===================================================
-   GAS連携 UI修正完全版
+   GAS連携 UI修正完全版 - ダークテーマ対応
    =================================================== */
 
 // 1. 設定管理
@@ -5740,7 +5740,7 @@ function saveGASSettings() {
   }
 }
 
-// 4. 安全なUI構築
+// 4. 安全なUI構築（ダークテーマ対応）
 function setupGASUI() {
   try {
     // 設定パネルを安全に取得
@@ -5763,37 +5763,38 @@ function setupGASUI() {
       gasSection.style.cssText = `
         margin: 20px 0;
         padding: 20px;
-        border: 1px solid #ddd;
+        border: 1px solid #3a3a3a;
         border-radius: 8px;
-        background: #f9f9f9;
+        background: #2a2a2a;
+        color: #e0e0e0;
       `;
       settingsPanel.appendChild(gasSection);
     }
     
     gasSection.innerHTML = `
-      <h3 style="margin-top: 0; color: #333;">☁️ Google Apps Script連携</h3>
+      <h3 style="margin-top: 0; color: #e0e0e0;">☁️ Google Apps Script連携</h3>
       
       <div style="margin: 15px 0;">
-        <label style="display: block; margin-bottom: 5px; font-weight: bold;">GAS WebアプリURL:</label>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #e0e0e0;">GAS WebアプリURL:</label>
         <input type="url" id="set_gasUrl" placeholder="https://script.google.com/macros/s/...../exec" 
-               style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-        <div style="font-size: 12px; color: #666; margin-top: 5px;">GASでデプロイしたWebアプリのURLを入力</div>
+               style="width: 100%; padding: 8px; border: 1px solid #555; border-radius: 4px; background: #3a3a3a; color: #e0e0e0;">
+        <div style="font-size: 12px; color: #aaa; margin-top: 5px;">GASでデプロイしたWebアプリのURLを入力</div>
       </div>
       
       <div style="margin: 15px 0;">
-        <label style="display: block; margin-bottom: 5px; font-weight: bold;">認証トークン（オプション）:</label>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #e0e0e0;">認証トークン（オプション）:</label>
         <input type="password" id="set_gasToken" placeholder="セキュリティ用トークン" 
-               style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-        <div style="font-size: 12px; color: #666; margin-top: 5px;">GAS側で認証を設定している場合のみ</div>
+               style="width: 100%; padding: 8px; border: 1px solid #555; border-radius: 4px; background: #3a3a3a; color: #e0e0e0;">
+        <div style="font-size: 12px; color: #aaa; margin-top: 5px;">GAS側で認証を設定している場合のみ</div>
       </div>
       
       <div style="margin: 15px 0;">
-        <label style="display: flex; align-items: center;">
+        <label style="display: flex; align-items: center; color: #e0e0e0;">
           <input type="checkbox" id="set_autoBackup" style="margin-right: 8px;"> 自動バックアップを有効化
         </label>
         <div style="margin-left: 20px; margin-top: 8px;">
-          <label>間隔: 
-            <select id="set_backupInterval" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+          <label style="color: #e0e0e0;">間隔: 
+            <select id="set_backupInterval" style="padding: 4px; border: 1px solid #555; border-radius: 4px; background: #3a3a3a; color: #e0e0e0;">
               <option value="1">1時間</option>
               <option value="6">6時間</option>
               <option value="24" selected>24時間</option>
@@ -5810,7 +5811,7 @@ function setupGASUI() {
         <button id="btnResetGAS" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ リセット</button>
       </div>
       
-      <div id="gasStatus" style="margin-top: 12px; padding: 8px; border-radius: 4px; display: none;">
+      <div id="gasStatus" style="margin-top: 12px; padding: 8px; border-radius: 4px; display: none; color: #fff;">
         ステータス表示エリア
       </div>
     `;
@@ -5821,7 +5822,7 @@ function setupGASUI() {
     // 設定を読み込み
     loadGASSettings();
     
-    console.log("✅ GAS UI設定完了");
+    console.log("✅ GAS UI設定完了（ダークテーマ対応）");
     
   } catch (error) {
     console.error("❌ GAS UI設定エラー:", error);
@@ -6078,7 +6079,7 @@ function enhanceExistingGASFunctions() {
 function initGASIntegration() {
   function initialize() {
     try {
-      console.log("🚀 GAS連携初期化開始");
+      console.log("🚀 GAS連携初期化開始（ダークテーマ対応）");
       
       // UI設定
       setupGASUI();
@@ -6088,7 +6089,7 @@ function initGASIntegration() {
         enhanceExistingGASFunctions();
       }, 2000);
       
-      console.log("✅ GAS連携機能の初期化完了");
+      console.log("✅ GAS連携機能の初期化完了（ダークテーマ対応）");
       
     } catch (error) {
       console.error("❌ GAS連携初期化エラー:", error);
