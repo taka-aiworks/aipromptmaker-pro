@@ -899,16 +899,31 @@ window.DEFAULT_NSFW_DICT = {
   { "tag": "birthday_surprise", "ja": "誕生日サプライズ", "level": "L1" }
 ],
 
-// 5. 職業・役職（NSFW用）
-"occupation_nsfw": [
-  { "tag": "teacher_student", "ja": "先生と生徒", "level": "L2" },
-  { "tag": "boss_secretary", "ja": "上司と秘書", "level": "L1" },
-  { "tag": "doctor_patient", "ja": "医師と患者", "level": "L2" },
-  { "tag": "trainer_athlete", "ja": "トレーナーと選手", "level": "L1" },
-  { "tag": "photographer_model", "ja": "カメラマンとモデル", "level": "L1" },
-  { "tag": "landlord_tenant", "ja": "大家と住人", "level": "L2" },
-  { "tag": "delivery_customer", "ja": "配達員と客", "level": "L2" },
-  { "tag": "tutor_student", "ja": "家庭教師と生徒", "level": "L2" }
-]
+  "occupation_nsfw": [
+    { "tag": "teacher_student", "ja": "先生と生徒", "level": "L2" },
+    { "tag": "tutor_student", "ja": "家庭教師と生徒", "level": "L2" },
+    { "tag": "boss_secretary", "ja": "上司と秘書", "level": "L1" },
+    { "tag": "ceo_employee", "ja": "社長と部下", "level": "L2" },
+    { "tag": "doctor_patient", "ja": "医師と患者", "level": "L2" },
+    { "tag": "nurse_patient", "ja": "看護師と患者", "level": "L2" },
+    { "tag": "trainer_athlete", "ja": "トレーナーと選手", "level": "L1" },
+    { "tag": "coach_student", "ja": "コーチと教え子", "level": "L1" },
+    { "tag": "photographer_model", "ja": "カメラマンとモデル", "level": "L1" },
+    { "tag": "idol_manager", "ja": "アイドルとマネージャー", "level": "L1" },
+    { "tag": "landlord_tenant", "ja": "大家と住人", "level": "L2" },
+    { "tag": "delivery_customer", "ja": "配達員と客", "level": "L2" },
+    { "tag": "waiter_customer", "ja": "店員と客", "level": "L1" },
+    { "tag": "police_citizen", "ja": "警官と市民", "level": "L2" },
+    { "tag": "prison_guard_prisoner", "ja": "看守と囚人", "level": "L3" },
+    { "tag": "soldier_commander", "ja": "兵士と指揮官", "level": "L2" },
+    { "tag": "nun_priest", "ja": "シスターと神父", "level": "L3" },
+    { "tag": "demon_summoner", "ja": "悪魔と召喚士", "level": "L3" },
+  
+    { "tag": "futanari_relationship", "ja": "ふたなりと女性", "level": "L3" },
+    { "tag": "monster_human", "ja": "モンスターと人間", "level": "L3" },
+    { "tag": "beastgirl_master", "ja": "ケモ耳少女と主人", "level": "L2" },
+    { "tag": "alien_human", "ja": "異星人と人間", "level": "L3" }
+  ]
+
   }
 };
