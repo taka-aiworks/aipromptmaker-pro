@@ -673,24 +673,33 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "long_nipples", "ja": "突き出た乳首", "level": "L1" },
       { "tag": "puffy_nipples", "ja": "ぷっくり乳首", "level": "L1" },
       { "tag": "inverted_nipples", "ja": "陥没乳首", "level": "L1" },
+    
       { "tag": "small_areolae", "ja": "小さな乳輪", "level": "L1" },
       { "tag": "large_areolae", "ja": "大きな乳輪", "level": "L1" },
       { "tag": "pink_areolae", "ja": "ピンク乳輪", "level": "L1" },
       { "tag": "areola_pale", "ja": "淡色乳輪", "level": "L1" },
       { "tag": "areola_brown", "ja": "ブラウン乳輪", "level": "L1" },
       { "tag": "areola_dark", "ja": "濃色乳輪", "level": "L1" },
+    
       { "tag": "erect_nipples", "ja": "勃起乳首", "level": "L2" },
       { "tag": "wet_nipples", "ja": "濡れた乳首", "level": "L2" },
       { "tag": "dripping_milk", "ja": "母乳滴る乳首", "level": "L2" },
       { "tag": "leaking_nipples", "ja": "母乳にじむ乳首", "level": "L2" },
+    
+      { "tag": "see_through_nipples", "ja": "透け乳首", "level": "L2" },
+      { "tag": "outlined_nipples", "ja": "乳首浮き（服越しに形が出る）", "level": "L1" },
+      { "tag": "perky_nipples", "ja": "尖った乳首（服越し/透け）", "level": "L1" },
+    
       { "tag": "pierced_nipples", "ja": "乳首ピアス", "level": "L2" },
       { "tag": "nipple_chains", "ja": "乳首チェーン", "level": "L2" },
       { "tag": "weighted_clamps", "ja": "重り付き乳首クリップ", "level": "L3" },
+    
+      { "tag": "twisted_nipples", "ja": "ひねられ乳首", "level": "L2" },
+      { "tag": "vacuum_pump_nipples", "ja": "ポンプで膨らんだ乳首", "level": "L3" },
       { "tag": "injured_nipples", "ja": "傷ついた乳首", "level": "L3" },
-      { "tag": "bleeding_nipples", "ja": "出血乳首", "level": "L3" },
-      { "tag": "twisted_nipples",       "ja": "ひねられ乳首",       "level": "L2" },
-      { "tag": "vacuum_pump_nipples",   "ja": "ポンプで膨らんだ乳首", "level": "L3" }
+      { "tag": "bleeding_nipples", "ja": "出血乳首", "level": "L3" }
     ],
+
    "action": [
       { "tag": "handholding",        "ja": "手をつなぐ",          "level": "L1" },
       { "tag": "linking_arms",       "ja": "腕を組む",            "level": "L1" },
