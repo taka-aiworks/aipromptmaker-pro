@@ -501,7 +501,53 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "evening_gown",        "ja": "イブニングドレス",       "level": "L1" },
       { "tag": "cocktail_dress",      "ja": "カクテルドレス",         "level": "L1" },
       { "tag": "party_dress",         "ja": "パーティードレス",       "level": "L1" },
-      { "tag": "sexy_clubwear",       "ja": "セクシークラブ服",       "level": "L2" }
+      { "tag": "sexy_clubwear",       "ja": "セクシークラブ服",       "level": "L2" },
+      { "tag": "sweater_r18",              "ja": "セーター（えっち仕様）",          "level": "L1" },
+      { "tag": "oversized_sweater_r18",    "ja": "ビッグサイズセーター（えっち）",  "level": "L1" },
+      { "tag": "turtleneck_sweater_r18",   "ja": "タートルネックセーター（えっち）","level": "L1" },
+      { "tag": "offshoulder_sweater_r18",  "ja": "オフショルセーター（えっち）",    "level": "L1" },
+      { "tag": "cableknit_sweater_r18",    "ja": "ケーブル編みセーター（えっち）",  "level": "L1" },
+      { "tag": "boob_window_sweater",      "ja": "おっぱい窓セーター",              "level": "L2" },
+      { "tag": "virgin_killer_sweater",    "ja": "処女殺しセーター",                "level": "L2" },
+      { "tag": "wet_sweater_sheer",        "ja": "濡れセーター（透け）",            "level": "L2" },
+    
+      { "tag": "sweater_only",             "ja": "裸セーター（セーターだけ）",      "level": "L2" },
+      { "tag": "cardigan_only",            "ja": "裸カーディガン（カーデだけ）",    "level": "L2" },
+      { "tag": "hoodie_only",              "ja": "裸パーカー（パーカーだけ）",      "level": "L2" },
+      { "tag": "jacket_only",              "ja": "裸ジャケット（上着だけ）",        "level": "L2" },
+      { "tag": "coat_only",                "ja": "裸コート（コートだけ）",          "level": "L2" },
+      { "tag": "necktie_only",             "ja": "裸ネクタイ（ネクタイだけ）",      "level": "L2" },
+      { "tag": "scarf_only",               "ja": "裸マフラー（マフラーだけ）",      "level": "L2" },
+    
+      { "tag": "thighhighs_only",          "ja": "裸ニーハイ（靴下だけ）",          "level": "L2" },
+      { "tag": "stockings_only",           "ja": "裸ストッキング（ストだけ）",      "level": "L2" },
+      { "tag": "pantyhose_only",           "ja": "裸パンティストッキング",          "level": "L2" },
+      { "tag": "gloves_only",              "ja": "裸手袋（手袋だけ）",              "level": "L1" },
+      { "tag": "heels_only",               "ja": "裸ハイヒール（靴だけ）",          "level": "L2" },
+    
+      { "tag": "open_back_sweater",        "ja": "背中ざっくりセーター",            "level": "L1" },
+      { "tag": "sideboob_sweater",         "ja": "横乳セーター",                    "level": "L2" },
+      { "tag": "zipper_sweater_down",      "ja": "前ジップセーターはだけ",          "level": "L2" },
+    
+        { "tag": "oversized_sweater",   "ja": "ダボセーター",        "level": "L1" },
+        { "tag": "offshoulder_sweater", "ja": "オフショルセーター",  "level": "L1" },
+        { "tag": "see_through_sweater", "ja": "透けセーター",        "level": "L2" },
+    
+        { "tag": "see_through_shirt",   "ja": "透けシャツ",          "level": "L2" },
+        { "tag": "wet_shirt",           "ja": "濡れシャツ",          "level": "L2" },
+        { "tag": "unbuttoned_shirt",    "ja": "開けシャツ",          "level": "L1" },
+        { "tag": "tied_shirt",          "ja": "結びシャツ",          "level": "L1" },
+    
+        { "tag": "pajamas_cute",        "ja": "可愛いパジャマ",      "level": "L1" },
+        { "tag": "silk_pajamas",        "ja": "シルクパジャマ",      "level": "L1" },
+        { "tag": "see_through_pajamas", "ja": "透けパジャマ",        "level": "L2" },
+        { "tag": "nightgown",           "ja": "ナイトガウン/ネグリジェ","level": "L1" },
+    
+        { "tag": "streetwear",          "ja": "ストリートファッション","level": "L1" },
+        { "tag": "gothic_fashion",      "ja": "ゴシックファッション", "level": "L1" },
+        { "tag": "punk_fashion",        "ja": "パンクファッション",   "level": "L1" },
+        { "tag": "visualkei_fashion",   "ja": "ヴィジュアル系ファッション", "level": "L2" },
+        { "tag": "casual_offshoulder",  "ja": "カジュアルオフショル", "level": "L1" }
     ],
     "underwear": [
       { "tag": "bra_off",            "ja": "ブラなし",           "level": "L2" },
