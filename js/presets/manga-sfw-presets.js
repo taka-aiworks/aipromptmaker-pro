@@ -226,11 +226,10 @@ function generateSFWPresetHTML() {
 function applySFWPreset(presetId) {
   const preset = MANGA_SFW_PRESETS[presetId];
   if (!preset) {
-    console.error(`SFWプリセットが見つかりません: ${presetId}`);
+
     return false; // エラーハンドリング改善
   }
   
-  console.log(`🎭 SFWプリセット適用: ${preset.name}`);
   
   // 既存の選択を全てクリア
   clearAllMangaSelections();
@@ -242,7 +241,6 @@ function applySFWPreset(presetId) {
     
     const container = document.getElementById(categoryId);
     if (!container) {
-      console.warn(`⚠️ カテゴリが見つかりません: ${categoryId}`);
       return;
     }
     
@@ -250,9 +248,7 @@ function applySFWPreset(presetId) {
     if (input) {
       input.checked = true;
       appliedCount++;
-      console.log(`✅ ${categoryId}: ${value}`);
     } else {
-      console.warn(`⚠️ 値が見つかりません: ${categoryId} = ${value}`);
     }
   });
   
@@ -263,13 +259,11 @@ function applySFWPreset(presetId) {
   if (currentPresetElement) {
     currentPresetElement.textContent = preset.name;
   } else {
-    console.warn('⚠️ currentSFWPreset要素が見つかりません - HTMLに要素を追加してください');
   }
   
   if (currentDescElement) {
     currentDescElement.textContent = preset.description;
   } else {
-    console.warn('⚠️ currentSFWDescription要素が見つかりません - HTMLに要素を追加してください');
   }
   
   // プロンプト生成
@@ -313,11 +307,9 @@ function clearAllMangaSelections() {
       });
     } else {
       // 存在しない要素は警告を出さない（オプション要素の可能性）
-      console.debug(`🔍 ${categoryId} 要素が見つかりません（オプション要素の可能性）`);
     }
   });
-  
-  console.log(`🗑️ ${clearedCount}個の選択をクリアしました`);
+
   return clearedCount;
 }
 
