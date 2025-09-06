@@ -5239,7 +5239,6 @@ window.deleteSelectedPreset = deleteSelectedPreset;
 window.updatePresetList = updatePresetList;
 window.collectCurrentSettings = collectCurrentSettings;
 window.applySettingsAdvanced = applySettingsAdvanced;
-window.addUniversalCopyButtons = addUniversalCopyButtons;
 
 // 自動初期化
 initCompletePresetSystem();
