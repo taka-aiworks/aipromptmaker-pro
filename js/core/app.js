@@ -5761,15 +5761,7 @@ function setupGASUI() {
     } else {
       gasSection = document.createElement("div");
       gasSection.id = "gas-settings-section";
-      gasSection.className = "panel";
-      gasSection.style.cssText = `
-        margin: 20px 0;
-        padding: 20px;
-        border: 1px solid #3a3a3a;
-        border-radius: 8px;
-        background: #2a2a2a;
-        color: #e0e0e0;
-      `;
+      gasSection.className = "card";
       settingsPanel.appendChild(gasSection);
     }
     
