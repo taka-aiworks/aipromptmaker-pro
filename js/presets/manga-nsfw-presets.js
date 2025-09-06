@@ -257,11 +257,9 @@ function generateNSFWPresetHTML() {
 function applyNSFWPreset(presetId) {
   const preset = MANGA_NSFW_PRESETS[presetId];
   if (!preset) {
-    console.error(`NSFWプリセットが見つかりません: ${presetId}`);
     return false; // エラーハンドリング改善
   }
   
-  console.log(`🔞 NSFWプリセット適用: ${preset.name} (${preset.level})`);
   
   // 既存の選択を全てクリア
   if (typeof clearAllMangaSelections === 'function') {
@@ -276,7 +274,7 @@ function applyNSFWPreset(presetId) {
       toggleMangaNSFWPanel();
     }
   } else {
-    console.warn('⚠️ mangaNSFWEnable要素が見つかりません');
+
   }
   
   // プリセット設定を適用
@@ -286,7 +284,6 @@ function applyNSFWPreset(presetId) {
     
     const container = document.getElementById(categoryId);
     if (!container) {
-      console.warn(`⚠️ NSFWカテゴリが見つかりません: ${categoryId}`);
       return;
     }
     
@@ -294,9 +291,8 @@ function applyNSFWPreset(presetId) {
     if (input) {
       input.checked = true;
       appliedCount++;
-      console.log(`✅ ${categoryId}: ${value}`);
+
     } else {
-      console.warn(`⚠️ NSFW値が見つかりません: ${categoryId} = ${value}`);
     }
   });
   
@@ -308,19 +304,17 @@ function applyNSFWPreset(presetId) {
   if (currentPresetElement) {
     currentPresetElement.textContent = preset.name;
   } else {
-    console.warn('⚠️ currentNSFWPreset要素が見つかりません - HTMLに要素を追加してください');
   }
   
   if (currentDescElement) {
     currentDescElement.textContent = preset.description;
   } else {
-    console.warn('⚠️ currentNSFWDescription要素が見つかりません - HTMLに要素を追加してください');
   }
   
   if (currentLevelElement) {
     currentLevelElement.textContent = `レベル: ${preset.level}`;
   } else {
-    console.warn('⚠️ currentNSFWLevel要素が見つかりません - HTMLに要素を追加してください');
+
   }
   
   // プロンプト生成
