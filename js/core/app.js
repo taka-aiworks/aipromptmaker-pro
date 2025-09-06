@@ -5456,62 +5456,6 @@ class GASConnector {
           resolve(response);
         } else {
           reject(new Error(response.error || "GASエラー"));
-/* ===================================================
-   GAS連携 UI修正完全版 - ダークテーマ対応
-   =================================================== */
-
-// 1. 設定管理
-const GAS_SETTINGS_KEY = "LPM_GAS_SETTINGS_V2";
-
-const GASSettings = {
-  gasUrl: "",
-  gasToken: "",
-  autoBackup: false,
-  backupInterval: 24,
-  lastBackup: null
-};
-
-// 2. GASConnector（完全版）
-class GASConnector {
-  constructor() {
-    this.isConnected = false;
-    this.lastError = null;
-    this.maxUrlLength = 8000;
-  }
-  
-  checkDataSize(data) {
-    const dataString = JSON.stringify(data);
-    const estimatedUrlLength = GASSettings.gasUrl.length + dataString.length + 200;
-    return {
-      size: dataString.length,
-      estimatedUrl: estimatedUrlLength,
-      isTooLarge: estimatedUrlLength > this.maxUrlLength,
-      dataString
-    };
-  }
-  
-  async sendViaJSONP(action, data) {
-    const sizeCheck = this.checkDataSize(data);
-    
-    if (sizeCheck.isTooLarge) {
-      throw new Error(`データが大きすぎます (${sizeCheck.size}文字)`);
-    }
-    
-    return new Promise((resolve, reject) => {
-      const callbackName = `gasCallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const timeoutDuration = 30000;
-      
-      window[callbackName] = function(response) {
-        clearTimeout(timeoutId);
-        delete window[callbackName];
-        if (script && script.parentNode) {
-          script.parentNode.removeChild(script);
-        }
-        
-        if (response.status === "success") {
-          resolve(response);
-        } else {
-          reject(new Error(response.error || "GASエラー"));
         }
       };
       
@@ -5861,10 +5805,10 @@ function setupGASUI() {
       </div>
       
       <div style="margin: 20px 0; display: flex; gap: 8px; flex-wrap: wrap;">
-        <button id="btnSaveGASSettings" class="btn ok small">💾 設定保存</button>
-        <button id="btnTestGAS" class="btn small">🔌 接続テスト</button>
-        <button id="btnManualBackup" class="btn ghost small">☁️ 手動バックアップ</button>
-        <button id="btnResetGAS" class="btn bad small">🗑️ リセット</button>
+        <button id="btnSaveGASSettings" style="padding: 8px 16px; background: #5fd39a; color: #0b0f16; border: none; border-radius: 10px; cursor: pointer; font-weight: 700;">💾 設定保存</button>
+        <button id="btnTestGAS" style="padding: 8px 16px; background: #6aa1ff; color: #0b0f16; border: none; border-radius: 10px; cursor: pointer; font-weight: 700;">🔌 接続テスト</button>
+        <button id="btnManualBackup" style="padding: 8px 16px; background: #1d2432; color: #e6eeff; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; font-weight: 600;">☁️ 手動バックアップ</button>
+        <button id="btnResetGAS" style="padding: 8px 16px; background: #ff6b6b; color: #0b0f16; border: none; border-radius: 10px; cursor: pointer; font-weight: 700;">🗑️ リセット</button>
       </div>
       
       <div id="gasStatus" style="margin-top: 12px; padding: 8px; border-radius: 10px; display: none; color: #fff;">
