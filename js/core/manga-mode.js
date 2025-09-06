@@ -1044,19 +1044,25 @@ function updateMangaOutput() {
 //  console.log('✅ updateMangaOutput実行完了');
 }
 
-// プロンプト生成（改良版） - 既存のgenerateMangaPrompt関数を置き換え
+// ========================================
+// manga-mode.js 修正版 - 既存コードを置き換え
+// ========================================
+
+// 🔥 修正1: generateMangaPrompt関数を置き換え（約1250行目付近）
 function generateMangaPrompt() {
   const tags = [];
   
- // console.log('🚀 プロンプト生成開始');
+  console.log('🚀 プロンプト生成開始');
   
-  // ===== 🎭 商用LoRAタグを最優先で先頭に追加 =====
+  // ===== 🎭 商用LoRAタグを最優先で先頭に追加（修正版） =====
   const commercialLoRAToggle = document.getElementById('mangaCommercialLoRAEnable');
   if (commercialLoRAToggle && commercialLoRAToggle.checked && window.commercialLoRAManager) {
     const loraBaseTags = window.commercialLoRAManager.getSelectedLoRATags();
     if (loraBaseTags.length > 0) {
       tags.push(...loraBaseTags);
-  //    console.log('✅ 商用LoRAタグ追加（先頭配置）:', loraBaseTags);
+      console.log('✅ 商用LoRAタグ追加（先頭配置）:', loraBaseTags);
+    } else {
+      console.log('⚠️ 商用LoRA有効だが選択タグなし');
     }
   }
   
@@ -1065,7 +1071,7 @@ function generateMangaPrompt() {
   if (fixed) {
     const fixedTags = fixed.split(/\s*,\s*/).filter(Boolean);
     tags.push(...fixedTags);
- //   console.log('📌 固定タグ:', fixedTags);
+    console.log('📌 固定タグ:', fixedTags);
   }
   
   // 従来のLoRAタグ（商用LoRAの後）
@@ -1074,22 +1080,21 @@ function generateMangaPrompt() {
     if (loraTag) {
       const weight = document.getElementById('mangaLoRAWeight')?.value || '0.8';
       tags.push(loraTag.replace(':0.8>', `:${weight}>`));
-  //    console.log('🎭 従来のLoRAタグ:', loraTag);
+      console.log('🎭 従来のLoRAタグ:', loraTag);
     }
   }
   
   // NSFW
   if (document.getElementById('mangaNSFWEnable')?.checked) {
     tags.push('NSFW');
-  // console.log('🔞 NSFWモード有効');
+    console.log('🔞 NSFWモード有効');
   }
   
   // キャラ基礎設定（1人目）
   const useCharBase = document.querySelector('input[name="mangaCharBase"]:checked')?.value === 'B';
   if (useCharBase) {
-    // 基本情報タブの値を参照
     tags.push('solo'); // 2人目がいる場合は後で修正
- //   console.log('👤 基本キャラ設定使用');
+    console.log('👤 基本キャラ設定使用');
     
     if (typeof getGenderCountTag === 'function') {
       const genderCountTag = getGenderCountTag();
@@ -1108,7 +1113,7 @@ function generateMangaPrompt() {
       tags.splice(soloIndex, 1);
     }
     tags.push('2people');
-  //  console.log('👥 2人目キャラ有効');
+    console.log('👥 2人目キャラ有効');
     
     // 2人目の設定を追加
     addSecondCharTags(tags);
@@ -1116,18 +1121,10 @@ function generateMangaPrompt() {
   
   // 【重要修正】SFW有効状態のチェックを改善
   const sfwEnabledElement = document.getElementById('mangaSFWEnable');
-  const sfwEnabled = sfwEnabledElement ? sfwEnabledElement.checked : false;
-//  console.log('📊 SFW有効状態確認:', {
-//    element_found: !!sfwEnabledElement,
-//    checked_value: sfwEnabledElement?.checked,
-//    final_result: sfwEnabled
-//  });
+  const sfwEnabled = sfwEnabledElement ? sfwEnabledElement.checked : true; // デフォルトで有効
+  console.log('📊 SFW有効状態:', sfwEnabled);
   
-  // 【修正】SFWが無効でも漫画パラメータを処理する（デフォルトで有効とみなす）
-  const shouldProcessMangaParams = sfwEnabled || !sfwEnabledElement;
-//  console.log('🎯 漫画パラメータ処理:', shouldProcessMangaParams);
-  
-  if (shouldProcessMangaParams) {
+  if (sfwEnabled) {
     const addedTags = [];
     
     // 基本的な漫画要素
@@ -1155,7 +1152,6 @@ function generateMangaPrompt() {
     
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaHandGesture'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaMovementAction'));
-    // 🆕 新規追加項目
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaRelationship'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaPhysicalState'));
     
@@ -1167,11 +1163,8 @@ function generateMangaPrompt() {
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaBackground'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaLighting'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaArtStyle'));
-    // 🆕 新規追加項目（任意項目）
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaOccupation'));
     addedTags.push(...addSelectedValuesSafe(tags, 'mangaSeasonWeather'));
-    
-  } else {
   }
   
   // NSFW専用項目
@@ -1186,26 +1179,185 @@ function generateMangaPrompt() {
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWBody'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWNipples'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWUnderwear'));
-    // 🆕 新カテゴリ追加
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWParticipants'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWAction2'));
-
-    // 🆕 新規追加項目
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWInteraction'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWBackground'));
     nsfwTags.push(...addSelectedValuesSafe(tags, 'mangaNSFWEmotion'));
-      
   }
   
   const finalPrompt = tags.filter(Boolean).join(', ');
+  console.log('📝 最終プロンプト:', finalPrompt);
   
   return finalPrompt;
 }
 
+
 // ========================================
-// 商用LoRAマネージャーとの統合強化
+// manga-mode.js 商用LoRA統合部分の修正
+// 1530行目付近を以下に置き換え
 // ========================================
 
+// 🔥 修正版: 商用LoRAマネージャーとの統合強化
+function initCommercialLoRAIntegration() {
+  console.log('🎭 商用LoRA統合初期化開始');
+  
+  // 商用LoRAマネージャーの存在確認
+  if (!window.commercialLoRAManager) {
+    console.warn('⚠️ commercialLoRAManager未初期化 - 遅延再試行します');
+    
+    // 遅延再試行（最大5回）
+    let retryCount = 0;
+    const maxRetries = 5;
+    
+    const retryInit = () => {
+      retryCount++;
+      
+      if (window.commercialLoRAManager) {
+        console.log('✅ commercialLoRAManager発見 - 統合を開始');
+        setupCommercialLoRAHooks();
+        return;
+      }
+      
+      if (retryCount < maxRetries) {
+        console.log(`🔄 commercialLoRAManager再試行 ${retryCount}/${maxRetries}`);
+        setTimeout(retryInit, 500);
+      } else {
+        console.warn('❌ commercialLoRAManager初期化タイムアウト');
+      }
+    };
+    
+    setTimeout(retryInit, 1000);
+    return;
+  }
+  
+  // 即座に統合セットアップ
+  setupCommercialLoRAHooks();
+}
+
+// 商用LoRAフックのセットアップ
+function setupCommercialLoRAHooks() {
+  if (!window.commercialLoRAManager) {
+    console.error('❌ setupCommercialLoRAHooks: commercialLoRAManager不存在');
+    return;
+  }
+  
+  console.log('🔗 商用LoRAフック設定開始');
+  
+  // 元のupdateMangaOutputメソッドをバックアップ
+  const originalUpdateMethod = window.commercialLoRAManager.updateMangaOutput;
+  
+  // 改良版updateMangaOutputメソッドを設定
+  window.commercialLoRAManager.updateMangaOutput = function() {
+    console.log('🎭 商用LoRA経由でupdateMangaOutput呼び出し');
+    
+    try {
+      // 循環参照防止フラグ
+      if (window.commercialLoRAManager._updating) {
+        console.warn('⚠️ 商用LoRA更新中 - 循環参照を防止');
+        return;
+      }
+      
+      window.commercialLoRAManager._updating = true;
+      
+      // メインのupdateMangaOutput関数を呼び出し
+      if (typeof updateMangaOutput === 'function') {
+        updateMangaOutput();
+      } else {
+        console.error('❌ updateMangaOutput関数が見つかりません');
+        
+        // フォールバック: 最小限のプロンプト生成
+        if (typeof generateMangaPrompt === 'function') {
+          const prompt = generateMangaPrompt();
+          console.log('📝 フォールバックプロンプト:', prompt);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ 商用LoRA updateMangaOutput エラー:', error);
+    } finally {
+      // フラグをリセット
+      window.commercialLoRAManager._updating = false;
+    }
+  };
+  
+  // 商用LoRAの選択変更を監視
+  setupCommercialLoRAChangeListener();
+  
+  console.log('✅ 商用LoRAフック設定完了');
+}
+
+// 商用LoRA選択変更の監視
+function setupCommercialLoRAChangeListener() {
+  // 商用LoRAトグルの監視
+  const commercialLoRAToggle = document.getElementById('mangaCommercialLoRAEnable');
+  if (commercialLoRAToggle) {
+    commercialLoRAToggle.addEventListener('change', () => {
+      console.log('🎭 商用LoRAトグル変更:', commercialLoRAToggle.checked);
+      
+      // 少し遅延してプロンプト更新
+      setTimeout(() => {
+        if (typeof updateMangaOutput === 'function') {
+          updateMangaOutput();
+        }
+      }, 100);
+    });
+  }
+  
+  // 商用LoRAパネル内の変更を監視
+  const commercialLoRAPanel = document.getElementById('commercialLoRAPanel');
+  if (commercialLoRAPanel) {
+    commercialLoRAPanel.addEventListener('change', (e) => {
+      if (e.target.matches('input[type="checkbox"], input[type="range"]')) {
+        console.log('🎭 商用LoRA選択変更:', e.target.name || e.target.id);
+        
+        // 遅延してプロンプト更新
+        setTimeout(() => {
+          if (typeof updateMangaOutput === 'function') {
+            updateMangaOutput();
+          }
+        }, 50);
+      }
+    });
+  }
+}
+
+// 商用LoRAのデバッグ関数
+function debugCommercialLoRA() {
+  console.log('🔍 商用LoRAデバッグ情報:');
+  
+  const info = {
+    managerExists: !!window.commercialLoRAManager,
+    toggleExists: !!document.getElementById('mangaCommercialLoRAEnable'),
+    panelExists: !!document.getElementById('commercialLoRAPanel'),
+    dictExists: !!window.COMMERCIAL_LORA_DICT,
+    isEnabled: document.getElementById('mangaCommercialLoRAEnable')?.checked || false,
+    selectedCount: window.commercialLoRAManager?.selectedLoRAs?.size || 0,
+    selectedTags: window.commercialLoRAManager?.getSelectedLoRATags?.() || []
+  };
+  
+  console.table(info);
+  
+  // プロンプト生成テスト
+  if (info.managerExists && info.selectedCount > 0) {
+    try {
+      const prompt = generateMangaPrompt();
+      const hasLoRAAtStart = info.selectedTags.some(tag => prompt.startsWith(tag.substring(0, 10)));
+      console.log('📝 LoRA先頭配置テスト:', hasLoRAAtStart ? '✅ 成功' : '❌ 失敗');
+      console.log('📝 生成プロンプト（最初の100文字）:', prompt.substring(0, 100));
+    } catch (error) {
+      console.error('❌ プロンプト生成テストエラー:', error);
+    }
+  }
+  
+  return info;
+}
+
+// 既存のコメント付きコードブロックを置き換え
+// ========================================
+// 【削除対象】以下のコードブロックを削除してください
+// ========================================
+/*
 // 商用LoRAマネージャーの更新処理を即座実行に変更
 if (window.commercialLoRAManager) {
   // 既存のupdateMangaOutputメソッドを上書き
@@ -1216,8 +1368,26 @@ if (window.commercialLoRAManager) {
     } else {
     }
   };
-
 }
+*/
+
+// ========================================
+// 【追加】初期化関数の最後にこれを追加
+// ========================================
+
+// 商用LoRA統合の初期化を実行
+setTimeout(() => {
+  initCommercialLoRAIntegration();
+}, 1500);
+
+// グローバル関数として公開
+window.initCommercialLoRAIntegration = initCommercialLoRAIntegration;
+window.setupCommercialLoRAHooks = setupCommercialLoRAHooks;
+window.debugCommercialLoRA = debugCommercialLoRA;
+
+console.log('🎭 商用LoRA統合機能を初期化しました');
+console.log('🔍 デバッグ実行: debugCommercialLoRA()');
+
 
 // ========================================
 // デバッグ・確認用関数
@@ -1270,40 +1440,17 @@ window.testFullMangaOutputWithLoRA = function() {
 
 
 
-// 【改良版】安全な値取得関数 - 既存のaddSelectedValuesSafe関数を置き換え
+// 🔥 修正2: addSelectedValuesSafe関数を改善（約1350行目付近）
 function addSelectedValuesSafe(tags, containerId) {
   const container = document.getElementById(containerId);
   const added = [];
   
-  //console.log(`🔍 ${containerId} 要素チェック開始`);
-  
   if (!container) {
+    console.warn(`⚠️ ${containerId} 要素が見つかりません`);
     return added;
   }
   
-  //console.log(`✅ ${containerId} コンテナ確認OK`);
-  
-  // ラジオボタンとチェックボックス両方に対応
-  const allInputs = container.querySelectorAll('input');
   const selectedInputs = container.querySelectorAll('input:checked');
-  
-  //console.log(`📊 ${containerId} 統計:`, {
-  //  total_inputs: allInputs.length,
-  //  selected_inputs: selectedInputs.length,
-  //  input_types: [...allInputs].map(inp => inp.type),
-  //  selected_values: [...selectedInputs].map(inp => inp.value)
-  //});
-  
-  // 各入力要素の詳細確認
-  //allInputs.forEach((input, index) => {
-  //  console.log(`🔸 ${containerId}[${index}]:`, {
-  //    type: input.type,
-  //    name: input.name,
-  //    value: input.value,
-  //    checked: input.checked,
-  //    id: input.id
-  //  });
-  //});
   
   selectedInputs.forEach(input => {
     if (input.value && input.value.trim() && input.value !== '') {
@@ -1312,14 +1459,13 @@ function addSelectedValuesSafe(tags, containerId) {
     }
   });
   
- // if (added.length > 0) {
- //   console.log(`✅ ${containerId} 追加成功:`, added);
- // } else {
- //   console.log(`📝 ${containerId}: 選択なし (全${allInputs.length}要素中、選択済み${selectedInputs.length}要素)`);
- // }
+  if (added.length > 0) {
+    console.log(`✅ ${containerId} 追加:`, added);
+  }
   
   return added;
 }
+
 
 // 既存のaddSelectedValues関数も置き換える
 function addSelectedValues(tags, name) {
