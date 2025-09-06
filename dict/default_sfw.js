@@ -142,7 +142,8 @@ window.DEFAULT_SFW_DICT = {
       { "tag": "dreadlocks", "label": "ドレッドヘア" },
       { "tag": "cornrows", "label": "コーンロウ" },
       { "tag": "afro", "label": "アフロ" },
-      { "tag": "man bun", "label": "マンバン（お団子男髪）" }
+      { "tag": "man bun", "label": "マンバン（お団子男髪）" },
+      { "tag": "bald", "label": "ハゲ/スキンヘッド" }
     ],
     "hair_length": [
       { "tag": "very long hair", "label": "超ロング" },
@@ -181,7 +182,14 @@ window.DEFAULT_SFW_DICT = {
       { "tag": "smooth skin", "label": "すべすべ肌" },
       { "tag": "mole under eye", "label": "目の下のほくろ" },
       { "tag": "mole near mouth", "label": "口元のほくろ" },
-      { "tag": "vitiligo", "label": "白斑" }
+      { "tag": "vitiligo", "label": "白斑" },
+      { "tag": "clean_shaven", "label": "ヒゲなし（つるつる）" },
+      { "tag": "mustache", "label": "口ヒゲ" },
+      { "tag": "beard", "label": "あごヒゲ" },
+      { "tag": "goatee", "label": "ヤギヒゲ" },
+      { "tag": "stubble", "label": "無精ヒゲ" },
+      { "tag": "full_beard", "label": "フルビアード" },
+      { "tag": "sideburns", "label": "もみあげ" }
     ],
     "eyes": [
       { "tag": "almond eyes", "label": "アーモンド形" },
