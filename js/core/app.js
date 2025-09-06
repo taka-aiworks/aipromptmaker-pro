@@ -5452,10 +5452,12 @@ class GASConnector {
           script.parentNode.removeChild(script);
         }
         
+        console.log("GAS Response:", response); // デバッグ用
+        
         if (response.status === "success") {
           resolve(response);
         } else {
-          reject(new Error(response.error || "GASエラー"));
+          reject(new Error(response.message || response.error || "GASエラー"));
         }
       };
       
@@ -5759,7 +5761,15 @@ function setupGASUI() {
     } else {
       gasSection = document.createElement("div");
       gasSection.id = "gas-settings-section";
-　　　gasSection.className = "card";
+      gasSection.className = "panel";
+      gasSection.style.cssText = `
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        background: #2a2a2a;
+        color: #e0e0e0;
+      `;
       settingsPanel.appendChild(gasSection);
     }
     
@@ -5873,7 +5883,7 @@ async function testGASConnection() {
     statusDiv.innerHTML = `
       ✅ 接続成功!<br>
       📡 ${result.message}<br>
-      ⏰ ${result.data?.serverTime ? new Date(result.data.serverTime).toLocaleString('ja-JP') : ''}
+      ⏰ ${new Date().toLocaleString('ja-JP')}
     `;
     
     if (typeof toast === 'function') {
@@ -6143,4 +6153,3 @@ if (typeof window.toast === 'undefined') {
 
 // 11. 自動初期化実行
 initGASIntegration();
-
