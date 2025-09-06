@@ -5759,7 +5759,6 @@ function setupGASUI() {
     } else {
       gasSection = document.createElement("div");
       gasSection.id = "gas-settings-section";
-     gasSection.className = "panel";
 　　　gasSection.className = "card";
       settingsPanel.appendChild(gasSection);
     }
