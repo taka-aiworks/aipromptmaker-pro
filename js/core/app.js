@@ -5444,24 +5444,32 @@ class GASConnector {
     return new Promise((resolve, reject) => {
       const callbackName = `gasCallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const timeoutDuration = 30000;
+      let isResolved = false;
       
       window[callbackName] = function(response) {
+        if (isResolved) return; // 重複実行を防ぐ
+        isResolved = true;
+        
         clearTimeout(timeoutId);
         delete window[callbackName];
+        
         if (script && script.parentNode) {
           script.parentNode.removeChild(script);
         }
         
-        console.log("GAS Response:", response); // デバッグ用
+        console.log("GAS Response:", response);
         
-        if (response.status === "success") {
+        if (response && response.status === "success") {
           resolve(response);
         } else {
-          reject(new Error(response.message || response.error || "GASエラー"));
+          reject(new Error(response ? (response.message || response.error || "GASエラー") : "無効なレスポンス"));
         }
       };
       
       const timeoutId = setTimeout(() => {
+        if (isResolved) return;
+        isResolved = true;
+        
         delete window[callbackName];
         if (script && script.parentNode) {
           script.parentNode.removeChild(script);
@@ -5480,6 +5488,9 @@ class GASConnector {
       const script = document.createElement("script");
       script.src = `${GASSettings.gasUrl}?${params.toString()}`;
       script.onerror = () => {
+        if (isResolved) return;
+        isResolved = true;
+        
         clearTimeout(timeoutId);
         delete window[callbackName];
         if (script.parentNode) {
@@ -5761,7 +5772,15 @@ function setupGASUI() {
     } else {
       gasSection = document.createElement("div");
       gasSection.id = "gas-settings-section";
-      gasSection.className = "card";
+      gasSection.className = "panel";
+      gasSection.style.cssText = `
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        background: #2a2a2a;
+        color: #e0e0e0;
+      `;
       settingsPanel.appendChild(gasSection);
     }
     
