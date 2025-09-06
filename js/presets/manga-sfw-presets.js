@@ -218,12 +218,16 @@ function generateSFWPresetHTML() {
   `;
 }
 
-// SFWプリセット適用関数
+// ========================================
+// manga-sfw-presets.js 修正版 - 既存コードを置き換え
+// ========================================
+
+// 🔥 修正: applySFWPreset関数を置き換え（約220行目付近）
 function applySFWPreset(presetId) {
   const preset = MANGA_SFW_PRESETS[presetId];
   if (!preset) {
     console.error(`SFWプリセットが見つかりません: ${presetId}`);
-    return;
+    return false; // エラーハンドリング改善
   }
   
   console.log(`🎭 SFWプリセット適用: ${preset.name}`);
@@ -232,6 +236,7 @@ function applySFWPreset(presetId) {
   clearAllMangaSelections();
   
   // プリセット設定を適用
+  let appliedCount = 0;
   Object.entries(preset.settings).forEach(([categoryId, value]) => {
     if (!value) return;
     
@@ -244,45 +249,76 @@ function applySFWPreset(presetId) {
     const input = container.querySelector(`input[value="${value}"]`);
     if (input) {
       input.checked = true;
+      appliedCount++;
       console.log(`✅ ${categoryId}: ${value}`);
     } else {
       console.warn(`⚠️ 値が見つかりません: ${categoryId} = ${value}`);
     }
   });
   
-  // UI更新
-  document.getElementById('currentSFWPreset').textContent = preset.name;
-  document.getElementById('currentSFWDescription').textContent = preset.description;
+  // UI更新（null チェック付き）
+  const currentPresetElement = document.getElementById('currentSFWPreset');
+  const currentDescElement = document.getElementById('currentSFWDescription');
+  
+  if (currentPresetElement) {
+    currentPresetElement.textContent = preset.name;
+  } else {
+    console.warn('⚠️ currentSFWPreset要素が見つかりません - HTMLに要素を追加してください');
+  }
+  
+  if (currentDescElement) {
+    currentDescElement.textContent = preset.description;
+  } else {
+    console.warn('⚠️ currentSFWDescription要素が見つかりません - HTMLに要素を追加してください');
+  }
   
   // プロンプト生成
-  updateMangaOutput();
+  if (typeof updateMangaOutput === 'function') {
+    updateMangaOutput();
+  }
   
   if (typeof toast === 'function') {
-    toast(`SFWプリセット「${preset.name}」を適用しました`);
+    toast(`SFWプリセット「${preset.name}」を適用しました (${appliedCount}項目)`);
   }
+  
+  return true; // 成功を示す
 }
 
-// 選択クリア関数
+// 🔥 修正: clearAllMangaSelections関数を改善（約260行目付近）
 function clearAllMangaSelections() {
   const categoryIds = [
     'mangaEmotionPrimary', 'mangaEmotionDetail', 'mangaExpressions',
     'mangaEyeState', 'mangaGaze', 'mangaMouthState', 'mangaPose',
     'mangaHandGesture', 'mangaMovementAction', 'mangaComposition',
     'mangaView', 'mangaCameraView', 'mangaPropsLight', 'mangaEffectManga',
-    'mangaBackground', 'mangaLighting', 'mangaArtStyle'
+    'mangaBackground', 'mangaLighting', 'mangaArtStyle',
+    // NSFW要素も含める
+    'mangaNSFWExpr', 'mangaNSFWExpo', 'mangaNSFWSitu', 'mangaNSFWLight',
+    'mangaNSFWPose', 'mangaNSFWAction', 'mangaNSFWAcc', 'mangaNSFWOutfit',
+    'mangaNSFWBody', 'mangaNSFWNipples', 'mangaNSFWUnderwear',
+    'mangaNSFWParticipants', 'mangaNSFWAction2'
   ];
   
+  let clearedCount = 0;
   categoryIds.forEach(categoryId => {
     const container = document.getElementById(categoryId);
     if (container) {
       container.querySelectorAll('input[type="radio"]').forEach(input => {
+        if (input.checked) clearedCount++;
         input.checked = false;
       });
       container.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        if (input.checked) clearedCount++;
         input.checked = false;
       });
+    } else {
+      // 存在しない要素は警告を出さない（オプション要素の可能性）
+      console.debug(`🔍 ${categoryId} 要素が見つかりません（オプション要素の可能性）`);
     }
   });
+  
+  console.log(`🗑️ ${clearedCount}個の選択をクリアしました`);
+  return clearedCount;
 }
 
 // イベントリスナー設定
