@@ -475,7 +475,33 @@ window.DEFAULT_NSFW_DICT = {
       { "tag": "cage_bra_outfit",  "ja": "ケージブラ衣装",         "level": "L3" },
       { "tag": "string_dress",     "ja": "紐ドレス",               "level": "L2" },
       { "tag": "torn_clothes",     "ja": "破れ服",                 "level": "L2" },
-      { "tag": "battle_damaged",   "ja": "戦闘ダメージ衣装",       "level": "L2" }
+      { "tag": "battle_damaged",   "ja": "戦闘ダメージ衣装",       "level": "L2" },
+      { "tag": "casual_outfit",       "ja": "カジュアル服（普段着）", "level": "L1" },
+      { "tag": "tshirt_jeans",        "ja": "Tシャツ＋ジーンズ",      "level": "L1" },
+      { "tag": "hoodie_outfit",       "ja": "パーカー服",             "level": "L1" },
+      { "tag": "crop_top_outfit",     "ja": "クロップトップ",         "level": "L1" },
+      { "tag": "tanktop_outfit",      "ja": "タンクトップ",           "level": "L1" },
+      { "tag": "denim_shorts",        "ja": "デニムショートパンツ",   "level": "L1" },
+      { "tag": "ripped_jeans",        "ja": "ダメージジーンズ",       "level": "L1" },
+    
+      { "tag": "gothic_dress",        "ja": "ゴシックドレス",         "level": "L1" },
+      { "tag": "punk_outfit",         "ja": "パンクファッション",     "level": "L2" },
+      { "tag": "rocker_outfit",       "ja": "ロッカーファッション",   "level": "L2" },
+      { "tag": "leather_jacket",      "ja": "レザージャケット",       "level": "L1" },
+      { "tag": "fishnet_outfit",      "ja": "網ファッション",         "level": "L2" },
+      { "tag": "grunge_outfit",       "ja": "グランジファッション",   "level": "L1" },
+      { "tag": "emo_outfit",          "ja": "エモ系ファッション",     "level": "L1" },
+    
+      { "tag": "business_suit",       "ja": "ビジネススーツ",         "level": "L1" },
+      { "tag": "office_lady_suit",    "ja": "OLスーツ",               "level": "L1" },
+      { "tag": "tight_skirt_suit",    "ja": "タイトスカートスーツ",   "level": "L1" },
+      { "tag": "blazer_fashion",      "ja": "ブレザーファッション",   "level": "L1" },
+      { "tag": "vest_outfit",         "ja": "ベスト付きスーツ",       "level": "L1" },
+    
+      { "tag": "evening_gown",        "ja": "イブニングドレス",       "level": "L1" },
+      { "tag": "cocktail_dress",      "ja": "カクテルドレス",         "level": "L1" },
+      { "tag": "party_dress",         "ja": "パーティードレス",       "level": "L1" },
+      { "tag": "sexy_clubwear",       "ja": "セクシークラブ服",       "level": "L2" }
     ],
     "underwear": [
       { "tag": "bra_off",            "ja": "ブラなし",           "level": "L2" },
