@@ -249,27 +249,38 @@ function generateNSFWPresetHTML() {
   `;
 }
 
-// NSFWプリセット適用関数
+// ========================================
+// manga-nsfw-presets.js 修正版 - 既存コードを置き換え
+// ========================================
+
+// 🔥 修正: applyNSFWPreset関数を置き換え（約250行目付近）
 function applyNSFWPreset(presetId) {
   const preset = MANGA_NSFW_PRESETS[presetId];
   if (!preset) {
     console.error(`NSFWプリセットが見つかりません: ${presetId}`);
-    return;
+    return false; // エラーハンドリング改善
   }
   
   console.log(`🔞 NSFWプリセット適用: ${preset.name} (${preset.level})`);
   
   // 既存の選択を全てクリア
-  clearAllMangaSelections();
+  if (typeof clearAllMangaSelections === 'function') {
+    clearAllMangaSelections();
+  }
   
   // NSFWを有効化
   const nsfwToggle = document.getElementById('mangaNSFWEnable');
   if (nsfwToggle) {
     nsfwToggle.checked = true;
-    toggleMangaNSFWPanel();
+    if (typeof toggleMangaNSFWPanel === 'function') {
+      toggleMangaNSFWPanel();
+    }
+  } else {
+    console.warn('⚠️ mangaNSFWEnable要素が見つかりません');
   }
   
   // プリセット設定を適用
+  let appliedCount = 0;
   Object.entries(preset.settings).forEach(([categoryId, value]) => {
     if (!value || categoryId === 'mangaNSFWEnable') return;
     
@@ -282,23 +293,46 @@ function applyNSFWPreset(presetId) {
     const input = container.querySelector(`input[value="${value}"]`);
     if (input) {
       input.checked = true;
+      appliedCount++;
       console.log(`✅ ${categoryId}: ${value}`);
     } else {
       console.warn(`⚠️ NSFW値が見つかりません: ${categoryId} = ${value}`);
     }
   });
   
-  // UI更新
-  document.getElementById('currentNSFWPreset').textContent = preset.name;
-  document.getElementById('currentNSFWDescription').textContent = preset.description;
-  document.getElementById('currentNSFWLevel').textContent = `レベル: ${preset.level}`;
+  // UI更新（null チェック付き）
+  const currentPresetElement = document.getElementById('currentNSFWPreset');
+  const currentDescElement = document.getElementById('currentNSFWDescription');
+  const currentLevelElement = document.getElementById('currentNSFWLevel');
+  
+  if (currentPresetElement) {
+    currentPresetElement.textContent = preset.name;
+  } else {
+    console.warn('⚠️ currentNSFWPreset要素が見つかりません - HTMLに要素を追加してください');
+  }
+  
+  if (currentDescElement) {
+    currentDescElement.textContent = preset.description;
+  } else {
+    console.warn('⚠️ currentNSFWDescription要素が見つかりません - HTMLに要素を追加してください');
+  }
+  
+  if (currentLevelElement) {
+    currentLevelElement.textContent = `レベル: ${preset.level}`;
+  } else {
+    console.warn('⚠️ currentNSFWLevel要素が見つかりません - HTMLに要素を追加してください');
+  }
   
   // プロンプト生成
-  updateMangaOutput();
+  if (typeof updateMangaOutput === 'function') {
+    updateMangaOutput();
+  }
   
   if (typeof toast === 'function') {
-    toast(`NSFWプリセット「${preset.name}」(${preset.level}) を適用しました`);
+    toast(`NSFWプリセット「${preset.name}」(${preset.level}) を適用しました (${appliedCount}項目)`);
   }
+  
+  return true; // 成功を示す
 }
 
 // NSFWイベントリスナー設定
