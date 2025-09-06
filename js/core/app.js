@@ -1053,7 +1053,6 @@ function initPlannerMode() {
           renderTextTriplet("outPlanner", [result], "fmtPlanner");
           toast("撮影モード生成完了");
         } catch (error) {
-          console.error("撮影モード生成エラー:", error);
           toast("撮影モード生成に失敗しました");
         }
       });
@@ -3423,7 +3422,7 @@ Object.entries(sfwDict).forEach(([dictKey, items]) => {
       'photo_technique', 'lighting_type', 'light_direction', 'time_of_day'
     ];
     if (!ignoreKeys.includes(dictKey)) {
-      console.warn(`SFWマッピング未定義: ${dictKey}`);
+     // console.warn(`SFWマッピング未定義: ${dictKey}`);
     }
     return;
   }
@@ -3437,7 +3436,7 @@ Object.entries(sfwDict).forEach(([dictKey, items]) => {
       'light-direction', 'time-of-day'
     ];
     if (!ignoreHtmlIds.includes(htmlId)) {
-      console.warn(`コンテナ未発見: wm-items-${htmlId}`);
+    //  console.warn(`コンテナ未発見: wm-items-${htmlId}`);
     }
     return;
   }
@@ -3468,13 +3467,13 @@ Object.entries(sfwDict).forEach(([dictKey, items]) => {
     
     const htmlId = MAPPING_TABLE.NSFW[dictKey];
     if (!htmlId) {
-      console.warn(`NSFWマッピング未定義: ${dictKey}`);
+    //  console.warn(`NSFWマッピング未定義: ${dictKey}`);
       return;
     }
     
     const container = document.getElementById(`wm-items-${htmlId}`);
     if (!container) {
-      console.warn(`コンテナ未発見: wm-items-${htmlId}`);
+     // console.warn(`コンテナ未発見: wm-items-${htmlId}`);
       return;
     }
     
@@ -3628,7 +3627,7 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
     if (attempts < maxAttempts) {
       setTimeout(waitForDicts, 800);
     } else {
-      console.error('辞書読み込みタイムアウト');
+     // console.error('辞書読み込みタイムアウト');
     }
   };
   
@@ -3722,7 +3721,7 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
   function applyProductionPreset(presetName) {
     const preset = PRODUCTION_PRESETS[presetName];
     if (!preset) {
-      console.error(`❌ 不明なプリセット: ${presetName}`);
+    //  console.error(`❌ 不明なプリセット: ${presetName}`);
       return;
     }
     
@@ -3800,7 +3799,7 @@ if ((window.SFW || window.DEFAULT_SFW_DICT) && (window.NSFW || window.DEFAULT_NS
   function setupRealtimeUpdates() {
     const productionPanel = document.getElementById('panelProduction');
     if (!productionPanel) {
-      console.warn('❌ 量産モードパネルが見つかりません');
+    //  console.warn('❌ 量産モードパネルが見つかりません');
       return;
     }
     
@@ -3985,7 +3984,7 @@ function enhancedBuildBatchProduction(n) {
   if (typeof buildBatchProduction === 'function') {
     return buildBatchProduction(n);
   } else {
-    console.warn('❌ buildBatchProduction関数が見つかりません');
+   // console.warn('❌ buildBatchProduction関数が見つかりません');
     return [];
   }
 }
@@ -4078,7 +4077,7 @@ function rebuildProductionData() {
 
   
   if (!window.SFW || !window.NSFW) {
-    console.error('❌ グローバル辞書が設定されていません');
+ //   console.error('❌ グローバル辞書が設定されていません');
     return false;
   }
   
@@ -4125,7 +4124,7 @@ function forceRenderAll() {
     if (typeof renderSFW === 'function') {
       renderSFW();
     } else {
-      console.warn('❌ renderSFW関数が見つかりません');
+    //  console.warn('❌ renderSFW関数が見つかりません');
     }
     
     // NSFW量産レンダリング
@@ -5380,7 +5379,6 @@ class GASConnector {
           script.parentNode.removeChild(script);
         }
         
-        console.log("GAS Response:", response);
         
         if (response && response.status === "success") {
           resolve(response);
@@ -5466,7 +5464,7 @@ class GASConnector {
             document.body.removeChild(iframe);
             document.body.removeChild(form);
           } catch (e) {
-            console.warn("クリーンアップエラー:", e);
+          //  console.warn("クリーンアップエラー:", e);
           }
           
           resolve({ 
@@ -5485,7 +5483,7 @@ class GASConnector {
           document.body.removeChild(iframe);
           document.body.removeChild(form);
         } catch (e) {
-          console.warn("クリーンアップエラー:", e);
+        //  console.warn("クリーンアップエラー:", e);
         }
         
         reject(new Error("フォーム送信に失敗しました"));
@@ -5499,7 +5497,7 @@ class GASConnector {
           document.body.removeChild(iframe);
           document.body.removeChild(form);
         } catch (e) {
-          console.warn("クリーンアップエラー:", e);
+        //  console.warn("クリーンアップエラー:", e);
         }
         
         reject(new Error("フォーム送信がタイムアウトしました"));
@@ -5518,30 +5516,24 @@ class GASConnector {
     
     try {
       const sizeCheck = this.checkDataSize(data);
-      console.log(`データサイズチェック: ${sizeCheck.size}文字, 推定URL: ${sizeCheck.estimatedUrl}文字`);
       
       if (action === 'ping') {
         return await this.sendViaJSONP(action, data);
       }
       
       if (sizeCheck.size < 2000) {
-        console.log("小データ: JSONP方式を使用");
         return await this.sendViaJSONP(action, data);
       } else {
-        console.log("中〜大データ: フォーム方式を使用");
         return await this.sendViaForm(action, data);
       }
       
     } catch (error) {
-      console.error(`GAS通信エラー (${action}):`, error);
       
       if (error.message.includes("スクリプトの読み込みに失敗") || 
           error.message.includes("データが大きすぎます")) {
-        console.log("フォールバック: フォーム方式を試行");
         try {
           return await this.sendViaForm(action, data);
         } catch (formError) {
-          console.error("フォーム方式も失敗:", formError);
           throw new Error(`両方の送信方式が失敗: JSONP(${error.message}), Form(${formError.message})`);
         }
       }
@@ -5583,7 +5575,6 @@ class GASConnector {
       metadata
     });
     
-    console.log(`CSV送信: ${sizeCheck.size}文字のデータを送信します`);
     
     return await this.sendData("save_csv", {
       type,
@@ -5613,7 +5604,6 @@ class GASConnector {
     }
     
     const sizeCheck = this.checkDataSize(optimizedBackup);
-    console.log(`バックアップ送信: ${sizeCheck.size}文字のデータを送信します`);
     
     // バックアップは常にフォーム方式を使用（データが大きいため）
     return await this.sendViaForm("save_backup", {
@@ -5636,7 +5626,7 @@ function loadGASSettings() {
       Object.assign(GASSettings, JSON.parse(stored));
     }
   } catch (error) {
-    console.warn("GAS設定の読み込みに失敗:", error);
+    // console.warn("GAS設定の読み込みに失敗:", error);
   }
   
   const urlInput = document.getElementById("set_gasUrl");
@@ -5666,14 +5656,12 @@ function saveGASSettings() {
     if (typeof toast === 'function') {
       toast("GAS設定を保存しました");
     } else {
-      console.log("GAS設定を保存しました");
     }
     return true;
   } catch (error) {
     if (typeof toast === 'function') {
       toast("GAS設定の保存に失敗しました");
     } else {
-      console.error("GAS設定の保存に失敗しました", error);
     }
     return false;
   }
@@ -5688,13 +5676,12 @@ function setupGASUI() {
     // 設定パネルが見つからない場合、代替場所を探す
     if (!settingsPanel) {
       settingsPanel = document.querySelector('.panel:last-child') || document.body;
-      console.warn("panelSettingsが見つからないため、代替場所にGAS設定を配置します");
     }
     
     // 既存のGAS設定セクションをチェック
     let gasSection = document.getElementById("gas-settings-section");
     if (gasSection) {
-      console.log("既存のGAS設定セクションを更新します");
+      // console.log("既存のGAS設定セクションを更新します");
     } else {
       gasSection = document.createElement("div");
       gasSection.id = "gas-settings-section";
@@ -5753,10 +5740,9 @@ function setupGASUI() {
     // 設定を読み込み
     loadGASSettings();
     
-    console.log("✅ GAS UI設定完了（ダークテーマ対応）");
     
   } catch (error) {
-    console.error("❌ GAS UI設定エラー:", error);
+   // console.error("❌ GAS UI設定エラー:", error);
   }
 }
 
@@ -5793,7 +5779,6 @@ async function testGASConnection() {
   const testBtn = document.getElementById("btnTestGAS");
   
   if (!statusDiv || !testBtn) {
-    console.error("UI要素が見つかりません");
     return;
   }
   
@@ -5878,11 +5863,9 @@ async function performManualBackup() {
     if (typeof toast === 'function') {
       toast(`バックアップ完了! ファイルID: ${result.data?.fileId?.substring(0, 8)}...`);
     } else {
-      console.log("バックアップ完了!");
     }
     
   } catch (error) {
-    console.error("バックアップエラー:", error);
     if (typeof toast === 'function') {
       toast(`バックアップ失敗: ${error.message}`);
     }
@@ -5910,7 +5893,6 @@ function resetGASSettings() {
   if (typeof toast === 'function') {
     toast("GAS設定をリセットしました");
   } else {
-    console.log("GAS設定をリセットしました");
   }
 }
 
@@ -5944,11 +5926,9 @@ function enhanceExistingGASFunctions() {
           if (typeof toast === 'function') {
             toast(`学習データを送信完了! ${result.data?.csvFileId ? 'ID: ' + result.data.csvFileId.substring(0, 8) + '...' : ''}`);
           } else {
-            console.log("学習データ送信完了!");
           }
           
         } catch (error) {
-          console.error("学習データ送信エラー:", error);
           if (typeof toast === 'function') {
             toast(`送信失敗: ${error.message}`);
           }
@@ -5985,11 +5965,9 @@ function enhanceExistingGASFunctions() {
           if (typeof toast === 'function') {
             toast(`量産データを送信完了! ${result.data?.csvFileId ? 'ID: ' + result.data.csvFileId.substring(0, 8) + '...' : ''}`);
           } else {
-            console.log("量産データ送信完了!");
           }
           
         } catch (error) {
-          console.error("量産データ送信エラー:", error);
           if (typeof toast === 'function') {
             toast(`送信失敗: ${error.message}`);
           }
@@ -6002,7 +5980,6 @@ function enhanceExistingGASFunctions() {
     }
     
   } catch (error) {
-    console.error("既存機能強化エラー:", error);
   }
 }
 
@@ -6010,7 +5987,6 @@ function enhanceExistingGASFunctions() {
 function initGASIntegration() {
   function initialize() {
     try {
-      console.log("🚀 GAS連携初期化開始（ダークテーマ対応）");
       
       // UI設定
       setupGASUI();
@@ -6020,10 +5996,8 @@ function initGASIntegration() {
         enhanceExistingGASFunctions();
       }, 2000);
       
-      console.log("✅ GAS連携機能の初期化完了（ダークテーマ対応）");
       
     } catch (error) {
-      console.error("❌ GAS連携初期化エラー:", error);
     }
   }
   
@@ -6051,7 +6025,6 @@ window.resetGASSettings = resetGASSettings;
 // 10. トースト関数（フォールバック）
 if (typeof window.toast === 'undefined') {
   window.toast = function(message, duration = 3000) {
-    console.log("TOAST:", message);
     
     const toast = document.createElement('div');
     toast.style.cssText = `
@@ -6089,23 +6062,19 @@ initGASIntegration();
    「⚙️ 設定」ヘッダーを設定パネルの最上位に移動
    ========================================================= */
 
-console.log("🔄 設定ヘッダーを最上位に移動開始");
 
 function moveSettingsHeaderToTop() {
   const settingsPanel = document.getElementById("panelSettings");
   if (!settingsPanel) {
-    console.warn("❌ 設定パネルが見つかりません");
     return;
   }
   
   // 設定パネル内のh2要素（⚙️ 設定）を取得
   const settingsHeader = settingsPanel.querySelector("h2");
   if (!settingsHeader) {
-    console.warn("❌ 設定ヘッダー（h2）が見つかりません");
     return;
   }
   
-  console.log("✅ 設定ヘッダーを発見:", settingsHeader.textContent);
   
   // 現在の位置から一旦削除
   settingsHeader.remove();
@@ -6113,7 +6082,6 @@ function moveSettingsHeaderToTop() {
   // 設定パネルの最初に挿入
   settingsPanel.insertBefore(settingsHeader, settingsPanel.firstChild);
   
-  console.log("✅ 設定ヘッダーを最上位に移動完了");
   
   // 他の追加された要素も整理
   organizeSettingsOrder();
@@ -6133,8 +6101,7 @@ function organizeSettingsOrder() {
     '[class*="history"]',        // 履歴関連
     '[class*="preset"]'          // プリセット管理
   ];
-  
-  console.log("📋 設定パネル内要素を整理中...");
+
   
   // 各要素を適切な位置に移動
   let currentPosition = settingsPanel.firstChild;
@@ -6165,13 +6132,11 @@ function organizeSettingsOrder() {
         settingsPanel.appendChild(element);
       }
       currentPosition = element;
-      console.log(`✅ ${selector} を位置 ${index + 1} に移動`);
     } else if (element) {
       currentPosition = element;
     }
   });
   
-  console.log("✅ 設定パネル内要素整理完了");
 }
 
 // Simple版要素を削除する関数（必要に応じて）
@@ -6180,14 +6145,12 @@ function removeSimpleElements() {
   const simpleSettingsSection = document.getElementById("simple-settings-section");
   if (simpleSettingsSection) {
     simpleSettingsSection.remove();
-    console.log("✅ Simple設定管理セクションを削除");
   }
   
   // Simple版プリセットコントロールを削除
   const simplePresetControls = document.querySelectorAll(".simple-preset-controls");
   simplePresetControls.forEach(control => {
     control.remove();
-    console.log("✅ Simpleプリセットコントロールを削除");
   });
   
   // Simple版関連のグローバル関数を無効化
@@ -6203,17 +6166,14 @@ function removeSimpleElements() {
   simpleFunctions.forEach(funcName => {
     if (window[funcName]) {
       window[funcName] = function() {
-        console.log(`❌ ${funcName} は無効化されています`);
       };
     }
   });
   
-  console.log("✅ Simple版要素と関数を無効化完了");
 }
 
 // 初期化関数
 function initSettingsReorder() {
-  console.log("🚀 設定UI整理初期化開始");
   
   // DOM読み込み完了後に実行
   if (document.readyState === 'loading') {
@@ -6239,4 +6199,3 @@ window.organizeSettingsOrder = organizeSettingsOrder;
 // 自動初期化実行
 initSettingsReorder();
 
-console.log("✅ 設定ヘッダー移動システム初期化完了");
