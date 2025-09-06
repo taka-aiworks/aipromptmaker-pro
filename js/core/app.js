@@ -5759,7 +5759,10 @@ function setupGASUI() {
     } else {
       gasSection = document.createElement("div");
       gasSection.id = "gas-settings-section";
+     gasSection.className = "panel";
 　　　gasSection.className = "card";
+      settingsPanel.appendChild(gasSection);
+    }
     
     gasSection.innerHTML = `
       <h3 style="margin-top: 0; color: var(--ink);">☁️ Google Apps Script連携</h3>
