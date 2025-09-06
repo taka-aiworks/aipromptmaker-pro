@@ -6151,3 +6151,4 @@ if (typeof window.toast === 'undefined') {
 
 // 11. 自動初期化実行
 initGASIntegration();
+
