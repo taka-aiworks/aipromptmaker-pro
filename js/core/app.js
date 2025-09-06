@@ -4994,7 +4994,6 @@ function initCompletePresetSystem() {
        addPresetButtons();
        addBackupUI();
        addHistoryUI();
-       addUniversalCopyButtons();
      }, 1500);
    });
  } else {
@@ -5002,7 +5001,6 @@ function initCompletePresetSystem() {
      addPresetButtons();
      addBackupUI();
      addHistoryUI();
-     addUniversalCopyButtons();
    }, 1500);
  }
  
