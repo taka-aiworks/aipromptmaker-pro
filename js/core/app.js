@@ -5461,8 +5461,10 @@ class GASConnector {
         
         if (response && response.status === "success") {
           resolve(response);
+        } else if (response && response.status === "error") {
+          reject(new Error(response.message || "認証エラー"));
         } else {
-          reject(new Error(response ? (response.message || response.error || "GASエラー") : "無効なレスポンス"));
+          reject(new Error("無効なレスポンス"));
         }
       };
       
@@ -5690,7 +5692,8 @@ class GASConnector {
     const sizeCheck = this.checkDataSize(optimizedBackup);
     console.log(`バックアップ送信: ${sizeCheck.size}文字のデータを送信します`);
     
-    return await this.sendData("save_backup", {
+    // バックアップは常にフォーム方式を使用（データが大きいため）
+    return await this.sendViaForm("save_backup", {
       backup: optimizedBackup,
       metadata: {
         backupAt: new Date().toISOString(),
@@ -5772,7 +5775,15 @@ function setupGASUI() {
     } else {
       gasSection = document.createElement("div");
       gasSection.id = "gas-settings-section";
-      gasSection.className = "card";
+      gasSection.className = "panel";
+      gasSection.style.cssText = `
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        background: #2a2a2a;
+        color: #e0e0e0;
+      `;
       settingsPanel.appendChild(gasSection);
     }
     
