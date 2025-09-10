@@ -1021,11 +1021,14 @@ function updateMangaOutput() {
   }
   
   if (outPrompt) {
-    outPrompt.textContent = prompt;
-  //  console.log('✅ outMangaPrompt更新完了');
+  // Nano-banana選択時は編集指示文を抽出
+  if (fmt.label && fmt.label.includes('Nano-banana')) {
+    const instructionMatch = allText.match(/🍌 Nano-banana Edit Instruction:\s*"([^"]+)"/);
+    outPrompt.textContent = instructionMatch ? instructionMatch[1] : prompt;
   } else {
-  //  console.error('❌ outMangaPrompt要素が見つかりません');
+    outPrompt.textContent = prompt;
   }
+}
   
   if (outNeg) {
     outNeg.textContent = negative;
