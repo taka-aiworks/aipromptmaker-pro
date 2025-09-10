@@ -810,11 +810,106 @@ const FORMATTERS = {
   nai:{ label:"NovelAI",
     line:(p,n,seed)=>`Prompt: ${p}\nUndesired: ${n}\nSeed: ${seed}`,
     csvHeader:['"no"','"seed"','"prompt"','"undesired"'],
-    csvRow:(i,seed,p,n)=>[`"${i}"`,`"${seed}"`,`"${p.replace(/"/g,'""')}"`,`"${n.replace(/"/g,'""')}"`].join(",") }
+    csvRow:(i,seed,p,n)=>[`"${i}"`,`"${seed}"`,`"${p.replace(/"/g,'""')}"`,`"${n.replace(/"/g,'""')}"`].join(",") },
+  "nano-banana":{ label:"Nano-banana (Gemini 2.5)",
+    line:(p,n,seed)=> {
+      // NanoBananaFormatterが利用可能な場合は高度なフィルタリングを使用
+      if (typeof window.NanoBananaFormatter !== 'undefined') {
+        if (typeof window.NanoBananaFormatter.formatNanobananaOutput === 'function') {
+          return window.NanoBananaFormatter.formatNanobananaOutput(p, n, seed);
+        }
+        
+        // フォールバック：基本フィルタリング
+        if (typeof window.NanoBananaFormatter.filterBasicInfo === 'function' &&
+            typeof window.NanoBananaFormatter.generateEditInstruction === 'function') {
+          const filtered = window.NanoBananaFormatter.filterBasicInfo(p);
+          const instruction = window.NanoBananaFormatter.generateEditInstruction(filtered);
+          return `🍌 Nano-banana Edit Instruction:\n"${instruction}"\n\n⚠️ Note: Character attributes filtered for image editing\n📋 Usage: Upload image to Gemini 2.5 → Enter instruction above\n\n🔧 Filtered tags: ${filtered || 'None (all were character attributes)'}\n🎯 Original: ${p.split(',').length} tags → ${filtered ? filtered.split(',').length : 0} preserved`;
+        }
+      }
+      
+      // 最終フォールバック：基本的な出力
+      const basicFiltered = p.split(',')
+        .map(tag => tag.trim())
+        .filter(tag => {
+          const lower = tag.toLowerCase();
+          // 基本的なキャラクター属性を除外
+          return !(
+            /^(1girl|1boy|2girls|2boys|solo|duo|multiple)/.test(lower) ||
+            /(hair|eyes|skin)$/.test(lower) ||
+            /^(blonde|brown|black|red|blue|green|white|pink|purple|orange|yellow|silver|gray|grey)/.test(lower) ||
+            /^(long|short|medium|shoulder|waist|hip)[\s-]?/.test(lower) ||
+            /^(tall|short|slim|thin|thick|curvy|muscular|petite)/.test(lower)
+          );
+        })
+        .slice(0, 5); // 最大5個まで
+      
+      const instruction = basicFiltered.length > 0 
+        ? `Add ${basicFiltered.join(', ')} to the image`
+        : 'Make small adjustments to improve the image';
+      
+      return `🍌 Nano-banana Edit Instruction:\n"${instruction}"\n\n⚠️ Note: Basic character attribute filtering applied\n📋 Usage: Upload image to Gemini 2.5 → Enter instruction above\n\n🔧 Preserved: ${basicFiltered.join(', ') || 'None'}\n🎯 Original: ${p.split(',').length} tags → ${basicFiltered.length} preserved`;
+    },
+    csvHeader:['"no"','"instruction"','"filtered_tags"','"excluded_count"','"original"'],
+    csvRow:(i,seed,p,n)=> {
+      let instruction = "Make small adjustments to improve the image";
+      let filteredPrompt = "";
+      let excludedCount = 0;
+      
+      // 高度なフィルタリングを試行
+      if (typeof window.NanoBananaFormatter !== 'undefined') {
+        if (typeof window.NanoBananaFormatter.filterTagsByCategory === 'function' &&
+            typeof window.NanoBananaFormatter.generateAdvancedEditInstruction === 'function') {
+          filteredPrompt = window.NanoBananaFormatter.filterTagsByCategory(p);
+          instruction = window.NanoBananaFormatter.generateAdvancedEditInstruction(filteredPrompt);
+        } else if (typeof window.NanoBananaFormatter.filterBasicInfo === 'function' &&
+                   typeof window.NanoBananaFormatter.generateEditInstruction === 'function') {
+          filteredPrompt = window.NanoBananaFormatter.filterBasicInfo(p);
+          instruction = window.NanoBananaFormatter.generateEditInstruction(filteredPrompt);
+        }
+      }
+      
+      // フォールバック：基本フィルタリング
+      if (!filteredPrompt) {
+        const tags = p.split(',').map(tag => tag.trim());
+        const filtered = tags.filter(tag => {
+          const lower = tag.toLowerCase();
+          return !(
+            /^(1girl|1boy|2girls|2boys|solo|duo|multiple)/.test(lower) ||
+            /(hair|eyes|skin)$/.test(lower) ||
+            /^(blonde|brown|black|red|blue|green|white|pink|purple|orange|yellow|silver|gray|grey)/.test(lower) ||
+            /^(long|short|medium|shoulder|waist|hip)[\s-]?/.test(lower) ||
+            /^(tall|short|slim|thin|thick|curvy|muscular|petite)/.test(lower)
+          );
+        }).slice(0, 5);
+        
+        filteredPrompt = filtered.join(', ');
+        if (filtered.length > 0) {
+          instruction = `Add ${filtered.join(', ')} to the image`;
+        }
+      }
+      
+      const originalCount = p.split(',').length;
+      const filteredCount = filteredPrompt ? filteredPrompt.split(',').filter(Boolean).length : 0;
+      excludedCount = originalCount - filteredCount;
+      
+      // CSV用にエスケープ
+      const escapedInstruction = `"${instruction.replace(/"/g, '""')}"`;
+      const escapedFiltered = `"${filteredPrompt.replace(/"/g, '""')}"`;
+      const escapedOriginal = `"${p.replace(/"/g, '""')}"`;
+      
+      return [
+        `"${i}"`,
+        escapedInstruction,
+        escapedFiltered,
+        `"${excludedCount}"`,
+        escapedOriginal
+      ].join(",");
+    }
+  }
 };
 
 const getFmt = (selId, fallback="a1111") => FORMATTERS[$(selId)?.value || fallback] || FORMATTERS[fallback];
-
 
 /* ===== カテゴリ分配 ===== */
 function categorizeOutfit(list){
