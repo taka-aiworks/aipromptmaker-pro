@@ -1,474 +1,369 @@
-// Nano-banana (Gemini 2.5 Flash Image) フォーマッタ - 強化版
-// 画像編集特化の出力形式 - 辞書外タグ対応版
+// Nano-banana (Gemini 2.5 Flash Image) フォーマッタ - 分離版
+// ChatGPT正式フォーマット対応版
 
 (function() {
   'use strict';
   
+  console.log('🍌 Nano-banana 分離版フォーマッタを読み込み中...');
+  
   /**
-   * カテゴリベースフィルタリング設定
+   * 表情マッピング（日本語・英語タグ → 英語表情）
    */
-  const CATEGORY_CONFIG = {
-    // キャラクター基本属性（完全除外）
-    EXCLUDE_BASIC: [
-      'age', 'gender', 'body_type', 'height', 'hair_style', 
-      'hair_length', 'bangs_style', 'eyes', 'face', 
-      'skin_features', 'skin_body', 'colors'
-    ],
-
-    // 編集指示に有用（保持）
-    KEEP_EDITING: [
-      'pose', 'pose_manga', 'expressions', 'background', 'lighting', 
-      'composition', 'view', 'hand_gesture', 'props_light', 'effect_manga',
-      'movement_action', 'gaze', 'mouth_state', 'eye_state', 'emotion_primary',
-      'emotion_detail', 'camera_angle', 'focal_length', 'depth_of_field',
-      'photo_technique', 'lighting_type', 'light_direction', 'time_of_day',
-      'season_weather', 'physical_state', 'art_style'
-    ],
-
-    // 条件付き保持（スマート判定）
-    CONDITIONAL: [
-      'worldview', 'speech_tone', 'outfit', 'accessories', 'occupation', 'relationship'
-    ],
-
-    // 技術的要素（除外）
-    EXCLUDE_TECH: [
-      'negative_presets', 'negative_categories', 'negative_quick_presets'
-    ]
+  const EXPRESSION_MAP = {
+    // 基本表情（英語）
+    "smiling": "smiling",
+    "smile": "smiling", 
+    "happy": "happy",
+    "serious": "serious", 
+    "angry": "angry",
+    "sad": "sad",
+    "surprised": "surprised",
+    "confused": "confused",
+    "embarrassed": "embarrassed",
+    "worried": "worried",
+    "determined": "determined", 
+    "neutral": "neutral",
+    "crying": "crying",
+    "laughing": "laughing",
+    "excited": "excited",
+    "sleepy": "sleepy",
+    "scared": "scared",
+    "shy": "shy",
+    "confident": "confident",
+    "annoyed": "annoyed",
+    
+    // 日本語表情
+    "笑顔": "smiling",
+    "微笑み": "smiling", 
+    "真剣": "serious",
+    "怒り": "angry",
+    "悲しい": "sad",
+    "驚き": "surprised",
+    "困惑": "confused",
+    "恥ずかしい": "embarrassed",
+    "心配": "worried",
+    "決意": "determined",
+    "無表情": "neutral",
+    "泣く": "crying",
+    "笑う": "laughing",
+    "興奮": "excited",
+    "眠い": "sleepy",
+    "怖い": "scared",
+    "恥ずかしがり": "shy",
+    "自信": "confident",
+    "イライラ": "annoyed",
+    
+    // 口・目の状態
+    "open mouth": "open mouth",
+    "closed mouth": "closed mouth", 
+    "smiling open mouth": "smiling with open mouth",
+    "winking": "winking",
+    "closed eyes": "with closed eyes",
+    "half-closed eyes": "with half-closed eyes"
   };
 
   /**
-   * 辞書に存在しないが除外すべきタグのパターン（正規表現ベース）
+   * ポーズ・小物マッピング（日本語・英語タグ → 英語指示）
    */
-  const EXCLUDE_PATTERNS = {
+  const POSE_ITEM_MAP = {
+    // 基本ポーズ（英語）
+    "standing": "standing upright",
+    "sitting": "sitting down", 
+    "running": "running",
+    "walking": "walking",
+    "lying": "lying down",
+    "kneeling": "kneeling",
+    "jumping": "jumping",
+    "dancing": "dancing",
+    "sleeping": "sleeping",
+    "stretching": "stretching",
+    
+    // 腕・手のポーズ
+    "arms crossed": "with arms crossed",
+    "hands on hips": "with hands on hips",
+    "waving": "waving",
+    "pointing": "pointing",
+    "peace sign": "making peace sign",
+    "thumbs up": "giving thumbs up",
+    "saluting": "saluting",
+    "praying": "with hands in prayer",
+    "clapping": "clapping hands",
+    "reaching out": "reaching out",
+    
+    // 日本語ポーズ
+    "立っている": "standing upright",
+    "座っている": "sitting down",
+    "走っている": "running", 
+    "歩いている": "walking",
+    "寝ている": "lying down",
+    "跪く": "kneeling",
+    "ジャンプ": "jumping",
+    "踊る": "dancing",
+    "眠る": "sleeping",
+    "伸び": "stretching",
+    "腕組み": "with arms crossed",
+    "腰に手": "with hands on hips",
+    "手を振る": "waving",
+    "指差し": "pointing",
+    "ピース": "making peace sign",
+    
+    // 小物・アクセサリー（英語）
+    "holding book": "holding a book",
+    "holding phone": "holding a phone", 
+    "holding bag": "holding a bag",
+    "holding flower": "holding a flower",
+    "holding cup": "holding a cup",
+    "holding sword": "holding a sword",
+    "holding staff": "holding a staff",
+    "wearing glasses": "wearing glasses",
+    "wearing hat": "wearing a hat",
+    "wearing headphones": "wearing headphones",
+    "wearing mask": "wearing a mask",
+    "carrying backpack": "carrying a backpack",
+    
+    // 小物・アクセサリー（日本語）
+    "本を持つ": "holding a book",
+    "電話を持つ": "holding a phone",
+    "バッグ": "holding a bag",
+    "花": "holding a flower",
+    "カップ": "holding a cup",
+    "剣": "holding a sword",
+    "杖": "holding a staff",
+    "メガネ": "wearing glasses",
+    "帽子": "wearing a hat",
+    "ヘッドホン": "wearing headphones",
+    "マスク": "wearing a mask",
+    "リュック": "carrying a backpack"
+  };
+
+  /**
+   * 除外パターン（キャラクター基本属性）
+   */
+  const EXCLUDE_PATTERNS = [
     // 人数・性別
-    gender_count: /^(1|2|3|4|5|6|multiple|solo|duo|trio|group|many|several)?(girl|boy|man|woman|male|female|person|people|character|characters)s?$/i,
+    /^(1|2|3|4|5|6|multiple|solo|duo|trio|group)?(girl|boy|man|woman|male|female|person|people|character)s?$/i,
     
-    // 髪色
-    hair_color: /^(blonde?|black|brown|red|white|silver|gray|grey|pink|blue|green|purple|orange|yellow)[\s-]?(hair|haired)$/i,
+    // 髪関連（色・長さ・スタイル）
+    /^(blonde?|black|brown|red|white|silver|gray|grey|pink|blue|green|purple|orange|yellow)[\s-]?(hair|haired)$/i,
+    /^(long|short|medium|shoulder|waist|hip)[\s-]?length[\s-]?hair$/i,
+    /^(long|short|medium)[\s-]?hair$/i,
+    /^(straight|curly|wavy|braided|tied|loose|messy|neat|spiky|fluffy|twintails|ponytail|twin[\s-]?tails)[\s-]?hair$/i,
+    /^(bangs|side[\s-]?swept|swept[\s-]?bangs|blunt[\s-]?bangs)$/i,
     
-    // 目色
-    eye_color: /^(blue|brown|green|red|purple|pink|yellow|amber|hazel|gray|grey|heterochromia)[\s-]?(eyes?|eyed)$/i,
+    // 目関連（色・形）
+    /^(blue|brown|green|red|purple|pink|yellow|amber|hazel|gray|grey|heterochromia)[\s-]?(eyes?|eyed)$/i,
+    /^(large|small|round|almond|narrow)[\s-]?eyes?$/i,
     
     // 肌色
-    skin_color: /^(pale|fair|light|dark|tan|tanned|olive|brown|black|white)[\s-]?(skin|skinned|complexion)$/i,
+    /^(pale|fair|light|dark|tan|tanned|olive|brown|black|white)[\s-]?(skin|skinned|complexion)$/i,
     
-    // 髪の長さ・スタイル（より詳細）
-    hair_length: /^(very\s+)?(long|short|medium|shoulder[\s-]?length|waist[\s-]?length|hip[\s-]?length|floor[\s-]?length)[\s-]?hair$/i,
-    hair_style: /^(straight|curly|wavy|braided|tied|loose|messy|neat|spiky|fluffy)[\s-]?hair$/i,
+    // 体型・年齢
+    /^(young|old|teen|teenage|adult|mature|elderly|child|kid|loli|shota)$/i,
+    /^(slim|thin|skinny|fat|chubby|thick|curvy|muscular|athletic|petite|tall|short|small|large|huge|tiny)$/i,
     
-    // 年齢
-    age: /^(young|old|teen|teenage|adult|mature|elderly|child|kid|loli|shota|milf|dilf)$/i,
+    // 服装基本（「髪型・服装は変更しない」方針）
+    /^(school[\s-]?uniform|uniform|dress|shirt|skirt|pants|jeans|jacket|coat)$/i,
     
-    // 体型
-    body_type: /^(slim|thin|skinny|fat|chubby|thick|curvy|muscular|athletic|petite|tall|short|small|large|huge|tiny)$/i,
-    
-    // 基本服装
-    basic_clothing: /^(naked|nude|topless|bottomless|underwear|bra|panties|lingerie)$/i,
-    
-    // 品質タグ（技術的）
-    quality: /^(masterpiece|best[\s-]?quality|high[\s-]?quality|ultra[\s-]?detailed|extremely[\s-]?detailed|detailed|8k|4k|hd|uhd|photorealistic|realistic|anime|manga|illustration)$/i,
+    // 品質・技術タグ
+    /^(masterpiece|best[\s-]?quality|high[\s-]?quality|ultra[\s-]?detailed|extremely[\s-]?detailed|detailed|8k|4k|hd|uhd)$/i,
+    /^(photorealistic|realistic|anime|manga|illustration|cg|3d)$/i,
     
     // アーティスト・著作権
-    artist: /^(by\s+|artist:|\(artist\)|style\s+of|in\s+the\s+style\s+of)/i,
+    /^(by\s+|artist:|\(artist\)|style\s+of|in\s+the\s+style\s+of)/i,
     
     // 評価・投票
-    rating: /^(rating:|score_\d+|upvotes|downvotes|favorites)$/i
-  };
+    /^(rating:|score_\d+|upvotes|downvotes|favorites)$/i
+  ];
 
   /**
-   * 条件付きカテゴリの保持判定ルール
+   * プロンプト処理メイン関数
+   * @param {string} prompt - 元のプロンプト
+   * @returns {object} 処理結果オブジェクト
    */
-  const CONDITIONAL_RULES = {
-    worldview: ['fantasy', 'sci-fi', 'steampunk', 'cyberpunk', 'medieval', 'historical', 'modern', 'urban', 'rural', 'space', 'underwater'],
-    speech_tone: ['cheerful', 'serious', 'mysterious', 'playful', 'gentle', 'rough'],
-    outfit: ['armor', 'costume', 'uniform', 'traditional', 'fantasy', 'futuristic', 'magical', 'warrior', 'maid', 'witch', 'knight', 'princess'],
-    accessories: ['weapon', 'staff', 'wand', 'shield', 'crown', 'mask', 'wings', 'magical', 'fantasy', 'special'],
-    occupation: ['warrior', 'mage', 'knight', 'princess', 'witch', 'assassin', 'hero', 'villain', 'pirate', 'ninja', 'samurai'],
-    relationship: ['couple', 'friends', 'family', 'group', 'team', 'party']
-  };
-
-  /**
-   * 編集指示パターン（改良版）
-   */
-  const EDIT_INSTRUCTIONS = {
-    pose: {
-      "standing": "change pose to standing",
-      "sitting": "change pose to sitting", 
-      "running": "change pose to running",
-      "walking": "change pose to walking",
-      "lying": "change pose to lying down",
-      "arms crossed": "change pose to arms crossed",
-      "hands on hips": "change pose to hands on hips",
-      "waving": "make the character waving",
-      "jumping": "change pose to jumping",
-      "kneeling": "change pose to kneeling"
-    },
-    expressions: {
-      "smiling": "change expression to smiling",
-      "serious": "change expression to serious", 
-      "surprised": "change expression to surprised",
-      "angry": "change expression to angry",
-      "sad": "change expression to sad",
-      "happy": "change expression to happy",
-      "confused": "change expression to confused",
-      "embarrassed": "change expression to embarrassed",
-      "determined": "change expression to determined",
-      "worried": "change expression to worried"
-    },
-    background: {
-      "school": "change background to school setting",
-      "park": "set background to park scene",
-      "beach": "change background to beach scene", 
-      "city": "set background to city scene",
-      "forest": "change background to forest scene",
-      "room": "set background to indoor room",
-      "cafe": "change background to cafe setting",
-      "library": "set background to library",
-      "castle": "change background to castle",
-      "mountain": "set background to mountain scene",
-      "classroom": "change background to classroom setting"
-    },
-    lighting: {
-      "soft": "add soft lighting",
-      "dramatic": "add dramatic lighting",
-      "golden hour": "add golden hour lighting",
-      "sunset": "add sunset lighting",
-      "moonlight": "add moonlight",
-      "studio": "add studio lighting",
-      "natural": "add natural lighting",
-      "warm": "add warm lighting"
-    },
-    effect_manga: {
-      "sparkles": "add sparkle effects",
-      "speed lines": "add speed lines",
-      "impact": "add impact effects",
-      "wind": "add wind effect",
-      "cherry blossoms": "add cherry blossom petals",
-      "bubbles": "add soap bubbles",
-      "stars": "add starry effect",
-      "flowers": "add flower petals"
-    }
-  };
-
-  /**
-   * SFW辞書からタグのカテゴリを取得する関数
-   */
-  function getTagCategory(tag) {
-    const sfwDict = window.DEFAULT_SFW_DICT?.SFW;
-    if (!sfwDict) {
-      console.warn('SFW辞書が見つかりません');
-      return null;
-    }
-
-    const normalizedTag = tag.toLowerCase().trim();
-    
-    // 全カテゴリを検索
-    for (const [category, items] of Object.entries(sfwDict)) {
-      if (Array.isArray(items)) {
-        const found = items.find(item => {
-          if (typeof item === 'object' && item.tag) {
-            return item.tag.toLowerCase() === normalizedTag;
-          }
-          return false;
-        });
-        
-        if (found) {
-          return category;
-        }
-      }
-    }
-    
-    return null; // 辞書にないタグ
-  }
-
-  /**
-   * 正規表現パターンマッチングで除外すべきタグかチェック
-   */
-  function shouldExcludeByPattern(tag) {
-    const normalizedTag = tag.trim();
-    
-    for (const [patternName, pattern] of Object.entries(EXCLUDE_PATTERNS)) {
-      if (pattern.test(normalizedTag)) {
-        return { shouldExclude: true, reason: patternName, pattern: pattern.source };
-      }
-    }
-    
-    return { shouldExclude: false, reason: null, pattern: null };
-  }
-
-  /**
-   * タグが条件付きカテゴリで保持すべきかを判定
-   */
-  function shouldKeepConditionalTag(tag, category) {
-    const rules = CONDITIONAL_RULES[category];
-    if (!rules) return false;
-    
-    const normalizedTag = tag.toLowerCase();
-    return rules.some(rule => normalizedTag.includes(rule.toLowerCase()));
-  }
-
-  /**
-   * 強化版カテゴリベースフィルタリング（辞書外タグ対応）
-   */
-  function filterTagsByCategory(prompt) {
+  function processNanoBananaCorrect(prompt) {
     if (!prompt || typeof prompt !== 'string') {
-      return '';
+      return {
+        instruction: "Keep the same person.",
+        expression: "not specified",
+        poseItem: "not specified",
+        excludedTags: "",
+        preservedTags: ""
+      };
     }
 
     const tags = prompt.split(',').map(tag => tag.trim()).filter(Boolean);
-    const filteredTags = [];
-    const excludedInfo = {
-      basic: [],
-      pattern: [],
-      tech: [],
-      conditional: []
-    };
+    const excludedTags = [];
+    const preservedTags = [];
+    let expression = "";
+    let poseItem = "";
 
+    // タグ分類処理
     tags.forEach(tag => {
-      // Step 1: 正規表現パターンチェック（辞書外タグ対応）
-      const patternResult = shouldExcludeByPattern(tag);
-      if (patternResult.shouldExclude) {
-        excludedInfo.pattern.push({ tag, reason: patternResult.reason });
-        console.log(`🚫 Pattern exclude: "${tag}" (${patternResult.reason})`);
+      const normalizedTag = tag.toLowerCase();
+      
+      // Step 1: 除外パターンチェック
+      const shouldExclude = EXCLUDE_PATTERNS.some(pattern => pattern.test(tag));
+      if (shouldExclude) {
+        excludedTags.push(tag);
         return;
       }
-
-      // Step 2: SFW辞書カテゴリチェック
-      const category = getTagCategory(tag);
       
-      if (!category) {
-        // 辞書にないタグで、パターンにも引っかからない場合は保持
-        filteredTags.push(tag);
-        console.log(`✅ Keep: "${tag}" (not in dictionary, passed pattern check)`);
-        return;
-      }
-
-      // Step 3: カテゴリベース判定
-      if (CATEGORY_CONFIG.EXCLUDE_BASIC.includes(category)) {
-        excludedInfo.basic.push(tag);
-        console.log(`🚫 Exclude basic: "${tag}" (${category})`);
-      } else if (CATEGORY_CONFIG.EXCLUDE_TECH.includes(category)) {
-        excludedInfo.tech.push(tag);
-        console.log(`🚫 Exclude tech: "${tag}" (${category})`);
-      } else if (CATEGORY_CONFIG.CONDITIONAL.includes(category)) {
-        if (shouldKeepConditionalTag(tag, category)) {
-          filteredTags.push(tag);
-          console.log(`✅ Keep conditional: "${tag}" (${category})`);
-        } else {
-          excludedInfo.conditional.push(tag);
-          console.log(`🚫 Exclude conditional: "${tag}" (${category})`);
+      // Step 2: 表情チェック（未設定の場合のみ）
+      if (!expression) {
+        const foundExpression = Object.keys(EXPRESSION_MAP).find(key => 
+          normalizedTag.includes(key.toLowerCase())
+        );
+        if (foundExpression) {
+          expression = EXPRESSION_MAP[foundExpression];
+          preservedTags.push(tag);
+          return;
         }
-      } else if (CATEGORY_CONFIG.KEEP_EDITING.includes(category)) {
-        filteredTags.push(tag);
-        console.log(`✅ Keep editing: "${tag}" (${category})`);
-      } else {
-        // 未分類カテゴリは保持（安全側に倒す）
-        filteredTags.push(tag);
-        console.log(`✅ Keep unknown: "${tag}" (${category})`);
       }
+      
+      // Step 3: ポーズ・小物チェック（未設定の場合のみ）
+      if (!poseItem) {
+        const foundPose = Object.keys(POSE_ITEM_MAP).find(key => 
+          normalizedTag.includes(key.toLowerCase())
+        );
+        if (foundPose) {
+          poseItem = POSE_ITEM_MAP[foundPose];
+          preservedTags.push(tag);
+          return;
+        }
+      }
+      
+      // Step 4: その他保持タグ（背景・ライティングなど）
+      preservedTags.push(tag);
     });
 
-    // デバッグ情報
-    console.log('🍌 Nano-banana 強化版フィルタリング結果:');
-    console.log('  保持:', filteredTags.length, '個');
-    console.log('  除外（基本）:', excludedInfo.basic.length, '個');
-    console.log('  除外（パターン）:', excludedInfo.pattern.length, '個');
-    console.log('  除外（条件付き）:', excludedInfo.conditional.length, '個');
-    console.log('  除外（技術）:', excludedInfo.tech.length, '個');
-
-    return filteredTags.join(', ');
-  }
-
-  /**
-   * 高度な編集指示文生成
-   */
-  function generateAdvancedEditInstruction(filteredPrompt) {
-    if (!filteredPrompt || filteredPrompt.trim() === '') {
-      return "Make small adjustments to improve the image";
-    }
-
-    const instructions = [];
-    const tags = filteredPrompt.split(',').map(tag => tag.trim()).filter(Boolean);
-
-    // カテゴリ別の指示生成
-    Object.entries(EDIT_INSTRUCTIONS).forEach(([category, patterns]) => {
-      tags.forEach(tag => {
-        const normalizedTag = tag.toLowerCase();
-        Object.entries(patterns).forEach(([key, instruction]) => {
-          if (normalizedTag.includes(key.toLowerCase())) {
-            instructions.push(instruction);
-          }
-        });
-      });
-    });
-
-    // より柔軟なマッチング
-    if (instructions.length === 0) {
-      const categorizedTags = {};
-      
-      tags.forEach(tag => {
-        const category = getTagCategory(tag);
-        if (category && CATEGORY_CONFIG.KEEP_EDITING.includes(category)) {
-          if (!categorizedTags[category]) {
-            categorizedTags[category] = [];
-          }
-          categorizedTags[category].push(tag);
-        }
-      });
-
-      // カテゴリごとに指示を生成
-      Object.entries(categorizedTags).forEach(([category, categoryTags]) => {
-        if (categoryTags.length > 0) {
-          switch (category) {
-            case 'pose':
-            case 'pose_manga':
-              instructions.push(`Change pose to ${categoryTags[0]}`);
-              break;
-            case 'expressions':
-              instructions.push(`Change expression to ${categoryTags[0]}`);
-              break;
-            case 'background':
-              instructions.push(`Set background to ${categoryTags[0]}`);
-              break;
-            case 'lighting':
-            case 'lighting_type':
-              instructions.push(`Add ${categoryTags[0]} lighting`);
-              break;
-            case 'effect_manga':
-              instructions.push(`Add ${categoryTags.join(' and ')} effects`);
-              break;
-            case 'gaze':
-              instructions.push(`Change gaze to ${categoryTags[0]}`);
-              break;
-            case 'hand_gesture':
-              instructions.push(`Change hand gesture to ${categoryTags[0]}`);
-              break;
-            default:
-              instructions.push(`Add ${categoryTags.join(', ')} to the image`);
-          }
-        }
-      });
-    }
-
-    // 指示がない場合の最終フォールバック
-    if (instructions.length === 0 && tags.length > 0) {
-      const firstFewTags = tags.slice(0, 3);
-      instructions.push(`Incorporate ${firstFewTags.join(', ')} into the image`);
-    }
-
-    // 重複除去と結合
-    const uniqueInstructions = [...new Set(instructions)];
-    return uniqueInstructions.join(', ');
-  }
-
-  /**
-   * Nano-banana用出力フォーマット関数（強化版）
-   */
-  function formatNanobananaOutput(prompt, negativePrompt, seed) {
-    // Step 1: 強化版フィルタリング
-    const filteredPrompt = filterTagsByCategory(prompt);
+    // ChatGPTが教えてくれた正確なフォーマットで指示文構築
+    let instruction = "Keep the same person.";
     
-    // Step 2: 高度な編集指示文生成
-    const editInstruction = generateAdvancedEditInstruction(filteredPrompt);
-    
-    // Step 3: 出力フォーマット構築
-    const output = `🍌 Nano-banana Edit Instruction:
-"${editInstruction}"
-
-⚠️ Note: Character attributes filtered using enhanced pattern matching
-- Dictionary-based: hair, eyes, face, skin features by category
-- Pattern-based: 1girl, 2boys, blue eyes, blonde hair, etc.
-- Quality tags: masterpiece, best quality, detailed, etc.
-
-📋 Usage in Gemini 2.5 Flash Image:
-1. Upload your original image to Gemini
-2. Enter the above instruction text
-3. Generate the edited image
-
-🔧 Filtered tags: ${filteredPrompt || 'None (all were character attributes)'}
-
-🎯 Original prompt: ${prompt.split(',').length} tags
-🔄 After filtering: ${filteredPrompt ? filteredPrompt.split(',').length : 0} tags preserved`;
-
-    return output;
-  }
-
-  /**
-   * 従来版との互換性関数
-   */
-  function filterBasicInfo(prompt) {
-    console.warn('⚠️ filterBasicInfo() is deprecated. Use filterTagsByCategory() instead.');
-    return filterTagsByCategory(prompt);
-  }
-
-  function generateEditInstruction(filteredPrompt) {
-    console.warn('⚠️ generateEditInstruction() is deprecated. Use generateAdvancedEditInstruction() instead.');
-    return generateAdvancedEditInstruction(filteredPrompt);
-  }
-
-  /**
-   * FORMATTERSオブジェクトに追加
-   */
- function addFormatterToGlobal() {
-  // この関数定義は残す
-}
-  /**
-   * 初期化とフォーマッタ登録
-   */
-  function waitForFORMATTERS() {
-    if (addFormatterToGlobal()) {
-      return;
+    if (expression) {
+      instruction += `\nChange the expression to ${expression}.`;
     }
     
-    let attempts = 0;
-    const maxAttempts = 50;
+    if (poseItem) {
+      instruction += `\nPose the character ${poseItem}.`;
+    }
     
-    const checkInterval = setInterval(() => {
-      attempts++;
-      
-      if (addFormatterToGlobal()) {
-        clearInterval(checkInterval);
-        console.log('✅ Nano-banana 強化版フォーマッタを遅延追加しました');
-      } else if (attempts >= maxAttempts) {
-        clearInterval(checkInterval);
-        console.warn('⚠️ FORMATTERS オブジェクトが見つかりません（タイムアウト）');
-      }
-    }, 500);
-  }
+    instruction += "\nDo not change hairstyle or outfit unless specified.";
 
-  // 複数のタイミングで実行を試行
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', waitForFORMATTERS);
-  } else {
-    waitForFORMATTERS();
-  }
-  
-  window.addEventListener('load', waitForFORMATTERS);
-
-  // グローバル関数として公開（デバッグ・互換性用）
-  if (typeof window !== 'undefined') {
-    window.NanoBananaFormatter = {
-      // 新しい関数
-      filterTagsByCategory,
-      generateAdvancedEditInstruction,
-      formatNanobananaOutput,
-      getTagCategory,
-      shouldKeepConditionalTag,
-      shouldExcludeByPattern,
-      
-      // 従来版互換性
-      filterBasicInfo,
-      generateEditInstruction,
-      
-      // 設定オブジェクト
-      CATEGORY_CONFIG,
-      CONDITIONAL_RULES,
-      EDIT_INSTRUCTIONS,
-      EXCLUDE_PATTERNS
+    return {
+      instruction,
+      expression: expression || "not specified",
+      poseItem: poseItem || "not specified",
+      excludedTags: excludedTags.join(', '),
+      preservedTags: preservedTags.join(', ')
     };
+  }
+
+  /**
+   * Nano-banana最終出力フォーマット関数
+   * @param {string} prompt - プロンプト
+   * @param {string} negativePrompt - ネガティブプロンプト（未使用）
+   * @param {number} seed - シード値（未使用）
+   * @returns {string} フォーマット済み出力
+   */
+  function formatNanoBananaCorrect(prompt, negativePrompt, seed) {
+    const result = processNanoBananaCorrect(prompt);
+    return result.instruction;
+  }
+
+  /**
+   * デバッグ・テスト用関数
+   */
+  function testNanoBananaFormatting() {
+    console.log('🧪 Nano-banana フォーマッタテスト開始');
     
-    console.log('🍌 Nano-banana 強化版フォーマッタが読み込まれました');
-    console.log('📊 除外パターン数:', Object.keys(EXCLUDE_PATTERNS).length);
+    const testCases = [
+      "1girl, smiling, standing, long hair, blue eyes, school uniform, masterpiece",
+      "1girl, serious, holding book, brown hair, classroom",
+      "1girl, happy, waving, blonde hair, park, soft lighting",
+      "1girl, long hair, blue eyes, school uniform, best quality"
+    ];
+    
+    testCases.forEach((testPrompt, index) => {
+      console.log(`\n--- テストケース ${index + 1} ---`);
+      console.log('入力:', testPrompt);
+      
+      const result = processNanoBananaCorrect(testPrompt);
+      console.log('処理結果:', result);
+      
+      const output = formatNanoBananaCorrect(testPrompt, "", 123);
+      console.log('最終出力:');
+      console.log(output);
+    });
+    
+    console.log('\n✅ Nano-banana フォーマッタテスト完了');
+  }
+
+  /**
+   * app.jsとの統合確認
+   */
+  function checkAppIntegration() {
+    if (window.FORMATTERS && window.FORMATTERS['nano-banana']) {
+      console.log('✅ app.jsでNano-bananaフォーマッタが認識されています');
+      
+      // 実際にフォーマッタ経由でテスト
+      try {
+        const testPrompt = "1girl, smiling, standing";
+        const output = window.FORMATTERS['nano-banana'].line(testPrompt, "", 123);
+        console.log('app.js経由テスト成功:', output.substring(0, 50) + '...');
+        return true;
+      } catch (error) {
+        console.error('❌ app.js経由テスト失敗:', error);
+        return false;
+      }
+    } else {
+      console.warn('⚠️ app.jsでNano-bananaフォーマッタが見つかりません');
+      return false;
+    }
+  }
+
+  /**
+   * 初期化とグローバル公開
+   */
+  function initialize() {
+    // グローバル関数として公開
+    window.processNanoBananaCorrect = processNanoBananaCorrect;
+    window.formatNanoBananaCorrect = formatNanoBananaCorrect;
+    window.EXPRESSION_MAP = EXPRESSION_MAP;
+    window.POSE_ITEM_MAP = POSE_ITEM_MAP;
+    window.EXCLUDE_PATTERNS = EXCLUDE_PATTERNS;
+    
+    // デバッグ用関数も公開
+    window.testNanoBananaFormatting = testNanoBananaFormatting;
+    window.checkNanoBananaAppIntegration = checkAppIntegration;
+    
+    console.log('✅ Nano-banana 分離版フォーマッタ関数をグローバルに公開しました');
+    
+    // app.js統合確認（少し遅延して実行）
+    setTimeout(() => {
+      checkAppIntegration();
+    }, 1000);
+    
+    console.log('🍌 Nano-banana 分離版フォーマッタの初期化完了');
+  }
+
+  /**
+   * DOM読み込み完了後に初期化
+   */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
   }
   
+  // window.load後にも再確認
+  window.addEventListener('load', () => {
+    setTimeout(checkAppIntegration, 500);
+  });
+
 })();
+
+// ブラウザコンソールでテスト可能:
+// testNanoBananaFormatting();
+// checkNanoBananaAppIntegration();
+// processNanoBananaCorrect("1girl, smiling, standing, long hair");
+// formatNanoBananaCorrect("1girl, happy, waving, school uniform");
