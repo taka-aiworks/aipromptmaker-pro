@@ -1,12 +1,12 @@
-# Nano-banana対応完全仕様書 - 最終完成版
+markdown# Nano-banana対応完全仕様書 - Phase 5実装中版
 
 ## 📊 プロジェクト概要
 
 ### 🎯 プロジェクト基本情報
 - **プロジェクト名**: Nano-banana対応AIプロンプトメーカー
 - **対象システム**: Gemini 2.5 Flash Image (Google DeepMind)
-- **開発期間**: Phase 1-5 完全完了
-- **完成度**: 100% ✅
+- **開発期間**: Phase 1-4完了、Phase 5実装中
+- **完成度**: 80% 🔄
 - **革新性**: 業界初レベルの画像編集特化プロンプト生成
 
 ### 🍌 Nano-banana基本情報
@@ -30,13 +30,11 @@
 - **リアルタイム更新**: 設定変更時の即座なプロンプト生成
 
 ### 📁 フォルダ構成
-
-```
 project-root/
 │
 ├── js/
 │   ├── core/
-│   │   ├── app.js              # メインアプリケーション
+│   │   ├── app.js              # メインアプリケーション（FORMATTERS定義あり）
 │   │   ├── commercial-lora.js  # 商用LoRA管理
 │   │   └── manga-mode.js       # 漫画モード機能
 │   │
@@ -59,104 +57,12 @@ project-root/
 │   └── commercial-lora.js      # 商用LoRA辞書
 │
 └── index.html                  # メインHTMLファイル
-```
 
-### 🔧 主要モジュール詳細
-
-#### js/core/app.js
-- メインアプリケーション制御
-- FORMATTERS オブジェクト管理
-- 全体的な状態管理
-
-#### js/formatters/nano-banana.js（強化版）
-- **カテゴリベースフィルタリング**: 47カテゴリ対応
-- **正規表現パターンマッチング**: 12パターン
-- **編集指示文生成**: ChatGPTテンプレート採用
-- **デバッグ機能**: 詳細ログ出力
-
-#### js/formatters/nano-banana-ui.js（重複防止版）
-- UI統合スクリプト
-- 重複防止機能
-- 動的UI切り替え
-- 注意書き表示
-
-## 🎛️ 実装済み機能
-
-### 1. 基本プロンプト生成機能
-- **学習モード**: LoRA学習用プロンプト（配分ルール最適化）
-- **量産モード**: 大量画像生成用（プリセット機能付き）
-- **撮影モード**: 写真風画像生成
-- **漫画モード**: 漫画・イラスト特化（SFW/NSFW対応）
-- **単語モード**: 辞書ベース選択機能
-- **🍌 Nano-banana出力**: 画像編集特化フォーマット（完全実装完了）
-
-### 2. 高度な管理機能
-- **プリセットシステム**: 設定の保存/読込/管理
-- **履歴機能**: 生成履歴の追跡
-- **バックアップ/復元**: 設定の完全バックアップ
-- **GAS連携**: Google Apps Script でのクラウド同期
-
-### 3. 商用LoRA対応
-- **カテゴリ別管理**: 画風/品質/エフェクト等
-- **重み調整**: 個別・一括重み設定
-- **選択状態管理**: Map ベースの状態管理
-
-### 4. Nano-banana専用機能
-- **高精度フィルタリング**: 90%+除外率
-- **自然言語編集指示**: 人間らしい表現
-- **キャラクター保持**: 既存特徴の維持
-- **SFW完全準拠**: Google利用規約対応
-
-## 🎨 UI/UX 特徴
-
-### 設計思想
-- **ダークテーマ**: メインデザイン
-- **チップ形式**: 選択UI
-- **検索機能**: リアルタイム検索・フィルタリング
-- **プリセット機能**: ワンクリック設定適用
-
-### ユーザビリティ
-- **未選択ボタン**: 明確な初期状態
-- **全解除ボタン**: 簡単リセット
-- **リアルタイムプレビュー**: 即座の結果確認
-- **注意書き表示**: Nano-banana選択時の制限事項明記
-
-### Nano-banana専用UI要素
-- **黄色い注意パネル**: NSFW非対応の明示
-- **動的切り替え**: 選択時のみ表示
-- **フィルタリング結果表示**: リアルタイム除外状況
-
-## 📊 データ管理
-
-### 辞書システム
-- **SFW辞書**: 安全な要素（表情、ポーズ、背景等）- 47カテゴリ
-- **NSFW辞書**: R-18要素（段階的レベル管理）
-- **商用LoRA辞書**: カテゴリ別LoRA管理
-
-### 設定管理
-- **localStorage ベース**: ブラウザ内永続化
-- **JSON形式**: インポート/エクスポート
-- **セッション管理**: タブ間での状態保持
-
-## 🔧 出力フォーマット対応
-
-### サポート形式
-- **Web UI (A1111)**: 最も一般的
-- **InvokeAI**: コマンドライン形式
-- **ComfyUI**: ノードベース形式
-- **SD.Next**: dream.py形式
-- **NovelAI**: NAI専用形式
-- **🍌 Nano-banana**: Gemini 2.5 Flash Image用（完全対応完了）
+### 🔧 出力フォーマット対応
 
 ### Nano-banana出力仕様
-```
-画像を編集してください。
-
-[編集指示]：
-[フィルタリング済み要素から生成された自然言語指示]
-
-[重要]：既存のキャラクターの特徴は保持してください。
-```
+Edit the image.
+[Important]: Please preserve the existing character features.
 
 ## 🚀 Phase別完了状況
 
@@ -183,22 +89,80 @@ project-root/
 - 正規表現パターンマッチング追加（辞書外タグ対応）
 - 高精度除外ロジック（90-100%除外率達成）
 - デバッグ機能充実
-- 実装統合問題解決（app.js FORMATTERS上書き問題解決）
+- 英語テンプレート確定（Edit the image形式）
 
-### ✅ Phase 5: 仕様策定・最終統合 - 完了
-- ChatGPTテンプレート採用確定
-- 方式D（パターン＋辞書ハイブリッド）実装
-- エンドツーエンドテスト完了
-- 品質保証完了
+### 🔄 Phase 5: カテゴリ別出力実装 - 実装中
+- **EDIT_INSTRUCTIONS**パターンマッチング実装
+- カテゴリ別英語指示文生成
+- 複数カテゴリの組み合わせ処理
+- **app.js統合**（FORMATTERS定義追加）← 現在ここ
 
 ## 🔬 技術仕様詳細
 
-### フィルタリング方式D: パターン＋辞書ハイブリッド
-
-#### 47カテゴリ分析
+### EDIT_INSTRUCTIONS パターン定義
 ```javascript
-// SFW辞書カテゴリ構成
-const SFW_CATEGORIES = {
+const EDIT_INSTRUCTIONS = {
+  pose: {
+    "standing": "change pose to standing",
+    "sitting": "change pose to sitting", 
+    "running": "change pose to running",
+    "walking": "change pose to walking",
+    "lying": "change pose to lying down",
+    "arms crossed": "change pose to arms crossed",
+    "hands on hips": "change pose to hands on hips",
+    "waving": "make the character waving",
+    "jumping": "change pose to jumping",
+    "kneeling": "change pose to kneeling"
+  },
+  expressions: {
+    "smiling": "change expression to smiling",
+    "serious": "change expression to serious", 
+    "surprised": "change expression to surprised",
+    "angry": "change expression to angry",
+    "sad": "change expression to sad",
+    "happy": "change expression to happy",
+    "confused": "change expression to confused",
+    "embarrassed": "change expression to embarrassed",
+    "determined": "change expression to determined",
+    "worried": "change expression to worried"
+  },
+  background: {
+    "school": "change background to school setting",
+    "park": "set background to park scene",
+    "beach": "change background to beach scene", 
+    "city": "set background to city scene",
+    "forest": "change background to forest scene",
+    "room": "set background to indoor room",
+    "cafe": "change background to cafe setting",
+    "library": "set background to library",
+    "castle": "change background to castle",
+    "mountain": "set background to mountain scene",
+    "classroom": "change background to classroom setting"
+  },
+  lighting: {
+    "soft": "add soft lighting",
+    "dramatic": "add dramatic lighting",
+    "golden hour": "add golden hour lighting",
+    "sunset": "add sunset lighting",
+    "moonlight": "add moonlight",
+    "studio": "add studio lighting",
+    "natural": "add natural lighting",
+    "warm": "add warm lighting"
+  },
+  effect_manga: {
+    "sparkles": "add sparkle effects",
+    "speed lines": "add speed lines",
+    "impact": "add impact effects",
+    "wind": "add wind effect",
+    "cherry blossoms": "add cherry blossom petals",
+    "bubbles": "add soap bubbles",
+    "stars": "add starry effect",
+    "flowers": "add flower petals"
+  }
+};
+フィルタリング方式D: パターン＋辞書ハイブリッド
+47カテゴリ分析
+javascriptconst SFW_CATEGORIES = {
   basic_attributes: ['solo', '1girl', '1boy', 'multiple_girls'],
   physical_features: ['petite', 'tall', 'short', 'slim'],
   hair_features: ['long_hair', 'short_hair', 'twin_tails'],
@@ -206,118 +170,31 @@ const SFW_CATEGORIES = {
   facial_features: ['round_face', 'oval_face', 'heart_face'],
   // ... 47カテゴリ合計
 };
-```
-
-#### 12正規表現パターン
-```javascript
-// 色+部位パターンマッチング
-const FILTER_PATTERNS = [
+12正規表現パターン
+javascriptconst FILTER_PATTERNS = [
   /\b(red|blue|green|yellow|orange|purple|pink|black|white|brown|blonde|silver)\s+(hair|eyes|skin)\b/gi,
   /\b(light|dark|pale|tan|fair)\s+(skin|complexion)\b/gi,
   /\b(1|one|single|multiple)\s*(girl|boy|person|character)s?\b/gi,
   // ... 12パターン合計
 ];
-```
+📋 Phase 5 実装チェックリスト
+🔄 現在の作業（app.js統合）
 
-#### 動作例
-```javascript
-// 入力例
-Input: "solo, 1girl, newborn, female, petite build, very short, twin tails, almond eyes, orange hair, orange eyes, light skin"
+ app.js内FORMATTERS定義にnano-banana追加
+ カテゴリ別EDIT_INSTRUCTIONSパターンマッチング実装
+ 複数カテゴリ組み合わせロジック実装
+ 英語テンプレート出力確認
 
-// フィルタリング処理
-🚫 基本属性除去 (5個): newborn, petite build, very short, twin tails, almond eyes
-🚫 パターンマッチ除去 (4個): 1girl, female, orange hair, light skin  
-🚫 条件付き除去 (1個): solo
-✅ 保持要素 (1個): orange eyes
+📊 プロジェクト進捗
 
-// 出力例
-Output: "orange eyes" → 90.9%除外率達成
-編集指示: "オレンジ色の瞳を強調して編集してください。"
-```
+技術的達成度: 80%（Phase 4完了、Phase 5実装中）
+UI統合: 100%完成
+フィルタリングロジック: 100%完成
+出力フォーマット: 80%完成（カテゴリ別パターン実装中）
 
-### 品質基準
-- **基本属性除外率**: 100%（人物基本情報の完全除去）
-- **編集要素保持率**: 95%以上（編集可能要素の高精度保持）
-- **総合フィルタリング精度**: 90%以上（全体的な最適化）
-- **自然言語変換精度**: 95%以上（人間らしい表現生成）
+🎯 次のアクション
+優先度1: app.js内FORMATTERSにnano-banana定義追加
+優先度2: カテゴリ別英語指示文生成ロジック実装
+優先度3: 実環境での動作テスト
 
-## 🎯 革新的価値
-
-### 業界初レベルの技術革新
-1. **SFW辞書カテゴリベースフィルタリング**: 47カテゴリによる体系的分析
-2. **正規表現パターンマッチング**: 辞書外タグへの高精度対応
-3. **画像編集特化プロンプト生成**: 従来の生成用から編集用への転換
-4. **Gemini 2.5専用最適化**: Google AIエコシステムへの先駆的対応
-
-### ビジネスインパクト
-- **画像編集市場参入**: 新たな市場セグメントへのアプローチ
-- **プロンプトエンジニアリング自動化**: 専門知識不要での高品質出力
-- **安全性重視制作支援**: Google利用規約完全準拠
-- **生産性向上**: 手動編集指示からの自動化による効率化
-
-## 📈 パフォーマンス指標
-
-### 技術的達成度
-- **フィルタリングロジック**: 100%完成
-- **UI統合**: 100%完成
-- **出力フォーマット**: 100%完成
-- **実装統合**: 100%完成（app.js問題解決済み）
-
-### 品質指標
-- **基本属性除外**: 100% ✅
-- **編集要素保持**: 95%+ ✅
-- **フィルタリング精度**: 90%+ ✅
-- **UI完成度**: 100% ✅
-
-## 🔒 制約事項と対応
-
-### Google利用規約対応
-- **NSFW完全非対応**: 技術的に除外機能実装
-- **安全性第一**: SFW要素のみ処理
-- **透かし対応**: SynthID自動挿入への配慮
-
-### 技術的制約
-- **ブラウザ環境**: クライアントサイド処理限定
-- **API非依存**: オフライン動作可能
-- **軽量実装**: 最小限のリソース使用
-
-## 📋 最終チェックリスト
-
-### 実装完了項目
-- [x] Phase 1-5 全完了
-- [x] 47カテゴリフィルタリング実装
-- [x] 12パターン正規表現実装
-- [x] ChatGPTテンプレート採用
-- [x] UI統合完了
-- [x] デバッグ機能実装
-- [x] app.js統合問題解決
-- [x] エンドツーエンドテスト完了
-
-### 品質保証項目
-- [x] NSFW要素完全除外確認
-- [x] 高精度フィルタリング確認
-- [x] 既存機能への影響なし確認
-- [x] 実環境動作確認
-- [x] パフォーマンステスト完了
-
-### ドキュメント完成項目
-- [x] 技術仕様書作成
-- [x] API仕様書作成
-- [x] ユーザーマニュアル作成
-- [x] 開発ドキュメント整備
-
-## 🏆 プロジェクト完了宣言
-
-**Nano-banana対応AIプロンプトメーカーの開発が100%完了しました。**
-
-- **技術的実装**: 全Phase完了、革新的フィルタリングシステム実現
-- **品質基準**: 全指標達成、エンタープライズレベルの品質確保
-- **革新性**: 業界初レベルの画像編集特化プロンプト生成システム
-- **実用性**: 即座に実運用可能な完成度
-
-**本プロジェクトにより、Gemini 2.5 Flash Imageを活用した画像編集ワークフローの自動化と、安全性を重視したコンテンツ制作支援が実現されました。**
-
----
-
-*プロジェクト完了日: 2025年9月10日*  
-*最終更新: 完全仕様書 v1.0*
+最終更新: Phase 5実装中 - カテゴリ別出力実装段階
