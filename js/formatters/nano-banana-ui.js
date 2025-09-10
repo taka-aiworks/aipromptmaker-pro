@@ -1,58 +1,85 @@
-// Nano-banana UI統合スクリプト - 修正版
-// フォーマット選択に追加 + 注意書き表示 + container参照エラー修正
+// Nano-banana UI統合スクリプト - 重複防止版
+// フォーマット選択に追加 + 注意書き表示 + 重複防止
 
 (function() {
   'use strict';
   
+  // 初期化フラグ（重複実行防止）
+  if (window.nanoBananaUIInitialized) {
+    console.log('🍌 Nano-banana UI は既に初期化済みです');
+    return;
+  }
+
   /**
-   * フォーマット選択にNano-bananaオプションを追加
+   * 重複チェック - 既にオプションが存在するか確認
+   * @param {HTMLSelectElement} selectElement - チェック対象のselect要素
+   * @returns {boolean} - 既に存在する場合はtrue
    */
-  function addNanoBananaOptions() {
-    // 漫画モードのフォーマット選択
-    const fmtManga = document.getElementById('fmtManga');
-    if (fmtManga) {
-      const option = document.createElement('option');
-      option.value = 'nano-banana';
-      option.textContent = 'Nano-banana (Gemini 2.5)';
-      fmtManga.appendChild(option);
-      console.log('✅ 漫画モードにNano-bananaオプションを追加');
-    }
+  function hasNanoBananaOption(selectElement) {
+    if (!selectElement) return false;
     
-    // 量産モードのフォーマット選択
-    const fmtProd = document.getElementById('fmtProd');
-    if (fmtProd) {
-      const option = document.createElement('option');
-      option.value = 'nano-banana';
-      option.textContent = 'Nano-banana (Gemini 2.5)';
-      fmtProd.appendChild(option);
-      console.log('✅ 量産モードにNano-bananaオプションを追加');
-    }
+    const existingOptions = Array.from(selectElement.options);
+    return existingOptions.some(option => option.value === 'nano-banana');
+  }
+
+  /**
+   * 重複するNano-bananaオプションを削除
+   * @param {HTMLSelectElement} selectElement - 対象のselect要素
+   */
+  function removeDuplicateOptions(selectElement) {
+    if (!selectElement) return;
     
-    // 学習モードのフォーマット選択（あれば）
-    const fmtLearn = document.getElementById('fmtLearnBatch');
-    if (fmtLearn) {
-      const option = document.createElement('option');
-      option.value = 'nano-banana';
-      option.textContent = 'Nano-banana (Gemini 2.5)';
-      fmtLearn.appendChild(option);
-      console.log('✅ 学習モードにNano-bananaオプションを追加');
-    }
+    const nanoBananaOptions = Array.from(selectElement.options).filter(
+      option => option.value === 'nano-banana'
+    );
     
-    // 撮影モードのフォーマット選択（あれば）
-    const fmtPlanner = document.getElementById('fmtPlanner');
-    if (fmtPlanner) {
-      const option = document.createElement('option');
-      option.value = 'nano-banana';
-      option.textContent = 'Nano-banana (Gemini 2.5)';
-      fmtPlanner.appendChild(option);
-      console.log('✅ 撮影モードにNano-bananaオプションを追加');
+    if (nanoBananaOptions.length > 1) {
+      console.log(`🔧 ${selectElement.id}: ${nanoBananaOptions.length}個の重複を削除`);
+      
+      // 最初の1つを残して削除
+      for (let i = 1; i < nanoBananaOptions.length; i++) {
+        nanoBananaOptions[i].remove();
+      }
     }
   }
 
   /**
+   * フォーマット選択にNano-bananaオプションを追加（重複防止版）
+   */
+  function addNanoBananaOptions() {
+    const selectors = [
+      { id: 'fmtManga', name: '漫画モード' },
+      { id: 'fmtProd', name: '量産モード' },
+      { id: 'fmtLearnBatch', name: '学習モード' },
+      { id: 'fmtPlanner', name: '撮影モード' }
+    ];
+
+    selectors.forEach(({ id, name }) => {
+      const selectElement = document.getElementById(id);
+      if (!selectElement) {
+        console.log(`⚠️ ${name} (${id}) が見つかりません`);
+        return;
+      }
+
+      // 重複チェック
+      if (hasNanoBananaOption(selectElement)) {
+        console.log(`ℹ️ ${name} に既にNano-bananaオプションが存在します`);
+        removeDuplicateOptions(selectElement); // 重複削除
+        return;
+      }
+
+      // 新しいオプションを追加
+      const option = document.createElement('option');
+      option.value = 'nano-banana';
+      option.textContent = 'Nano-banana (Gemini 2.5)';
+      selectElement.appendChild(option);
+      
+      console.log(`✅ ${name} にNano-bananaオプションを追加`);
+    });
+  }
+
+  /**
    * 適切なコンテナ要素を取得する関数
-   * @param {HTMLElement|string} elementOrId - 要素またはID
-   * @returns {HTMLElement|null} - コンテナ要素
    */
   function getContainer(elementOrId) {
     let element;
@@ -81,8 +108,6 @@
 
   /**
    * 注意書きを表示/非表示する関数
-   * @param {boolean} show - 表示するかどうか
-   * @param {HTMLElement|string} containerRef - 注意書きを表示するコンテナ（要素またはID）
    */
   function toggleNanoBananaNotice(show, containerRef) {
     const container = getContainer(containerRef);
@@ -121,28 +146,23 @@
         </div>
       `;
       
-      // 安全な挿入位置を見つける
+      // 安全な挿入
       try {
-        // select要素の直後に挿入
         const selectElement = container.querySelector('select') || 
                              (container.tagName === 'SELECT' ? container : null);
         
         if (selectElement) {
-          // select要素の直後に挿入
           selectElement.parentNode.insertBefore(notice, selectElement.nextSibling);
         } else {
-          // select要素が見つからない場合は、labelの直後を探す
           const formatLabel = container.querySelector('label');
           if (formatLabel) {
             formatLabel.parentNode.insertBefore(notice, formatLabel.nextSibling);
           } else {
-            // 最終手段：コンテナの最後に追加
             container.appendChild(notice);
           }
         }
       } catch (e) {
         console.warn('注意書きの挿入に失敗:', e);
-        // フォールバック：コンテナの最後に追加
         try {
           container.appendChild(notice);
         } catch (e2) {
@@ -151,7 +171,6 @@
       }
       
     } else if (!show && notice) {
-      // 注意書きを削除
       try {
         notice.remove();
       } catch (e) {
@@ -162,7 +181,6 @@
 
   /**
    * フォーマット選択変更時のイベントハンドラ
-   * @param {Event} event - 変更イベント
    */
   function handleFormatChange(event) {
     const select = event.target;
@@ -170,7 +188,7 @@
     
     console.log(`🔄 フォーマット変更: ${select.id} → ${select.value}`);
     
-    // 注意書きの表示/非表示を切り替え（select要素の親を渡す）
+    // 注意書きの表示/非表示を切り替え
     toggleNanoBananaNotice(isNanoBanana, select.parentElement || select);
     
     if (isNanoBanana) {
@@ -179,34 +197,23 @@
   }
 
   /**
-   * 特定のselect要素にイベントリスナーを設定
-   * @param {string} selectorId - select要素のID
-   */
-  function setupEventListenerForSelect(selectorId) {
-    const select = document.getElementById(selectorId);
-    if (select) {
-      // 既存のイベントリスナーを削除（重複防止）
-      select.removeEventListener('change', handleFormatChange);
-      // 新しいイベントリスナーを追加
-      select.addEventListener('change', handleFormatChange);
-      console.log(`✅ ${selectorId} にイベントリスナーを設定`);
-      return true;
-    } else {
-      console.log(`⚠️ ${selectorId} が見つかりません`);
-      return false;
-    }
-  }
-
-  /**
-   * 全モードのイベントリスナーを設定
+   * イベントリスナー設定（重複防止版）
    */
   function setupEventListeners() {
     const formatSelectors = ['fmtManga', 'fmtProd', 'fmtLearnBatch', 'fmtPlanner'];
     let successCount = 0;
     
     formatSelectors.forEach(selectorId => {
-      if (setupEventListenerForSelect(selectorId)) {
+      const select = document.getElementById(selectorId);
+      if (select) {
+        // 既存のイベントリスナーを削除（重複防止）
+        select.removeEventListener('change', handleFormatChange);
+        // 新しいイベントリスナーを追加
+        select.addEventListener('change', handleFormatChange);
+        console.log(`✅ ${selectorId} にイベントリスナーを設定`);
         successCount++;
+      } else {
+        console.log(`⚠️ ${selectorId} が見つかりません`);
       }
     });
     
@@ -230,20 +237,49 @@
   }
 
   /**
-   * 初期化関数
+   * 全体の重複チェックと削除
+   */
+  function globalDuplicateCheck() {
+    console.log('🔍 重複チェック開始...');
+    
+    const formatSelectors = ['fmtManga', 'fmtProd', 'fmtLearnBatch', 'fmtPlanner'];
+    
+    formatSelectors.forEach(selectorId => {
+      const select = document.getElementById(selectorId);
+      if (select) {
+        removeDuplicateOptions(select);
+      }
+    });
+    
+    console.log('✅ 重複チェック完了');
+  }
+
+  /**
+   * 初期化関数（重複防止版）
    */
   function initNanoBananaUI() {
+    if (window.nanoBananaUIInitialized) {
+      console.log('🍌 Nano-banana UI は既に初期化済みです');
+      return true;
+    }
+
     console.log('🍌 Nano-banana UI統合を開始...');
     
     try {
-      // フォーマットオプション追加
+      // 1. 既存の重複を削除
+      globalDuplicateCheck();
+      
+      // 2. フォーマットオプション追加
       addNanoBananaOptions();
       
-      // イベントリスナー設定
+      // 3. イベントリスナー設定
       const setupSuccess = setupEventListeners();
       
-      // 既存選択状態確認
+      // 4. 既存選択状態確認
       checkExistingSelections();
+      
+      // 5. 初期化完了フラグ
+      window.nanoBananaUIInitialized = true;
       
       console.log('✅ Nano-banana UI統合完了');
       return setupSuccess > 0;
@@ -261,51 +297,29 @@
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initNanoBananaUI);
     } else {
-      // 既にDOMが読み込まれている場合は少し遅延して実行
       setTimeout(initNanoBananaUI, 100);
     }
   }
 
-  /**
-   * 遅延初期化（他のスクリプトが要素を追加するのを待つ）
-   */
-  function delayedInitialization() {
-    let attempts = 0;
-    const maxAttempts = 10;
-    
-    const retryInit = () => {
-      attempts++;
-      const success = initNanoBananaUI();
-      
-      if (!success && attempts < maxAttempts) {
-        console.log(`🔄 UI初期化をリトライ (${attempts}/${maxAttempts})`);
-        setTimeout(retryInit, 1000);
-      }
-    };
-    
-    retryInit();
-  }
-
-  // グローバル関数として公開（デバッグ用）
+  // グローバル関数として公開
   if (typeof window !== 'undefined') {
     window.NanoBananaUI = {
       addNanoBananaOptions,
       toggleNanoBananaNotice,
       handleFormatChange,
       setupEventListeners,
-      setupEventListenerForSelect,
       checkExistingSelections,
       initNanoBananaUI,
-      getContainer
+      getContainer,
+      hasNanoBananaOption,
+      removeDuplicateOptions,
+      globalDuplicateCheck
     };
   }
 
-  // 複数のタイミングで初期化実行
+  // 初期化実行
   initialize();
   
-  // 追加の遅延初期化
-  setTimeout(delayedInitialization, 2000);
-  
-  console.log('🍌 Nano-banana UI統合スクリプトが読み込まれました');
+  console.log('🍌 Nano-banana UI統合スクリプト（重複防止版）が読み込まれました');
   
 })();
