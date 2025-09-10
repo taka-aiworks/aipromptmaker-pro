@@ -195,25 +195,39 @@ to avoid conflicts with existing image
     return false;
   }
   
-  // 即座に試行
-  if (!addFormatterToGlobal()) {
-    // FORMATTERSが見つからない場合は少し待ってから再試行
+  // DOMContentLoaded後に確実に実行
+  function waitForFORMATTERS() {
+    if (addFormatterToGlobal()) {
+      return;
+    }
+    
+    // FORMATTERSが見つからない場合は監視を開始
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 50; // 25秒間監視
     
-    const retryAdd = () => {
+    const checkInterval = setInterval(() => {
       attempts++;
+      
       if (addFormatterToGlobal()) {
+        clearInterval(checkInterval);
         console.log('✅ Nano-banana フォーマッタを遅延追加しました');
-      } else if (attempts < maxAttempts) {
-        setTimeout(retryAdd, 500);
-      } else {
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
         console.warn('⚠️ FORMATTERS オブジェクトが見つかりません（タイムアウト）');
+        console.log('デバッグ: window.FORMATTERS =', window.FORMATTERS);
       }
-    };
-    
-    setTimeout(retryAdd, 500);
+    }, 500);
   }
+  
+  // 複数のタイミングで実行を試行
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitForFORMATTERS);
+  } else {
+    waitForFORMATTERS();
+  }
+  
+  // 追加で、window.onload でも試行
+  window.addEventListener('load', waitForFORMATTERS);
   
   // デバッグ用関数をグローバルに公開
   if (typeof window !== 'undefined') {
