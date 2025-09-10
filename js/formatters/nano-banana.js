@@ -409,40 +409,9 @@
   /**
    * FORMATTERSオブジェクトに追加
    */
-  function addFormatterToGlobal() {
-    if (typeof window !== 'undefined' && window.FORMATTERS) {
-      window.FORMATTERS['nano-banana'] = {
-        label: "Nano-banana (Gemini 2.5)",
-        format: formatNanobananaOutput,
-        line: formatNanobananaOutput,
-        csvHeader: ['"no"', '"instruction"', '"filtered_tags"', '"excluded_count"', '"original"'],
-        csvRow: function(i, seed, prompt, negativePrompt) {
-          const filteredPrompt = filterTagsByCategory(prompt);
-          const editInstruction = generateAdvancedEditInstruction(filteredPrompt);
-          const originalCount = prompt.split(',').length;
-          const filteredCount = filteredPrompt ? filteredPrompt.split(',').length : 0;
-          const excludedCount = originalCount - filteredCount;
-          
-          const escapedInstruction = `"${editInstruction.replace(/"/g, '""')}"`;
-          const escapedFiltered = `"${filteredPrompt.replace(/"/g, '""')}"`;
-          const escapedOriginal = `"${prompt.replace(/"/g, '""')}"`;
-          
-          return [
-            `"${i}"`,
-            escapedInstruction,
-            escapedFiltered,
-            `"${excludedCount}"`,
-            escapedOriginal
-          ].join(",");
-        }
-      };
-      
-      console.log('✅ Nano-banana 強化版フォーマッタが追加されました');
-      return true;
-    }
-    return false;
-  }
-
+ function addFormatterToGlobal() {
+  // この関数定義は残す
+}
   /**
    * 初期化とフォーマッタ登録
    */
