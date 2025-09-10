@@ -118,10 +118,9 @@
   function handleFormatChange(event) {
     const select = event.target;
     const isNanoBanana = select.value === 'nano-banana';
-    const container = select.closest('.panel') || select.closest('.card') || select.parentElement;
     
     // 注意書きの表示/非表示を切り替え
-    toggleNanoBananaNotice(isNanoBanana, container);
+    toggleNanoBananaNotice(isNanoBanana, select.id);
     
     if (isNanoBanana) {
       console.log(`🍌 Nano-bananaモードが選択されました (${select.id})`);
