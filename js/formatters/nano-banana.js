@@ -167,30 +167,52 @@ to avoid conflicts with existing image
   }
   
   // FORMATTERSオブジェクトにNano-bananaフォーマッタを追加
-  if (typeof window !== 'undefined' && window.FORMATTERS) {
-    window.FORMATTERS['nano-banana'] = {
-      label: "Nano-banana (Gemini 2.5)",
-      format: formatNanobananaOutput,
-      line: formatNanobananaOutput,
-      csvHeader: ['"no"', '"instruction"', '"filtered_tags"', '"original"'],
-      csvRow: function(i, seed, prompt, negativePrompt) {
-        const filteredPrompt = filterBasicInfo(prompt);
-        const editInstruction = generateEditInstruction(filteredPrompt);
-        const escapedInstruction = `"${editInstruction.replace(/"/g, '""')}"`;
-        const escapedFiltered = `"${filteredPrompt.replace(/"/g, '""')}"`;
-        const escapedOriginal = `"${prompt.replace(/"/g, '""')}"`;
-        return [
-          `"${i}"`,
-          escapedInstruction,
-          escapedFiltered,
-          escapedOriginal
-        ].join(",");
+  function addFormatterToGlobal() {
+    if (typeof window !== 'undefined' && window.FORMATTERS) {
+      window.FORMATTERS['nano-banana'] = {
+        label: "Nano-banana (Gemini 2.5)",
+        format: formatNanobananaOutput,
+        line: formatNanobananaOutput,
+        csvHeader: ['"no"', '"instruction"', '"filtered_tags"', '"original"'],
+        csvRow: function(i, seed, prompt, negativePrompt) {
+          const filteredPrompt = filterBasicInfo(prompt);
+          const editInstruction = generateEditInstruction(filteredPrompt);
+          const escapedInstruction = `"${editInstruction.replace(/"/g, '""')}"`;
+          const escapedFiltered = `"${filteredPrompt.replace(/"/g, '""')}"`;
+          const escapedOriginal = `"${prompt.replace(/"/g, '""')}"`;
+          return [
+            `"${i}"`,
+            escapedInstruction,
+            escapedFiltered,
+            escapedOriginal
+          ].join(",");
+        }
+      };
+      
+      console.log('✅ Nano-banana フォーマッタが追加されました');
+      return true;
+    }
+    return false;
+  }
+  
+  // 即座に試行
+  if (!addFormatterToGlobal()) {
+    // FORMATTERSが見つからない場合は少し待ってから再試行
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    const retryAdd = () => {
+      attempts++;
+      if (addFormatterToGlobal()) {
+        console.log('✅ Nano-banana フォーマッタを遅延追加しました');
+      } else if (attempts < maxAttempts) {
+        setTimeout(retryAdd, 500);
+      } else {
+        console.warn('⚠️ FORMATTERS オブジェクトが見つかりません（タイムアウト）');
       }
     };
     
-    console.log('✅ Nano-banana フォーマッタが追加されました');
-  } else {
-    console.warn('⚠️ FORMATTERS オブジェクトが見つかりません');
+    setTimeout(retryAdd, 500);
   }
   
   // デバッグ用関数をグローバルに公開
