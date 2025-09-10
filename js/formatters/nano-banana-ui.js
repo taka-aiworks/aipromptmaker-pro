@@ -84,13 +84,24 @@
         </div>
       `;
       
-      // フォーマット選択の次に挿入
-      const formatLabel = container.querySelector('label');
-      if (formatLabel && formatLabel.nextSibling) {
-        container.insertBefore(notice, formatLabel.nextSibling);
-      } else if (formatLabel) {
-        formatLabel.parentNode.insertBefore(notice, formatLabel.nextSibling);
-      } else {
+      // 安全な挿入位置を見つける
+      try {
+        const formatLabel = container.querySelector('label');
+        if (formatLabel) {
+          // formatLabelの親要素に挿入
+          const parent = formatLabel.parentElement;
+          if (parent && parent.contains(formatLabel)) {
+            parent.insertBefore(notice, formatLabel.nextSibling);
+          } else {
+            container.appendChild(notice);
+          }
+        } else {
+          // フォーマット選択が見つからない場合はコンテナの最後に追加
+          container.appendChild(notice);
+        }
+      } catch (e) {
+        console.warn('注意書きの挿入に失敗:', e);
+        // フォールバック：コンテナの最後に追加
         container.appendChild(notice);
       }
       
