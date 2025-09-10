@@ -1,5 +1,5 @@
-// Nano-banana (Gemini 2.5 Flash Image) フォーマッタ - 改良版
-// 画像編集特化の出力形式 - SFW辞書カテゴリベースフィルタリング対応
+// Nano-banana (Gemini 2.5 Flash Image) フォーマッタ - 強化版
+// 画像編集特化の出力形式 - 辞書外タグ対応版
 
 (function() {
   'use strict';
@@ -10,94 +10,81 @@
   const CATEGORY_CONFIG = {
     // キャラクター基本属性（完全除外）
     EXCLUDE_BASIC: [
-      'age',           // 年齢
-      'gender',        // 性別  
-      'body_type',     // 体型
-      'height',        // 身長
-      'hair_style',    // 髪型
-      'hair_length',   // 髪の長さ
-      'bangs_style',   // 前髪スタイル
-      'eyes',          // 目
-      'face',          // 顔
-      'skin_features', // 肌の特徴
-      'skin_body',     // 肌・身体特徴
-      'colors'         // 髪色・目色などの色情報
+      'age', 'gender', 'body_type', 'height', 'hair_style', 
+      'hair_length', 'bangs_style', 'eyes', 'face', 
+      'skin_features', 'skin_body', 'colors'
     ],
 
     // 編集指示に有用（保持）
     KEEP_EDITING: [
-      'pose',             // ポーズ
-      'pose_manga',       // 漫画ポーズ
-      'expressions',      // 表情
-      'background',       // 背景
-      'lighting',         // 照明
-      'composition',      // 構図
-      'view',            // 視点
-      'hand_gesture',    // ジェスチャー
-      'props_light',     // 小道具
-      'effect_manga',    // エフェクト
-      'movement_action', // 動作
-      'gaze',           // 視線
-      'mouth_state',    // 口の状態
-      'eye_state',      // 目の状態
-      'emotion_primary',// 感情（基本）
-      'emotion_detail', // 感情（詳細）
-      'camera_angle',   // カメラアングル
-      'focal_length',   // 焦点距離
-      'depth_of_field', // 被写界深度
-      'photo_technique',// 撮影技法
-      'lighting_type',  // 照明タイプ
-      'light_direction',// 光の方向
-      'time_of_day',    // 時間帯
-      'season_weather', // 季節・天候
-      'physical_state', // 身体状態
-      'art_style'       // 画風
+      'pose', 'pose_manga', 'expressions', 'background', 'lighting', 
+      'composition', 'view', 'hand_gesture', 'props_light', 'effect_manga',
+      'movement_action', 'gaze', 'mouth_state', 'eye_state', 'emotion_primary',
+      'emotion_detail', 'camera_angle', 'focal_length', 'depth_of_field',
+      'photo_technique', 'lighting_type', 'light_direction', 'time_of_day',
+      'season_weather', 'physical_state', 'art_style'
     ],
 
     // 条件付き保持（スマート判定）
     CONDITIONAL: [
-      'worldview',      // 世界観（背景系のみ保持）
-      'speech_tone',    // 口調（表情系のみ保持）
-      'outfit',         // 服装（特殊衣装のみ保持）
-      'accessories',    // アクセサリー（特殊道具のみ保持）
-      'occupation',     // 職業（背景・設定系のみ保持）
-      'relationship'    // 関係性（複数人の場合のみ保持）
+      'worldview', 'speech_tone', 'outfit', 'accessories', 'occupation', 'relationship'
     ],
 
     // 技術的要素（除外）
     EXCLUDE_TECH: [
-      'negative_presets',
-      'negative_categories', 
-      'negative_quick_presets'
+      'negative_presets', 'negative_categories', 'negative_quick_presets'
     ]
+  };
+
+  /**
+   * 辞書に存在しないが除外すべきタグのパターン（正規表現ベース）
+   */
+  const EXCLUDE_PATTERNS = {
+    // 人数・性別
+    gender_count: /^(1|2|3|4|5|6|multiple|solo|duo|trio|group|many|several)?(girl|boy|man|woman|male|female|person|people|character|characters)s?$/i,
+    
+    // 髪色
+    hair_color: /^(blonde?|black|brown|red|white|silver|gray|grey|pink|blue|green|purple|orange|yellow)[\s-]?(hair|haired)$/i,
+    
+    // 目色
+    eye_color: /^(blue|brown|green|red|purple|pink|yellow|amber|hazel|gray|grey|heterochromia)[\s-]?(eyes?|eyed)$/i,
+    
+    // 肌色
+    skin_color: /^(pale|fair|light|dark|tan|tanned|olive|brown|black|white)[\s-]?(skin|skinned|complexion)$/i,
+    
+    // 髪の長さ・スタイル（より詳細）
+    hair_length: /^(very\s+)?(long|short|medium|shoulder[\s-]?length|waist[\s-]?length|hip[\s-]?length|floor[\s-]?length)[\s-]?hair$/i,
+    hair_style: /^(straight|curly|wavy|braided|tied|loose|messy|neat|spiky|fluffy)[\s-]?hair$/i,
+    
+    // 年齢
+    age: /^(young|old|teen|teenage|adult|mature|elderly|child|kid|loli|shota|milf|dilf)$/i,
+    
+    // 体型
+    body_type: /^(slim|thin|skinny|fat|chubby|thick|curvy|muscular|athletic|petite|tall|short|small|large|huge|tiny)$/i,
+    
+    // 基本服装
+    basic_clothing: /^(naked|nude|topless|bottomless|underwear|bra|panties|lingerie)$/i,
+    
+    // 品質タグ（技術的）
+    quality: /^(masterpiece|best[\s-]?quality|high[\s-]?quality|ultra[\s-]?detailed|extremely[\s-]?detailed|detailed|8k|4k|hd|uhd|photorealistic|realistic|anime|manga|illustration)$/i,
+    
+    // アーティスト・著作権
+    artist: /^(by\s+|artist:|\(artist\)|style\s+of|in\s+the\s+style\s+of)/i,
+    
+    // 評価・投票
+    rating: /^(rating:|score_\d+|upvotes|downvotes|favorites)$/i
   };
 
   /**
    * 条件付きカテゴリの保持判定ルール
    */
   const CONDITIONAL_RULES = {
-    worldview: [
-      'fantasy', 'sci-fi', 'steampunk', 'cyberpunk', 'medieval', 
-      'historical', 'modern', 'urban', 'rural', 'space', 'underwater'
-    ],
-    speech_tone: [
-      'cheerful', 'serious', 'mysterious', 'playful', 'gentle', 'rough'
-    ],
-    outfit: [
-      'armor', 'costume', 'uniform', 'traditional', 'fantasy', 'futuristic',
-      'magical', 'warrior', 'maid', 'witch', 'knight', 'princess'
-    ],
-    accessories: [
-      'weapon', 'staff', 'wand', 'shield', 'crown', 'mask', 'wings',
-      'magical', 'fantasy', 'special'
-    ],
-    occupation: [
-      'warrior', 'mage', 'knight', 'princess', 'witch', 'assassin',
-      'hero', 'villain', 'pirate', 'ninja', 'samurai'
-    ],
-    relationship: [
-      'couple', 'friends', 'family', 'group', 'team', 'party'
-    ]
+    worldview: ['fantasy', 'sci-fi', 'steampunk', 'cyberpunk', 'medieval', 'historical', 'modern', 'urban', 'rural', 'space', 'underwater'],
+    speech_tone: ['cheerful', 'serious', 'mysterious', 'playful', 'gentle', 'rough'],
+    outfit: ['armor', 'costume', 'uniform', 'traditional', 'fantasy', 'futuristic', 'magical', 'warrior', 'maid', 'witch', 'knight', 'princess'],
+    accessories: ['weapon', 'staff', 'wand', 'shield', 'crown', 'mask', 'wings', 'magical', 'fantasy', 'special'],
+    occupation: ['warrior', 'mage', 'knight', 'princess', 'witch', 'assassin', 'hero', 'villain', 'pirate', 'ninja', 'samurai'],
+    relationship: ['couple', 'friends', 'family', 'group', 'team', 'party']
   };
 
   /**
@@ -138,7 +125,8 @@
       "cafe": "change background to cafe setting",
       "library": "set background to library",
       "castle": "change background to castle",
-      "mountain": "set background to mountain scene"
+      "mountain": "set background to mountain scene",
+      "classroom": "change background to classroom setting"
     },
     lighting: {
       "soft": "add soft lighting",
@@ -194,6 +182,21 @@
   }
 
   /**
+   * 正規表現パターンマッチングで除外すべきタグかチェック
+   */
+  function shouldExcludeByPattern(tag) {
+    const normalizedTag = tag.trim();
+    
+    for (const [patternName, pattern] of Object.entries(EXCLUDE_PATTERNS)) {
+      if (pattern.test(normalizedTag)) {
+        return { shouldExclude: true, reason: patternName, pattern: pattern.source };
+      }
+    }
+    
+    return { shouldExclude: false, reason: null, pattern: null };
+  }
+
+  /**
    * タグが条件付きカテゴリで保持すべきかを判定
    */
   function shouldKeepConditionalTag(tag, category) {
@@ -205,7 +208,7 @@
   }
 
   /**
-   * カテゴリベースでタグをフィルタリング（改良版）
+   * 強化版カテゴリベースフィルタリング（辞書外タグ対応）
    */
   function filterTagsByCategory(prompt) {
     if (!prompt || typeof prompt !== 'string') {
@@ -216,45 +219,60 @@
     const filteredTags = [];
     const excludedInfo = {
       basic: [],
+      pattern: [],
       tech: [],
       conditional: []
     };
 
     tags.forEach(tag => {
-      const category = getTagCategory(tag);
-      
-      if (!category) {
-        // 辞書にないタグは保持（カスタムタグの可能性）
-        filteredTags.push(tag);
+      // Step 1: 正規表現パターンチェック（辞書外タグ対応）
+      const patternResult = shouldExcludeByPattern(tag);
+      if (patternResult.shouldExclude) {
+        excludedInfo.pattern.push({ tag, reason: patternResult.reason });
+        console.log(`🚫 Pattern exclude: "${tag}" (${patternResult.reason})`);
         return;
       }
 
+      // Step 2: SFW辞書カテゴリチェック
+      const category = getTagCategory(tag);
+      
+      if (!category) {
+        // 辞書にないタグで、パターンにも引っかからない場合は保持
+        filteredTags.push(tag);
+        console.log(`✅ Keep: "${tag}" (not in dictionary, passed pattern check)`);
+        return;
+      }
+
+      // Step 3: カテゴリベース判定
       if (CATEGORY_CONFIG.EXCLUDE_BASIC.includes(category)) {
-        // 基本属性は除外
         excludedInfo.basic.push(tag);
+        console.log(`🚫 Exclude basic: "${tag}" (${category})`);
       } else if (CATEGORY_CONFIG.EXCLUDE_TECH.includes(category)) {
-        // 技術的要素は除外
         excludedInfo.tech.push(tag);
+        console.log(`🚫 Exclude tech: "${tag}" (${category})`);
       } else if (CATEGORY_CONFIG.CONDITIONAL.includes(category)) {
-        // 条件付きカテゴリは判定
         if (shouldKeepConditionalTag(tag, category)) {
           filteredTags.push(tag);
+          console.log(`✅ Keep conditional: "${tag}" (${category})`);
         } else {
           excludedInfo.conditional.push(tag);
+          console.log(`🚫 Exclude conditional: "${tag}" (${category})`);
         }
       } else if (CATEGORY_CONFIG.KEEP_EDITING.includes(category)) {
-        // 編集有用カテゴリは保持
         filteredTags.push(tag);
+        console.log(`✅ Keep editing: "${tag}" (${category})`);
       } else {
         // 未分類カテゴリは保持（安全側に倒す）
         filteredTags.push(tag);
+        console.log(`✅ Keep unknown: "${tag}" (${category})`);
       }
     });
 
     // デバッグ情報
-    console.log('🍌 Nano-banana フィルタリング結果:');
+    console.log('🍌 Nano-banana 強化版フィルタリング結果:');
     console.log('  保持:', filteredTags.length, '個');
     console.log('  除外（基本）:', excludedInfo.basic.length, '個');
+    console.log('  除外（パターン）:', excludedInfo.pattern.length, '個');
     console.log('  除外（条件付き）:', excludedInfo.conditional.length, '個');
     console.log('  除外（技術）:', excludedInfo.tech.length, '個');
 
@@ -286,7 +304,6 @@
 
     // より柔軟なマッチング
     if (instructions.length === 0) {
-      // カテゴリベースの汎用指示生成
       const categorizedTags = {};
       
       tags.forEach(tag => {
@@ -345,10 +362,10 @@
   }
 
   /**
-   * Nano-banana用出力フォーマット関数（改良版）
+   * Nano-banana用出力フォーマット関数（強化版）
    */
   function formatNanobananaOutput(prompt, negativePrompt, seed) {
-    // Step 1: カテゴリベースフィルタリング
+    // Step 1: 強化版フィルタリング
     const filteredPrompt = filterTagsByCategory(prompt);
     
     // Step 2: 高度な編集指示文生成
@@ -358,9 +375,10 @@
     const output = `🍌 Nano-banana Edit Instruction:
 "${editInstruction}"
 
-⚠️ Note: Character attributes filtered using SFW dictionary categories
-- Excluded: age, gender, body type, hair, eyes, face, skin features
-- Kept: pose, expression, background, lighting, effects, composition
+⚠️ Note: Character attributes filtered using enhanced pattern matching
+- Dictionary-based: hair, eyes, face, skin features by category
+- Pattern-based: 1girl, 2boys, blue eyes, blonde hair, etc.
+- Quality tags: masterpiece, best quality, detailed, etc.
 
 📋 Usage in Gemini 2.5 Flash Image:
 1. Upload your original image to Gemini
@@ -369,7 +387,7 @@
 
 🔧 Filtered tags: ${filteredPrompt || 'None (all were character attributes)'}
 
-🎯 Original prompt contained: ${prompt.split(',').length} tags
+🎯 Original prompt: ${prompt.split(',').length} tags
 🔄 After filtering: ${filteredPrompt ? filteredPrompt.split(',').length : 0} tags preserved`;
 
     return output;
@@ -419,7 +437,7 @@
         }
       };
       
-      console.log('✅ Nano-banana 改良版フォーマッタが追加されました');
+      console.log('✅ Nano-banana 強化版フォーマッタが追加されました');
       return true;
     }
     return false;
@@ -441,7 +459,7 @@
       
       if (addFormatterToGlobal()) {
         clearInterval(checkInterval);
-        console.log('✅ Nano-banana 改良版フォーマッタを遅延追加しました');
+        console.log('✅ Nano-banana 強化版フォーマッタを遅延追加しました');
       } else if (attempts >= maxAttempts) {
         clearInterval(checkInterval);
         console.warn('⚠️ FORMATTERS オブジェクトが見つかりません（タイムアウト）');
@@ -467,6 +485,7 @@
       formatNanobananaOutput,
       getTagCategory,
       shouldKeepConditionalTag,
+      shouldExcludeByPattern,
       
       // 従来版互換性
       filterBasicInfo,
@@ -475,11 +494,12 @@
       // 設定オブジェクト
       CATEGORY_CONFIG,
       CONDITIONAL_RULES,
-      EDIT_INSTRUCTIONS
+      EDIT_INSTRUCTIONS,
+      EXCLUDE_PATTERNS
     };
     
-    console.log('🍌 Nano-banana 改良版フォーマッタが読み込まれました');
-    console.log('📊 カテゴリ設定:', CATEGORY_CONFIG);
+    console.log('🍌 Nano-banana 強化版フォーマッタが読み込まれました');
+    console.log('📊 除外パターン数:', Object.keys(EXCLUDE_PATTERNS).length);
   }
   
 })();
