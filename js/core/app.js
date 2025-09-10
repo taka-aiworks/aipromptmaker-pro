@@ -2426,7 +2426,22 @@ function renderTextTriplet(baseId, rows, fmtSelId){
 
   if (rows.length > 1) {
     // 既存の処理
-    const allPrompts = rows.map(r => Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "")).join("\n\n");
+    let allPrompts = rows.map(r => Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "")).join("\n\n");
+    
+    // ★★★ Nano-banana専用処理を追加 ★★★
+    if (fmt.label && fmt.label.includes('Nano-banana')) {
+      allPrompts = rows.map(r => {
+        const originalPrompt = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
+        if (fmt.line && typeof fmt.line === 'function') {
+          const nanoOutput = fmt.line(originalPrompt, r.neg || "", r.seed || 0);
+          // 編集指示文部分のみを抽出
+          const instructionMatch = nanoOutput.match(/🍌 Nano-banana Edit Instruction:\s*"([^"]+)"/);
+          return instructionMatch ? instructionMatch[1] : originalPrompt;
+        }
+        return originalPrompt;
+      }).join("\n\n");
+    }
+    
     const allTexts   = rows.map((r,i) => {
       const p = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
       return fmt.line(p, r.neg || "", r.seed || 0);
@@ -2460,11 +2475,21 @@ function renderTextTriplet(baseId, rows, fmtSelId){
   } else {
     // 1件のみの場合
     const r = rows[0];
-    const prompt = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
+    let prompt = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
     const neg = r.neg || "";
     const caption = r.caption || "";
 
-    const allText = fmt.line(prompt, neg, r.seed || 0);
+    // ★★★ Nano-banana専用処理を追加 ★★★
+    if (fmt.label && fmt.label.includes('Nano-banana') && fmt.line && typeof fmt.line === 'function') {
+      const nanoOutput = fmt.line(prompt, neg, r.seed || 0);
+      // 編集指示文部分のみを抽出
+      const instructionMatch = nanoOutput.match(/🍌 Nano-banana Edit Instruction:\s*"([^"]+)"/);
+      if (instructionMatch) {
+        prompt = instructionMatch[1]; // プロンプト表示を編集指示文に変更
+      }
+    }
+
+    const allText = fmt.line(Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || ""), neg, r.seed || 0);
 
     const outAll = document.getElementById(`${baseId}All`);
     if (outAll) outAll.textContent = allText;
