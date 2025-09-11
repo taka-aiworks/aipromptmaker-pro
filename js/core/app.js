@@ -1674,7 +1674,37 @@ function buildOnePlanner() {
 
   const seed = seedFromName((document.getElementById('charName')?.value || ''), 0);
   const prompt = p.join(", ");
-  return { seed, pos: p, neg, prompt, text: `${prompt}${neg ? ` --neg ${neg}` : ""} seed:${seed}` };
+  // buildOnePlanner関数の最後のreturn文を以下に置き換えてください
+
+  // ★★★ Nano-banana用プロンプトを作成（基本情報除外） ★★★
+  const basicInfoTags = [
+    getBFValue('age'),
+    getBFValue('gender'), 
+    getBFValue('body'),
+    getBFValue('height'),
+    getOne('hairStyle'),
+    getOne('hairLength'),
+    getOne('bangsStyle'),
+    getOne('skinFeatures'),
+    getOne('eyeShape'),
+    textOf('tagH'),
+    textOf('tagE'),
+    textOf('tagSkin'),
+    loraTag  // LoRAタグも除外
+  ].filter(Boolean);
+  
+  // 全プロンプトから基本情報を除外してNano-banana用プロンプトを作成
+  const allTags = prompt.split(", ");
+  const nanoBananaPrompt = allTags.filter(tag => !basicInfoTags.includes(tag)).join(", ");
+
+  return { 
+    seed, 
+    pos: p, 
+    neg, 
+    prompt, 
+    nanoBananaPrompt,  // ← これを追加
+    text: `${prompt}${neg ? ` --neg ${neg}` : ""} seed:${seed}` 
+  };
 }
 
 // buildOneLearning関数を修正（1枚テスト用）
@@ -2336,42 +2366,29 @@ function renderLearnTableTo(tbodySel, rows){
 }
 
 // まとめ出力（学習/量産）に使っているユーティリティ
-// 現在のrenderTextTriplet関数を完全に置き換えてください
+// renderTextTriplet関数の修正（nanoBananaPromptを使用）
 function renderTextTriplet(baseId, rows, fmtSelId){
   const fmt = getFmt(`#${fmtSelId}`);
-
-  // ★★★ デバッグログ追加 ★★★
-  console.log("🔍 renderTextTriplet呼び出し");
-  console.log("🔍 baseId:", baseId);
-  console.log("🔍 fmtSelId:", fmtSelId);
-  console.log("🔍 fmt:", fmt);
-  console.log("🔍 fmt.label:", fmt.label);
-
-  // Nano-banana特別処理フラグ
   const isNanoBanana = fmt.label && fmt.label.includes('Nano-banana');
-  console.log("🔍 isNanoBanana:", isNanoBanana);
 
   if (rows.length > 1) {
     // 複数行の場合
     let allPrompts;
     
     if (isNanoBanana) {
-      console.log("🍌 Nano-banana複数行処理開始");
-      // Nano-banana: 編集指示文のみを抽出
       allPrompts = rows.map(r => {
-        const originalPrompt = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
+        // ★★★ nanoBananaPromptがあればそれを使用（基本情報除外済み） ★★★
+        const inputPrompt = r.nanoBananaPrompt || (Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || ""));
+        console.log("🍌 Nano-banana入力:", inputPrompt);
+        
         if (fmt.line && typeof fmt.line === 'function') {
-          const nanoOutput = fmt.line(originalPrompt, r.neg || "", r.seed || 0);
-          console.log("🍌 nanoOutput:", nanoOutput);
-          // 編集指示文部分のみを抽出
+          const nanoOutput = fmt.line(inputPrompt, r.neg || "", r.seed || 0);
           const instructionMatch = nanoOutput.match(/🍌 Nano-banana Edit Instruction:\s*"([^"]+)"/);
-          console.log("🍌 instructionMatch:", instructionMatch);
-          return instructionMatch ? instructionMatch[1] : originalPrompt;
+          return instructionMatch ? instructionMatch[1] : inputPrompt;
         }
-        return originalPrompt;
+        return inputPrompt;
       }).join("\n\n");
     } else {
-      // 通常フォーマット
       allPrompts = rows.map(r => Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "")).join("\n\n");
     }
     
@@ -2392,9 +2409,6 @@ function renderTextTriplet(baseId, rows, fmtSelId){
 
     const allCaptions = rows.map(r => r.caption || "").filter(Boolean).join("\n\n");
 
-    console.log("🔍 最終出力 - allPrompts:", allPrompts);
-    console.log("🔍 最終出力 - allTexts:", allTexts);
-
     const outAll = document.getElementById(`${baseId}All`);
     if (outAll) outAll.textContent = allTexts;
 
@@ -2414,32 +2428,28 @@ function renderTextTriplet(baseId, rows, fmtSelId){
     const neg = r.neg || "";
     const caption = r.caption || "";
 
-    console.log("🔍 1件処理 - 元のprompt:", prompt);
-
     let allText;
     
     if (isNanoBanana && fmt.line && typeof fmt.line === 'function') {
-      console.log("🍌 Nano-banana単体処理開始");
-      // Nano-banana: 編集指示文のみを抽出してプロンプト欄に表示
-      const nanoOutput = fmt.line(prompt, neg, r.seed || 0);
+      // ★★★ nanoBananaPromptがあればそれを使用（基本情報除外済み） ★★★
+      const inputPrompt = r.nanoBananaPrompt || prompt;
+      console.log("🍌 Nano-banana入力:", inputPrompt);
+      
+      const nanoOutput = fmt.line(inputPrompt, neg, r.seed || 0);
       console.log("🍌 nanoOutput:", nanoOutput);
       
       const instructionMatch = nanoOutput.match(/🍌 Nano-banana Edit Instruction:\s*"([^"]+)"/);
       console.log("🍌 instructionMatch:", instructionMatch);
       
       if (instructionMatch) {
-        prompt = instructionMatch[1]; // プロンプト表示を編集指示文に変更
+        prompt = instructionMatch[1];
         console.log("🍌 抽出された編集指示文:", prompt);
       }
       
-      allText = nanoOutput; // 全部表示用はフル出力
+      allText = nanoOutput;
     } else {
-      // 通常フォーマット
       allText = fmt.line(prompt, neg, r.seed || 0);
     }
-
-    console.log("🔍 最終出力 - prompt:", prompt);
-    console.log("🔍 最終出力 - allText:", allText);
 
     const outAll = document.getElementById(`${baseId}All`);
     if (outAll) outAll.textContent = allText;
@@ -2454,6 +2464,8 @@ function renderTextTriplet(baseId, rows, fmtSelId){
     if (outCaption) outCaption.textContent = caption;
   }
 }
+
+
 function bindCopyTripletExplicit(pairs){
   if (!Array.isArray(pairs)) return;
   pairs.forEach(pair => {
