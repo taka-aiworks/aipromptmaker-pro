@@ -5,7 +5,6 @@
 (function() {
   'use strict';
   
-  console.log('🍌 Nano-banana SFW辞書完全対応版を読み込み中...');
 
   /**
    * SFWカテゴリテンプレート設定
@@ -147,18 +146,13 @@ function testSkinColorExclusion() {
     'brown skin'
   ];
   
-  console.log('🧪 肌色タグ除外テスト:');
   testTags.forEach(tag => {
     const shouldExclude = FALLBACK_EXCLUDE_PATTERNS.some(pattern => pattern.test(tag));
-    console.log(`${tag}: ${shouldExclude ? '✅ 除外' : '❌ 保持'}`);
   });
 }
 
 // グローバル関数として公開
 window.testSkinColorExclusion = testSkinColorExclusion;
-
-console.log('🍌 Nano-banana: 肌色除外パターンを追加しました');
-console.log('テスト実行: testSkinColorExclusion()');
 
   /**
    * SFW辞書からタグのカテゴリを取得
@@ -186,13 +180,11 @@ console.log('テスト実行: testSkinColorExclusion()');
         });
         
         if (found) {
-          console.log(`📂 タグ "${tag}" → カテゴリ: ${category}`);
           return category;
         }
       }
     }
     
-    console.log(`❓ タグ "${tag}" → 辞書にありません`);
     return null;
   }
 
@@ -295,8 +287,6 @@ console.log('テスト実行: testSkinColorExclusion()');
     const preservedTags = [];
     const instructions = [];
 
-    console.log('🔍 Nano-banana SFW辞書完全対応処理開始');
-    console.log('入力タグ数:', tags.length);
 
     // タグ分類処理
     tags.forEach(tag => {
@@ -307,7 +297,6 @@ console.log('テスト実行: testSkinColorExclusion()');
         // カテゴリベース判定
         if (SFW_CATEGORY_CONFIG.EXCLUDE_CATEGORIES.includes(category)) {
           excludedTags.push(tag);
-          console.log(`🚫 除外（${category}）: ${tag}`);
         } else if (SFW_CATEGORY_CONFIG.KEEP_CATEGORIES.includes(category)) {
           preservedTags.push(tag);
           
@@ -315,32 +304,25 @@ console.log('テスト実行: testSkinColorExclusion()');
           const instruction = generateInstructionFromCategory(tag, category);
           if (instruction) {
             instructions.push(instruction);
-            console.log(`✅ 保持+指示（${category}）: ${tag} → ${instruction}`);
           } else {
-            console.log(`✅ 保持（${category}）: ${tag}`);
           }
         } else if (SFW_CATEGORY_CONFIG.CONDITIONAL_CATEGORIES.includes(category)) {
           if (shouldKeepConditionalTag(tag, category)) {
             preservedTags.push(tag);
-            console.log(`✅ 条件付き保持（${category}）: ${tag}`);
           } else {
             excludedTags.push(tag);
-            console.log(`🚫 条件付き除外（${category}）: ${tag}`);
           }
         } else {
           // 未分類カテゴリは保持（安全側）
           preservedTags.push(tag);
-          console.log(`✅ 未分類保持（${category}）: ${tag}`);
         }
       } else {
         // Step 2: 辞書にない場合は正規表現チェック
         if (shouldExcludeByPattern(tag)) {
           excludedTags.push(tag);
-          console.log(`🚫 パターン除外: ${tag}`);
         } else {
           preservedTags.push(tag);
           instructions.push(`add ${tag.replace(/_/g, ' ')}`);
-          console.log(`✅ パターン保持: ${tag}`);
         }
       }
     });
@@ -355,11 +337,6 @@ console.log('テスト実行: testSkinColorExclusion()');
     }
     
     finalInstruction += "\n[Important]: Please preserve the existing character features.";
-
-    console.log('📊 処理結果:');
-    console.log('  保持:', preservedTags.length, '個');
-    console.log('  除外:', excludedTags.length, '個');
-    console.log('  指示文:', instructions.length, '個');
 
     return {
       instruction: finalInstruction,
@@ -391,7 +368,6 @@ function formatNanoBananaCorrect(prompt, negativePrompt, seed) {
    * デバッグ・テスト用関数
    */
   function testSFWDictBasedProcessing() {
-    console.log('🧪 SFW辞書完全対応処理テスト開始');
     
     const testCases = [
       "joy, delighted, sparkling_eyes, at_viewer, grin, peace_sign",
@@ -401,38 +377,23 @@ function formatNanoBananaCorrect(prompt, negativePrompt, seed) {
     ];
     
     testCases.forEach((testPrompt, index) => {
-      console.log(`\n--- テストケース ${index + 1} ---`);
-      console.log('入力:', testPrompt);
       
       const result = processNanoBananaCorrect(testPrompt);
-      console.log('保持タグ:', result.preservedTags);
-      console.log('除外タグ:', result.excludedTags);
       
       const output = formatNanoBananaCorrect(testPrompt, "", 123);
-      console.log('最終出力:');
-      console.log(output);
     });
     
-    console.log('\n✅ SFW辞書完全対応処理テスト完了');
   }
 
   /**
    * 統計情報表示
    */
   function showNanoBananaStats() {
-    console.log('📊 Nano-banana統計情報:');
-    console.log(`  カテゴリテンプレート: ${Object.keys(CATEGORY_TEMPLATES).length}個`);
-    console.log(`  特殊オーバーライド: ${Object.values(SPECIAL_OVERRIDES).reduce((sum, cat) => sum + Object.keys(cat).length, 0)}個`);
-    console.log(`  除外カテゴリ: ${SFW_CATEGORY_CONFIG.EXCLUDE_CATEGORIES.length}個`);
-    console.log(`  保持カテゴリ: ${SFW_CATEGORY_CONFIG.KEEP_CATEGORIES.length}個`);
-    console.log(`  条件付きカテゴリ: ${SFW_CATEGORY_CONFIG.CONDITIONAL_CATEGORIES.length}個`);
-    console.log(`  除外パターン: ${FALLBACK_EXCLUDE_PATTERNS.length}個`);
     
     // SFW辞書の存在確認
     const sfwDict = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
     if (sfwDict) {
       const categoryCount = Object.keys(sfwDict).length;
-      console.log(`  SFW辞書: ${categoryCount}カテゴリ検出`);
     } else {
       console.warn('⚠️ SFW辞書が見つかりません');
     }
@@ -469,20 +430,16 @@ function formatNanoBananaCorrect(prompt, negativePrompt, seed) {
     };
     window.NANO_BANANA_FORMATTER = NANO_BANANA_FORMATTER;
     
-    console.log('✅ Nano-banana完全版の関数をグローバルに公開');
     
     // SFW辞書の存在確認
     setTimeout(() => {
       const sfwDict = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
       if (sfwDict) {
         const categoryCount = Object.keys(sfwDict).length;
-        console.log(`✅ SFW辞書検出: ${categoryCount}カテゴリ`);
       } else {
         console.warn('⚠️ SFW辞書が見つかりません');
       }
     }, 1000);
-    
-    console.log('🍌 Nano-banana SFW辞書完全対応版の初期化完了');
   }
 
   /**
