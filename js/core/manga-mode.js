@@ -1019,16 +1019,16 @@ function updateMangaOutput() {
   } else {
  //   console.error('❌ outMangaAll要素が見つかりません');
   }
-  
+
 // manga-mode.js の updateMangaOutput関数内の修正
 // 約1700行目付近の outPrompt 処理部分を以下に置き換え
 
 if (outPrompt) {
-  // Nano-banana選択時は編集指示文を表示
+  // Nano-banana選択時は編集指示文のみを表示（ネガティブプロンプト除外）
   if (fmt.label && fmt.label.includes('Nano-banana')) {
-    // nano-banana.jsで生成された編集指示文をそのまま表示
-    // allTextには既にformatNanoBananaCorrect()の結果が入っている
-    outPrompt.textContent = allText;
+    // ネガティブプロンプト部分を除外して編集指示文のみを抽出
+    const instructionOnly = allText.split('\n\nNegative:')[0];
+    outPrompt.textContent = instructionOnly;
   } else {
     // 他のフォーマットの場合は通常のプロンプトを表示
     outPrompt.textContent = prompt;
