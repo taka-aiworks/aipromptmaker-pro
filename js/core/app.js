@@ -2520,7 +2520,6 @@ function renderTextTriplet(baseId, rows, fmtSelId){
 
 console.log('🍌 renderTextTriplet関数 Nano-banana完全対応版（空プロンプト対策付き）- 準備完了');
 
-
 function bindCopyTripletExplicit(pairs){
   if (!Array.isArray(pairs)) return;
   pairs.forEach(pair => {
