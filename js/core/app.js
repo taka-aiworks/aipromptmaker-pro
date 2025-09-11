@@ -2379,13 +2379,12 @@ function renderLearnTableTo(tbodySel, rows){
   tb.appendChild(frag);
 }
 
-// まとめ出力（学習/量産）に使っているユーティリティ
 /* ==================================================
-   renderTextTriplet関数 完全修正版
-   撮影モード・量産モード Nano-banana対応
+   撮影モード・量産モード Nano-banana 対応修正
+   基本情報のみの場合の対処を追加
    ================================================== */
 
-// app.js の既存 renderTextTriplet関数を以下に置き換え
+// renderTextTriplet関数の修正版（空プロンプト対応）
 function renderTextTriplet(baseId, rows, fmtSelId){
   const fmt = getFmt(`#${fmtSelId}`);
   const isNanoBanana = fmt.label && fmt.label.includes('Nano-banana');
@@ -2399,14 +2398,28 @@ function renderTextTriplet(baseId, rows, fmtSelId){
         const inputPrompt = r.nanoBananaPrompt || (Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || ""));
         console.log("🍌 Nano-banana入力:", inputPrompt);
         
+        // 空の場合のフォールバック
+        if (!inputPrompt || inputPrompt.trim() === '') {
+          console.warn("🍌 入力が空のため、基本的な編集指示を生成");
+          return "add anime style effects, improve composition";
+        }
+        
         if (fmt.line && typeof fmt.line === 'function') {
           const nanoOutput = fmt.line(inputPrompt, r.neg || "", r.seed || 0);
-          // ★★★ 正しい編集指示文抽出 ★★★
-          const editMatch = nanoOutput.match(/Edit the image\.\s*(.*?)\s*\[Important\]/s);
+          const editMatch = nanoOutput.match(/Edit the image\.\s*([\s\S]*?)\s*\[Important\]/);
+        // [\s\S]*? は改行を含む任意の文字にマッチ
           
           if (editMatch && editMatch[1].trim()) {
             const instructions = editMatch[1].trim().split('\n').map(line => line.trim()).filter(Boolean);
-            return instructions.join(', ');
+            const result = instructions.join(', ');
+            
+            // 指示文が空の場合のフォールバック
+            if (!result || result.trim() === '') {
+              console.warn("🍌 編集指示文が空のため、デフォルト指示を使用");
+              return "add anime style effects, improve composition";
+            }
+            
+            return result;
           }
           return inputPrompt;
         }
@@ -2457,22 +2470,36 @@ function renderTextTriplet(baseId, rows, fmtSelId){
       const inputPrompt = r.nanoBananaPrompt || prompt;
       console.log("🍌 Nano-banana入力:", inputPrompt);
       
-      const nanoOutput = fmt.line(inputPrompt, neg, r.seed || 0);
-      console.log("🍌 nanoOutput:", nanoOutput);
-      
-      // ★★★ 正しい編集指示文抽出 ★★★
-      const editMatch = nanoOutput.match(/Edit the image\.\s*(.*?)\s*\[Important\]/s);
-      
-      if (editMatch && editMatch[1].trim()) {
-        const instructions = editMatch[1].trim().split('\n').map(line => line.trim()).filter(Boolean);
-        prompt = instructions.join(', ');
-        console.log("🍌 抽出された編集指示文:", prompt);
+      // 空の場合のフォールバック
+      if (!inputPrompt || inputPrompt.trim() === '') {
+        console.warn("🍌 入力が空のため、基本的な編集指示を生成");
+        prompt = "add anime style effects, improve composition";
+        allText = fmt.line("add anime style effects, improve composition", neg, r.seed || 0);
       } else {
-        console.warn("🍌 編集指示文の抽出に失敗");
-        prompt = inputPrompt;
+        const nanoOutput = fmt.line(inputPrompt, neg, r.seed || 0);
+        console.log("🍌 nanoOutput:", nanoOutput);
+        
+        const editMatch = nanoOutput.match(/Edit the image\.\s*(.*?)\s*\[Important\]/s);
+        
+        if (editMatch && editMatch[1].trim()) {
+          const instructions = editMatch[1].trim().split('\n').map(line => line.trim()).filter(Boolean);
+          const extractedPrompt = instructions.join(', ');
+          
+          // 指示文が空の場合のフォールバック
+          if (!extractedPrompt || extractedPrompt.trim() === '') {
+            console.warn("🍌 編集指示文が空のため、デフォルト指示を使用");
+            prompt = "add anime style effects, improve composition";
+          } else {
+            prompt = extractedPrompt;
+            console.log("🍌 抽出された編集指示文:", prompt);
+          }
+        } else {
+          console.warn("🍌 編集指示文の抽出に失敗 - デフォルト指示を使用");
+          prompt = "add anime style effects, improve composition";
+        }
+        
+        allText = nanoOutput;
       }
-      
-      allText = nanoOutput;
     } else {
       allText = fmt.line(prompt, neg, r.seed || 0);
     }
@@ -2491,8 +2518,8 @@ function renderTextTriplet(baseId, rows, fmtSelId){
   }
 }
 
+console.log('🍌 renderTextTriplet関数 Nano-banana完全対応版（空プロンプト対策付き）- 準備完了');
 
-console.log('🍌 renderTextTriplet関数 Nano-banana完全対応版 - 準備完了');
 
 function bindCopyTripletExplicit(pairs){
   if (!Array.isArray(pairs)) return;
