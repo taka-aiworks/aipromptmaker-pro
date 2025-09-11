@@ -2116,62 +2116,47 @@
         </div>
       </div>
     </details>
+  </div>
 
-    <!-- 出力設定 -->
-    <details class="production-section" open>
-      <summary><span class="caret">▼</span> 出力設定</summary>
-      <div class="section-content">
-        <div class="grid g2">
-          <div class="panel">
-            <h4>固定タグ・ネガティブ</h4>
-            <label>固定タグ（先頭に付与）</label>
-            <textarea id="fixedProd" rows="3" placeholder="※タグを追加したい場合はここに入力"></textarea>
-            <label>ネガティブ（量産用）</label>
-            <textarea id="p_neg" rows="3" placeholder="※ 共通ネガに加えて、量産時のみ追加したい内容があれば入力"></textarea>
-          </div>
-          <div class="panel">
-            <h4>生成設定</h4>
-            <div class="row">
-              <label class="inline">
-                <input type="radio" name="seedMode" value="fixed" checked>
-                seed固定
-              </label>
-              <label class="inline">
-                <input type="radio" name="seedMode" value="vary">
-                行ごとに微差seed
-              </label>
-            </div>
-            <div class="row">
-              <label>件数</label>
-              <select id="countProd">
-                <option>20</option>
-                <option>30</option>
-                <option selected>50</option>
-              </select>
-            </div>
-            <!-- 🔧 修正: フォーマット選択を追加 -->
-            <div class="row">
-              <label class="inline mini">出力フォーマット</label>
-              <select id="fmtProd">
-                <option value="a1111" selected>Web UI（汎用）</option>
-                <option value="invoke">InvokeAI（CLI）</option>
-                <option value="comfy">ComfyUI（テキスト）</option>
-                <option value="sdnext">SD.Next（dream.py）</option>
-                <option value="nai">NovelAI</option>
-                <option value="nano-banana">Nano-banana (Gemini 2.5)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-    </details>
+  <!-- 固定タグ・ネガティブ -->
+  <div class="panel">
+    <h3>📝 固定タグ / ネガティブ</h3>
+    <label>固定タグ（先頭に付与）</label>
+    <textarea id="fixedProd" rows="3" placeholder="※タグを追加したい場合はここに入力"></textarea>
+    <label style="margin-top:10px">ネガティブ（量産用）</label>
+    <textarea id="p_neg" rows="3" placeholder="※ 共通ネガに加えて、量産時のみ追加したい内容があれば入力"></textarea>
   </div>
 
   <!-- 生成ボタンエリア -->
   <div class="production-generate">
-    <div class="row">
-      <button id="btnGenProd" class="btn ok large">🚀 量産セット生成</button>
-      <div style="flex: 1;"></div>
+    <div class="row" style="gap:8px;margin-top:10px">
+      <button id="btnGenProd" class="btn ok">🚀 量産セット生成</button>
+      <select id="countProd">
+        <option>20</option>
+        <option>30</option>
+        <option selected>50</option>
+      </select>
+      <label class="inline mini">出力フォーマット
+        <select id="fmtProd">
+          <option value="a1111" selected>Web UI（汎用）</option>
+          <option value="invoke">InvokeAI（CLI）</option>
+          <option value="comfy">ComfyUI（テキスト）</option>
+          <option value="sdnext">SD.Next（dream.py）</option>
+          <option value="nai">NovelAI</option>
+          <option value="nano-banana">Nano-banana (Gemini 2.5)</option>
+        </select>
+      </label>
+      <div class="row mini" style="margin-left:auto">
+        <label class="inline">
+          <input type="radio" name="seedMode" value="fixed" checked>
+          seed固定
+        </label>
+        <label class="inline">
+          <input type="radio" name="seedMode" value="vary">
+          行ごとに微差seed
+        </label>
+      </div>
+      <span style="flex:1"></span>
       <button id="btnCsvProd" class="btn ghost">ローカル保存（CSV）</button>
       <button id="btnCloudProd" class="btn ghost">クラウド保存（CSV）</button>
     </div>
@@ -2205,7 +2190,7 @@
     </div>
   </div>
 </section>
-        
+
     <!-- 設定タブ（そのまま） -->
     <section id="panelSettings" class="card" hidden>
       <h2>⚙️ 設定</h2>
