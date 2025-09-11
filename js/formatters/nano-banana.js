@@ -337,13 +337,22 @@
     };
   }
 
-  /**
-   * 最終出力フォーマット
-   */
-  function formatNanoBananaCorrect(prompt, negativePrompt, seed) {
-    const result = processNanoBananaCorrect(prompt);
-    return result.instruction;
+/**
+ * 最終出力フォーマット（ネガティブプロンプト対応版）
+ */
+function formatNanoBananaCorrect(prompt, negativePrompt, seed) {
+  const result = processNanoBananaCorrect(prompt);
+  
+  // 基本の編集指示
+  let output = result.instruction;
+  
+  // ネガティブプロンプトがある場合は追加
+  if (negativePrompt && negativePrompt.trim() !== '') {
+    output += `\n\nNegative: ${negativePrompt.trim()}`;
   }
+  
+  return output;
+}
 
   /**
    * デバッグ・テスト用関数
