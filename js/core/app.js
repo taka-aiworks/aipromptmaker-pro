@@ -2380,7 +2380,7 @@ function renderLearnTableTo(tbodySel, rows){
 }
 
 // まとめ出力（学習/量産）に使っているユーティリティ
-// renderTextTriplet関数の修正（nanoBananaPromptを使用）
+// renderTextTriplet関数の完全修正版
 function renderTextTriplet(baseId, rows, fmtSelId){
   const fmt = getFmt(`#${fmtSelId}`);
   const isNanoBanana = fmt.label && fmt.label.includes('Nano-banana');
@@ -2391,14 +2391,19 @@ function renderTextTriplet(baseId, rows, fmtSelId){
     
     if (isNanoBanana) {
       allPrompts = rows.map(r => {
-        // ★★★ nanoBananaPromptがあればそれを使用（基本情報除外済み） ★★★
         const inputPrompt = r.nanoBananaPrompt || (Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || ""));
         console.log("🍌 Nano-banana入力:", inputPrompt);
         
         if (fmt.line && typeof fmt.line === 'function') {
           const nanoOutput = fmt.line(inputPrompt, r.neg || "", r.seed || 0);
-          const instructionMatch = nanoOutput.match(/🍌 Nano-banana Edit Instruction:\s*"([^"]+)"/);
-          return instructionMatch ? instructionMatch[1] : inputPrompt;
+          // ★★★ 正しい編集指示文抽出 ★★★
+          const editMatch = nanoOutput.match(/Edit the image\.\s*(.*?)\s*\[Important\]/s);
+          
+          if (editMatch && editMatch[1].trim()) {
+            const instructions = editMatch[1].trim().split('\n').map(line => line.trim()).filter(Boolean);
+            return instructions.join(', ');
+          }
+          return inputPrompt;
         }
         return inputPrompt;
       }).join("\n\n");
@@ -2445,19 +2450,22 @@ function renderTextTriplet(baseId, rows, fmtSelId){
     let allText;
     
     if (isNanoBanana && fmt.line && typeof fmt.line === 'function') {
-      // ★★★ nanoBananaPromptがあればそれを使用（基本情報除外済み） ★★★
       const inputPrompt = r.nanoBananaPrompt || prompt;
       console.log("🍌 Nano-banana入力:", inputPrompt);
       
       const nanoOutput = fmt.line(inputPrompt, neg, r.seed || 0);
       console.log("🍌 nanoOutput:", nanoOutput);
       
-      const instructionMatch = nanoOutput.match(/🍌 Nano-banana Edit Instruction:\s*"([^"]+)"/);
-      console.log("🍌 instructionMatch:", instructionMatch);
+      // ★★★ 正しい編集指示文抽出 ★★★
+      const editMatch = nanoOutput.match(/Edit the image\.\s*(.*?)\s*\[Important\]/s);
       
-      if (instructionMatch) {
-        prompt = instructionMatch[1];
+      if (editMatch && editMatch[1].trim()) {
+        const instructions = editMatch[1].trim().split('\n').map(line => line.trim()).filter(Boolean);
+        prompt = instructions.join(', ');
         console.log("🍌 抽出された編集指示文:", prompt);
+      } else {
+        console.warn("🍌 編集指示文の抽出に失敗");
+        prompt = inputPrompt;
       }
       
       allText = nanoOutput;
