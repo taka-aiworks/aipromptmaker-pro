@@ -2380,7 +2380,12 @@ function renderLearnTableTo(tbodySel, rows){
 }
 
 // まとめ出力（学習/量産）に使っているユーティリティ
-// renderTextTriplet関数の完全修正版
+/* ==================================================
+   renderTextTriplet関数 完全修正版
+   撮影モード・量産モード Nano-banana対応
+   ================================================== */
+
+// app.js の既存 renderTextTriplet関数を以下に置き換え
 function renderTextTriplet(baseId, rows, fmtSelId){
   const fmt = getFmt(`#${fmtSelId}`);
   const isNanoBanana = fmt.label && fmt.label.includes('Nano-banana');
@@ -2446,7 +2451,6 @@ function renderTextTriplet(baseId, rows, fmtSelId){
     let prompt = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
     const neg = r.neg || "";
     const caption = r.caption || "";
-
     let allText;
     
     if (isNanoBanana && fmt.line && typeof fmt.line === 'function') {
@@ -2487,6 +2491,8 @@ function renderTextTriplet(baseId, rows, fmtSelId){
   }
 }
 
+
+console.log('🍌 renderTextTriplet関数 Nano-banana完全対応版 - 準備完了');
 
 function bindCopyTripletExplicit(pairs){
   if (!Array.isArray(pairs)) return;
