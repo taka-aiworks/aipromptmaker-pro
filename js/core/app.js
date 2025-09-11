@@ -2379,12 +2379,7 @@ function renderLearnTableTo(tbodySel, rows){
   tb.appendChild(frag);
 }
 
-/* ==================================================
-   撮影モード・量産モード Nano-banana 対応修正
-   基本情報のみの場合の対処を追加
-   ================================================== */
-
-// renderTextTriplet関数の修正版（空プロンプト対応）
+// renderTextTriplet関数の完全修正版（Option B対応）
 function renderTextTriplet(baseId, rows, fmtSelId){
   const fmt = getFmt(`#${fmtSelId}`);
   const isNanoBanana = fmt.label && fmt.label.includes('Nano-banana');
@@ -2401,27 +2396,22 @@ function renderTextTriplet(baseId, rows, fmtSelId){
         // 空の場合のフォールバック
         if (!inputPrompt || inputPrompt.trim() === '') {
           console.warn("🍌 入力が空のため、基本的な編集指示を生成");
-          return "add anime style effects, improve composition";
+          return "Edit the image.\nadd anime style effects, improve composition\n[Important]: Please preserve the existing character features.";
         }
         
         if (fmt.line && typeof fmt.line === 'function') {
           const nanoOutput = fmt.line(inputPrompt, r.neg || "", r.seed || 0);
-          const editMatch = nanoOutput.match(/Edit the image\.\s*([\s\S]*?)\s*\[Important\]/);
-        // [\s\S]*? は改行を含む任意の文字にマッチ
           
-          if (editMatch && editMatch[1].trim()) {
-            const instructions = editMatch[1].trim().split('\n').map(line => line.trim()).filter(Boolean);
-            const result = instructions.join(', ');
-            
-            // 指示文が空の場合のフォールバック
-            if (!result || result.trim() === '') {
-              console.warn("🍌 編集指示文が空のため、デフォルト指示を使用");
-              return "add anime style effects, improve composition";
-            }
-            
-            return result;
+          // Nano-banana出力をそのまま返す（ネガティブプロンプト部分は除去）
+          const cleanOutput = nanoOutput.split('\n\nNegative:')[0].trim();
+          
+          if (cleanOutput && cleanOutput !== 'Edit the image.\n[Important]: Please preserve the existing character features.') {
+            return cleanOutput;
           }
-          return inputPrompt;
+          
+          // 空の場合のフォールバック
+          console.warn("🍌 編集指示文が空のため、デフォルト指示を使用");
+          return "Edit the image.\nadd anime style effects, improve composition\n[Important]: Please preserve the existing character features.";
         }
         return inputPrompt;
       }).join("\n\n");
@@ -2473,29 +2463,21 @@ function renderTextTriplet(baseId, rows, fmtSelId){
       // 空の場合のフォールバック
       if (!inputPrompt || inputPrompt.trim() === '') {
         console.warn("🍌 入力が空のため、基本的な編集指示を生成");
-        prompt = "add anime style effects, improve composition";
+        prompt = "Edit the image.\nadd anime style effects, improve composition\n[Important]: Please preserve the existing character features.";
         allText = fmt.line("add anime style effects, improve composition", neg, r.seed || 0);
       } else {
         const nanoOutput = fmt.line(inputPrompt, neg, r.seed || 0);
         console.log("🍌 nanoOutput:", nanoOutput);
         
-        const editMatch = nanoOutput.match(/Edit the image\.\s*(.*?)\s*\[Important\]/s);
+        // Nano-banana出力をそのまま使用（ネガティブプロンプト部分は除去）
+        const cleanOutput = nanoOutput.split('\n\nNegative:')[0].trim();
         
-        if (editMatch && editMatch[1].trim()) {
-          const instructions = editMatch[1].trim().split('\n').map(line => line.trim()).filter(Boolean);
-          const extractedPrompt = instructions.join(', ');
-          
-          // 指示文が空の場合のフォールバック
-          if (!extractedPrompt || extractedPrompt.trim() === '') {
-            console.warn("🍌 編集指示文が空のため、デフォルト指示を使用");
-            prompt = "add anime style effects, improve composition";
-          } else {
-            prompt = extractedPrompt;
-            console.log("🍌 抽出された編集指示文:", prompt);
-          }
+        if (cleanOutput && cleanOutput !== 'Edit the image.\n[Important]: Please preserve the existing character features.') {
+          prompt = cleanOutput;
+          console.log("🍌 Nano-banana完全出力:", prompt);
         } else {
-          console.warn("🍌 編集指示文の抽出に失敗 - デフォルト指示を使用");
-          prompt = "add anime style effects, improve composition";
+          console.warn("🍌 編集指示文が空のため、デフォルト指示を使用");
+          prompt = "Edit the image.\nadd anime style effects, improve composition\n[Important]: Please preserve the existing character features.";
         }
         
         allText = nanoOutput;
@@ -2518,7 +2500,7 @@ function renderTextTriplet(baseId, rows, fmtSelId){
   }
 }
 
-console.log('🍌 renderTextTriplet関数 Nano-banana完全対応版（空プロンプト対策付き）- 準備完了');
+
 
 function bindCopyTripletExplicit(pairs){
   if (!Array.isArray(pairs)) return;
@@ -2542,6 +2524,7 @@ function bindCopyTripletExplicit(pairs){
     });
   });
 }
+
 
 /* ===== CSV出力 ===== */
 function csvFromLearn(fmtSelId = "#fmtLearnBatch") {
