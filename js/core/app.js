@@ -1674,7 +1674,7 @@ function buildOnePlanner() {
 
   const seed = seedFromName((document.getElementById('charName')?.value || ''), 0);
   const prompt = p.join(", ");
-  // buildOnePlanner関数の最後のreturn文を以下に置き換えてください
+  // buildOnePlanner関数の最後のreturn文を以下に置き換え
 
   // ★★★ Nano-banana用プロンプトを作成（基本情報除外） ★★★
   const basicInfoTags = [
@@ -1692,12 +1692,17 @@ function buildOnePlanner() {
     textOf('tagSkin'),
     loraTag  // LoRAタグも除外
   ].filter(Boolean);
+
+  console.log("🔍 基本情報タグ:", basicInfoTags);
   
   // 全プロンプトから基本情報を除外してNano-banana用プロンプトを作成
   const allTags = prompt.split(", ");
+  console.log("🔍 全タグ:", allTags);
+  
   const nanoBananaPrompt = allTags.filter(tag => !basicInfoTags.includes(tag)).join(", ");
+  console.log("🔍 Nano-banana用プロンプト:", nanoBananaPrompt);
 
-  return { 
+  const result = { 
     seed, 
     pos: p, 
     neg, 
@@ -1705,7 +1710,16 @@ function buildOnePlanner() {
     nanoBananaPrompt,  // ← これを追加
     text: `${prompt}${neg ? ` --neg ${neg}` : ""} seed:${seed}` 
   };
+  
+  // デバッグ用
+  window.lastPlannerResult = result;
+  console.log("🔍 buildOnePlanner結果:", result);
+  
+  return result;
 }
+
+
+
 
 // buildOneLearning関数を修正（1枚テスト用）
 function buildOneLearning(extraSeed = 0){
