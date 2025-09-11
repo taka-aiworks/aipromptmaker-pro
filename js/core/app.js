@@ -2336,16 +2336,19 @@ function renderLearnTableTo(tbodySel, rows){
 }
 
 // まとめ出力（学習/量産）に使っているユーティリティ
-// renderTextTriplet関数を拡張してキャプション出力にも対応
+// renderTextTriplet関数を拡張してNano-banana対応
 function renderTextTriplet(baseId, rows, fmtSelId){
   const fmt = getFmt(`#${fmtSelId}`);
+
+  // Nano-banana特別処理フラグ
+  const isNanoBanana = fmt.label && fmt.label.includes('Nano-banana');
 
   if (rows.length > 1) {
     // 既存の処理
     let allPrompts = rows.map(r => Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "")).join("\n\n");
     
     // ★★★ Nano-banana専用処理を追加 ★★★
-    if (fmt.label && fmt.label.includes('Nano-banana')) {
+    if (isNanoBanana) {
       allPrompts = rows.map(r => {
         const originalPrompt = Array.isArray(r.pos) ? r.pos.join(", ") : (r.prompt || "");
         if (fmt.line && typeof fmt.line === 'function') {
@@ -2396,7 +2399,7 @@ function renderTextTriplet(baseId, rows, fmtSelId){
     const caption = r.caption || "";
 
     // ★★★ Nano-banana専用処理を追加 ★★★
-    if (fmt.label && fmt.label.includes('Nano-banana') && fmt.line && typeof fmt.line === 'function') {
+    if (isNanoBanana && fmt.line && typeof fmt.line === 'function') {
       const nanoOutput = fmt.line(prompt, neg, r.seed || 0);
       // 編集指示文部分のみを抽出
       const instructionMatch = nanoOutput.match(/🍌 Nano-banana Edit Instruction:\s*"([^"]+)"/);
@@ -2480,6 +2483,49 @@ function csvFromProd(fmtSelId = "#fmtProd") {
   return [header.join(","), ...rows].join("\n");
 }
 
+// csvFromProd関数をNano-banana対応に強化
+const originalCsvFromProd = csvFromProd;
+
+function csvFromProd(fmtSelId = "#fmtProd") {
+  const fmt = getFmt(fmtSelId);
+  const isNanoBanana = fmt.label && fmt.label.includes('Nano-banana');
+  
+  if (isNanoBanana) {
+    // Nano-banana用のCSVヘッダー
+    const header = ['"no"','"instruction"','"expression"','"pose_item"','"excluded_tags"','"original"'];
+    
+    const rows = Array.from($("#tblProd tbody")?.querySelectorAll("tr") || []).map((tr, i) => {
+      const tds = Array.from(tr.children).map(td => td.textContent || "");
+      const no = tds[0] || (i+1);
+      const seed = tds[1] || "";
+      const p = tds[2] || "";
+      const n = tds[3] || "";
+      
+      // Nano-banana処理
+      if (typeof window.processNanoBananaCorrect === 'function') {
+        const result = window.processNanoBananaCorrect(p);
+        const esc = (s) => `"${String(s).replace(/"/g,'""')}"`;
+        return [
+          esc(no),
+          esc(result.instruction),
+          esc(result.expression),
+          esc(result.poseItem),
+          esc(result.excludedTags),
+          esc(p)
+        ].join(",");
+      } else {
+        // フォールバック
+        const esc = (s) => `"${String(s).replace(/"/g,'""')}"`;
+        return [esc(no), esc(p), esc(""), esc(""), esc(""), esc(p)].join(",");
+      }
+    });
+    
+    return [header.join(","), ...rows].join("\n");
+  } else {
+    // 通常のCSV出力（既存の処理を呼び出し）
+    return originalCsvFromProd(fmtSelId);
+  }
+}
 
 
 
@@ -2787,6 +2833,45 @@ function initAll(){
     if (window.initWordModeItems) window.initWordModeItems();
     if (window.initPlannerItems) window.initPlannerItems();
   });
+
+  // ★★★ Nano-banana対応の初期化を追加 ★★★
+  setTimeout(() => {
+    console.log("🍌 Nano-banana対応初期化中...");
+    
+    // フォーマット変更時の自動更新対応
+    const fmtPlanner = document.getElementById("fmtPlanner");
+    if (fmtPlanner && !fmtPlanner.dataset.nanoBananaInit) {
+      fmtPlanner.addEventListener("change", () => {
+        const outPlannerAll = document.getElementById("outPlannerAll");
+        if (outPlannerAll && outPlannerAll.textContent.trim()) {
+          setTimeout(() => {
+            const btnPlanOne = document.getElementById("btnPlanOne");
+            if (btnPlanOne) btnPlanOne.click();
+          }, 100);
+        }
+      });
+      fmtPlanner.dataset.nanoBananaInit = "true";
+    }
+    
+    const fmtProd = document.getElementById("fmtProd");
+    if (fmtProd && !fmtProd.dataset.nanoBananaInit) {
+      fmtProd.addEventListener("change", () => {
+        const outProdAll = document.getElementById("outProdAll");
+        if (outProdAll && outProdAll.textContent.trim()) {
+          const tableRows = document.querySelectorAll("#tblProd tbody tr");
+          if (tableRows.length > 0) {
+            setTimeout(() => {
+              const btnGenProd = document.getElementById("btnGenProd");
+              if (btnGenProd) btnGenProd.click();
+            }, 100);
+          }
+        }
+      });
+      fmtProd.dataset.nanoBananaInit = "true";
+    }
+    
+    console.log("✅ Nano-banana対応初期化完了");
+  }, 3000);
 }
 
 document.addEventListener('DOMContentLoaded', initAll);
