@@ -2915,7 +2915,6 @@ function initAll(){
 
   // ★★★ Nano-banana対応の初期化を追加 ★★★
   setTimeout(() => {
-    console.log("🍌 Nano-banana対応初期化中...");
     
     // フォーマット変更時の自動更新対応
     const fmtPlanner = document.getElementById("fmtPlanner");
@@ -2948,8 +2947,6 @@ function initAll(){
       });
       fmtProd.dataset.nanoBananaInit = "true";
     }
-    
-    console.log("✅ Nano-banana対応初期化完了");
   }, 3000);
 }
 
