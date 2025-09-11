@@ -1,184 +1,303 @@
-// Nano-banana (Gemini 2.5 Flash Image) フォーマッタ - 分離版
-// ChatGPT正式フォーマット対応版
+// Nano-banana (Gemini 2.5 Flash Image) フォーマッタ - SFW辞書ベース完全実装版
+// ChatGPT正式フォーマット + SFW辞書カテゴリ判定
 
 (function() {
   'use strict';
   
-  console.log('🍌 Nano-banana 分離版フォーマッタを読み込み中...');
+  console.log('🍌 Nano-banana SFW辞書ベース版を読み込み中...');
   
   /**
-   * 表情マッピング（日本語・英語タグ → 英語表情）
+   * SFW辞書カテゴリ分類設定
    */
-  const EXPRESSION_MAP = {
-    // 基本表情（英語）
-    "smiling": "smiling",
-    "smile": "smiling", 
-    "happy": "happy",
-    "serious": "serious", 
-    "angry": "angry",
-    "sad": "sad",
-    "surprised": "surprised",
-    "confused": "confused",
-    "embarrassed": "embarrassed",
-    "worried": "worried",
-    "determined": "determined", 
-    "neutral": "neutral",
-    "crying": "crying",
-    "laughing": "laughing",
-    "excited": "excited",
-    "sleepy": "sleepy",
-    "scared": "scared",
-    "shy": "shy",
-    "confident": "confident",
-    "annoyed": "annoyed",
-    
-    // 日本語表情
-    "笑顔": "smiling",
-    "微笑み": "smiling", 
-    "真剣": "serious",
-    "怒り": "angry",
-    "悲しい": "sad",
-    "驚き": "surprised",
-    "困惑": "confused",
-    "恥ずかしい": "embarrassed",
-    "心配": "worried",
-    "決意": "determined",
-    "無表情": "neutral",
-    "泣く": "crying",
-    "笑う": "laughing",
-    "興奮": "excited",
-    "眠い": "sleepy",
-    "怖い": "scared",
-    "恥ずかしがり": "shy",
-    "自信": "confident",
-    "イライラ": "annoyed",
-    
-    // 口・目の状態
-    "open mouth": "open mouth",
-    "closed mouth": "closed mouth", 
-    "smiling open mouth": "smiling with open mouth",
-    "winking": "winking",
-    "closed eyes": "with closed eyes",
-    "half-closed eyes": "with half-closed eyes"
+  const SFW_CATEGORY_CONFIG = {
+    // 完全除外カテゴリ（キャラクター基本属性）
+    EXCLUDE_CATEGORIES: [
+      'age', 'gender', 'body_type', 'height', 
+      'hair_style', 'hair_length', 'bangs_style', 
+      'eyes', 'face', 'skin_features', 'skin_body', 
+      'colors', 'personality'
+    ],
+
+    // 編集指示に有用（保持対象）
+    KEEP_CATEGORIES: [
+      'expressions', 'pose', 'background', 'lighting', 
+      'composition', 'view', 'art_style', 'accessories'
+    ],
+
+    // 条件付き保持（内容により判定）
+    CONDITIONAL_CATEGORIES: [
+      'outfit' // 基本服装は除外、特殊衣装は保持
+    ]
   };
 
   /**
-   * ポーズ・小物マッピング（日本語・英語タグ → 英語指示）
+   * カテゴリ別自然言語パターン（英語指示文）
    */
-  const POSE_ITEM_MAP = {
-    // 基本ポーズ（英語）
-    "standing": "standing upright",
-    "sitting": "sitting down", 
-    "running": "running",
-    "walking": "walking",
-    "lying": "lying down",
-    "kneeling": "kneeling",
-    "jumping": "jumping",
-    "dancing": "dancing",
-    "sleeping": "sleeping",
-    "stretching": "stretching",
-    
-    // 腕・手のポーズ
-    "arms crossed": "with arms crossed",
-    "hands on hips": "with hands on hips",
-    "waving": "waving",
-    "pointing": "pointing",
-    "peace sign": "making peace sign",
-    "thumbs up": "giving thumbs up",
-    "saluting": "saluting",
-    "praying": "with hands in prayer",
-    "clapping": "clapping hands",
-    "reaching out": "reaching out",
-    
-    // 日本語ポーズ
-    "立っている": "standing upright",
-    "座っている": "sitting down",
-    "走っている": "running", 
-    "歩いている": "walking",
-    "寝ている": "lying down",
-    "跪く": "kneeling",
-    "ジャンプ": "jumping",
-    "踊る": "dancing",
-    "眠る": "sleeping",
-    "伸び": "stretching",
-    "腕組み": "with arms crossed",
-    "腰に手": "with hands on hips",
-    "手を振る": "waving",
-    "指差し": "pointing",
-    "ピース": "making peace sign",
-    
-    // 小物・アクセサリー（英語）
-    "holding book": "holding a book",
-    "holding phone": "holding a phone", 
-    "holding bag": "holding a bag",
-    "holding flower": "holding a flower",
-    "holding cup": "holding a cup",
-    "holding sword": "holding a sword",
-    "holding staff": "holding a staff",
-    "wearing glasses": "wearing glasses",
-    "wearing hat": "wearing a hat",
-    "wearing headphones": "wearing headphones",
-    "wearing mask": "wearing a mask",
-    "carrying backpack": "carrying a backpack",
-    
-    // 小物・アクセサリー（日本語）
-    "本を持つ": "holding a book",
-    "電話を持つ": "holding a phone",
-    "バッグ": "holding a bag",
-    "花": "holding a flower",
-    "カップ": "holding a cup",
-    "剣": "holding a sword",
-    "杖": "holding a staff",
-    "メガネ": "wearing glasses",
-    "帽子": "wearing a hat",
-    "ヘッドホン": "wearing headphones",
-    "マスク": "wearing a mask",
-    "リュック": "carrying a backpack"
+  const CATEGORY_PATTERNS = {
+    // 表情カテゴリ
+    expressions: {
+      "smiling": "Make the character smile",
+      "serious": "Change expression to serious", 
+      "happy": "Make the character look happy",
+      "sad": "Change expression to sad",
+      "angry": "Make the character look angry",
+      "surprised": "Change expression to surprised",
+      "confused": "Make the character look confused",
+      "embarrassed": "Change expression to embarrassed",
+      "worried": "Make the character look worried",
+      "determined": "Change expression to determined",
+      "neutral": "Change expression to neutral",
+      "excited": "Make the character look excited",
+      "sleepy": "Change expression to sleepy",
+      "crying": "Make the character cry",
+      "laughing": "Make the character laugh",
+      "winking": "Make the character wink",
+      "blushing": "Add a blush to the character's face"
+    },
+
+    // ポーズカテゴリ
+    pose: {
+      "standing": "Pose the character standing upright",
+      "sitting": "Change pose to sitting position", 
+      "lying": "Pose the character lying down",
+      "running": "Change pose to running motion",
+      "walking": "Pose the character walking",
+      "jumping": "Change pose to jumping",
+      "kneeling": "Pose the character kneeling",
+      "dancing": "Change pose to dancing",
+      "stretching": "Pose the character stretching",
+      "arms crossed": "Pose the character with arms crossed",
+      "hands on hips": "Pose the character with hands on hips",
+      "waving": "Make the character wave",
+      "pointing": "Pose the character pointing",
+      "peace sign": "Make the character show peace sign",
+      "thumbs up": "Pose the character giving thumbs up",
+      "saluting": "Change pose to saluting",
+      "praying": "Pose the character with hands in prayer",
+      "reaching out": "Pose the character reaching out"
+    },
+
+    // 背景カテゴリ
+    background: {
+      "school": "Change background to school setting",
+      "classroom": "Set background to classroom scene",
+      "park": "Change background to park scene",
+      "beach": "Set background to beach scene", 
+      "city": "Change background to city scene",
+      "forest": "Set background to forest scene",
+      "mountain": "Change background to mountain scene",
+      "room": "Set background to indoor room",
+      "bedroom": "Change background to bedroom setting",
+      "kitchen": "Set background to kitchen scene",
+      "cafe": "Change background to cafe setting",
+      "library": "Set background to library scene",
+      "office": "Change background to office setting",
+      "hospital": "Set background to hospital scene",
+      "castle": "Change background to castle scene",
+      "garden": "Set background to garden scene",
+      "street": "Change background to street scene",
+      "train": "Set background to train scene",
+      "plain": "Use plain background",
+      "white": "Set background to white"
+    },
+
+    // ライティングカテゴリ
+    lighting: {
+      "soft": "Add soft lighting",
+      "natural": "Use natural lighting",
+      "warm": "Add warm lighting",
+      "bright": "Increase lighting brightness",
+      "dim": "Make lighting dimmer",
+      "dramatic": "Add dramatic lighting",
+      "studio": "Use studio lighting",
+      "sunset": "Add sunset lighting",
+      "golden hour": "Add golden hour lighting",
+      "moonlight": "Add moonlight",
+      "candlelight": "Add candlelight",
+      "neon": "Add neon lighting",
+      "backlight": "Add backlighting",
+      "rim light": "Add rim lighting"
+    },
+
+    // 構図カテゴリ
+    composition: {
+      "close up": "Change to close-up composition",
+      "medium shot": "Use medium shot composition",
+      "full body": "Show full body in composition",
+      "upper body": "Focus on upper body",
+      "portrait": "Use portrait composition",
+      "wide shot": "Change to wide shot composition",
+      "from above": "Change camera angle from above",
+      "from below": "Change camera angle from below",
+      "side view": "Change to side view",
+      "back view": "Change to back view"
+    },
+
+    // 視点カテゴリ  
+    view: {
+      "front view": "Change to front view",
+      "side view": "Change to side view", 
+      "back view": "Change to back view",
+      "three-quarter view": "Use three-quarter view",
+      "profile view": "Change to profile view",
+      "from above": "Change viewpoint from above",
+      "from below": "Change viewpoint from below",
+      "bird's eye": "Use bird's eye view",
+      "worm's eye": "Use worm's eye view"
+    },
+
+    // アクセサリーカテゴリ
+    accessories: {
+      "glasses": "Add glasses to the character",
+      "hat": "Put a hat on the character",
+      "headband": "Add headband to the character",
+      "earrings": "Add earrings to the character",
+      "necklace": "Add necklace to the character",
+      "bracelet": "Add bracelet to the character",
+      "watch": "Add watch to the character",
+      "ring": "Add ring to the character",
+      "bag": "Give the character a bag",
+      "backpack": "Add backpack to the character",
+      "book": "Give the character a book",
+      "phone": "Give the character a phone",
+      "sword": "Add sword to the character",
+      "staff": "Give the character a staff",
+      "wand": "Add wand to the character",
+      "flower": "Give the character a flower",
+      "umbrella": "Add umbrella to the character"
+    }
   };
 
   /**
-   * 除外パターン（キャラクター基本属性）
+   * 補助的な正規表現パターン（辞書にないタグ用）
    */
-  const EXCLUDE_PATTERNS = [
+  const FALLBACK_EXCLUDE_PATTERNS = [
     // 人数・性別
     /^(1|2|3|4|5|6|multiple|solo|duo|trio|group)?(girl|boy|man|woman|male|female|person|people|character)s?$/i,
     
-    // 髪関連（色・長さ・スタイル）
-    /^(blonde?|black|brown|red|white|silver|gray|grey|pink|blue|green|purple|orange|yellow)[\s-]?(hair|haired)$/i,
-    /^(long|short|medium|shoulder|waist|hip)[\s-]?length[\s-]?hair$/i,
-    /^(long|short|medium)[\s-]?hair$/i,
-    /^(straight|curly|wavy|braided|tied|loose|messy|neat|spiky|fluffy|twintails|ponytail|twin[\s-]?tails)[\s-]?hair$/i,
-    /^(bangs|side[\s-]?swept|swept[\s-]?bangs|blunt[\s-]?bangs)$/i,
-    
-    // 目関連（色・形）
-    /^(blue|brown|green|red|purple|pink|yellow|amber|hazel|gray|grey|heterochromia)[\s-]?(eyes?|eyed)$/i,
-    /^(large|small|round|almond|narrow)[\s-]?eyes?$/i,
-    
-    // 肌色
-    /^(pale|fair|light|dark|tan|tanned|olive|brown|black|white)[\s-]?(skin|skinned|complexion)$/i,
+    // 髪色・目色（具体的な色名）
+    /^(blonde?|black|brown|red|white|silver|gray|grey|pink|blue|green|purple|orange|yellow|aqua|cyan|magenta)[\s-]?(hair|haired|eyes?|eyed)$/i,
     
     // 体型・年齢
-    /^(young|old|teen|teenage|adult|mature|elderly|child|kid|loli|shota)$/i,
-    /^(slim|thin|skinny|fat|chubby|thick|curvy|muscular|athletic|petite|tall|short|small|large|huge|tiny)$/i,
+    /^(young|old|teen|teenage|adult|mature|elderly|child|kid|tall|short|slim|thin|fat|petite|curvy|muscular)$/i,
     
-    // 服装基本（「髪型・服装は変更しない」方針）
-    /^(school[\s-]?uniform|uniform|dress|shirt|skirt|pants|jeans|jacket|coat)$/i,
+    // 品質タグ
+    /^(masterpiece|best[\s-]?quality|high[\s-]?quality|detailed|8k|4k|hd|realistic|anime|illustration)$/i,
     
-    // 品質・技術タグ
-    /^(masterpiece|best[\s-]?quality|high[\s-]?quality|ultra[\s-]?detailed|extremely[\s-]?detailed|detailed|8k|4k|hd|uhd)$/i,
-    /^(photorealistic|realistic|anime|manga|illustration|cg|3d)$/i,
-    
-    // アーティスト・著作権
-    /^(by\s+|artist:|\(artist\)|style\s+of|in\s+the\s+style\s+of)/i,
-    
-    // 評価・投票
-    /^(rating:|score_\d+|upvotes|downvotes|favorites)$/i
+    // アーティスト・評価
+    /^(by\s+|artist:|rating:|score_\d+).*$/i
   ];
 
   /**
-   * プロンプト処理メイン関数
-   * @param {string} prompt - 元のプロンプト
-   * @returns {object} 処理結果オブジェクト
+   * SFW辞書からタグのカテゴリを取得
+   */
+  function getSFWTagCategory(tag) {
+    // SFW辞書の参照
+    const sfwDict = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
+    if (!sfwDict) {
+      console.warn('⚠️ SFW辞書が見つかりません');
+      return null;
+    }
+
+    const normalizedTag = tag.toLowerCase().trim();
+    
+    // 全カテゴリを検索
+    for (const [category, items] of Object.entries(sfwDict)) {
+      if (Array.isArray(items)) {
+        const found = items.find(item => {
+          if (typeof item === 'object' && item !== null) {
+            // オブジェクト形式 {tag: "xxx", label: "yyy"}
+            const itemTag = (item.tag || '').toLowerCase();
+            const itemLabel = (item.label || item.ja || '').toLowerCase();
+            return itemTag === normalizedTag || itemLabel === normalizedTag;
+          } else if (typeof item === 'string') {
+            // 文字列形式
+            return item.toLowerCase() === normalizedTag;
+          }
+          return false;
+        });
+        
+        if (found) {
+          console.log(`📂 タグ "${tag}" → カテゴリ: ${category}`);
+          return category;
+        }
+      }
+    }
+    
+    console.log(`❓ タグ "${tag}" → 辞書にありません`);
+    return null;
+  }
+
+  /**
+   * 条件付きカテゴリの保持判定
+   */
+  function shouldKeepConditionalTag(tag, category) {
+    if (category === 'outfit') {
+      const normalizedTag = tag.toLowerCase();
+      
+      // 特殊・ファンタジー衣装は保持
+      const specialOutfits = [
+        'armor', 'costume', 'uniform', 'traditional', 'kimono',
+        'dress', 'wedding', 'formal', 'fantasy', 'magical',
+        'warrior', 'knight', 'princess', 'witch', 'maid',
+        'nun', 'nurse', 'police', 'military', 'sailor'
+      ];
+      
+      return specialOutfits.some(special => normalizedTag.includes(special));
+    }
+    
+    return false;
+  }
+
+  /**
+   * 正規表現による補助チェック（辞書にないタグ用）
+   */
+  function shouldExcludeByPattern(tag) {
+    return FALLBACK_EXCLUDE_PATTERNS.some(pattern => pattern.test(tag.trim()));
+  }
+
+  /**
+   * カテゴリからの自然言語指示文生成
+   */
+  function generateInstructionFromCategory(tag, category) {
+    const patterns = CATEGORY_PATTERNS[category];
+    if (!patterns) return null;
+
+    const normalizedTag = tag.toLowerCase();
+    
+    // 完全一致を優先
+    if (patterns[normalizedTag]) {
+      return patterns[normalizedTag];
+    }
+    
+    // 部分一致で検索
+    const partialMatch = Object.keys(patterns).find(key => 
+      normalizedTag.includes(key.toLowerCase()) || key.toLowerCase().includes(normalizedTag)
+    );
+    
+    if (partialMatch) {
+      return patterns[partialMatch];
+    }
+    
+    // 汎用パターン
+    switch (category) {
+      case 'expressions':
+        return `Change expression to ${tag}`;
+      case 'pose':
+        return `Pose the character ${tag}`;
+      case 'background':
+        return `Set background to ${tag}`;
+      case 'lighting':
+        return `Add ${tag} lighting`;
+      case 'accessories':
+        return `Add ${tag} to the character`;
+      default:
+        return `Add ${tag} to the image`;
+    }
+  }
+
+  /**
+   * メインのプロンプト処理関数（SFW辞書ベース）
    */
   function processNanoBananaCorrect(prompt) {
     if (!prompt || typeof prompt !== 'string') {
@@ -194,76 +313,84 @@
     const tags = prompt.split(',').map(tag => tag.trim()).filter(Boolean);
     const excludedTags = [];
     const preservedTags = [];
-    let expression = "";
-    let poseItem = "";
+    const instructions = [];
+
+    console.log('🔍 Nano-banana SFW辞書ベース処理開始');
+    console.log('入力タグ数:', tags.length);
 
     // タグ分類処理
     tags.forEach(tag => {
-      const normalizedTag = tag.toLowerCase();
+      // Step 1: SFW辞書でカテゴリ判定
+      const category = getSFWTagCategory(tag);
       
-      // Step 1: 除外パターンチェック
-      const shouldExclude = EXCLUDE_PATTERNS.some(pattern => pattern.test(tag));
-      if (shouldExclude) {
-        excludedTags.push(tag);
-        return;
-      }
-      
-      // Step 2: 表情チェック（未設定の場合のみ）
-      if (!expression) {
-        const foundExpression = Object.keys(EXPRESSION_MAP).find(key => 
-          normalizedTag.includes(key.toLowerCase())
-        );
-        if (foundExpression) {
-          expression = EXPRESSION_MAP[foundExpression];
+      if (category) {
+        // カテゴリベース判定
+        if (SFW_CATEGORY_CONFIG.EXCLUDE_CATEGORIES.includes(category)) {
+          excludedTags.push(tag);
+          console.log(`🚫 除外（${category}）: ${tag}`);
+        } else if (SFW_CATEGORY_CONFIG.KEEP_CATEGORIES.includes(category)) {
           preservedTags.push(tag);
-          return;
+          
+          // 自然言語指示文生成
+          const instruction = generateInstructionFromCategory(tag, category);
+          if (instruction) {
+            instructions.push(instruction);
+            console.log(`✅ 保持+指示（${category}）: ${tag} → ${instruction}`);
+          } else {
+            console.log(`✅ 保持（${category}）: ${tag}`);
+          }
+        } else if (SFW_CATEGORY_CONFIG.CONDITIONAL_CATEGORIES.includes(category)) {
+          if (shouldKeepConditionalTag(tag, category)) {
+            preservedTags.push(tag);
+            console.log(`✅ 条件付き保持（${category}）: ${tag}`);
+          } else {
+            excludedTags.push(tag);
+            console.log(`🚫 条件付き除外（${category}）: ${tag}`);
+          }
+        } else {
+          // 未分類カテゴリは保持（安全側）
+          preservedTags.push(tag);
+          console.log(`✅ 未分類保持（${category}）: ${tag}`);
+        }
+      } else {
+        // Step 2: 辞書にない場合は正規表現チェック
+        if (shouldExcludeByPattern(tag)) {
+          excludedTags.push(tag);
+          console.log(`🚫 パターン除外: ${tag}`);
+        } else {
+          preservedTags.push(tag);
+          console.log(`✅ パターン保持: ${tag}`);
         }
       }
-      
-      // Step 3: ポーズ・小物チェック（未設定の場合のみ）
-      if (!poseItem) {
-        const foundPose = Object.keys(POSE_ITEM_MAP).find(key => 
-          normalizedTag.includes(key.toLowerCase())
-        );
-        if (foundPose) {
-          poseItem = POSE_ITEM_MAP[foundPose];
-          preservedTags.push(tag);
-          return;
-        }
-      }
-      
-      // Step 4: その他保持タグ（背景・ライティングなど）
-      preservedTags.push(tag);
     });
 
-    // ChatGPTが教えてくれた正確なフォーマットで指示文構築
-    let instruction = "Keep the same person.";
+    // ChatGPT正式フォーマットで指示文構築
+    let finalInstruction = "Keep the same person.";
     
-    if (expression) {
-      instruction += `\nChange the expression to ${expression}.`;
+    if (instructions.length > 0) {
+      // 重複除去
+      const uniqueInstructions = [...new Set(instructions)];
+      finalInstruction += "\n" + uniqueInstructions.join("\n");
     }
     
-    if (poseItem) {
-      instruction += `\nPose the character ${poseItem}.`;
-    }
-    
-    instruction += "\nDo not change hairstyle or outfit unless specified.";
+    finalInstruction += "\nDo not change hairstyle or outfit unless specified.";
+
+    console.log('📊 処理結果:');
+    console.log('  保持:', preservedTags.length, '個');
+    console.log('  除外:', excludedTags.length, '個');
+    console.log('  指示文:', instructions.length, '個');
 
     return {
-      instruction,
-      expression: expression || "not specified",
-      poseItem: poseItem || "not specified",
+      instruction: finalInstruction,
+      expression: "processed by category",
+      poseItem: "processed by category",
       excludedTags: excludedTags.join(', '),
       preservedTags: preservedTags.join(', ')
     };
   }
 
   /**
-   * Nano-banana最終出力フォーマット関数
-   * @param {string} prompt - プロンプト
-   * @param {string} negativePrompt - ネガティブプロンプト（未使用）
-   * @param {number} seed - シード値（未使用）
-   * @returns {string} フォーマット済み出力
+   * 最終出力フォーマット
    */
   function formatNanoBananaCorrect(prompt, negativePrompt, seed) {
     const result = processNanoBananaCorrect(prompt);
@@ -273,52 +400,30 @@
   /**
    * デバッグ・テスト用関数
    */
-  function testNanoBananaFormatting() {
-    console.log('🧪 Nano-banana フォーマッタテスト開始');
+  function testSFWDictBasedProcessing() {
+    console.log('🧪 SFW辞書ベース処理テスト開始');
     
     const testCases = [
       "1girl, smiling, standing, long hair, blue eyes, school uniform, masterpiece",
-      "1girl, serious, holding book, brown hair, classroom",
-      "1girl, happy, waving, blonde hair, park, soft lighting",
-      "1girl, long hair, blue eyes, school uniform, best quality"
+      "1girl, serious, holding book, brown hair, classroom, soft lighting",
+      "1girl, happy, waving, blonde hair, park, cherry blossoms, sunset",
+      "solo, portrait, sitting, library, dramatic lighting, looking at viewer"
     ];
     
     testCases.forEach((testPrompt, index) => {
-      console.log(`\n--- テストケース ${index + 1} ---`);
+      console.log(`\n--- SFWテストケース ${index + 1} ---`);
       console.log('入力:', testPrompt);
       
       const result = processNanoBananaCorrect(testPrompt);
-      console.log('処理結果:', result);
+      console.log('保持タグ:', result.preservedTags);
+      console.log('除外タグ:', result.excludedTags);
       
       const output = formatNanoBananaCorrect(testPrompt, "", 123);
       console.log('最終出力:');
       console.log(output);
     });
     
-    console.log('\n✅ Nano-banana フォーマッタテスト完了');
-  }
-
-  /**
-   * app.jsとの統合確認
-   */
-  function checkAppIntegration() {
-    if (window.FORMATTERS && window.FORMATTERS['nano-banana']) {
-      console.log('✅ app.jsでNano-bananaフォーマッタが認識されています');
-      
-      // 実際にフォーマッタ経由でテスト
-      try {
-        const testPrompt = "1girl, smiling, standing";
-        const output = window.FORMATTERS['nano-banana'].line(testPrompt, "", 123);
-        console.log('app.js経由テスト成功:', output.substring(0, 50) + '...');
-        return true;
-      } catch (error) {
-        console.error('❌ app.js経由テスト失敗:', error);
-        return false;
-      }
-    } else {
-      console.warn('⚠️ app.jsでNano-bananaフォーマッタが見つかりません');
-      return false;
-    }
+    console.log('\n✅ SFW辞書ベース処理テスト完了');
   }
 
   /**
@@ -328,22 +433,27 @@
     // グローバル関数として公開
     window.processNanoBananaCorrect = processNanoBananaCorrect;
     window.formatNanoBananaCorrect = formatNanoBananaCorrect;
-    window.EXPRESSION_MAP = EXPRESSION_MAP;
-    window.POSE_ITEM_MAP = POSE_ITEM_MAP;
-    window.EXCLUDE_PATTERNS = EXCLUDE_PATTERNS;
+    window.getSFWTagCategory = getSFWTagCategory;
+    window.testSFWDictBasedProcessing = testSFWDictBasedProcessing;
     
-    // デバッグ用関数も公開
-    window.testNanoBananaFormatting = testNanoBananaFormatting;
-    window.checkNanoBananaAppIntegration = checkAppIntegration;
+    // 設定オブジェクトも公開
+    window.SFW_CATEGORY_CONFIG = SFW_CATEGORY_CONFIG;
+    window.CATEGORY_PATTERNS = CATEGORY_PATTERNS;
     
-    console.log('✅ Nano-banana 分離版フォーマッタ関数をグローバルに公開しました');
+    console.log('✅ Nano-banana SFW辞書ベース版の関数をグローバルに公開');
     
-    // app.js統合確認（少し遅延して実行）
+    // SFW辞書の存在確認
     setTimeout(() => {
-      checkAppIntegration();
+      const sfwDict = window.DEFAULT_SFW_DICT?.SFW || window.SFW;
+      if (sfwDict) {
+        const categoryCount = Object.keys(sfwDict).length;
+        console.log(`✅ SFW辞書検出: ${categoryCount}カテゴリ`);
+      } else {
+        console.warn('⚠️ SFW辞書が見つかりません');
+      }
     }, 1000);
     
-    console.log('🍌 Nano-banana 分離版フォーマッタの初期化完了');
+    console.log('🍌 Nano-banana SFW辞書ベース版の初期化完了');
   }
 
   /**
@@ -354,16 +464,11 @@
   } else {
     initialize();
   }
-  
-  // window.load後にも再確認
-  window.addEventListener('load', () => {
-    setTimeout(checkAppIntegration, 500);
-  });
 
 })();
 
 // ブラウザコンソールでテスト可能:
-// testNanoBananaFormatting();
-// checkNanoBananaAppIntegration();
-// processNanoBananaCorrect("1girl, smiling, standing, long hair");
-// formatNanoBananaCorrect("1girl, happy, waving, school uniform");
+// testSFWDictBasedProcessing();
+// getSFWTagCategory("smiling");
+// processNanoBananaCorrect("1girl, happy, standing, school, soft lighting");
+// formatNanoBananaCorrect("1girl, serious, sitting, library, dramatic lighting");
