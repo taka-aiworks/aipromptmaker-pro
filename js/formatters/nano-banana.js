@@ -119,13 +119,46 @@
   /**
    * パターン除外用正規表現（辞書外タグ用）
    */
-  const FALLBACK_EXCLUDE_PATTERNS = [
-    /^(1|2|3|4|5|6|multiple|solo|duo|trio|group)?(girl|boy|man|woman|male|female|person|people|character)s?$/i,
-    /^(blonde?|black|brown|red|white|silver|gray|grey|pink|blue|green|purple|orange|yellow|aqua|cyan|magenta)[\s-]?(hair|haired|eyes?|eyed)$/i,
-    /^(young|old|teen|teenage|adult|mature|elderly|child|kid|tall|short|slim|thin|fat|petite|curvy|muscular)$/i,
-    /^(masterpiece|best[\s-]?quality|high[\s-]?quality|detailed|8k|4k|hd|realistic|anime|illustration)$/i,
-    /^(by\s+|artist:|rating:|score_\d+).*$/i
+  // nano-banana.js の FALLBACK_EXCLUDE_PATTERNS に肌色パターンを追加
+
+/**
+ * パターン除外用正規表現（辞書外タグ用）- 肌色対応版
+ */
+const FALLBACK_EXCLUDE_PATTERNS = [
+  /^(1|2|3|4|5|6|multiple|solo|duo|trio|group)?(girl|boy|man|woman|male|female|person|people|character)s?$/i,
+  /^(blonde?|black|brown|red|white|silver|gray|grey|pink|blue|green|purple|orange|yellow|aqua|cyan|magenta)[\s-]?(hair|haired|eyes?|eyed)$/i,
+  /^(young|old|teen|teenage|adult|mature|elderly|child|kid|tall|short|slim|thin|fat|petite|curvy|muscular)$/i,
+  /^(masterpiece|best[\s-]?quality|high[\s-]?quality|detailed|8k|4k|hd|realistic|anime|illustration)$/i,
+  /^(by\s+|artist:|rating:|score_\d+).*$/i,
+  // 🆕 肌色パターンを追加
+  /^(pale|fair|light|dark|tan|tanned|olive|brown|black|white)[\s-]?(skin|skinned|complexion)$/i
+];
+
+// テスト用関数
+function testSkinColorExclusion() {
+  const testTags = [
+    'light skin',
+    'dark skin', 
+    'pale skin',
+    'tan skin',
+    'fair skin',
+    'olive skin',
+    'white skin',
+    'brown skin'
   ];
+  
+  console.log('🧪 肌色タグ除外テスト:');
+  testTags.forEach(tag => {
+    const shouldExclude = FALLBACK_EXCLUDE_PATTERNS.some(pattern => pattern.test(tag));
+    console.log(`${tag}: ${shouldExclude ? '✅ 除外' : '❌ 保持'}`);
+  });
+}
+
+// グローバル関数として公開
+window.testSkinColorExclusion = testSkinColorExclusion;
+
+console.log('🍌 Nano-banana: 肌色除外パターンを追加しました');
+console.log('テスト実行: testSkinColorExclusion()');
 
   /**
    * SFW辞書からタグのカテゴリを取得
