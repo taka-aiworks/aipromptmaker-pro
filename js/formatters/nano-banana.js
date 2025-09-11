@@ -415,6 +415,17 @@
     window.SFW_CATEGORY_CONFIG = SFW_CATEGORY_CONFIG;
     window.CATEGORY_TEMPLATES = CATEGORY_TEMPLATES;
     window.SPECIAL_OVERRIDES = SPECIAL_OVERRIDES;
+
+    // FORMATTERS定義（app.js統合用）
+    const NANO_BANANA_FORMATTER = {
+      name: "Nano-banana (Gemini 2.5)",
+      description: "Google Gemini 2.5 Flash Image用の画像編集フォーマッタ",
+      format: formatNanoBananaCorrect,
+      supportsNegative: true,  // ネガティブプロンプト対応
+      supportsSeed: false,
+      notes: "⚠️ 画像編集専用。NSFW非対応。キャラクター基本属性は自動除外されます。"
+    };
+    window.NANO_BANANA_FORMATTER = NANO_BANANA_FORMATTER;
     
     console.log('✅ Nano-banana完全版の関数をグローバルに公開');
     
