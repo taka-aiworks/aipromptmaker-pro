@@ -4,13 +4,13 @@
  * 
  * 主な機能:
  * - 1人/2人キャラの自動判定と適切なプロンプト生成
- * - SD系最適化: 位置指定 + BREAK形式による2人キャラ対応
+ * - SD系最適化: シンプルなBREAK形式による2人キャラ対応
  * - 個人特徴と共通要素の適切な分離
  * - NSFW/SFWの切り替え対応
  * - 服装除外機能との連携
  */
 
-// 🔥 SD最適化版: generateMangaPrompt関数（BREAK形式対応）
+// ★★★ メイン関数: SD最適化版generateMangaPrompt ★★★
 function generateMangaPrompt() {
   // ===== 🚀 2人キャラ判定 =====
   const secondCharEnabled = document.getElementById('mangaSecondCharEnable')?.checked;
@@ -24,32 +24,74 @@ function generateMangaPrompt() {
   }
 }
 
- 共通要素の収集
+// ★★★ SD最適化: 2人キャラ専用プロンプト生成（BREAK形式） ★★★
+function generate2PersonMangaPromptSD() {
+  const baseTags = [];
+  const interactions = [];
+  const personalFeatures1 = []; // 1人目
+  const personalFeatures2 = []; // 2人目
+  const commonFeatures = [];    // 共通要素
+  
+  // 1. 最優先: 商用LoRA
+  addCommercialLoRAIfEnabled(baseTags);
+  
+  // 2. 固定プロンプト
+  addFixedPromptIfExists(baseTags);
+  
+  // 3. 従来LoRA（任意入力）
+  addPrimaryLoRAIfEnabled(baseTags);
+  
+  // 4. NSFW判定
+  if (document.getElementById('mangaNSFWEnable')?.checked) {
+    baseTags.push('NSFW');
+  }
+  
+  // 5. インタラクションの収集
+  const interactionMode = document.querySelector('input[name="interactionMode"]:checked')?.value || 'sfw';
+  if (interactionMode === 'sfw') {
+    addSelectedValuesSafe(interactions, 'secondCharInteractionSFW');
+  } else {
+    addSelectedValuesSafe(interactions, 'secondCharInteractionNSFW');
+  }
+  
+  // 6. インタラクションをbaseTagsに追加（two peopleと分離）
+  if (interactions.length > 0) {
+    baseTags.push(...interactions);
+  }
+  
+  // 7. 1人目の個人特徴収集（2人目LoRAは含めない）
+  collect1stPersonFeaturesSD(personalFeatures1);
+  
+  // 8. 2人目の個人特徴収集（2人目LoRAを含む）  
+  collect2ndPersonFeaturesSD(personalFeatures2);
+  
+  // 9. 共通要素の収集
   collectCommonFeaturesSD(commonFeatures);
   
-  // 10. ★★★ SD最適化出力: 位置指定 + BREAK形式 ★★★
+  // 10. ★★★ SD最適化出力: シンプルなBREAK形式 ★★★
   const result = [];
   
-  // 基本タグ（商用LoRA + 固定 + 従来LoRA + NSFW + 人数・インタラクション）
+  // 基本タグ（商用LoRA + 固定 + 従来LoRA + NSFW + インタラクション）
   if (baseTags.length > 0) {
     result.push(baseTags.join(', '));
   }
   
-  // 1人目（左側）: 性別判定して位置指定
+  // two people（独立）
+  result.push('two people');
+  
+  // 1人目: 性別判定してラベル付け
   if (personalFeatures1.length > 0) {
     const gender1 = determineGenderFromFeatures(personalFeatures1);
-    const positionLabel1 = `${gender1} on the left`;
-    result.push(`${positionLabel1}, ${personalFeatures1.join(', ')}`);
+    result.push(`${gender1}, ${personalFeatures1.join(', ')}`);
   }
   
   // BREAK区切り
   result.push('BREAK');
   
-  // 2人目（右側）: 性別判定して位置指定
+  // 2人目: 性別判定してラベル付け
   if (personalFeatures2.length > 0) {
     const gender2 = determineGenderFromFeatures(personalFeatures2);
-    const positionLabel2 = `${gender2} on the right`;
-    result.push(`${positionLabel2}, ${personalFeatures2.join(', ')}`);
+    result.push(`${gender2}, ${personalFeatures2.join(', ')}`);
   }
   
   // 共通要素（背景・環境等）
@@ -112,7 +154,7 @@ function generate1PersonMangaPrompt() {
 // SD最適化: 特徴収集システム
 // ========================================
 
-// ★★★ 1人目の特徴収集（左側用） ★★★
+// ★★★ 1人目の特徴収集（完全版） ★★★
 function collect1stPersonFeaturesSD(features) {
   // 基本情報（1人目）
   if (typeof getBFValue === 'function') {
@@ -155,20 +197,35 @@ function collect1stPersonFeaturesSD(features) {
   if (eyeColor) features.push(eyeColor);
   if (skinColor) features.push(skinColor);
   
+  // アクセサリー
+  const charAccSel = document.getElementById("characterAccessory");
+  const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
+  if (charAccSel && charAccSel.value) {
+    if (charAccColor && charAccColor !== "—") {
+      features.push(`${charAccColor} ${charAccSel.value}`);
+    } else {
+      features.push(charAccSel.value);
+    }
+  }
+  
   // 服装（NSFW除外チェック付き）
   const shouldExcludeOutfit = checkNSFWOutfitExclusion();
   if (!shouldExcludeOutfit) {
     add1stPersonOutfitFeaturesSD(features);
   }
   
-  // 1人目の個人的な表情・ポーズ（漫画モード設定から）
-  addSelectedValuesSafe(features, 'mangaEmotionPrimary');
-  addSelectedValuesSafe(features, 'mangaEmotionDetail');
-  addSelectedValuesSafe(features, 'mangaExpressions');
-  addSelectedValuesSafe(features, 'mangaEyeState');
-  addSelectedValuesSafe(features, 'mangaGaze');
-  addSelectedValuesSafe(features, 'mangaMouthState');
-  addSelectedValuesSafe(features, 'mangaPose');
+  // 表情・感情（詳細）
+  addSelectedValuesSafe(features, 'mangaEmotionPrimary');   // joy, anger等
+  addSelectedValuesSafe(features, 'mangaEmotionDetail');    // delighted, furious等
+  addSelectedValuesSafe(features, 'mangaExpressions');      // bright_smile等
+  addSelectedValuesSafe(features, 'mangaEyeState');         // sparkling_eyes等
+  addSelectedValuesSafe(features, 'mangaGaze');             // at_viewer等
+  addSelectedValuesSafe(features, 'mangaMouthState');       // grin等
+  
+  // ポーズ・動作
+  addSelectedValuesSafe(features, 'mangaPose');             // standing等
+  addSelectedValuesSafe(features, 'mangaHandGesture');      // peace_sign等
+  addSelectedValuesSafe(features, 'mangaMovementAction');   // stretching等
   
   // NSFW個人特徴（1人目）
   const nsfwEnabled = document.getElementById('mangaNSFWEnable')?.checked;
@@ -320,17 +377,6 @@ function add1stPersonOutfitFeaturesSD(features) {
       }
     }
   }
-  
-  // アクセサリー
-  const charAccSel = document.getElementById("characterAccessory");
-  const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
-  if (charAccSel && charAccSel.value) {
-    if (charAccColor && charAccColor !== "—") {
-      features.push(`${charAccColor} ${charAccSel.value}`);
-    } else {
-      features.push(charAccSel.value);
-    }
-  }
 }
 
 // ★★★ 2人目の服装特徴追加 ★★★
@@ -426,7 +472,7 @@ function addPrimaryLoRAIfEnabled(tags) {
   }
 }
 
-// 🆕 1人目の服装を直接タグに追加
+// 1人目の服装を直接タグに追加
 function add1stCharacterOutfitToTags(tags) {
   if (typeof getIsOnepiece !== 'function' || typeof getOne !== 'function') {
     return;
@@ -464,7 +510,7 @@ function add1stCharacterOutfitToTags(tags) {
   }
 }
 
-// 🆕 基本キャラ情報のみ追加（服装除く）
+// 基本キャラ情報のみ追加（服装除く）
 function addBasicCharacterInfo(tags) {
   // 体型・年齢・性別
   if (typeof getBFValue === 'function') {
@@ -572,6 +618,42 @@ function addSelectedValuesSafe(tags, containerId) {
   });
   
   return added;
+}
+
+// NSFW服装除外チェック（既存関数への依存）
+function checkNSFWOutfitExclusion() {
+  // NSFWが無効な場合は除外しない
+  const nsfwEnabled = document.getElementById('mangaNSFWEnable')?.checked;
+  if (!nsfwEnabled) {
+    return false;
+  }
+  
+  // 対象の3カテゴリをチェック
+  const exclusionCategories = [
+    'mangaNSFWExpo',      // 露出度
+    'mangaNSFWOutfit',    // NSFW衣装
+    'mangaNSFWUnderwear'  // 下着状態
+  ];
+  
+  for (const categoryId of exclusionCategories) {
+    const container = document.getElementById(categoryId);
+    if (container) {
+      // 選択されている項目があるかチェック
+      const selectedInputs = container.querySelectorAll('input:checked');
+      if (selectedInputs.length > 0) {
+        // 「未選択」以外が選択されているかチェック
+        const hasValidSelection = Array.from(selectedInputs).some(input => 
+          input.value && input.value.trim() !== ''
+        );
+        
+        if (hasValidSelection) {
+          return true;
+        }
+      }
+    }
+  }
+  
+  return false;
 }
 
 // ========================================
