@@ -24,50 +24,7 @@ function generateMangaPrompt() {
   }
 }
 
-// ★★★ SD最適化: 2人キャラ専用プロンプト生成（BREAK形式） ★★★
-function generate2PersonMangaPromptSD() {
-  const baseTags = [];
-  const interactions = [];
-  const personalFeatures1 = []; // 1人目（左側）
-  const personalFeatures2 = []; // 2人目（右側）
-  const commonFeatures = [];    // 共通要素
-  
-  // 1. 最優先: 商用LoRA（既存処理）
-  addCommercialLoRAIfEnabled(baseTags);
-  
-  // 2. 固定プロンプト（既存処理）
-  addFixedPromptIfExists(baseTags);
-  
-  // 3. 従来LoRA（既存処理）
-  addPrimaryLoRAIfEnabled(baseTags);
-  
-  // 4. NSFW判定
-  if (document.getElementById('mangaNSFWEnable')?.checked) {
-    baseTags.push('NSFW');
-  }
-  
-  // 5. インタラクションの収集（最優先）
-  const interactionMode = document.querySelector('input[name="interactionMode"]:checked')?.value || 'sfw';
-  if (interactionMode === 'sfw') {
-    addSelectedValuesSafe(interactions, 'secondCharInteractionSFW');
-  } else {
-    addSelectedValuesSafe(interactions, 'secondCharInteractionNSFW');
-  }
-  
-  // 6. ★★★ SD最適化: "two people" + インタラクション形式 ★★★
-  if (interactions.length > 0) {
-    baseTags.push(`two people, ${interactions.join(', ')}`);
-  } else {
-    baseTags.push('two people');
-  }
-  
-  // 7. 1人目（左側）の個人特徴収集
-  collect1stPersonFeaturesSD(personalFeatures1);
-  
-  // 8. 2人目（右側）の個人特徴収集  
-  collect2ndPersonFeaturesSD(personalFeatures2);
-  
-  // 9. 共通要素の収集
+ 共通要素の収集
   collectCommonFeaturesSD(commonFeatures);
   
   // 10. ★★★ SD最適化出力: 位置指定 + BREAK形式 ★★★
@@ -225,9 +182,9 @@ function collect1stPersonFeaturesSD(features) {
   }
 }
 
-// ★★★ 2人目の特徴収集（右側用） ★★★  
+// ★★★ 2人目の特徴収集（完全版） ★★★  
 function collect2ndPersonFeaturesSD(features) {
-  // 2人目のLoRA
+  // 2人目のLoRA（最初に追加）
   if (document.getElementById('secondCharUseLoRA')?.checked) {
     const loraTag = document.getElementById('secondCharLoRATag')?.value?.trim();
     if (loraTag) {
@@ -239,7 +196,7 @@ function collect2ndPersonFeaturesSD(features) {
   // 2人目のキャラ基礎設定
   const useSecondCharBase = document.querySelector('input[name="secondCharBase"]:checked')?.value === 'B';
   if (useSecondCharBase) {
-    // コア設定
+    // 基本設定
     addSelectedValuesSafe(features, 'secondCharGender');
     addSelectedValuesSafe(features, 'secondCharAge');
     addSelectedValuesSafe(features, 'secondCharHairstyle');
