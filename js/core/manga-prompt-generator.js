@@ -153,7 +153,7 @@ function generate1PersonMangaPrompt() {
 // SD最適化: 特徴収集システム
 // ========================================
 
-// ★★★ 1人目の特徴収集（完全版） ★★★
+// ★★★ 1人目の特徴収集（完全版・構図除外） ★★★
 function collect1stPersonFeaturesSD(features) {
   // 基本情報（1人目）
   if (typeof getBFValue === 'function') {
@@ -221,10 +221,13 @@ function collect1stPersonFeaturesSD(features) {
   addSelectedValuesSafe(features, 'mangaGaze');             // at_viewer等
   addSelectedValuesSafe(features, 'mangaMouthState');       // grin等
   
-  // ポーズ・動作
+  // ポーズ・動作（個人特徴のみ）
   addSelectedValuesSafe(features, 'mangaPose');             // standing等
   addSelectedValuesSafe(features, 'mangaHandGesture');      // peace_sign等
   addSelectedValuesSafe(features, 'mangaMovementAction');   // stretching等
+  
+  // 🔧 重要: mangaComposition(upper_body等)は共通要素として扱うため除外
+  // addSelectedValuesSafe(features, 'mangaComposition'); ← この行をコメントアウト
   
   // NSFW個人特徴（1人目）
   const nsfwEnabled = document.getElementById('mangaNSFWEnable')?.checked;
@@ -268,13 +271,13 @@ function collect2ndPersonFeaturesSD(features) {
   }
 }
 
-// ★★★ 共通要素の収集（個人動作除外版） ★★★
+// ★★★ 共通要素の収集（構図を含む正しい版） ★★★
 function collectCommonFeaturesSD(features) {
   // 環境・背景・演出（個人に依存しない要素のみ）
   addSelectedValuesSafe(features, 'mangaBackground');      // school, park等
   addSelectedValuesSafe(features, 'mangaLighting');        // daylight, sunset等
   addSelectedValuesSafe(features, 'mangaArtStyle');        // manga style等
-  addSelectedValuesSafe(features, 'mangaComposition');     // upper_body, full_body等
+  addSelectedValuesSafe(features, 'mangaComposition');     // 🔧 upper_body, full_body等（共通要素として正しい）
   addSelectedValuesSafe(features, 'mangaView');            // from_above, from_below等
   addSelectedValuesSafe(features, 'mangaCameraView');      // close-up, wide_shot等
   
@@ -304,10 +307,10 @@ function collectCommonFeaturesSD(features) {
     addSelectedValuesSafe(features, 'mangaNSFWEmotion');       // 共通感情
   }
   
-  // 注意: 個人動作は除外
+  // ✅ 注意: 個人動作は除外（これらは各キャラの個人特徴に含める）
   // - mangaHandGesture (個人の手のジェスチャー)
   // - mangaMovementAction (個人の動作)
-  // これらは各キャラの個人特徴に含める
+  // - mangaPose (個人のポーズ)
 }
 
 // ========================================
@@ -409,9 +412,13 @@ function add2ndPersonOutfitFeaturesSD(features) {
 // SD最適化: 性別判定システム
 // ========================================
 
-// ★★★ 性別判定関数（SD形式用） ★★★
+// ★★★ 性別判定関数（年齢考慮版） ★★★
 function determineGenderFromFeatures(personalFeatures) {
   const featuresText = personalFeatures.join(' ').toLowerCase();
+  
+  // 年齢チェック（adult系の年齢が含まれているか）
+  const adultAgePatterns = /\b(adult|mature|middle-aged|old|elderly|40s|50s|60s|early_30s|late_30s|early_40s|late_40s)\b/;
+  const isAdult = adultAgePatterns.test(featuresText);
   
   // 女性的特徴をチェック
   const femalePatterns = [
@@ -423,15 +430,22 @@ function determineGenderFromFeatures(personalFeatures) {
   // 男性的特徴をチェック  
   const malePatterns = [
     /\b(boy|male|man|guy|masculine|男子|男性)\b/,
-    /\b(muscular|beard|masculine|pants|shirt)\b/
+    /\b(muscular|beard|masculine)\b/
   ];
   
   const hasFemale = femalePatterns.some(pattern => pattern.test(featuresText));
   const hasMale = malePatterns.some(pattern => pattern.test(featuresText));
   
-  if (hasFemale && !hasMale) return 'girl';
-  if (hasMale && !hasFemale) return 'boy';
-  if (hasFemale && hasMale) return 'person'; // 両方の特徴がある場合
+  // 年齢を考慮した性別判定
+  if (hasFemale && !hasMale) {
+    return isAdult ? 'woman' : 'girl';
+  }
+  if (hasMale && !hasFemale) {
+    return isAdult ? 'man' : 'boy';
+  }
+  if (hasFemale && hasMale) {
+    return 'person'; // 両方の特徴がある場合
+  }
   
   // デフォルト: 基本情報から推定
   return 'person';
