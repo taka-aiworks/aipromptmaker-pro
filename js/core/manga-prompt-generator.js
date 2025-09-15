@@ -54,30 +54,29 @@ function generate2PersonMangaPromptSD() {
     addSelectedValuesSafe(interactions, 'secondCharInteractionNSFW');
   }
   
-  // 6. インタラクションをbaseTagsに追加（two peopleと分離）
-  if (interactions.length > 0) {
-    baseTags.push(...interactions);
-  }
-  
-  // 7. 1人目の個人特徴収集（2人目LoRAは含めない）
+  // 6. 1人目の個人特徴収集（2人目LoRAは含めない）
   collect1stPersonFeaturesSD(personalFeatures1);
   
-  // 8. 2人目の個人特徴収集（2人目LoRAを含む）  
+  // 7. 2人目の個人特徴収集（2人目LoRAを含む）  
   collect2ndPersonFeaturesSD(personalFeatures2);
   
-  // 9. 共通要素の収集
+  // 8. 共通要素の収集
   collectCommonFeaturesSD(commonFeatures);
   
-  // 10. ★★★ SD最適化出力: シンプルなBREAK形式 ★★★
+  // 9. ★★★ SD最適化出力: two people + インタラクションを1行に統合 ★★★
   const result = [];
   
-  // 基本タグ（商用LoRA + 固定 + 従来LoRA + NSFW + インタラクション）
+  // 基本タグ（商用LoRA + 固定 + 従来LoRA + NSFW）
   if (baseTags.length > 0) {
     result.push(baseTags.join(', '));
   }
   
-  // two people（独立）
-  result.push('two people');
+  // 🔧 修正: two people + インタラクションを1行に統合
+  const peopleAndInteractionTags = ['two people'];
+  if (interactions.length > 0) {
+    peopleAndInteractionTags.push(...interactions);
+  }
+  result.push(peopleAndInteractionTags.join(', '));
   
   // 1人目: 性別判定してラベル付け
   if (personalFeatures1.length > 0) {
@@ -272,12 +271,12 @@ function collect2ndPersonFeaturesSD(features) {
 // ★★★ 共通要素の収集（個人動作除外版） ★★★
 function collectCommonFeaturesSD(features) {
   // 環境・背景・演出（個人に依存しない要素のみ）
-  addSelectedValuesSafe(features, 'mangaBackground');
-  addSelectedValuesSafe(features, 'mangaLighting');
-  addSelectedValuesSafe(features, 'mangaArtStyle');
-  addSelectedValuesSafe(features, 'mangaComposition');
-  addSelectedValuesSafe(features, 'mangaView');
-  addSelectedValuesSafe(features, 'mangaCameraView');
+  addSelectedValuesSafe(features, 'mangaBackground');      // school, park等
+  addSelectedValuesSafe(features, 'mangaLighting');        // daylight, sunset等
+  addSelectedValuesSafe(features, 'mangaArtStyle');        // manga style等
+  addSelectedValuesSafe(features, 'mangaComposition');     // upper_body, full_body等
+  addSelectedValuesSafe(features, 'mangaView');            // from_above, from_below等
+  addSelectedValuesSafe(features, 'mangaCameraView');      // close-up, wide_shot等
   
   // 効果・演出（環境系のみ）
   addSelectedValuesSafe(features, 'mangaEffectManga');
