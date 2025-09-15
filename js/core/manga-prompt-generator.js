@@ -122,17 +122,17 @@ function generate1CharacterTags(tags) {
 
 // 🆕 1人目の服装を直接タグに追加
 function add1stCharacterOutfitToTags(tags) {
-  console.log('👔 1人モード: 服装追加開始');
+ // console.log('👔 1人モード: 服装追加開始');
   
   if (typeof getIsOnepiece !== 'function' || typeof getOne !== 'function') {
-    console.warn('⚠️ 基本情報関数が利用できません');
+  //  console.warn('⚠️ 基本情報関数が利用できません');
     return;
   }
   
   const getColor = id => (document.getElementById(id)?.textContent || "").trim().replace(/^—$/, "");
   const isOnepiece = getIsOnepiece();
   
-  console.log('👗 ワンピース判定:', isOnepiece);
+//  console.log('👗 ワンピース判定:', isOnepiece);
   
   if (isOnepiece) {
     const dress = getOne('outfit_dress');
@@ -140,7 +140,7 @@ function add1stCharacterOutfitToTags(tags) {
       const color = getColor('tag_top');
       const outfitTag = color ? `${color} ${dress}` : dress;
       tags.push(outfitTag);
-      console.log('✅ ドレス追加:', outfitTag);
+  //    console.log('✅ ドレス追加:', outfitTag);
     }
   } else {
     // 分離服装
@@ -159,14 +159,14 @@ function add1stCharacterOutfitToTags(tags) {
         const color = getColor(colorId);
         const outfitTag = color ? `${color} ${item}` : item;
         tags.push(outfitTag);
-        console.log(`✅ ${name}追加:`, outfitTag);
+   //     console.log(`✅ ${name}追加:`, outfitTag);
       } else {
-        console.log(`⚠️ ${name}未選択`);
+   //     console.log(`⚠️ ${name}未選択`);
       }
     });
   }
   
-  console.log('👔 1人モード: 服装追加完了');
+ // console.log('👔 1人モード: 服装追加完了');
 }
 
 
@@ -496,4 +496,4 @@ if (typeof window !== 'undefined') {
   window.collect2ndCharFeatures = collect2ndCharFeatures;
 }
 
-console.log('✅ manga-prompt-generator.js 読み込み完了');
+//console.log('✅ manga-prompt-generator.js 読み込み完了');
