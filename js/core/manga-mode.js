@@ -1726,7 +1726,7 @@ function addBasicInfoTagsSafe(tags) {
       //console.log('🚫 NSFW設定により基本情報の服装をスキップ');
     } else {
       // 服装（基本情報タブの設定から）
-      addBasicOutfitTagsSafe(tags);
+      addSelectedValuesSafe(tags, 'mangaExpressions'); 
     }
     
   } catch (error) {
