@@ -1507,14 +1507,14 @@ function addBasicInfoTagsSafe(tags) {
     
     // ★★★ 【条件分岐】服装タグの追加 ★★★
     if (shouldExcludeOutfit) {
-      console.log('🚫 NSFW設定により基本情報の服装をスキップ');
+      //console.log('🚫 NSFW設定により基本情報の服装をスキップ');
     } else {
       // 服装（基本情報タブの設定から）
       addBasicOutfitTagsSafe(tags);
     }
     
   } catch (error) {
-    console.error('基本情報タグ追加エラー:', error);
+    //console.error('基本情報タグ追加エラー:', error);
   }
 }
 
@@ -1546,7 +1546,7 @@ function checkNSFWOutfitExclusion() {
         );
         
         if (hasValidSelection) {
-          console.log(`🔍 ${categoryId} で選択項目を検出 - 基本情報服装を除外`);
+         // console.log(`🔍 ${categoryId} で選択項目を検出 - 基本情報服装を除外`);
           return true;
         }
       }
@@ -1568,11 +1568,11 @@ function addBasicOutfitTagsSafe(tags) {
   try {
     // 既存の関数が利用可能な場合のみ実行
     if (typeof getIsOnepiece !== 'function' || typeof getOne !== 'function') {
-      console.log('⚠️ 基本情報取得関数が利用不可 - 服装タグスキップ');
+      //console.log('⚠️ 基本情報取得関数が利用不可 - 服装タグスキップ');
       return;
     }
     
-    console.log('👔 基本情報の服装タグを追加中...');
+    //console.log('👔 基本情報の服装タグを追加中...');
     
     const isOnepiece = getIsOnepiece();
     const textOf = id => {
@@ -1586,10 +1586,10 @@ function addBasicOutfitTagsSafe(tags) {
         const topColor = textOf('tag_top');
         if (topColor) {
           tags.push(`${topColor} ${dress}`);
-          console.log(`✅ ワンピース追加: ${topColor} ${dress}`);
+         // console.log(`✅ ワンピース追加: ${topColor} ${dress}`);
         } else {
           tags.push(dress);
-          console.log(`✅ ワンピース追加: ${dress}`);
+         // console.log(`✅ ワンピース追加: ${dress}`);
         }
       }
     } else {
@@ -1603,10 +1603,10 @@ function addBasicOutfitTagsSafe(tags) {
         const topColor = textOf('tag_top');
         if (topColor) {
           tags.push(`${topColor} ${top}`);
-          console.log(`✅ トップス追加: ${topColor} ${top}`);
+         // console.log(`✅ トップス追加: ${topColor} ${top}`);
         } else {
           tags.push(top);
-          console.log(`✅ トップス追加: ${top}`);
+         // console.log(`✅ トップス追加: ${top}`);
         }
       }
       
@@ -1614,19 +1614,19 @@ function addBasicOutfitTagsSafe(tags) {
         const bottomColor = textOf('tag_bottom');
         if (bottomColor) {
           tags.push(`${bottomColor} ${pants}`);
-          console.log(`✅ パンツ追加: ${bottomColor} ${pants}`);
+         // console.log(`✅ パンツ追加: ${bottomColor} ${pants}`);
         } else {
           tags.push(pants);
-          console.log(`✅ パンツ追加: ${pants}`);
+        //  console.log(`✅ パンツ追加: ${pants}`);
         }
       } else if (bottomCat === 'skirt' && skirt) {
         const bottomColor = textOf('tag_bottom');
         if (bottomColor) {
           tags.push(`${bottomColor} ${skirt}`);
-          console.log(`✅ スカート追加: ${bottomColor} ${skirt}`);
+        //  console.log(`✅ スカート追加: ${bottomColor} ${skirt}`);
         } else {
           tags.push(skirt);
-          console.log(`✅ スカート追加: ${skirt}`);
+        //  console.log(`✅ スカート追加: ${skirt}`);
         }
       }
       
@@ -1634,25 +1634,25 @@ function addBasicOutfitTagsSafe(tags) {
         const shoeColor = textOf('tag_shoes');
         if (shoeColor) {
           tags.push(`${shoeColor} ${shoes}`);
-          console.log(`✅ 靴追加: ${shoeColor} ${shoes}`);
+       //   console.log(`✅ 靴追加: ${shoeColor} ${shoes}`);
         } else {
           tags.push(shoes);
-          console.log(`✅ 靴追加: ${shoes}`);
+         // console.log(`✅ 靴追加: ${shoes}`);
         }
       }
     }
     
   } catch (error) {
-    console.error('基本服装タグ追加エラー:', error);
+   // console.error('基本服装タグ追加エラー:', error);
   }
 }
 
 // 🆕 デバッグ用グローバル関数
 window.debugNSFWOutfitExclusion = function() {
-  console.log('=== NSFW服装除外デバッグ ===');
+//  console.log('=== NSFW服装除外デバッグ ===');
   
   const nsfwEnabled = document.getElementById('mangaNSFWEnable')?.checked;
-  console.log('NSFW有効:', nsfwEnabled);
+//  console.log('NSFW有効:', nsfwEnabled);
   
   const categories = [
     'mangaNSFWExpo',
@@ -1665,29 +1665,29 @@ window.debugNSFWOutfitExclusion = function() {
     if (container) {
       const selected = container.querySelectorAll('input:checked');
       const values = Array.from(selected).map(inp => inp.value).filter(Boolean);
-      console.log(`${categoryId}:`, values);
+   //   console.log(`${categoryId}:`, values);
     } else {
-      console.log(`${categoryId}: 要素なし`);
+    //  console.log(`${categoryId}: 要素なし`);
     }
   });
   
   const shouldExclude = checkNSFWOutfitExclusion();
-  console.log('除外判定:', shouldExclude);
+ // console.log('除外判定:', shouldExclude);
   
   return shouldExclude;
 };
 
 // 🆕 テスト用関数
 window.testMangaOutfitExclusion = function() {
-  console.log('=== 服装除外テスト実行 ===');
+//  console.log('=== 服装除外テスト実行 ===');
   
   // テスト前の状態
   const beforePrompt = generateMangaPrompt();
-  console.log('修正前プロンプト:', beforePrompt);
+//  console.log('修正前プロンプト:', beforePrompt);
   
   // 除外判定
   const isExcluded = checkNSFWOutfitExclusion();
-  console.log('服装除外:', isExcluded);
+//  console.log('服装除外:', isExcluded);
   
   return {
     prompt: beforePrompt,
