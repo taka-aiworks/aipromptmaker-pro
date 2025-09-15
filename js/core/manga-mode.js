@@ -1450,9 +1450,12 @@ function addSelectedValues(tags, name) {
 }
 
 
-// 【修正版】基本情報タグの安全な追加
+// 🔥 修正1: addBasicInfoTagsSafe関数を置き換え（NSFW服装除外対応版）
 function addBasicInfoTagsSafe(tags) {
   try {
+    // ===== 🚨 NSFW服装除外チェック（新規追加） =====
+    const shouldExcludeOutfit = checkNSFWOutfitExclusion();
+    
     // 既存の基本情報取得関数が利用可能な場合のみ実行
     if (typeof getBFValue === 'function') {
       const age = getBFValue('age');
@@ -1463,8 +1466,6 @@ function addBasicInfoTagsSafe(tags) {
       if (gender) tags.push(gender);
       if (body) tags.push(body);
       if (height) tags.push(height);
-   //   console.log('👤 基本情報タグ追加:', { age, gender, body, height });
-    } else {
     }
     
     if (typeof getOne === 'function') {
@@ -1478,7 +1479,6 @@ function addBasicInfoTagsSafe(tags) {
       if (hairLength) tags.push(hairLength);
       if (bangsStyle) tags.push(bangsStyle);
       if (skinFeatures) tags.push(skinFeatures);
-   //   console.log('💄 スタイルタグ追加:', { hairStyle, eyeShape, hairLength, bangsStyle, skinFeatures });
     }
     
     // 色タグ（基本情報タブの色ピッカーから）
@@ -1494,27 +1494,68 @@ function addBasicInfoTagsSafe(tags) {
     if (eyeColor) tags.push(eyeColor);
     if (skinColor) tags.push(skinColor);
     
-   // console.log('🎨 色タグ追加:', { hairColor, eyeColor, skinColor });
-    
-    // ★★★ 【追加】基本情報のアクセサリー処理 ★★★
+    // ★★★ 【修正】基本情報のアクセサリー処理 ★★★
     const charAccSel = document.getElementById("characterAccessory");
     const charAccColor = window.getCharAccColor ? window.getCharAccColor() : "";
     if (charAccSel && charAccSel.value) {
       if (charAccColor && charAccColor !== "—") {
         tags.push(`${charAccColor} ${charAccSel.value}`);
-    //    console.log('💎 基本アクセサリー追加（色付き）:', `${charAccColor} ${charAccSel.value}`);
       } else {
         tags.push(charAccSel.value);
-    //    console.log('💎 基本アクセサリー追加:', charAccSel.value);
       }
     }
     
-    // 服装（基本情報タブの設定から）
-    addBasicOutfitTagsSafe(tags);
+    // ★★★ 【条件分岐】服装タグの追加 ★★★
+    if (shouldExcludeOutfit) {
+      console.log('🚫 NSFW設定により基本情報の服装をスキップ');
+    } else {
+      // 服装（基本情報タブの設定から）
+      addBasicOutfitTagsSafe(tags);
+    }
     
   } catch (error) {
+    console.error('基本情報タグ追加エラー:', error);
   }
 }
+
+
+// 🆕 新規関数: NSFW服装除外チェック
+function checkNSFWOutfitExclusion() {
+  // NSFWが無効な場合は除外しない
+  const nsfwEnabled = document.getElementById('mangaNSFWEnable')?.checked;
+  if (!nsfwEnabled) {
+    return false;
+  }
+  
+  // 対象の3カテゴリをチェック
+  const exclusionCategories = [
+    'mangaNSFWExpo',      // 露出度
+    'mangaNSFWOutfit',    // NSFW衣装
+    'mangaNSFWUnderwear'  // 下着状態
+  ];
+  
+  for (const categoryId of exclusionCategories) {
+    const container = document.getElementById(categoryId);
+    if (container) {
+      // 選択されている項目があるかチェック
+      const selectedInputs = container.querySelectorAll('input:checked');
+      if (selectedInputs.length > 0) {
+        // 「未選択」以外が選択されているかチェック
+        const hasValidSelection = Array.from(selectedInputs).some(input => 
+          input.value && input.value.trim() !== ''
+        );
+        
+        if (hasValidSelection) {
+          console.log(`🔍 ${categoryId} で選択項目を検出 - 基本情報服装を除外`);
+          return true;
+        }
+      }
+    }
+  }
+  
+  return false;
+}
+
 
 // 既存関数との互換性のため
 function addBasicInfoTags(tags) {
@@ -1522,13 +1563,16 @@ function addBasicInfoTags(tags) {
 }
 
 
-// 【新規関数】基本服装タグの安全な追加 - addBasicOutfitTags関数を置き換えまたは追加
+// 🔥 修正2: addBasicOutfitTagsSafe関数（デバッグログ追加版）
 function addBasicOutfitTagsSafe(tags) {
   try {
     // 既存の関数が利用可能な場合のみ実行
     if (typeof getIsOnepiece !== 'function' || typeof getOne !== 'function') {
+      console.log('⚠️ 基本情報取得関数が利用不可 - 服装タグスキップ');
       return;
     }
+    
+    console.log('👔 基本情報の服装タグを追加中...');
     
     const isOnepiece = getIsOnepiece();
     const textOf = id => {
@@ -1542,8 +1586,10 @@ function addBasicOutfitTagsSafe(tags) {
         const topColor = textOf('tag_top');
         if (topColor) {
           tags.push(`${topColor} ${dress}`);
+          console.log(`✅ ワンピース追加: ${topColor} ${dress}`);
         } else {
           tags.push(dress);
+          console.log(`✅ ワンピース追加: ${dress}`);
         }
       }
     } else {
@@ -1557,8 +1603,10 @@ function addBasicOutfitTagsSafe(tags) {
         const topColor = textOf('tag_top');
         if (topColor) {
           tags.push(`${topColor} ${top}`);
+          console.log(`✅ トップス追加: ${topColor} ${top}`);
         } else {
           tags.push(top);
+          console.log(`✅ トップス追加: ${top}`);
         }
       }
       
@@ -1566,15 +1614,19 @@ function addBasicOutfitTagsSafe(tags) {
         const bottomColor = textOf('tag_bottom');
         if (bottomColor) {
           tags.push(`${bottomColor} ${pants}`);
+          console.log(`✅ パンツ追加: ${bottomColor} ${pants}`);
         } else {
           tags.push(pants);
+          console.log(`✅ パンツ追加: ${pants}`);
         }
       } else if (bottomCat === 'skirt' && skirt) {
         const bottomColor = textOf('tag_bottom');
         if (bottomColor) {
           tags.push(`${bottomColor} ${skirt}`);
+          console.log(`✅ スカート追加: ${bottomColor} ${skirt}`);
         } else {
           tags.push(skirt);
+          console.log(`✅ スカート追加: ${skirt}`);
         }
       }
       
@@ -1582,16 +1634,67 @@ function addBasicOutfitTagsSafe(tags) {
         const shoeColor = textOf('tag_shoes');
         if (shoeColor) {
           tags.push(`${shoeColor} ${shoes}`);
+          console.log(`✅ 靴追加: ${shoeColor} ${shoes}`);
         } else {
           tags.push(shoes);
+          console.log(`✅ 靴追加: ${shoes}`);
         }
       }
-      
     }
     
   } catch (error) {
+    console.error('基本服装タグ追加エラー:', error);
   }
 }
+
+// 🆕 デバッグ用グローバル関数
+window.debugNSFWOutfitExclusion = function() {
+  console.log('=== NSFW服装除外デバッグ ===');
+  
+  const nsfwEnabled = document.getElementById('mangaNSFWEnable')?.checked;
+  console.log('NSFW有効:', nsfwEnabled);
+  
+  const categories = [
+    'mangaNSFWExpo',
+    'mangaNSFWOutfit', 
+    'mangaNSFWUnderwear'
+  ];
+  
+  categories.forEach(categoryId => {
+    const container = document.getElementById(categoryId);
+    if (container) {
+      const selected = container.querySelectorAll('input:checked');
+      const values = Array.from(selected).map(inp => inp.value).filter(Boolean);
+      console.log(`${categoryId}:`, values);
+    } else {
+      console.log(`${categoryId}: 要素なし`);
+    }
+  });
+  
+  const shouldExclude = checkNSFWOutfitExclusion();
+  console.log('除外判定:', shouldExclude);
+  
+  return shouldExclude;
+};
+
+// 🆕 テスト用関数
+window.testMangaOutfitExclusion = function() {
+  console.log('=== 服装除外テスト実行 ===');
+  
+  // テスト前の状態
+  const beforePrompt = generateMangaPrompt();
+  console.log('修正前プロンプト:', beforePrompt);
+  
+  // 除外判定
+  const isExcluded = checkNSFWOutfitExclusion();
+  console.log('服装除外:', isExcluded);
+  
+  return {
+    prompt: beforePrompt,
+    excluded: isExcluded,
+    hasOutfitTags: beforePrompt.includes('shirt') || beforePrompt.includes('dress') || beforePrompt.includes('pants')
+  };
+};
 
 // 既存関数との互換性のため
 function addBasicOutfitTags(tags) {
