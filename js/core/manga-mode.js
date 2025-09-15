@@ -1372,14 +1372,14 @@ function addBasicInfoTagsSafe(tags) {
     
     // ★★★ 【修正】服装タグの追加 ★★★
     if (shouldExcludeOutfit) {
-      console.log('🚫 NSFW設定により基本情報の服装をスキップ');
+     // console.log('🚫 NSFW設定により基本情報の服装をスキップ');
     } else {
       // 🔧 正しい服装関数を呼び出し
       addBasicOutfitTagsSafe(tags);  // ← これが正しい！
     }
     
   } catch (error) {
-    console.error('基本情報タグ追加エラー:', error);
+  //  console.error('基本情報タグ追加エラー:', error);
   }
 }
 
@@ -1433,11 +1433,11 @@ function addBasicOutfitTagsSafe(tags) {
   try {
     // 既存の関数が利用可能な場合のみ実行
     if (typeof getIsOnepiece !== 'function' || typeof getOne !== 'function') {
-      console.log('⚠️ 基本情報取得関数が利用不可 - 服装タグスキップ');
+   //   console.log('⚠️ 基本情報取得関数が利用不可 - 服装タグスキップ');
       return;
     }
     
-    console.log('👔 基本情報の服装タグを追加中...');
+   // console.log('👔 基本情報の服装タグを追加中...');
     
     const isOnepiece = getIsOnepiece();
     const textOf = id => {
@@ -1451,10 +1451,10 @@ function addBasicOutfitTagsSafe(tags) {
         const topColor = textOf('tag_top');
         if (topColor) {
           tags.push(`${topColor} ${dress}`);
-          console.log(`✅ ワンピース追加: ${topColor} ${dress}`);
+       //   console.log(`✅ ワンピース追加: ${topColor} ${dress}`);
         } else {
           tags.push(dress);
-          console.log(`✅ ワンピース追加: ${dress}`);
+       //   console.log(`✅ ワンピース追加: ${dress}`);
         }
       }
     } else {
@@ -1468,10 +1468,10 @@ function addBasicOutfitTagsSafe(tags) {
         const topColor = textOf('tag_top');
         if (topColor) {
           tags.push(`${topColor} ${top}`);
-          console.log(`✅ トップス追加: ${topColor} ${top}`);
+       //   console.log(`✅ トップス追加: ${topColor} ${top}`);
         } else {
           tags.push(top);
-          console.log(`✅ トップス追加: ${top}`);
+        //  console.log(`✅ トップス追加: ${top}`);
         }
       }
       
@@ -1479,19 +1479,19 @@ function addBasicOutfitTagsSafe(tags) {
         const bottomColor = textOf('tag_bottom');
         if (bottomColor) {
           tags.push(`${bottomColor} ${pants}`);
-          console.log(`✅ パンツ追加: ${bottomColor} ${pants}`);
+       //   console.log(`✅ パンツ追加: ${bottomColor} ${pants}`);
         } else {
           tags.push(pants);
-          console.log(`✅ パンツ追加: ${pants}`);
+       //   console.log(`✅ パンツ追加: ${pants}`);
         }
       } else if (bottomCat === 'skirt' && skirt) {
         const bottomColor = textOf('tag_bottom');
         if (bottomColor) {
           tags.push(`${bottomColor} ${skirt}`);
-          console.log(`✅ スカート追加: ${bottomColor} ${skirt}`);
+        //  console.log(`✅ スカート追加: ${bottomColor} ${skirt}`);
         } else {
           tags.push(skirt);
-          console.log(`✅ スカート追加: ${skirt}`);
+        //  console.log(`✅ スカート追加: ${skirt}`);
         }
       }
       
@@ -1499,16 +1499,16 @@ function addBasicOutfitTagsSafe(tags) {
         const shoeColor = textOf('tag_shoes');
         if (shoeColor) {
           tags.push(`${shoeColor} ${shoes}`);
-          console.log(`✅ 靴追加: ${shoeColor} ${shoes}`);
+       //   console.log(`✅ 靴追加: ${shoeColor} ${shoes}`);
         } else {
           tags.push(shoes);
-          console.log(`✅ 靴追加: ${shoes}`);
+       //   console.log(`✅ 靴追加: ${shoes}`);
         }
       }
     }
     
   } catch (error) {
-    console.error('基本服装タグ追加エラー:', error);
+  //  console.error('基本服装タグ追加エラー:', error);
   }
 }
 
