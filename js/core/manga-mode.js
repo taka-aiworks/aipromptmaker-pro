@@ -1138,17 +1138,61 @@ function generateMangaPrompt() {
     tags.push(finalGenderCountTag);
   }
   
-  // ===== キャラ基礎設定（1人目） =====
-  const useCharBase = document.querySelector('input[name="mangaCharBase"]:checked')?.value === 'B';
-  if (useCharBase) {
-    // 基本情報タグを追加（服装除外チェック付き）
-    addBasicInfoTagsWithNSFWCheck(tags);
-  }
+  // ===== 🔥 修正：人数・性別タグの適切な処理 =====
+let finalGenderCountTag = '';
+const secondCharEnabled = document.getElementById('mangaSecondCharEnable')?.checked;
+
+if (secondCharEnabled) {
+  // 2人目有効の場合
+  const firstGender = getBFValue('gender')?.toLowerCase() || '';
+  const secondGender = getSelectedValue('secondCharGender')?.toLowerCase() || '';
   
-  // ===== 2人目キャラ =====
-  if (secondCharEnabled) {
-    addSecondCharTags(tags);
+  // 1人目の性別判定
+  const firstIs = {
+    girl: /\b(female|girl|woman|feminine|女子|女性)\b/.test(firstGender),
+    boy: /\b(male|boy|man|masculine|男子|男性)\b/.test(firstGender)
+  };
+  
+  // 2人目の性別判定
+  const secondIs = {
+    girl: /\b(female|girl|woman|feminine|女子|女性)\b/.test(secondGender),
+    boy: /\b(male|boy|man|masculine|男子|男性)\b/.test(secondGender)
+  };
+  
+  // 2人の組み合わせを決定
+  if (firstIs.girl && secondIs.girl) {
+    finalGenderCountTag = '2girls';
+  } else if (firstIs.boy && secondIs.boy) {
+    finalGenderCountTag = '2boys';
+  } else if ((firstIs.girl && secondIs.boy) || (firstIs.boy && secondIs.girl)) {
+    finalGenderCountTag = '1girl 1boy';
+  } else if (firstIs.girl || secondIs.girl) {
+    finalGenderCountTag = '1girl 1other';
+  } else if (firstIs.boy || secondIs.boy) {
+    finalGenderCountTag = '1boy 1other';
+  } else {
+    finalGenderCountTag = '2others';
   }
+} else {
+  // 1人の場合（従来のロジック）
+  finalGenderCountTag = getGenderCountTag() || '';
+}
+
+if (finalGenderCountTag) {
+  tags.push(finalGenderCountTag);
+}
+
+// ===== キャラ基礎設定（1人目） =====
+const useCharBase = document.querySelector('input[name="mangaCharBase"]:checked')?.value === 'B';
+if (useCharBase) {
+  // 基本情報タグを追加（服装除外チェック付き）
+  addBasicInfoTagsWithNSFWCheck(tags);
+}
+
+// ===== 2人目キャラ =====
+if (secondCharEnabled) {
+  addSecondCharTags(tags);
+}
   
   // ===== SFW有効状態のチェック =====
   const sfwEnabledElement = document.getElementById('mangaSFWEnable');
@@ -1607,8 +1651,13 @@ function addBasicInfoTagsWithNSFWCheck(tags) {
     if (shouldExcludeOutfit) {
       console.log('🚫 NSFW設定により基本情報の服装をスキップ');
     } else {
-      // 服装（基本情報タブの設定から）
-      addBasicOutfitTagsSafe(tags);
+      // ★★★ 【条件分岐】服装タグの追加 ★★★
+      if (shouldExcludeOutfit) {
+        console.log('🚫 NSFW設定により基本情報の服装をスキップ');
+      } else {
+        // 服装（基本情報タブの設定から）
+        addBasicOutfitTagsSafe(tags);
+      }
     }
     
   } catch (error) {
