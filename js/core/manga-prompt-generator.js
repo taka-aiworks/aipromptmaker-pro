@@ -91,7 +91,8 @@ function generate2CharacterTags(tags) {
   addCommonTags(tags);
 }
 
-// 🆕 1人キャラ用タグ生成（従来維持）
+// manga-prompt-generator.js の generate1CharacterTags 関数を修正
+
 function generate1CharacterTags(tags) {
   // 性別・人数タグ
   if (typeof getGenderCountTag === 'function') {
@@ -99,22 +100,111 @@ function generate1CharacterTags(tags) {
     if (genderTag) tags.push(genderTag);
   }
   
-  // 基本情報
+  // === 🔧 基本情報の処理を修正 ===
   const useCharBase = document.querySelector('input[name="mangaCharBase"]:checked')?.value === 'B';
   if (useCharBase) {
+    // 基本情報（体型・髪型・色）を追加
+    addBasicCharacterInfo(tags);
+    
+    // 服装の処理を分離（NSFW除外チェック付き）
     const shouldExcludeOutfit = checkNSFWOutfitExclusion();
-    if (shouldExcludeOutfit) {
-      addBasicInfoWithoutOutfit(tags);
-    } else {
-      addBasicInfoTagsSafe(tags);
+    if (!shouldExcludeOutfit) {
+      add1stCharacterOutfitToTags(tags); // 🆕 新関数で服装を追加
     }
   }
   
-  // 個人要素
+  // 個人要素（表情・ポーズ）
   addPersonalTags(tags);
   
   // 共通要素
   addCommonTags(tags);
+}
+
+// 🆕 1人目の服装を直接タグに追加
+function add1stCharacterOutfitToTags(tags) {
+  console.log('👔 1人モード: 服装追加開始');
+  
+  if (typeof getIsOnepiece !== 'function' || typeof getOne !== 'function') {
+    console.warn('⚠️ 基本情報関数が利用できません');
+    return;
+  }
+  
+  const getColor = id => (document.getElementById(id)?.textContent || "").trim().replace(/^—$/, "");
+  const isOnepiece = getIsOnepiece();
+  
+  console.log('👗 ワンピース判定:', isOnepiece);
+  
+  if (isOnepiece) {
+    const dress = getOne('outfit_dress');
+    if (dress) {
+      const color = getColor('tag_top');
+      const outfitTag = color ? `${color} ${dress}` : dress;
+      tags.push(outfitTag);
+      console.log('✅ ドレス追加:', outfitTag);
+    }
+  } else {
+    // 分離服装
+    const outfits = [
+      { name: 'トップス', item: getOne('outfit_top'), colorId: 'tag_top' },
+      { 
+        name: 'ボトムス', 
+        item: getOne('bottomCat') === 'pants' ? getOne('outfit_pants') : getOne('outfit_skirt'), 
+        colorId: 'tag_bottom' 
+      },
+      { name: '靴', item: getOne('outfit_shoes'), colorId: 'tag_shoes' }
+    ];
+    
+    outfits.forEach(({name, item, colorId}) => {
+      if (item) {
+        const color = getColor(colorId);
+        const outfitTag = color ? `${color} ${item}` : item;
+        tags.push(outfitTag);
+        console.log(`✅ ${name}追加:`, outfitTag);
+      } else {
+        console.log(`⚠️ ${name}未選択`);
+      }
+    });
+  }
+  
+  console.log('👔 1人モード: 服装追加完了');
+}
+
+
+
+
+// 🆕 基本キャラ情報のみ追加（服装除く）
+function addBasicCharacterInfo(tags) {
+  // 体型・年齢・性別
+  if (typeof getBFValue === 'function') {
+    ['age', 'gender', 'body', 'height'].forEach(key => {
+      const value = getBFValue(key);
+      if (value) tags.push(value);
+    });
+  }
+  
+  // 髪型・目の形・肌特徴
+  if (typeof getOne === 'function') {
+    ['hairStyle', 'eyeShape', 'hairLength', 'bangsStyle', 'skinFeatures'].forEach(key => {
+      const value = getOne(key);
+      if (value) tags.push(value);
+    });
+  }
+
+  
+  
+  // 色（髪・目・肌）
+  const getColor = id => (document.getElementById(id)?.textContent || "").trim();
+  ['tagH', 'tagE', 'tagSkin'].forEach(id => {
+    const value = getColor(id);
+    if (value) tags.push(value);
+  });
+  
+  // アクセサリー
+  const acc = document.getElementById("characterAccessory");
+  const accColor = window.getCharAccColor ? window.getCharAccColor() : "";
+  if (acc?.value) {
+    tags.push((accColor && accColor !== "—") ? `${accColor} ${acc.value}` : acc.value);
+  }
 }
 
 // ========================================
