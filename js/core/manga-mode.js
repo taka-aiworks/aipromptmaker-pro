@@ -1092,29 +1092,65 @@ function generateMangaPrompt() {
     tags.push('NSFW');
   }
   
+  // 🔥 修正：人数・性別タグ処理部分を以下に置き換え
+
+  // ===== 人数・性別タグの適切な処理 =====
+  let finalGenderCountTag = '';
+  const secondCharEnabled = document.getElementById('mangaSecondCharEnable')?.checked;
+  
+  if (secondCharEnabled) {
+    // 2人目有効の場合
+    const firstGender = (typeof getBFValue === 'function' ? getBFValue('gender') : '')?.toLowerCase() || '';
+    const secondGender = (typeof getSelectedValue === 'function' ? getSelectedValue('secondCharGender') : '')?.toLowerCase() || '';
+    
+    // 1人目の性別判定
+    const firstIs = {
+      girl: /\b(female|girl|woman|feminine|女子|女性)\b/.test(firstGender),
+      boy: /\b(male|boy|man|masculine|男子|男性)\b/.test(firstGender)
+    };
+    
+    // 2人目の性別判定
+    const secondIs = {
+      girl: /\b(female|girl|woman|feminine|女子|女性)\b/.test(secondGender),
+      boy: /\b(male|boy|man|masculine|男子|男性)\b/.test(secondGender)
+    };
+    
+    // 2人の組み合わせを決定
+    if (firstIs.girl && secondIs.girl) {
+      finalGenderCountTag = '2girls';
+    } else if (firstIs.boy && secondIs.boy) {
+      finalGenderCountTag = '2boys';
+    } else if ((firstIs.girl && secondIs.boy) || (firstIs.boy && secondIs.girl)) {
+      finalGenderCountTag = '1girl, 1boy';
+    } else if (firstIs.girl || secondIs.girl) {
+      finalGenderCountTag = '1girl, 1other';
+    } else if (firstIs.boy || secondIs.boy) {
+      finalGenderCountTag = '1boy, 1other';
+    } else {
+      finalGenderCountTag = '2others';
+    }
+  } else {
+    // 1人の場合（従来のロジック）
+    if (typeof getGenderCountTag === 'function') {
+      finalGenderCountTag = getGenderCountTag() || '';
+    }
+  }
+  
+  // 性別・人数タグを追加
+  if (finalGenderCountTag) {
+    tags.push(finalGenderCountTag);
+  }
+  
   // キャラ基礎設定（1人目）
   const useCharBase = document.querySelector('input[name="mangaCharBase"]:checked')?.value === 'B';
   if (useCharBase) {
-    tags.push('solo'); // 2人目がいる場合は後で修正
-    
-    if (typeof getGenderCountTag === 'function') {
-      const genderCountTag = getGenderCountTag();
-      if (genderCountTag) tags.push(genderCountTag);
-    }
-    
+    // soloタグは削除（上記で適切な人数・性別タグを設定済み）
     // 基本情報タブから取得する想定のタグ
     addBasicInfoTagsSafe(tags);
   }
   
   // 2人目キャラ
-  if (document.getElementById('mangaSecondCharEnable')?.checked) {
-    // soloを削除して2peopleに変更
-    const soloIndex = tags.indexOf('solo');
-    if (soloIndex !== -1) {
-      tags.splice(soloIndex, 1);
-    }
-    tags.push('2people');
-    
+  if (secondCharEnabled) {
     // 2人目の設定を追加
     addSecondCharTags(tags);
   }
