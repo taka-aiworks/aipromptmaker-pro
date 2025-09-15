@@ -1056,18 +1056,16 @@ if (outPrompt) {
 // manga-mode.js 修正版 - 既存コードを置き換え
 // ========================================
 
-// 🔥 修正1: generateMangaPrompt関数を置き換え（約1250行目付近）
+// 🔥 修正版: generateMangaPrompt関数（2人キャラ完全対応）
 function generateMangaPrompt() {
   const tags = [];
   
-
-  // ===== 🎭 商用LoRAタグを最優先で先頭に追加（修正版） =====
+  // ===== 🎭 商用LoRAタグを最優先で先頭に追加 =====
   const commercialLoRAToggle = document.getElementById('mangaCommercialLoRAEnable');
   if (commercialLoRAToggle && commercialLoRAToggle.checked && window.commercialLoRAManager) {
     const loraBaseTags = window.commercialLoRAManager.getSelectedLoRATags();
     if (loraBaseTags.length > 0) {
       tags.push(...loraBaseTags);
-    } else {
     }
   }
   
@@ -1092,167 +1090,22 @@ function generateMangaPrompt() {
     tags.push('NSFW');
   }
   
-
-// 🔥 修正：2人キャラ時の個別特徴出力対応
-
-// ===== 人数・性別タグの適切な処理（個別特徴対応版） =====
-let finalGenderCountTag = '';
-let firstCharTags = [];
-let secondCharTags = [];
-const secondCharEnabled = document.getElementById('mangaSecondCharEnable')?.checked;
-
-if (secondCharEnabled) {
-  // 2人目有効の場合
-  const firstGender = (typeof getBFValue === 'function' ? getBFValue('gender') : '')?.toLowerCase() || '';
-  const secondGender = (typeof getSelectedValue === 'function' ? getSelectedValue('secondCharGender') : '')?.toLowerCase() || '';
+  // ===== 🚀 2人キャラシステム =====
+  const secondCharEnabled = document.getElementById('mangaSecondCharEnable')?.checked;
   
-  // 1人目の性別判定
-  const firstIs = {
-    girl: /\b(female|girl|woman|feminine|女子|女性)\b/.test(firstGender),
-    boy: /\b(male|boy|man|masculine|男子|男性)\b/.test(firstGender)
-  };
-  
-  // 2人目の性別判定
-  const secondIs = {
-    girl: /\b(female|girl|woman|feminine|女子|女性)\b/.test(secondGender),
-    boy: /\b(male|boy|man|masculine|男子|男性)\b/.test(secondGender)
-  };
-  
-  // 2人の組み合わせを決定
-  if (firstIs.girl && secondIs.girl) {
-    finalGenderCountTag = '2girls';
-  } else if (firstIs.boy && secondIs.boy) {
-    finalGenderCountTag = '2boys';
-  } else if ((firstIs.girl && secondIs.boy) || (firstIs.boy && secondIs.girl)) {
-    finalGenderCountTag = '1girl, 1boy';
-  } else if (firstIs.girl || secondIs.girl) {
-    finalGenderCountTag = '1girl, 1other';
-  } else if (firstIs.boy || secondIs.boy) {
-    finalGenderCountTag = '1boy, 1other';
+  if (secondCharEnabled) {
+    // === 2人キャラモード ===
+    generate2CharacterPrompt(tags);
   } else {
-    finalGenderCountTag = '2others';
+    // === 1人キャラモード（従来） ===
+    generate1CharacterPrompt(tags);
   }
   
-  // ===== 1人目の特徴を収集 =====
-  if (typeof getBFValue === 'function') {
-    const age = getBFValue('age');
-    const gender = getBFValue('gender');
-    const body = getBFValue('body');
-    const height = getBFValue('height');
-    if (age) firstCharTags.push(age);
-    if (gender) firstCharTags.push(gender);
-    if (body) firstCharTags.push(body);
-    if (height) firstCharTags.push(height);
-  }
-  
-  if (typeof getOne === 'function') {
-    const hairStyle = getOne('hairStyle');
-    const eyeShape = getOne('eyeShape');
-    const hairLength = getOne('hairLength');
-    const bangsStyle = getOne('bangsStyle');
-    const skinFeatures = getOne('skinFeatures');
-    if (hairStyle) firstCharTags.push(hairStyle);
-    if (eyeShape) firstCharTags.push(eyeShape);
-    if (hairLength) firstCharTags.push(hairLength);
-    if (bangsStyle) firstCharTags.push(bangsStyle);
-    if (skinFeatures) firstCharTags.push(skinFeatures);
-  }
-  
-  // 1人目の色タグ
-  const textOf = id => {
-    const element = document.getElementById(id);
-    return element ? (element.textContent || "").trim() : "";
-  };
-  
-  const hairColor = textOf('tagH');
-  const eyeColor = textOf('tagE');
-  const skinColor = textOf('tagSkin');
-  if (hairColor) firstCharTags.push(hairColor);
-  if (eyeColor) firstCharTags.push(eyeColor);
-  if (skinColor) firstCharTags.push(skinColor);
-  
-  // ===== 2人目の特徴を収集 =====
-  const secondGenderValue = getSelectedValue('secondCharGender');
-  const secondAge = getSelectedValue('secondCharAge');
-  const secondHairstyle = getSelectedValue('secondCharHairstyle');
-  const secondHairLength = getSelectedValue('secondCharHairLength');
-  const secondBangsStyle = getSelectedValue('secondCharBangsStyle');
-  const secondSkinFeatures = getSelectedValue('secondCharSkinFeatures');
-  const secondHairColor = getSelectedValue('secondCharHairColor');
-  const secondEyeColor = getSelectedValue('secondCharEyeColor');
-  const secondSkinTone = getSelectedValue('secondCharSkinTone');
-  
-  if (secondGenderValue) secondCharTags.push(secondGenderValue);
-  if (secondAge) secondCharTags.push(secondAge);
-  if (secondHairstyle) secondCharTags.push(secondHairstyle);
-  if (secondHairLength) secondCharTags.push(secondHairLength);
-  if (secondBangsStyle) secondCharTags.push(secondBangsStyle);
-  if (secondSkinFeatures) secondCharTags.push(secondSkinFeatures);
-  if (secondHairColor) secondCharTags.push(secondHairColor);
-  if (secondEyeColor) secondCharTags.push(secondEyeColor);
-  if (secondSkinTone) secondCharTags.push(secondSkinTone);
-  
-} else {
-  // 1人の場合（従来のロジック）
-  if (typeof getGenderCountTag === 'function') {
-    finalGenderCountTag = getGenderCountTag() || '';
-  }
+  const finalPrompt = tags.filter(Boolean).join(', ');
+  return finalPrompt;
 }
 
-// 性別・人数タグを追加
-if (finalGenderCountTag) {
-  tags.push(finalGenderCountTag);
-}
 
-// ===== キャラ特徴の追加 =====
-const useCharBase = document.querySelector('input[name="mangaCharBase"]:checked')?.value === 'B';
-
-if (secondCharEnabled && useCharBase) {
-  // 2人の場合：括弧で分離
-  let firstLabel = '';
-  let secondLabel = '';
-  
-  // ラベル決定
-  if (finalGenderCountTag.includes('2girls')) {
-    firstLabel = 'girl1';
-    secondLabel = 'girl2';
-  } else if (finalGenderCountTag.includes('2boys')) {
-    firstLabel = 'boy1';
-    secondLabel = 'boy2';
-  } else if (finalGenderCountTag.includes('1girl') && finalGenderCountTag.includes('1boy')) {
-    firstLabel = firstCharTags.some(tag => /\b(female|girl|woman|feminine|女子|女性)\b/.test(tag)) ? 'girl' : 'boy';
-    secondLabel = firstLabel === 'girl' ? 'boy' : 'girl';
-  } else {
-    firstLabel = 'char1';
-    secondLabel = 'char2';
-  }
-  
-  // 括弧付きで追加
-  if (firstCharTags.length > 0) {
-    tags.push(`(${firstLabel}: ${firstCharTags.join(', ')})`);
-  }
-  if (secondCharTags.length > 0) {
-    tags.push(`(${secondLabel}: ${secondCharTags.join(', ')})`);
-  }
-  
-  // 服装は従来通り（NSFW除外チェック付き）
-  const shouldExcludeOutfit = (typeof checkNSFWOutfitExclusion === 'function') ? 
-    checkNSFWOutfitExclusion() : false;
-  
-  if (!shouldExcludeOutfit) {
-    // 基本情報の服装のみ追加（人物特徴は除外）
-    addBasicOutfitOnlyTags(tags);
-  }
-  
-} else if (useCharBase) {
-  // 1人の場合：従来通り
-  addBasicInfoTagsSafe(tags);
-}
-
-// 2人目キャラの追加情報
-if (secondCharEnabled) {
-  addSecondCharTags(tags);
-}
 
 // ===== 服装のみ追加する関数（新規追加が必要） =====
 function addBasicOutfitOnlyTags(tags) {
