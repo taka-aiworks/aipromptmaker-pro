@@ -1052,59 +1052,6 @@ if (outPrompt) {
 //  console.log('✅ updateMangaOutput実行完了');
 }
 
-// ========================================
-// manga-mode.js 修正版 - 既存コードを置き換え
-// ========================================
-
-// 🔥 修正版: generateMangaPrompt関数（2人キャラ完全対応）
-function generateMangaPrompt() {
-  const tags = [];
-  
-  // ===== 🎭 商用LoRAタグを最優先で先頭に追加 =====
-  const commercialLoRAToggle = document.getElementById('mangaCommercialLoRAEnable');
-  if (commercialLoRAToggle && commercialLoRAToggle.checked && window.commercialLoRAManager) {
-    const loraBaseTags = window.commercialLoRAManager.getSelectedLoRATags();
-    if (loraBaseTags.length > 0) {
-      tags.push(...loraBaseTags);
-    }
-  }
-  
-  // 固定タグ（商用LoRA後の2番目）
-  const fixed = document.getElementById('fixedManga')?.value?.trim();
-  if (fixed) {
-    const fixedTags = fixed.split(/\s*,\s*/).filter(Boolean);
-    tags.push(...fixedTags);
-  }
-  
-  // 従来のLoRAタグ（商用LoRAの後）
-  if (document.getElementById('mangaUseLoRA')?.checked) {
-    const loraTag = document.getElementById('mangaLoRATag')?.value?.trim();
-    if (loraTag) {
-      const weight = document.getElementById('mangaLoRAWeight')?.value || '0.8';
-      tags.push(loraTag.replace(':0.8>', `:${weight}>`));
-    }
-  }
-  
-  // NSFW
-  if (document.getElementById('mangaNSFWEnable')?.checked) {
-    tags.push('NSFW');
-  }
-  
-  // ===== 🚀 2人キャラシステム =====
-  const secondCharEnabled = document.getElementById('mangaSecondCharEnable')?.checked;
-  
-  if (secondCharEnabled) {
-    // === 2人キャラモード ===
-    generate2CharacterPrompt(tags);
-  } else {
-    // === 1人キャラモード（従来） ===
-    generate1CharacterPrompt(tags);
-  }
-  
-  const finalPrompt = tags.filter(Boolean).join(', ');
-  return finalPrompt;
-}
-
 
 
 // ===== 服装のみ追加する関数（新規追加が必要） =====
