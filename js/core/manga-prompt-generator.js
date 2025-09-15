@@ -269,9 +269,9 @@ function collect2ndPersonFeaturesSD(features) {
   }
 }
 
-// ★★★ 共通要素の収集 ★★★
+// ★★★ 共通要素の収集（個人動作除外版） ★★★
 function collectCommonFeaturesSD(features) {
-  // 環境・背景・演出（個人に依存しない要素）
+  // 環境・背景・演出（個人に依存しない要素のみ）
   addSelectedValuesSafe(features, 'mangaBackground');
   addSelectedValuesSafe(features, 'mangaLighting');
   addSelectedValuesSafe(features, 'mangaArtStyle');
@@ -279,35 +279,36 @@ function collectCommonFeaturesSD(features) {
   addSelectedValuesSafe(features, 'mangaView');
   addSelectedValuesSafe(features, 'mangaCameraView');
   
-  // 効果・演出
+  // 効果・演出（環境系のみ）
   addSelectedValuesSafe(features, 'mangaEffectManga');
   addSelectedValuesSafe(features, 'mangaPropsLight');
   addSelectedValuesSafe(features, 'mangaEffectMangaFX');
   
-  // 動作・ジェスチャー（共通）
-  addSelectedValuesSafe(features, 'mangaHandGesture');
-  addSelectedValuesSafe(features, 'mangaMovementAction');
-  
-  // 関係性・状況
+  // 関係性・状況（個人動作は除外）
   addSelectedValuesSafe(features, 'mangaRelationship');
   addSelectedValuesSafe(features, 'mangaPhysicalState');
   addSelectedValuesSafe(features, 'mangaOccupation');
   addSelectedValuesSafe(features, 'mangaSeasonWeather');
   
-  // NSFW共通要素
+  // NSFW共通要素（環境系のみ）
   const nsfwEnabled = document.getElementById('mangaNSFWEnable')?.checked;
   if (nsfwEnabled) {
     addSelectedValuesSafe(features, 'mangaNSFWSitu');
     addSelectedValuesSafe(features, 'mangaNSFWLight');
-    addSelectedValuesSafe(features, 'mangaNSFWAction');
-    addSelectedValuesSafe(features, 'mangaNSFWAction2');
-    addSelectedValuesSafe(features, 'mangaNSFWAcc');
-    addSelectedValuesSafe(features, 'mangaNSFWOutfit');
-    addSelectedValuesSafe(features, 'mangaNSFWParticipants');
-    addSelectedValuesSafe(features, 'mangaNSFWInteraction');
-    addSelectedValuesSafe(features, 'mangaNSFWBackground');
-    addSelectedValuesSafe(features, 'mangaNSFWEmotion');
+    addSelectedValuesSafe(features, 'mangaNSFWAction');        // 共通アクション
+    addSelectedValuesSafe(features, 'mangaNSFWAction2');       // 射精・体液系
+    addSelectedValuesSafe(features, 'mangaNSFWAcc');           // 共通アクセサリー
+    addSelectedValuesSafe(features, 'mangaNSFWOutfit');        // 共通衣装
+    addSelectedValuesSafe(features, 'mangaNSFWParticipants');  // 人数・構成
+    addSelectedValuesSafe(features, 'mangaNSFWInteraction');   // 共通インタラクション
+    addSelectedValuesSafe(features, 'mangaNSFWBackground');    // NSFW背景
+    addSelectedValuesSafe(features, 'mangaNSFWEmotion');       // 共通感情
   }
+  
+  // 注意: 個人動作は除外
+  // - mangaHandGesture (個人の手のジェスチャー)
+  // - mangaMovementAction (個人の動作)
+  // これらは各キャラの個人特徴に含める
 }
 
 // ========================================
